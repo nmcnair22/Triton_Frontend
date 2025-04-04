@@ -251,3 +251,90 @@ export const generateRandomMultiData = (startDate, endDate, intervalHours, minVa
     }
     return data;
 };
+
+/**
+ * Formats a date to mm/dd/yyyy
+ * @param {Date|string} value - Date to format
+ * @param {Object} options - Formatting options
+ * @returns {string} Formatted date
+ */
+export const formatDate = (value, options = {}) => {
+  if (!value) return '';
+  
+  const defaultOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    ...options
+  };
+  
+  return new Date(value).toLocaleDateString('en-US', defaultOptions);
+};
+
+/**
+ * Formats a number as currency
+ * @param {number} value - Value to format
+ * @param {string} currency - Currency code (default: USD)
+ * @param {string} locale - Locale code (default: en-US)
+ * @returns {string} Formatted currency
+ */
+export const formatCurrency = (value, currency = 'USD', locale = 'en-US') => {
+  if (value === null || value === undefined) return '$0.00';
+  
+  return value.toLocaleString(locale, { 
+    style: 'currency', 
+    currency: currency 
+  });
+};
+
+/**
+ * Formats a number with specified decimals and thousands separators
+ * @param {number} value - Value to format
+ * @param {number} decimals - Number of decimals
+ * @returns {string} Formatted number
+ */
+export const formatNumber = (value, decimals = 2) => {
+  if (value === null || value === undefined) return '0.00';
+  
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+};
+
+/**
+ * Formats a due date relative to today (e.g. "2 days ago", "in 3 days")
+ * @param {Date|string} dueDate - Due date to format
+ * @param {string} status - Status (e.g. 'open', 'paid')
+ * @returns {Object} Formatted date with message and class
+ */
+export const formatDueDate = (dueDate, status) => {
+  if (!dueDate) return { message: '', class: '' };
+  
+  const today = new Date();
+  const dueDateObj = new Date(dueDate);
+  
+  if (status === 'open') {
+    if (dueDateObj < today) {
+      // Past due
+      const daysOverdue = Math.ceil((today - dueDateObj) / (1000 * 60 * 60 * 24));
+      return {
+        message: `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
+        class: 'text-red-500 font-medium'
+      };
+    } else if ((dueDateObj - today) <= 3 * 24 * 60 * 60 * 1000) {
+      // Due soon (within 3 days)
+      const daysDue = Math.ceil((dueDateObj - today) / (1000 * 60 * 60 * 24));
+      return {
+        message: `Due in ${daysDue} day${daysDue !== 1 ? 's' : ''}`,
+        class: 'text-yellow-500 font-medium'
+      };
+    }
+  }
+  
+  // Default - just show the date
+  return {
+    message: formatDate(dueDate),
+    class: ''
+  };
+};

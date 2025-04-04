@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useInvoiceStore } from '@/stores/invoiceStore';
 import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
+import { formatCurrency, formatDate, formatDueDate } from '@/lib/utils';
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -13,6 +14,7 @@ const invoices = ref([]);
 const selectedInvoice = ref(null);
 const isLoading = computed(() => invoiceStore.loading);
 const error = computed(() => invoiceStore.error);
+const isInteractive = ref(false); // New toggle state for interactive mode
 
 // Table products for the selected invoice
 const products = ref([]);
@@ -152,16 +154,6 @@ function clearFilter() {
   };
 }
 
-// Format date for display
-function formatDate(value) {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-}
-
 // Handle customer invoice selection change
 function onCustomerInvoiceSelect() {
   if (selectedCustomerInvoice.value) {
@@ -229,38 +221,6 @@ function getRowClass(data) {
     return 'bg-yellow-50 dark:bg-yellow-900/20';
   }
   return '';
-}
-
-// Function to format due date message based on status
-function formatDueDate(dueDate, status) {
-  if (!dueDate) return '';
-  
-  const today = new Date();
-  const dueDateObj = new Date(dueDate);
-  
-  if (status === 'open') {
-    if (dueDateObj < today) {
-      // Past due
-      const daysOverdue = Math.ceil((today - dueDateObj) / (1000 * 60 * 60 * 24));
-      return {
-        message: `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
-        class: 'text-red-500 font-medium'
-      };
-    } else if ((dueDateObj - today) <= 3 * 24 * 60 * 60 * 1000) {
-      // Due soon (within 3 days)
-      const daysDue = Math.ceil((dueDateObj - today) / (1000 * 60 * 60 * 24));
-      return {
-        message: `Due in ${daysDue} day${daysDue !== 1 ? 's' : ''}`,
-        class: 'text-yellow-500 font-medium'
-      };
-    }
-  }
-  
-  // Default - just show the date
-  return {
-    message: formatDate(dueDate),
-    class: ''
-  };
 }
 </script>
 <template>
@@ -343,7 +303,7 @@ function formatDueDate(dueDate, status) {
                              {label: 'Greater Than or Equal To', value: FilterMatchMode.GREATER_THAN_OR_EQUAL_TO}
                            ]">
                         <template #body="slotProps">
-                            ${{ typeof slotProps.data.total === 'number' ? slotProps.data.total.toFixed(2) : slotProps.data.total }}
+                            {{ formatCurrency(slotProps.data.total) }}
                         </template>
                         <template #filter="{ filterModel }">
                             <InputNumber v-model="filterModel.value" mode="currency" currency="USD" locale="en-US" class="p-column-filter" placeholder="Search by amount" />
@@ -360,7 +320,7 @@ function formatDueDate(dueDate, status) {
                            ]">
                         <template #body="slotProps">
                             <span :class="{'text-red-500 font-medium': slotProps.data.remainingAmount > 0}">
-                                ${{ typeof slotProps.data.remainingAmount === 'number' ? slotProps.data.remainingAmount.toFixed(2) : (slotProps.data.remainingAmount || '0.00') }}
+                                {{ formatCurrency(slotProps.data.remainingAmount) }}
                             </span>
                         </template>
                         <template #filter="{ filterModel }">
@@ -417,8 +377,17 @@ function formatDueDate(dueDate, status) {
                             <div class="mt-3 body-xsmall text-left">CIS<br>1023 Calle Sombra Unit B San Clemente, CA 92673</div>
                         </div>
                         <div class="flex flex-col text-right">
+                            <ToggleButton 
+                                v-model="isInteractive" 
+                                onLabel="Interactive On" 
+                                offLabel="Interactive Off" 
+                                onIcon="pi pi-check" 
+                                offIcon="pi pi-times" 
+                                :class="isInteractive ? 'p-button-outlined p-button-success' : 'p-button-outlined p-button-help'"
+                                class="mb-4"
+                            />
                             <h1 class="title-h6">Invoice</h1>
-                            <span class="mt-1.5 body-medium">#{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</span>
+                            <span class="mt-1.5 body-medium">{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</span>
                         </div>
                     </div>
                     <Divider />
@@ -467,19 +436,19 @@ function formatDueDate(dueDate, status) {
                             <div class="flex flex-col gap-3 min-w-52">
                                 <div class="flex items-center justify-between">
                                     <span class="label-small text-surface-950 dark:text-surface-0">Subtotal</span>
-                                    <span>${{ selectedInvoice?.subtotal?.toFixed(2) || '0.00' }}</span>
+                                    <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="label-small text-surface-950 dark:text-surface-0">VAT ({{ selectedInvoice?.vatRate || 0 }}%)</span>
-                                    <span>${{ selectedInvoice?.vat?.toFixed(2) || '0.00' }}</span>
+                                    <span>{{ formatCurrency(selectedInvoice?.vat) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="label-small text-surface-950 dark:text-surface-0">Total</span>
-                                    <span>${{ selectedInvoice?.total?.toFixed(2) || '0.00' }}</span>
+                                    <span>{{ formatCurrency(selectedInvoice?.total) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between" v-if="selectedInvoice?.remainingAmount > 0">
                                     <span class="label-small text-red-500 font-medium">Amount Due</span>
-                                    <span class="text-red-500 font-medium">${{ selectedInvoice?.remainingAmount?.toFixed(2) || '0.00' }}</span>
+                                    <span class="text-red-500 font-medium">{{ formatCurrency(selectedInvoice?.remainingAmount) }}</span>
                                 </div>
                             </div>
                         </div>
