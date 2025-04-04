@@ -2,11 +2,47 @@
 import AppleWidget from '@/components/auth/AppleWidget.vue';
 import GoogleWidget from '@/components/auth/GoogleWidget.vue';
 import Logo from '@/components/landing/LogoWidget.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { AuthService } from '@/service/AuthService';
+import { useUserStore } from '@/stores/userStore';
+
+const router = useRouter();
+const userStore = useUserStore();
 
 const email = ref('');
 const password = ref('');
 const remember = ref(false);
+const errorMessage = ref('');
+
+// Get values from the store
+const loading = computed(() => userStore.loading);
+const error = computed(() => userStore.error);
+
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    if (!email.value || !password.value) {
+        errorMessage.value = 'Please enter both email and password';
+        return;
+    }
+    
+    errorMessage.value = '';
+    
+    try {
+        await userStore.login(email.value, password.value);
+        // Login successful, redirect to dashboard
+        router.push({ name: 'dashboard-marketing' });
+    } catch (error) {
+        // Handle login errors
+        console.error('Login error:', error);
+        errorMessage.value = error.response?.data?.message || 'Login failed. Please check your credentials.';
+    }
+}
+
+function handleMicrosoftLogin() {
+    AuthService.redirectToMicrosoftLogin();
+}
 </script>
 
 <template>
@@ -20,14 +56,17 @@ const remember = ref(false);
                     <div class="max-w-md mx-auto w-full">
                         <h5 class="title-h5 text-center lg:text-left">Login</h5>
                         <p class="body-small mt-3.5 text-center lg:text-left">Please enter your details</p>
-                        <button class="button-button mt-8"><GoogleWidget /> Sign in with Google</button>
-                        <button class="button-button mt-4"><AppleWidget /> Sign in with Apple</button>
+                        
+                        <!-- Display error message if there is one -->
+                        <Message v-if="errorMessage" severity="error" class="w-full mb-4">{{ errorMessage }}</Message>
+                        
+                        <button class="button-button mt-8" @click="handleMicrosoftLogin"><GoogleWidget /> Sign in with Microsoft</button>
                         <div class="flex items-center gap-3.5 my-7">
                             <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
                             <span class="body-small text-surface-400 dark:text-surface-600">or</span>
                             <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
                         </div>
-                        <form>
+                        <form @submit="handleLogin">
                             <InputText type="text" v-model="email" class="w-full" placeholder="Email" />
                             <InputText type="password" v-model="password" class="w-full mt-4" placeholder="Password" />
                             <div class="my-8 flex items-center justify-between">
@@ -37,12 +76,14 @@ const remember = ref(false);
                                 </div>
                                 <router-link to="/auth/forgot-password" class="body-small text-primary-500 hover:underline">Forgot password?</router-link>
                             </div>
-                            <button type="submit" class="body-button w-full">Login</button>
+                            <button type="submit" class="body-button w-full" :disabled="loading">
+                                {{ loading ? 'Logging in...' : 'Login' }}
+                            </button>
                         </form>
                         <div class="mt-8 body-small text-center lg:text-left">Not registered? <router-link to="/auth/register" class="text-primary-500 hover:underline">Create an Account</router-link></div>
                     </div>
                 </div>
-                <div class="mt-8 text-center lg:text-start block relative text-surface-400 dark:text-surface-500 text-sm">©{{ new Date().getFullYear() }} PrimeTek</div>
+                <div class="mt-8 text-center lg:text-start block relative text-surface-400 dark:text-surface-500 text-sm">©{{ new Date().getFullYear() }} Triton</div>
             </div>
             <div class="hidden lg:flex h-full py-20">
                 <div class="h-full w-full lg:max-w-[32.5rem] xl:max-w-[60.5rem] mx-auto flex items-center justify-center shadow-[0px_1px_2px_0px_rgba(18,18,23,0.05)] rounded-3xl border border-surface overflow-hidden">

@@ -2,6 +2,7 @@ import AppLayout from '@/layout/AppLayout.vue';
 import AuthLayout from '@/layout/AuthLayout.vue';
 import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
+import { AuthService } from '@/service/AuthService';
 
 const routes = [
     {
@@ -356,7 +357,8 @@ const routes = [
                 },
                 component: () => import('@/views/reporting/ReportManager.vue')
             }
-        ]
+        ],
+        meta: { requiresAuth: true }
     },
     {
         path: '/landing',
@@ -450,6 +452,22 @@ const router = createRouter({
     routes,
     scrollBehavior() {
         return { left: 0, top: 0 };
+    }
+});
+
+// Navigation guard for authentication
+router.beforeEach((to, from, next) => {
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+    const isLoggedIn = AuthService.isLoggedIn();
+    
+    if (requiresAuth && !isLoggedIn) {
+        // Redirect to login page if not logged in and trying to access a protected route
+        next({ name: 'login' });
+    } else if (to.name === 'login' && isLoggedIn) {
+        // Redirect to dashboard if already logged in and trying to access login page
+        next({ name: 'dashboard-marketing' });
+    } else {
+        next();
     }
 });
 

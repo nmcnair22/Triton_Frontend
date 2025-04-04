@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AuthService } from './AuthService';
 
 // Create axios instance with base URL
 const apiClient = axios.create({
@@ -11,7 +12,7 @@ const apiClient = axios.create({
 
 // Add request interceptor for authentication if needed
 apiClient.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
+  const token = AuthService.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

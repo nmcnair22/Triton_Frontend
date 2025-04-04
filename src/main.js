@@ -10,7 +10,13 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 
+// Import auth service
+import { AuthService } from './service/AuthService';
+
 import '@/assets/styles.scss';
+
+// Setup authentication interceptors
+AuthService.setupInterceptors();
 
 const app = createApp(App);
 const pinia = createPinia();
