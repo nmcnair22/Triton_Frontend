@@ -20,7 +20,7 @@ const routes = [
                 path: '/dashboard-banking',
                 name: 'dashboard-banking',
                 meta: {
-                    breadcrumb: ['Banking Dashboard']
+                    breadcrumb: ['Streamline Dashboard']
                 },
                 component: () => import('@/views/dashboard/BankingView.vue')
             },
