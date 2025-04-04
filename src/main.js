@@ -3,7 +3,7 @@ import App from './App.vue';
 import router from './router';
 
 import BlockViewer from '@/components/BlockViewer.vue';
-import { definePreset } from '@primeuix/themes';
+import { definePreset, palette } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
@@ -15,23 +15,29 @@ const app = createApp(App);
 
 app.use(router);
 
+// Generate palettes for CIS colors
+const cisNavyPalette = palette('#0B2244');
+const cisBluePalette = palette('#297FB7');
+const cisYellowPalette = palette('#FFB400');
+const cisGrayPalette = palette('#595959');
+const cisRedPalette = palette('#F60D03');
+
 const MyPreset = definePreset(Aura, {
+    colors: {
+        'cis-navy': cisNavyPalette,
+        'cis-blue': cisBluePalette,
+        'cis-yellow': cisYellowPalette,
+        'cis-gray': cisGrayPalette,
+        'cis-red': cisRedPalette
+    },
     semantic: {
-        primary: {
-            50: '{blue.50}',
-            100: '{blue.100}',
-            200: '{blue.200}',
-            300: '{blue.300}',
-            400: '{blue.400}',
-            500: '{blue.500}',
-            600: '{blue.600}',
-            700: '{blue.700}',
-            800: '{blue.800}',
-            900: '{blue.900}',
-            950: '{blue.950}'
+        primary: cisNavyPalette,
+        info: cisBluePalette,
+        warning: cisYellowPalette,
+        danger: cisRedPalette
         }
-    }
 });
+
 app.use(PrimeVue, {
     theme: {
         preset: MyPreset,

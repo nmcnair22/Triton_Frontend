@@ -2,11 +2,11 @@ import { computed, reactive } from 'vue';
 
 const layoutConfig = reactive({
     preset: 'Aura',
-    primary: 'blue',
+    primary: 'cis-navy',
     surface: null,
     darkTheme: false,
     menuMode: 'static',
-    menuTheme: 'dark',
+    menuTheme: 'primary',
     cardStyle: 'transparent'
 });
 

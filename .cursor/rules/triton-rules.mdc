@@ -1,0 +1,336 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Vue 3 Composition API with PrimeVue 4 integration
+globs: ["src/**/*.vue"]
+alwaysApply: false
+---
+
+# Vue 3 with PrimeVue 4 Rules
+
+This project uses Vue 3 Composition API with `<script setup>` syntax, PrimeVue 4 component library, Tailwind CSS integration, and follows specific project patterns.
+
+## Component Structure
+
+All Vue components should follow this structure:
+- `<script setup>` section first
+- `<template>` section second
+- Optional `<style>` section last
+
+### ✅ Correct Example
+
+```vue
+<script setup>
+import { ref } from 'vue';
+const count = ref(0);
+</script>
+
+<template>
+  <div>{{ count }}</div>
+</template>
+
+<style>
+/* Optional styles */
+</style>
+```
+
+## PrimeVue 4 Component Usage
+
+PrimeVue 4 uses updated component names and patterns:
+
+### Component Naming
+Use the new PrimeVue 4 component names:
+- Use `DatePicker` (not `Calendar`)
+- Use `Select` (not `Dropdown`)
+- Use `ToggleSwitch` (not `InputSwitch`)
+- Use `Popover` (not `OverlayPanel`)
+- Use `Drawer` (not `Sidebar`)
+- Use `Tabs` (not `TabView`)
+
+### ✅ Correct Example
+
+```vue
+<script setup>
+import DatePicker from 'primevue/datepicker';
+import Select from 'primevue/select';
+</script>
+
+<template>
+  <DatePicker v-model="date" />
+  <Select v-model="selectedItem" :options="items" optionLabel="name" />
+</template>
+```
+
+## Variable Naming Conventions
+
+Use descriptive variable names with appropriate prefixes for better readability:
+- Use `is` prefix for boolean states (e.g., `isLoading`, `isActive`)
+- Use `has` prefix for boolean properties (e.g., `hasError`, `hasItems`)
+- Use `should` prefix for conditional flags (e.g., `shouldRefresh`)
+
+### ✅ Correct Example
+
+```vue
+<script setup>
+import { ref } from 'vue';
+
+const isLoading = ref(false);
+const hasItems = ref(false);
+const shouldRefresh = ref(true);
+
+function fetchData() {
+  isLoading.value = true;
+  // API call
+  isLoading.value = false;
+  hasItems.value = true;
+}
+</script>
+```
+
+## Code Organization
+
+- Group related functionality together
+- Extract complex logic into separate functions or composables
+- Keep components focused on a single responsibility
+- Use separate files for complex helpers or utilities
+
+### ✅ Correct Example
+
+```vue
+<script setup>
+// Imports grouped by source/type
+import { ref, computed, onMounted } from 'vue';
+import Select from 'primevue/select';
+
+// State declarations
+const selectedValue = ref(null);
+const options = ref([]);
+const isLoading = ref(false);
+
+// Computed properties
+const hasSelection = computed(() => selectedValue.value !== null);
+const filteredOptions = computed(() => options.value.filter(opt => opt.active));
+
+// Methods
+function loadOptions() {
+  isLoading.value = true;
+  // Load data
+  isLoading.value = false;
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  loadOptions();
+});
+</script>
+```
+
+## Pass-Through (PT) API
+
+PrimeVue 4 uses the Pass-Through (PT) API for customization:
+
+### ✅ Correct Example
+
+```vue
+<template>
+  <Select
+    v-model="selectedItem"
+    :options="items"
+    optionLabel="name"
+    placeholder="Select an item"
+    :pt="{
+      root: { class: 'custom-select' },
+      label: { class: 'custom-label' }
+    }"
+  />
+</template>
+```
+
+## Tailwind CSS Best Practices
+
+- Use utility classes directly in components
+- Follow a mobile-first approach with responsive classes
+- Extract common patterns to component classes when they repeat
+- Maintain consistency with the project's spacing and color system
+
+### ✅ Correct Example
+
+```vue
+<template>
+  <!-- Mobile-first approach -->
+  <div class="flex flex-col md:flex-row gap-4 md:gap-6">
+    <div class="w-full md:w-1/2 p-4 rounded-lg shadow-sm bg-white dark:bg-surface-900">
+      <!-- Component content -->
+    </div>
+  </div>
+</template>
+```
+
+## Performance Considerations
+
+- Avoid expensive computations in templates
+- Use computed properties for derived values
+- Implement lazy loading for heavy components
+- Debounce event handlers for frequently triggered events
+
+### ✅ Correct Example
+
+```vue
+<script setup>
+import { ref, computed } from 'vue';
+
+const searchTerm = ref('');
+const items = ref([/* many items */]);
+
+// Use computed for filtering instead of inline in template
+const filteredItems = computed(() => {
+  if (!searchTerm.value) return items.value;
+  return items.value.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.value.toLowerCase())
+  );
+});
+
+// Debounce search input
+function onSearch(event) {
+  // Implement debounce logic or use a utility
+  searchTerm.value = event.target.value;
+}
+</script>
+
+<template>
+  <input type="text" @input="onSearch" />
+  <!-- Use computed property instead of filtering in the template -->
+  <div v-for="item in filteredItems" :key="item.id">
+    {{ item.name }}
+  </div>
+</template>
+```
+
+## Theming with Aura Preset
+
+This project uses the Aura preset theme from PrimeVue 4:
+
+### ✅ Correct Example
+
+```js
+// In main.js
+import { definePreset } from '@primeuix/themes';
+import Aura from '@primeuix/themes/aura';
+
+const MyPreset = definePreset(Aura, {
+  semantic: {
+    primary: {
+      // Theme color customization
+    }
+  }
+});
+
+app.use(PrimeVue, {
+  theme: {
+    preset: MyPreset,
+    options: {
+      darkModeSelector: '.app-dark'
+    }
+  }
+});
+```
+
+## Model Value Pattern
+
+PrimeVue 4 uses Vue 3's `modelValue` pattern for two-way binding:
+
+### ✅ Correct Example
+
+```vue
+<template>
+  <!-- Shorthand (recommended) -->
+  <DatePicker v-model="date" />
+  
+  <!-- Expanded form -->
+  <DatePicker :modelValue="date" @update:modelValue="date = $event" />
+</template>
+```
+
+## Deprecated Components
+
+Avoid using these PrimeVue 3 components that are deprecated in PrimeVue 4:
+- Don't use `Chips` (use `AutoComplete` with multiple selection instead)
+- Don't use `TabMenu` (use `Tabs` without panels)
+- Don't use `Steps` (use `Stepper` without panels)
+- Don't use `InlineMessage` (use `Message` component)
+- Don't use `BadgeDirective` (use `OverlayBadge`)
+
+## Triton Frontend Project Structure
+
+Root Files
+├── README.md
+├── index.html
+├── jsconfig.json
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── project-structure.txt
+├── tailwind.config.js
+├── vercel.json
+└── vite.config.mjs
+
+src/
+├── assets/
+│   ├── demo/
+│   │   └── flags/             # Demo flags and images
+│   ├── layout/
+│   │    ├── fonts/             # Custom fonts
+│   │    ├── sidebar/
+│   │    │   └── themes/        # Sidebar theme files
+│   │    └── variables/         # Styling variables and tokens
+│   └── styles.scss
+│   └── tailwind.css
+│
+├── components/                # Reusable UI components
+│   ├── auth/                 # Authentication components
+│   ├── dashboard/            # Dashboard components
+│   │   ├── banking/
+│   │   ├── charts/
+│   │   ├── ecommerce/
+│   │   └── marketing/
+│   └── landing/              # Landing page components
+│       ├── contact/
+│       ├── features/
+│       └── pricing/
+│
+├── layout/                    # Global layout containers
+│   └── composables/          # Layout composables (shared layout logic)
+│
+├── router/
+│   └── index.js              # Vue Router configuration and route definitions
+│
+├── service/                 # API service files for data fetching
+│   ├── CountryService.js
+│   ├── CustomerService.js
+│   ├── FileService.js
+│   ├── NodeService.js
+│   ├── PhotoService.js
+│   └── ProductService.js
+│
+├── lib/                     # Utility libraries and helper functions
+│   └── utils.js
+│
+├── views/                   # Page-level views (each typically used in a route)
+│   ├── apps/                # Application-specific pages
+│   │   ├── blog/
+│   │   ├── chat/
+│   │   ├── mail/
+│   │   └── tasklist/
+│   ├── auth/                # Authentication views (Login, Register, etc.)
+│   ├── dashboard/           # Dashboard views (BankingView, EcommerceView, MarketingView)
+│   ├── e-commerce/          # E-commerce pages (CheckoutForm, NewProduct, etc.)
+│   ├── landing/             # Landing pages (Home, Features, Pricing, Contact)
+│   ├── pages/               # Static/informational pages (AboutUs, FAQ, NotFound, etc.)
+│   ├── uikit/               # UI kit documentation pages (ButtonDoc, ChartDoc, etc.)
+│   ├── user-management/     # User administration views (UserList, UserCreate, etc.)
+│   └── utilities/           # Utility pages (Blocks, Documentation)
+│
+└── main.js                  # Application entry point (bootstraps Vue)
