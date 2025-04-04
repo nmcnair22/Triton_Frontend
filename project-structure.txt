@@ -1,0 +1,153 @@
+# Triton Frontend Project Structure
+
+This is a Vue 3 frontend application built with Vite. It follows a standard Vue project structure with components, views, router, and assets.
+
+# Triton Frontend Project Structure
+
+## Root Files
+- README.md
+- index.html
+- jsconfig.json
+- package-lock.json
+- package.json
+- postcss.config.js
+- project-structure.txt
+- tailwind.config.js
+- vercel.json
+- vite.config.mjs
+
+## Source Directory Structure
+- src
+-   assets
+-     demo
+-       flags
+-     layout
+-       fonts
+-       sidebar
+-         themes
+-       variables
+-   components
+-     auth
+-     dashboard
+-       banking
+-       charts
+-       ecommerce
+-       marketing
+-     landing
+-       contact
+-       features
+-       pricing
+-   layout
+-     composables
+-   lib
+-   router
+-   service
+-   views
+-     apps
+-       blog
+-       chat
+-       mail
+-       tasklist
+-     auth
+-     dashboard
+-     e-commerce
+-     landing
+-     pages
+-     uikit
+-     user-management
+-     utilities
+
+## Main Components
+### App and Layout
+- src/App.vue
+- src/layout/AppBreadcrumb.vue
+- src/layout/AppConfig.vue
+- src/layout/AppFooter.vue
+- src/layout/AppLayout.vue
+- src/layout/AppMenu.vue
+- src/layout/AppMenuItem.vue
+- src/layout/AppRightMenu.vue
+- src/layout/AppSearch.vue
+- src/layout/AppSidebar.vue
+- src/layout/AppTopbar.vue
+- src/layout/AuthLayout.vue
+- src/layout/LandingLayout.vue
+
+### Views (Pages)
+- src/views/apps/Files.vue
+- src/views/apps/blog/Detail.vue
+- src/views/apps/blog/Edit.vue
+- src/views/apps/blog/List.vue
+- src/views/apps/chat/ChatBox.vue
+- src/views/apps/chat/ChatSidebar.vue
+- src/views/apps/chat/Index.vue
+- src/views/apps/chat/UserCard.vue
+- src/views/apps/mail/ComposeNew.vue
+- src/views/apps/mail/Detail.vue
+- src/views/apps/mail/Index.vue
+- src/views/apps/mail/MailSidebar.vue
+- src/views/apps/mail/MailTypes.vue
+- src/views/apps/mail/Reply.vue
+- src/views/apps/tasklist/CreateTaskDialog.vue
+- src/views/apps/tasklist/Index.vue
+- src/views/apps/tasklist/List.vue
+- src/views/auth/ForgotPassword.vue
+- src/views/auth/LockScreen.vue
+- src/views/auth/LoginView.vue
+- src/views/auth/NewPassword.vue
+- src/views/auth/RegisterView.vue
+- src/views/auth/VerificationView.vue
+- src/views/dashboard/BankingView.vue
+- src/views/dashboard/EcommerceView.vue
+- src/views/dashboard/MarketingView.vue
+- src/views/e-commerce/CheckoutForm.vue
+- src/views/e-commerce/NewProduct.vue
+- src/views/e-commerce/OrderHistory.vue
+- src/views/e-commerce/OrderSummary.vue
+- src/views/e-commerce/ProductList.vue
+- src/views/e-commerce/ProductOverview.vue
+- src/views/e-commerce/ShoppingCart.vue
+- src/views/landing/ContactView.vue
+- src/views/landing/FeaturesView.vue
+- src/views/landing/LandingView.vue
+- src/views/landing/PricingView.vue
+- src/views/pages/AboutUs.vue
+- src/views/pages/AccessDenied.vue
+- src/views/pages/Crud.vue
+- src/views/pages/Empty.vue
+- src/views/pages/Faq.vue
+- src/views/pages/Help.vue
+- src/views/pages/Invoice.vue
+- src/views/pages/NotFound.vue
+- src/views/pages/Oops.vue
+- src/views/uikit/ButtonDoc.vue
+- src/views/uikit/ChartDoc.vue
+- src/views/uikit/FileDoc.vue
+- src/views/uikit/FormLayoutDoc.vue
+- src/views/uikit/InputDoc.vue
+- src/views/uikit/ListDoc.vue
+- src/views/uikit/MediaDoc.vue
+- src/views/uikit/MenuDoc.vue
+- src/views/uikit/MessagesDoc.vue
+- src/views/uikit/MiscDoc.vue
+- src/views/uikit/OverlayDoc.vue
+- src/views/uikit/PanelsDoc.vue
+- src/views/uikit/TableDoc.vue
+- src/views/uikit/TimelineDoc.vue
+- src/views/uikit/TreeDoc.vue
+- src/views/user-management/UserCreate.vue
+- src/views/user-management/UserList.vue
+- src/views/utilities/Blocks.vue
+- src/views/utilities/Documentation.vue
+
+## Main JavaScript Files
+- src/layout/composables/layout.js
+- src/lib/utils.js
+- src/main.js
+- src/router/index.js
+- src/service/CountryService.js
+- src/service/CustomerService.js
+- src/service/FileService.js
+- src/service/NodeService.js
+- src/service/PhotoService.js
+- src/service/ProductService.js
