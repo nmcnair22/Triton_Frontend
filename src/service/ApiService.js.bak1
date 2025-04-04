@@ -66,25 +66,6 @@ export const InvoiceService = {
     return ApiService.get(`/invoices/${id}`);
   },
   
-  // Get customer invoices with optional filtering
-  getCustomerInvoices(filterConditions, params = {}) {
-    // Use the provided filter conditions directly
-    return ApiService.get(`/accounting/sales-invoices`, { 
-      ...params,
-      filter: filterConditions
-    });
-  },
-  
-  // Get a specific sales invoice by ID
-  getSalesInvoice(id) {
-    return ApiService.get(`/accounting/sales-invoices/${id}`);
-  },
-  
-  // Get line items for a specific sales invoice
-  getSalesInvoiceLines(id) {
-    return ApiService.get(`/accounting/sales-invoices/${id}/lines`);
-  },
-  
   // Create a new invoice
   createInvoice(invoice) {
     return ApiService.post('/invoices', invoice);
