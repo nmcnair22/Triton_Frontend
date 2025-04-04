@@ -35,7 +35,7 @@ function onAnchorToggle() {
         <div class="sidebar-header">
             <router-link :to="{ name: 'dashboard-marketing' }" class="logo">
                 <img class="logo-image" :src="layoutConfig.menuTheme === 'light' ? '/layout/images/logo-dark.svg' : '/layout/images/logo-white.svg'" alt="diamond-layout" />
-                <span class="app-name title-h7">DIAMOND</span>
+                <span class="app-name title-h7">TRITON V3</span>
             </router-link>
             <button class="layout-sidebar-anchor" type="button" @click="onAnchorToggle" />
         </div>

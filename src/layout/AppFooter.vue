@@ -8,8 +8,8 @@ const { isDarkTheme } = useLayout();
     <div class="layout-footer">
         <div class="footer-logo-container">
             <img :src="`/layout/images/logo-${isDarkTheme ? 'white' : 'dark'}.svg`" alt="diamond-layout" />
-            <span class="footer-app-name">DIAMOND</span>
+            <span class="footer-app-name">TRITON V3</span>
         </div>
-        <span class="footer-copyright">&#169; Your Organization - 2025</span>
+        <span class="footer-copyright">&#169; Triton - 2024</span>
     </div>
 </template>
