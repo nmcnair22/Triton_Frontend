@@ -8,15 +8,16 @@ const authClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  },
-  withCredentials: true // Important for CSRF cookie
+  }
+  // Remove withCredentials since we're using token auth, not cookies
 });
 
 export const AuthService = {
   // Login with email and password
   async login(email, password) {
     try {
-      const response = await authClient.post('/login', {
+      // Change to use api-login endpoint which returns tokens
+      const response = await authClient.post('/api-login', {
         email,
         password
       });
@@ -31,6 +32,7 @@ export const AuthService = {
       
       return response.data;
     } catch (error) {
+      console.error('Login error:', error);
       throw error;
     }
   },
@@ -43,7 +45,15 @@ export const AuthService = {
   // Logout function
   async logout() {
     try {
-      await authClient.post('/logout');
+      const token = this.getToken();
+      if (token) {
+        // Include the token in the logout request
+        await authClient.post('/logout', {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
       this.clearSession();
     } catch (error) {
       console.error('Logout error', error);

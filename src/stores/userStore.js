@@ -21,6 +21,7 @@ export const useUserStore = defineStore('user', () => {
     
     try {
       const response = await AuthService.login(email, password);
+      // The API returns data in format { user: {...}, token: "..." }
       user.value = response.user;
       return response;
     } catch (err) {

@@ -10,7 +10,7 @@ const apiClient = axios.create({
   }
 });
 
-// Add request interceptor for authentication if needed
+// Add request interceptor for authentication
 apiClient.interceptors.request.use(config => {
   const token = AuthService.getToken();
   if (token) {
@@ -18,6 +18,19 @@ apiClient.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Add response interceptor for handling unauthorized responses
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // Token expired or invalid
+      AuthService.clearSession();
+      window.location.href = '/auth/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const ApiService = {
   // Generic API methods

@@ -36,7 +36,17 @@ async function handleLogin(event) {
     } catch (error) {
         // Handle login errors
         console.error('Login error:', error);
-        errorMessage.value = error.response?.data?.message || 'Login failed. Please check your credentials.';
+        
+        if (error.response) {
+            // The server responded with an error
+            errorMessage.value = error.response.data.message || `Error ${error.response.status}: ${error.response.statusText}`;
+        } else if (error.request) {
+            // The request was made but no response was received
+            errorMessage.value = 'No response from server. Please check your network connection.';
+        } else {
+            // Something else went wrong
+            errorMessage.value = error.message || 'Login failed. Please check your credentials.';
+        }
     }
 }
 
