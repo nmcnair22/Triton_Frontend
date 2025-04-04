@@ -10,11 +10,11 @@ const routes = [
         children: [
             {
                 path: '/',
-                name: 'e-commerce',
+                name: 'dashboard-marketing',
                 meta: {
-                    breadcrumb: ['E-Commerce Dashboard']
+                    breadcrumb: ['Marketing Dashboard']
                 },
-                component: () => import('@/views/dashboard/EcommerceView.vue')
+                component: () => import('@/views/dashboard/MarketingView.vue')
             },
             {
                 path: '/dashboard-banking',
@@ -23,14 +23,6 @@ const routes = [
                     breadcrumb: ['Banking Dashboard']
                 },
                 component: () => import('@/views/dashboard/BankingView.vue')
-            },
-            {
-                path: '/dashboard-marketing',
-                name: 'dashboard-marketing',
-                meta: {
-                    breadcrumb: ['Marketing Dashboard']
-                },
-                component: () => import('@/views/dashboard/MarketingView.vue')
             },
             {
                 path: '/apps/blog/list',
@@ -345,8 +337,24 @@ const routes = [
             },
             {
                 path: '/pages/invoice',
-                name: 'invoice',
-                component: () => import('@/views/pages/Invoice.vue')
+                name: 'invoice-sample',
+                component: () => import('@/views/pages/InvoiceSample.vue')
+            },
+            {
+                path: '/accounting/invoicing',
+                name: 'accounting-invoicing',
+                meta: {
+                    breadcrumb: ['Accounting', 'Invoicing']
+                },
+                component: () => import('@/views/accounting/Invoicing.vue')
+            },
+            {
+                path: '/reporting/report-manager',
+                name: 'reporting-report-manager',
+                meta: {
+                    breadcrumb: ['Reporting', 'Report Manager']
+                },
+                component: () => import('@/views/reporting/ReportManager.vue')
             }
         ]
     },

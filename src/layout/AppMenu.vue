@@ -8,19 +8,45 @@ const model = ref([
         icon: 'pi pi-home',
         items: [
             {
-                label: 'E-Commerce',
-                icon: 'pi pi-fw pi-warehouse',
-                to: '/'
-            },
-            {
-                label: 'Banking',
-                icon: 'pi pi-fw pi-building-columns',
-                to: '/dashboard-banking'
-            },
-            {
                 label: 'Marketing',
                 icon: 'pi pi-fw pi-gauge',
                 to: '/dashboard-marketing'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Streamline',
+        icon: 'pi pi-chart-line',
+        items: [
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-building-columns',
+                to: '/dashboard-banking'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Accounting',
+        icon: 'pi pi-calculator',
+        items: [
+            {
+                label: 'Invoicing',
+                icon: 'pi pi-fw pi-dollar',
+                to: '/accounting/invoicing'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Reporting',
+        icon: 'pi pi-chart-bar',
+        items: [
+            {
+                label: 'Report Manager',
+                icon: 'pi pi-fw pi-table',
+                to: '/reporting/report-manager'
             }
         ]
     },
@@ -172,37 +198,6 @@ const model = ref([
     },
     { separator: true },
     {
-        label: 'Prime Blocks',
-        icon: 'pi pi-fw pi-prime',
-        items: [
-            {
-                label: 'Free Blocks',
-                icon: 'pi pi-fw pi-eye',
-                to: '/blocks'
-            },
-            {
-                label: 'All Blocks',
-                icon: 'pi pi-fw pi-globe',
-                url: 'https://primeblocks.org',
-                target: '_blank'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Utilities',
-        icon: 'pi pi-fw pi-compass',
-        items: [
-            {
-                label: 'Figma',
-                icon: 'pi pi-fw pi-pencil',
-                url: 'https://www.figma.com/design/3BgdXCQjva5nUEO8OidU1B/Preview-%7C-Diamond?node-id=0-1&t=KdfljgRtYLzFPfKL-1',
-                target: '_blank'
-            }
-        ]
-    },
-    { separator: true },
-    {
         label: 'Pages',
         icon: 'pi pi-fw pi-briefcase',
         items: [
@@ -264,7 +259,7 @@ const model = ref([
                 to: '/pages/crud'
             },
             {
-                label: 'Invoice',
+                label: 'Invoice Sample',
                 icon: 'pi pi-fw pi-dollar',
                 to: '/pages/invoice'
             },
@@ -361,94 +356,6 @@ const model = ref([
                 label: 'Create',
                 icon: 'pi pi-fw pi-plus',
                 to: '/profile/create'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Hierarchy',
-        icon: 'pi pi-fw pi-align-left',
-        items: [
-            {
-                label: 'Submenu 1',
-                icon: 'pi pi-fw pi-align-left',
-                items: [
-                    {
-                        label: 'Submenu 1.1',
-                        icon: 'pi pi-fw pi-align-left',
-                        items: [
-                            {
-                                label: 'Submenu 1.1.1',
-                                icon: 'pi pi-fw pi-align-left'
-                            },
-                            {
-                                label: 'Submenu 1.1.2',
-                                icon: 'pi pi-fw pi-align-left'
-                            },
-                            {
-                                label: 'Submenu 1.1.3',
-                                icon: 'pi pi-fw pi-align-left'
-                            }
-                        ]
-                    },
-                    {
-                        label: 'Submenu 1.2',
-                        icon: 'pi pi-fw pi-align-left',
-                        items: [
-                            {
-                                label: 'Submenu 1.2.1',
-                                icon: 'pi pi-fw pi-align-left'
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: 'Submenu 2',
-                icon: 'pi pi-fw pi-align-left',
-                items: [
-                    {
-                        label: 'Submenu 2.1',
-                        icon: 'pi pi-fw pi-align-left',
-                        items: [
-                            {
-                                label: 'Submenu 2.1.1',
-                                icon: 'pi pi-fw pi-align-left'
-                            },
-                            {
-                                label: 'Submenu 2.1.2',
-                                icon: 'pi pi-fw pi-align-left'
-                            }
-                        ]
-                    },
-                    {
-                        label: 'Submenu 2.2',
-                        icon: 'pi pi-fw pi-align-left',
-                        items: [
-                            {
-                                label: 'Submenu 2.2.1',
-                                icon: 'pi pi-fw pi-align-left'
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Start',
-        icon: 'pi pi-fw pi-download',
-        items: [
-            {
-                label: 'Buy Now',
-                icon: 'pi pi-fw pi-shopping-cart',
-                url: 'https://www.primefaces.org/store'
-            },
-            {
-                label: 'Documentation',
-                icon: 'pi pi-fw pi-info-circle',
-                to: '/documentation'
             }
         ]
     }
