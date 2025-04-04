@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import { createPinia } from 'pinia';
 
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
@@ -12,8 +13,10 @@ import ToastService from 'primevue/toastservice';
 import '@/assets/styles.scss';
 
 const app = createApp(App);
+const pinia = createPinia();
 
 app.use(router);
+app.use(pinia);
 
 // Generate palettes for CIS colors
 const cisNavyPalette = palette('#0B2244');
