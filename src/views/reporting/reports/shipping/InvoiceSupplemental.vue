@@ -342,20 +342,24 @@ watch(selectedInvoice, (newInvoice) => {
                 <h5>Invoice Supplemental Report</h5>
                 
                 <div class="mb-4">
-                    <div class="flex flex-column mb-2">
-                        <label class="font-medium mb-2">Customer Filter</label>
-                        <div class="flex align-items-center mb-2">
+                    <div class="flex flex-wrap align-items-center gap-3">
+                        <div class="w-full md:w-4">
+                            <MultiSelect 
+                                v-model="selectedCustomers" 
+                                :options="customerStore.customers" 
+                                optionLabel="name" 
+                                placeholder="Select Customers"
+                                display="chip"
+                                filter
+                                :maxSelectedLabels="3" 
+                                :disabled="isLoadingCustomers"
+                                class="w-full" />
+                        </div>
+                        <div class="ml-auto flex align-items-center">
+                            <label class="mr-2">Active/Full list</label>
                             <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
-                            <span class="ml-2 mr-3">Active Only</span>
                         </div>
                     </div>
-                    
-                    <MultiSelect v-model="selectedCustomers" 
-                              :options="customerStore.customers" 
-                              optionLabel="name" 
-                              placeholder="Select Customers" 
-                              :disabled="isLoadingCustomers"
-                              class="w-full" />
                 </div>
                 
                 <div class="card p-4 mb-4">
