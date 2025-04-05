@@ -60,7 +60,8 @@ const groupByOptions = ref([
   { name: 'None', value: 'none' },
   { name: 'Product', value: 'product' },
   { name: 'Location', value: 'location' },
-  { name: 'Service', value: 'service' }
+  { name: 'Service', value: 'service' },
+  { name: 'Shipping', value: 'shipping' }
 ]);
 const selectedGroupBy = ref({ name: 'None', value: 'none' });
 const groupedProducts = ref([]);
@@ -80,7 +81,7 @@ function onSort(event) {
   loadCustomerInvoices();
 }
 
-// Fetch customers and invoices when component mounts
+// Fetch only customers when component mounts
 onMounted(async () => {
   // Only load customers initially, wait for customer selection to fetch invoices
   await loadCustomers();
@@ -94,6 +95,11 @@ async function loadCustomers() {
     console.error('Failed to load customers:', err);
   }
 }
+
+// Watch for changes in selected customers
+watch(selectedCustomers, () => {
+  onCustomerChange();
+});
 
 // Function to load customer invoices
 async function loadCustomerInvoices() {
@@ -164,8 +170,6 @@ async function selectInvoice(id) {
     }
   } catch (err) {
     console.error(`Failed to load invoice #${id}:`, err);
-    // Fallback to demo data if API fails
-    loadDemoData();
   }
 }
 
@@ -334,11 +338,12 @@ watch(selectedInvoice, (newInvoice) => {
   }
 });
 </script>
+
 <template>
     <div class="grid">
         <div class="col-12">
             <div class="card p-4 mb-2">
-                <h5>Select a Customer</h5>
+                <h5>Invoice Supplemental - Select a Customer</h5>
                 <MultiSelect v-model="selectedCustomers" :options="customers" optionLabel="name" placeholder="Select Customers" 
                            display="chip" :filter="true" :loading="isLoadingCustomers" @change="onCustomerChange" class="w-full">
                     <template #option="slotProps">
@@ -515,7 +520,7 @@ watch(selectedInvoice, (newInvoice) => {
                                 :class="isInteractive ? 'p-button-outlined p-button-success' : 'p-button-outlined p-button-help'"
                                 class="mb-4"
                             />
-                            <h1 class="title-h6">Invoice</h1>
+                            <h1 class="title-h6">Invoice Supplemental</h1>
                             <span class="mt-1.5 body-medium">{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</span>
                         </div>
                     </div>
