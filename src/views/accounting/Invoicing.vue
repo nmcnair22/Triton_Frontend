@@ -352,7 +352,7 @@ watch(selectedInvoice, (newInvoice) => {
                     
                     <!-- Fixed spacing between MultiSelect and toggle -->
                     <div style="margin-left: 2rem; display: flex; align-items: center;">
-                        <label style="margin-right: 0.5rem;">Active/Full list</label>
+                        <label style="margin-right: 0.5rem;">Full list / Only active customers</label>
                         <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
                     </div>
                 </div>
