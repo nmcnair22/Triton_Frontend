@@ -310,7 +310,7 @@ watch(selectedInvoice, (newInvoice) => {
 });
 </script>
 <template>
-    <Toast />
+    <Toast position="bottom-center" />
     <div class="grid">
         <div class="col-12">
             <div class="card p-4 mb-2">
