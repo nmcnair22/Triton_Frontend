@@ -26,15 +26,21 @@ export const useCustomerStore = defineStore('customer', () => {
       let hasMoreRecords = true;
       let skip = 0;
       const pageSize = 100; // Match our backend default
+      let pageCount = 0;
+      
+      console.log('Starting customer pagination fetch');
       
       // Continue fetching until we get all customers
       while (hasMoreRecords) {
+        pageCount++;
         // Add pagination parameters
         const paginationParams = {
           ...params,
           $skip: skip,
           pageSize: pageSize
         };
+        
+        console.log(`Fetching customer page ${pageCount} with params:`, paginationParams);
         
         const response = await ApiService.get('/customers', paginationParams);
         
@@ -55,22 +61,27 @@ export const useCustomerStore = defineStore('customer', () => {
             phoneNumber: customer.phoneNumber
           }));
           
+          console.log(`Retrieved ${pageCustomers.length} customers on page ${pageCount}`);
+          
           // Add this page's customers to our collection
           allCustomers = [...allCustomers, ...pageCustomers];
           
           // If we got fewer customers than pageSize, we're at the end
           if (pageCustomers.length < pageSize) {
+            console.log(`Received ${pageCustomers.length} customers (< pageSize ${pageSize}), no more pages`);
             hasMoreRecords = false;
           }
           
           // Move to next page
           skip += pageSize;
         } else {
+          console.log('Unexpected response format or no customers in response:', response.data);
           hasMoreRecords = false;
         }
       }
       
       customers.value = allCustomers;
+      console.log(`Total customers retrieved: ${customers.value.length}`);
       return customers.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch customers';
