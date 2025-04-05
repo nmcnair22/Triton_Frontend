@@ -253,88 +253,194 @@ export const generateRandomMultiData = (startDate, endDate, intervalHours, minVa
 };
 
 /**
- * Formats a date to mm/dd/yyyy
- * @param {Date|string} value - Date to format
- * @param {Object} options - Formatting options
- * @returns {string} Formatted date
+ * Format a date for display (mm/dd/yyyy)
+ * @param {string|Date} date - The date to format
+ * @param {string} [format='mm/dd/yyyy'] - The format to use
+ * @returns {string} The formatted date or empty string if invalid
  */
-export const formatDate = (value, options = {}) => {
-  if (!value) return '';
+export const formatDate = (date, format = 'mm/dd/yyyy') => {
+  if (!date) return '';
   
-  const defaultOptions = {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    ...options
-  };
-  
-  return new Date(value).toLocaleDateString('en-US', defaultOptions);
+  try {
+    const d = new Date(date);
+    if (isNaN(d)) return '';
+    
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const year = d.getFullYear();
+    
+    if (format === 'mm/dd/yyyy') {
+      return `${month}/${day}/${year}`;
+    } else if (format === 'yyyy-mm-dd') {
+      return `${year}-${month}-${day}`;
+    } else {
+      return `${month}/${day}/${year}`;
+    }
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return '';
+  }
 };
 
 /**
- * Formats a number as currency
- * @param {number} value - Value to format
- * @param {string} currency - Currency code (default: USD)
- * @param {string} locale - Locale code (default: en-US)
- * @returns {string} Formatted currency
+ * Format a number as currency with proper thousand separators
+ * @param {number} amount - The amount to format
+ * @param {string} [currency='USD'] - The currency to use
+ * @param {string} [locale='en-US'] - The locale to use
+ * @returns {string} The formatted currency or empty string if invalid
  */
-export const formatCurrency = (value, currency = 'USD', locale = 'en-US') => {
-  if (value === null || value === undefined) return '$0.00';
+export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
+  if (amount === null || amount === undefined) return '';
   
-  return value.toLocaleString(locale, { 
-    style: 'currency', 
-    currency: currency 
-  });
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  } catch (e) {
+    console.error('Error formatting currency:', e);
+    return '';
+  }
 };
 
 /**
- * Formats a number with specified decimals and thousands separators
- * @param {number} value - Value to format
- * @param {number} decimals - Number of decimals
- * @returns {string} Formatted number
+ * Format a number with the specified decimals and thousand separators
+ * @param {number} number - The number to format
+ * @param {number} [decimals=2] - Number of decimal places
+ * @param {string} [locale='en-US'] - The locale to use
+ * @returns {string} The formatted number or empty string if invalid
  */
-export const formatNumber = (value, decimals = 2) => {
-  if (value === null || value === undefined) return '0.00';
+export const formatNumber = (number, decimals = 2, locale = 'en-US') => {
+  if (number === null || number === undefined) return '';
   
-  return Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(number);
+  } catch (e) {
+    console.error('Error formatting number:', e);
+    return '';
+  }
 };
 
 /**
- * Formats a due date relative to today (e.g. "2 days ago", "in 3 days")
- * @param {Date|string} dueDate - Due date to format
- * @param {string} status - Status (e.g. 'open', 'paid')
- * @returns {Object} Formatted date with message and class
+ * Format a due date message based on its status
+ * @param {string|Date} dueDate - The due date
+ * @param {string} status - The invoice status
+ * @returns {object} Object with message and CSS class
  */
 export const formatDueDate = (dueDate, status) => {
-  if (!dueDate) return { message: '', class: '' };
+  if (!dueDate) return { message: 'No due date', class: 'text-surface-400' };
   
-  const today = new Date();
-  const dueDateObj = new Date(dueDate);
-  
-  if (status === 'open') {
-    if (dueDateObj < today) {
-      // Past due
-      const daysOverdue = Math.ceil((today - dueDateObj) / (1000 * 60 * 60 * 24));
-      return {
-        message: `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
+  try {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // For paid invoices, just show the date
+    if (status === 'paid') {
+      return { 
+        message: formatDate(dueDate), 
+        class: 'text-surface-700'
+      };
+    }
+    
+    // For overdue invoices
+    if (diffDays < 0) {
+      return { 
+        message: `Overdue by ${Math.abs(diffDays)} days`, 
         class: 'text-red-500 font-medium'
       };
-    } else if ((dueDateObj - today) <= 3 * 24 * 60 * 60 * 1000) {
-      // Due soon (within 3 days)
-      const daysDue = Math.ceil((dueDateObj - today) / (1000 * 60 * 60 * 24));
-      return {
-        message: `Due in ${daysDue} day${daysDue !== 1 ? 's' : ''}`,
+    }
+    
+    // For invoices due soon (within next 3 days)
+    if (diffDays <= 3) {
+      return { 
+        message: `Due in ${diffDays} days`, 
         class: 'text-yellow-500 font-medium'
       };
     }
+    
+    // Default case - just show the date
+    return { 
+      message: formatDate(dueDate), 
+      class: 'text-surface-700'
+    };
+  } catch (e) {
+    console.error('Error formatting due date:', e);
+    return { message: formatDate(dueDate), class: '' };
+  }
+};
+
+/**
+ * Group invoice line items by a specific field
+ * @param {Array} items - The array of invoice line items to group
+ * @param {string} groupBy - The field to group by (e.g., 'glAccountCategory', 'jobNo')
+ * @returns {Object} Object with grouped items and calculated subtotals
+ */
+export const groupInvoiceItems = (items, groupBy) => {
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return { groups: [], groupNames: [] };
   }
   
-  // Default - just show the date
-  return {
-    message: formatDate(dueDate),
-    class: ''
-  };
+  try {
+    // Create a map to group the items
+    const groupMap = new Map();
+    
+    // Determine the display field based on the groupBy option
+    const getGroupName = (item) => {
+      switch (groupBy) {
+        case 'product':
+          return item.genProdPostingGroup || 'Other';
+        case 'location':
+          return item.udfL1 || 'Other';
+        case 'category':
+          return item.glAccountCategory || 'Other';
+        case 'service':
+          return item.description || 'Other';
+        default:
+          return 'All Items';
+      }
+    };
+    
+    // Group the items
+    items.forEach(item => {
+      const groupName = getGroupName(item);
+      
+      if (!groupMap.has(groupName)) {
+        groupMap.set(groupName, []);
+      }
+      
+      groupMap.get(groupName).push(item);
+    });
+    
+    // Convert the map to an array of groups with totals
+    const groups = Array.from(groupMap.entries()).map(([name, groupItems]) => {
+      // Calculate the total for this group
+      const groupTotal = groupItems.reduce((sum, item) => {
+        return sum + (parseFloat(item.amountIncludingTax) || 0);
+      }, 0);
+      
+      return {
+        name,
+        items: groupItems,
+        total: groupTotal
+      };
+    });
+    
+    // Sort groups by name
+    groups.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Extract just the group names for easy access
+    const groupNames = groups.map(group => group.name);
+    
+    return { groups, groupNames };
+  } catch (e) {
+    console.error('Error grouping invoice items:', e);
+    return { groups: [], groupNames: [] };
+  }
 };

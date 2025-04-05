@@ -3,7 +3,7 @@ import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useInvoiceStore } from '@/stores/invoiceStore';
 import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
-import { formatCurrency, formatDate, formatDueDate } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -54,6 +54,18 @@ const lazyParams = reactive({
 
 // Available row per page options
 const rowsPerPageOptions = [5, 10, 20, 50];
+
+// Interactive mode
+const groupByOptions = ref([
+  { name: 'None', value: 'none' },
+  { name: 'Product', value: 'product' },
+  { name: 'Location', value: 'location' },
+  { name: 'Service', value: 'service' }
+]);
+const selectedGroupBy = ref({ name: 'None', value: 'none' });
+const groupedProducts = ref([]);
+const groupNames = ref([]);
+const isRegrouping = ref(false);
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -274,11 +286,64 @@ async function fetchEnrichedInvoiceData(documentNumber) {
           console.log('  jobContractEntryNo:', firstMappedItem.jobContractEntryNo);
         }
       }
+      
+      // Update products with the enriched data
+      if (enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
+        products.value = enrichedInvoice.enrichedItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity.toString(),
+          price: formatCurrency(item.unitPrice),
+          total: formatCurrency(item.amountIncludingTax),
+          // Store the original item data for grouping
+          rawItem: item
+        }));
+        
+        // Apply grouping if needed
+        applyGrouping();
+      }
     }
   } catch (err) {
     console.error('Error fetching enriched invoice data:', err);
   }
 }
+
+// Function to apply grouping to products
+function applyGrouping() {
+  if (selectedGroupBy.value.value === 'none' || !products.value || products.value.length === 0) {
+    isRegrouping.value = false;
+    groupedProducts.value = [];
+    groupNames.value = [];
+    return;
+  }
+  
+  isRegrouping.value = true;
+  
+  // Small delay to ensure the loading spinner shows
+  setTimeout(() => {
+    // Get raw item data for grouping
+    const rawItems = products.value.map(product => product.rawItem);
+    
+    // Group items using the utility function
+    const { groups, groupNames: names } = groupInvoiceItems(rawItems, selectedGroupBy.value.value);
+    
+    // Add the groupType to each group for display
+    const groupsWithType = groups.map(group => ({
+      ...group,
+      groupType: selectedGroupBy.value.name
+    }));
+    
+    // Update reactive state
+    groupedProducts.value = groupsWithType;
+    groupNames.value = names;
+    
+    isRegrouping.value = false;
+  }, 300);
+}
+
+// Watch for changes in selectedGroupBy
+watch(selectedGroupBy, () => {
+  applyGrouping();
+});
 
 // Watch for changes in selected invoice
 watch(selectedInvoice, (newInvoice) => {
@@ -423,6 +488,24 @@ watch(selectedInvoice, (newInvoice) => {
                 
                 <!-- Invoice content -->
                 <div v-else-if="selectedInvoice">
+                    <!-- Interactive tools panel - only shows when interactive mode is enabled -->
+                    <div v-if="isInteractive" class="mb-4 p-3 border-1 border-surface-200 dark:border-surface-700 border-round bg-surface-50 dark:bg-surface-800">
+                        <h5>Interactive Tools</h5>
+                        <div class="field grid">
+                            <label for="groupBy" class="col-12 md:col-2 md:mb-0 mb-2 font-medium">Group By:</label>
+                            <div class="col-12 md:col-10">
+                                <Select 
+                                    id="groupBy"
+                                    v-model="selectedGroupBy" 
+                                    :options="groupByOptions" 
+                                    optionLabel="name" 
+                                    placeholder="Select Grouping"
+                                    class="w-full"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="flex items-start pt-6 px-6 pb-9 gap-6 flex-wrap-reverse">
                         <div class="flex-1">
                             <svg class="fill-surface-950 dark:fill-surface-0" width="125" height="32" viewBox="0 0 125 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -482,13 +565,62 @@ watch(selectedInvoice, (newInvoice) => {
                         </div>
                     </div>
                     <Divider />
+                    <!-- Invoice Items Section -->
                     <div>
-                        <DataTable :value="products" tableStyle="min-width: 50rem">
+                        <!-- Regrouping loading state -->
+                        <div v-if="isRegrouping" class="flex justify-center items-center p-4">
+                            <ProgressSpinner />
+                        </div>
+
+                        <!-- Standard non-grouped display (when interactive is off or no grouping selected) -->
+                        <DataTable v-else-if="!isInteractive || selectedGroupBy.value === 'none'" 
+                                 :value="products" tableStyle="min-width: 50rem">
                             <Column field="description" header="Description" />
                             <Column field="quantity" header="Quantity" />
                             <Column field="price" header="Unit Price" />
-                            <Column field="total" header="Line Total" />
+                            <Column field="total" header="Amount" />
                         </DataTable>
+
+                        <!-- Grouped display (when interactive is on and grouping is selected) -->
+                        <div v-else-if="groupedProducts.length > 0" class="grouped-invoice">
+                            <div v-for="(group, index) in groupedProducts" :key="index" class="mb-5">
+                                <!-- Group Header -->
+                                <div class="flex justify-content-between align-items-center p-3 bg-surface-100 dark:bg-surface-800 mb-2 rounded">
+                                    <h3 class="m-0 text-lg font-medium">
+                                        <span class="font-bold">{{ group.groupType }}</span> : {{ group.name }}
+                                    </h3>
+                                </div>
+                                
+                                <!-- Group Items DataTable -->
+                                <DataTable :value="group.items.map(item => ({
+                                    description: item.description,
+                                    quantity: item.quantity.toString(),
+                                    price: formatCurrency(item.unitPrice),
+                                    total: formatCurrency(item.amountIncludingTax)
+                                }))" class="mb-0" tableStyle="min-width: 50rem">
+                                    <Column field="description" header="Description" />
+                                    <Column field="quantity" header="Quantity" class="text-center" style="text-align: center;" />
+                                    <Column field="price" header="Unit Price" />
+                                    <Column field="total" header="Amount" />
+                                </DataTable>
+                                
+                                <!-- Group Subtotal with simple bottom border -->
+                                <div class="border-top-2 border-surface-200 dark:border-surface-700 mb-4">
+                                    <div class="py-3" style="text-align: right; padding-right: 64px;">
+                                        <span class="font-medium">{{ group.groupType }} Subtotal: <span class="font-bold">{{ formatCurrency(group.total) }}</span></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Divider between groups (except for the last one) -->
+                                <Divider v-if="index < groupedProducts.length - 1" class="border-2 border-surface-200 dark:border-surface-700 my-4" />
+                            </div>
+                        </div>
+                        
+                        <!-- No items message -->
+                        <div v-else class="p-4 text-center text-surface-400">
+                            No items found for this invoice
+                        </div>
+                        
                         <div class="py-6 px-4 flex items-start gap-6 flex-wrap sm:flex-row flex-col">
                             <div class="flex-1 body-small text-left text-surface-950 dark:text-surface-0">
                                 <div v-if="selectedInvoice?.status" class="flex align-items-center gap-2">
@@ -504,7 +636,7 @@ watch(selectedInvoice, (newInvoice) => {
                                     <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="label-small text-surface-950 dark:text-surface-0">VAT ({{ selectedInvoice?.vatRate || 0 }}%)</span>
+                                    <span class="label-small text-surface-950 dark:text-surface-0">Tax ({{ selectedInvoice?.vatRate || 0 }}%)</span>
                                     <span>{{ formatCurrency(selectedInvoice?.vat) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
