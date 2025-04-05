@@ -20,34 +20,67 @@ export const useCustomerStore = defineStore('customer', () => {
   async function fetchCustomers(params = {}) {
     loading.value = true;
     error.value = null;
+    let allCustomers = [];
     
-    console.log('Starting customer fetch with params:', params);
+    console.log('Starting customer fetch with pagination');
     
     try {
-      const response = await ApiService.get('/customers', params);
-      // Handle the nested data structure in the API response
-      if (response.data && response.data.data && response.data.data.value) {
-        console.log(`Retrieved ${response.data.data.value.length} customers`);
+      let hasMoreRecords = true;
+      let skip = 0;
+      const pageSize = 100; // This matches the backend default
+      
+      // Continue fetching until we get all customers
+      while (hasMoreRecords) {
+        // Add pagination parameters to the request
+        const paginationParams = {
+          ...params,
+          '$skip': skip,
+          'pageSize': pageSize
+        };
         
-        customers.value = response.data.data.value.map(customer => ({
-          id: customer.id,
-          number: customer.number,
-          name: customer.displayName, // Use displayName for the customer name
-          company: customer.type === 'Company' ? customer.displayName : '',
-          address: customer.addressLine1,
-          city: customer.city,
-          state: customer.state,
-          postalCode: customer.postalCode,
-          country: customer.country,
-          email: customer.email,
-          phoneNumber: customer.phoneNumber
-        }));
-      } else {
-        console.log('Unexpected response format or no customers in response:', response.data);
-        customers.value = [];
+        console.log(`Fetching page with skip=${skip}, pageSize=${pageSize}`);
+        const response = await ApiService.get('/customers', paginationParams);
+        
+        // Process this page of customers
+        if (response.data && response.data.data && response.data.data.value) {
+          const pageCustomers = response.data.data.value;
+          console.log(`Retrieved ${pageCustomers.length} customers in this batch`);
+          
+          const formattedCustomers = pageCustomers.map(customer => ({
+            id: customer.id,
+            number: customer.number,
+            name: customer.displayName,
+            company: customer.type === 'Company' ? customer.displayName : '',
+            address: customer.addressLine1,
+            city: customer.city,
+            state: customer.state,
+            postalCode: customer.postalCode,
+            country: customer.country,
+            email: customer.email,
+            phoneNumber: customer.phoneNumber
+          }));
+          
+          // Add this page's customers to our collection
+          allCustomers = [...allCustomers, ...formattedCustomers];
+          
+          // If we got fewer customers than requested or none, we've reached the end
+          if (pageCustomers.length < pageSize) {
+            hasMoreRecords = false;
+            console.log('Reached last page of customers');
+          } else {
+            // Move to next page
+            skip += pageSize;
+            console.log(`Moving to next page, skip=${skip}`);
+          }
+        } else {
+          // No data or error in response
+          hasMoreRecords = false;
+          console.log('No more customers or unexpected response format:', response.data);
+        }
       }
       
-      console.log(`Total customers after fetch: ${customers.value.length}`);
+      console.log(`Total customers after pagination: ${allCustomers.length}`);
+      customers.value = allCustomers;
       return customers.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch customers';
