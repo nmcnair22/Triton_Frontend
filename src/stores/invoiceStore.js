@@ -7,10 +7,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const invoices = ref([]);
   const customerInvoices = ref([]);
   const currentInvoice = ref(null);
+  const currentEnrichedInvoice = ref(null);
   const loading = ref(false);
   const loadingCustomerInvoices = ref(false);
+  const loadingEnrichedInvoice = ref(false);
   const error = ref(null);
   const customerInvoicesError = ref(null);
+  const enrichedInvoiceError = ref(null);
 
   // Getters
   const getInvoiceById = computed(() => {
@@ -19,6 +22,42 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
   const totalInvoices = computed(() => invoices.value.length);
   const totalCustomerInvoices = computed(() => customerInvoices.value.length);
+
+  // Field mapping function for normalized line item data
+  const mapEnrichedLineFields = (enrichedLine) => {
+    return {
+      sequence: enrichedLine.Line_No,
+      lineObjectNumber: enrichedLine.No,
+      lineType: enrichedLine.Type,
+      description: enrichedLine.Description,
+      description2: enrichedLine.Description_2,
+      quantity: enrichedLine.Quantity,
+      unitPrice: enrichedLine.Unit_Price,
+      amountExcludingTax: enrichedLine.Line_Amount,
+      amountIncludingTax: enrichedLine.Amount_Including_VAT,
+      unitOfMeasureCode: enrichedLine.Unit_of_Measure_Code,
+      taxPercent: enrichedLine.VAT_Percent,
+      discountPercent: enrichedLine.Line_Discount_Percent,
+      discountAmount: enrichedLine.Line_Discount_Amount,
+      invoiceDiscountAllocation: enrichedLine.Invoice_Discount_Amount,
+      // Additional enriched fields
+      documentNo: enrichedLine.Document_No,
+      genProdPostingGroup: enrichedLine.Gen_Prod_Posting_Group,
+      jobNo: enrichedLine.Job_No,
+      jobTaskNo: enrichedLine.Job_Task_No,
+      cisId: enrichedLine.CIS_ID,
+      jobContractEntryNo: enrichedLine.Job_Contract_Entry_No,
+      glAccountCategory: enrichedLine.GLAccountCategory,
+      glAccountSubCategory: enrichedLine.GLAccountSubCategory,
+      glAccountName: enrichedLine.GLAccountName,
+      glAccountId: enrichedLine.GLAccountId,
+      udfL1: enrichedLine.Bssi_UDF_L1,
+      udfL2: enrichedLine.Bssi_UDF_L2,
+      udfL3: enrichedLine.Bssi_UDF_L3,
+      udfL4: enrichedLine.Bssi_UDF_L4,
+      udfL13: enrichedLine.Bssi_UDF_L13
+    };
+  };
 
   // Actions
   async function fetchInvoices(params = {}) {
@@ -154,6 +193,59 @@ export const useInvoiceStore = defineStore('invoice', () => {
     }
   }
 
+  async function fetchEnrichedInvoiceLines(documentNumber) {
+    if (!documentNumber) {
+      enrichedInvoiceError.value = 'Document number is required';
+      return null;
+    }
+    
+    loadingEnrichedInvoice.value = true;
+    enrichedInvoiceError.value = null;
+    
+    try {
+      const response = await InvoiceService.getEnrichedSalesInvoiceLines(documentNumber);
+      
+      if (response.data && response.data.success && response.data.data && response.data.data.value) {
+        // Store both the raw and normalized data
+        const rawEnrichedLines = response.data.data.value;
+        const enrichedLines = rawEnrichedLines.map(mapEnrichedLineFields);
+        
+        // Create a copy of the current invoice and add the enriched line items
+        if (currentInvoice.value) {
+          currentEnrichedInvoice.value = {
+            ...currentInvoice.value,
+            enrichedItems: enrichedLines,
+            rawEnrichedItems: rawEnrichedLines,
+            rawResponse: response.data,
+            isEnriched: true
+          };
+        } else {
+          // If no current invoice exists, create a minimal structure
+          currentEnrichedInvoice.value = {
+            documentNumber,
+            enrichedItems: enrichedLines,
+            rawEnrichedItems: rawEnrichedLines,
+            rawResponse: response.data,
+            isEnriched: true
+          };
+        }
+        
+        return currentEnrichedInvoice.value;
+      } else {
+        currentEnrichedInvoice.value = null;
+        console.error('Unexpected response format in enriched invoice data:', response.data);
+        enrichedInvoiceError.value = 'Failed to parse enriched invoice data';
+        return null;
+      }
+    } catch (err) {
+      enrichedInvoiceError.value = err.message || `Failed to fetch enriched invoice #${documentNumber}`;
+      console.error(`Error fetching enriched invoice #${documentNumber}:`, err);
+      return null;
+    } finally {
+      loadingEnrichedInvoice.value = false;
+    }
+  }
+
   async function createInvoice(invoice) {
     loading.value = true;
     error.value = null;
@@ -225,8 +317,10 @@ export const useInvoiceStore = defineStore('invoice', () => {
     invoices.value = [];
     customerInvoices.value = [];
     currentInvoice.value = null;
+    currentEnrichedInvoice.value = null;
     error.value = null;
     customerInvoicesError.value = null;
+    enrichedInvoiceError.value = null;
   }
 
   return {
@@ -234,10 +328,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
     invoices,
     customerInvoices,
     currentInvoice,
+    currentEnrichedInvoice,
     loading,
     loadingCustomerInvoices,
+    loadingEnrichedInvoice,
     error,
     customerInvoicesError,
+    enrichedInvoiceError,
     
     // Getters
     getInvoiceById,
@@ -248,6 +345,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     fetchInvoices,
     fetchCustomerInvoices,
     fetchInvoice,
+    fetchEnrichedInvoiceLines,
     createInvoice,
     updateInvoice,
     deleteInvoice,

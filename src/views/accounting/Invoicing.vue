@@ -14,7 +14,9 @@ const invoices = ref([]);
 const selectedInvoice = ref(null);
 const isLoading = computed(() => invoiceStore.loading);
 const error = computed(() => invoiceStore.error);
-const isInteractive = ref(false); // New toggle state for interactive mode
+const isInteractive = ref(false); // Toggle state for interactive mode
+const isLoadingEnrichedData = computed(() => invoiceStore.loadingEnrichedInvoice);
+const enrichedError = computed(() => invoiceStore.enrichedInvoiceError);
 
 // Table products for the selected invoice
 const products = ref([]);
@@ -222,6 +224,69 @@ function getRowClass(data) {
   }
   return '';
 }
+
+// Watch for changes to interactive mode
+watch(isInteractive, async (newValue) => {
+  if (newValue && selectedInvoice.value) {
+    // When interactive mode is enabled and an invoice is selected
+    await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
+  }
+});
+
+// Function to fetch enriched invoice data
+async function fetchEnrichedInvoiceData(documentNumber) {
+  if (!documentNumber) return;
+  
+  try {
+    await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
+    
+    // Enhanced logging to show all data
+    const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
+    if (enrichedInvoice) {
+      console.log('Fetched enriched invoice data:');
+      
+      // Log normalized data
+      console.log('- Normalized data:', enrichedInvoice.enrichedItems);
+      
+      // Log raw data
+      console.log('- Raw data:', enrichedInvoice.rawEnrichedItems);
+      
+      // Log specific fields from the first item to verify they're being captured
+      if (enrichedInvoice.rawEnrichedItems && enrichedInvoice.rawEnrichedItems.length > 0) {
+        const firstItem = enrichedInvoice.rawEnrichedItems[0];
+        console.log('Specific fields from first raw item:');
+        console.log('  Document_No:', firstItem.Document_No);
+        console.log('  Gen_Prod_Posting_Group:', firstItem.Gen_Prod_Posting_Group);
+        console.log('  Job_No:', firstItem.Job_No);
+        console.log('  Job_Task_No:', firstItem.Job_Task_No);
+        console.log('  CIS_ID:', firstItem.CIS_ID);
+        console.log('  Job_Contract_Entry_No:', firstItem.Job_Contract_Entry_No);
+        
+        // Log the same fields from the mapped data for comparison
+        if (enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
+          const firstMappedItem = enrichedInvoice.enrichedItems[0];
+          console.log('Same fields from first mapped item:');
+          console.log('  documentNo:', firstMappedItem.documentNo);
+          console.log('  genProdPostingGroup:', firstMappedItem.genProdPostingGroup);
+          console.log('  jobNo:', firstMappedItem.jobNo);
+          console.log('  jobTaskNo:', firstMappedItem.jobTaskNo);
+          console.log('  cisId:', firstMappedItem.cisId);
+          console.log('  jobContractEntryNo:', firstMappedItem.jobContractEntryNo);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching enriched invoice data:', err);
+  }
+}
+
+// Watch for changes in selected invoice
+watch(selectedInvoice, (newInvoice) => {
+  if (newInvoice && isInteractive.value) {
+    // If interactive mode is already on when invoice selection changes
+    fetchEnrichedInvoiceData(newInvoice.number || newInvoice.id);
+  }
+});
 </script>
 <template>
     <div class="grid">

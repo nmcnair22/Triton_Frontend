@@ -85,6 +85,13 @@ export const InvoiceService = {
     return ApiService.get(`/accounting/sales-invoices/${id}/lines`);
   },
   
+  // Get enriched line items for interactive invoice
+  getEnrichedSalesInvoiceLines(documentNumber) {
+    return ApiService.post('/accounting/sales-invoice-lines', {
+      document_number: documentNumber
+    });
+  },
+  
   // Create a new invoice
   createInvoice(invoice) {
     return ApiService.post('/invoices', invoice);
