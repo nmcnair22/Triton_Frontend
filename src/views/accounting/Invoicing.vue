@@ -4,10 +4,14 @@ import { useInvoiceStore } from '@/stores/invoiceStore';
 import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
+import { useToast } from 'primevue/usetoast';
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
 const customerStore = useCustomerStore();
+
+// Initialize the toast service
+const toast = useToast();
 
 // Reactive data
 const invoices = ref([]);
@@ -183,9 +187,17 @@ function getRowClass(data) {
 
 // Watch for changes to interactive mode
 watch(isInteractive, async (newValue) => {
-  if (newValue && selectedInvoice.value) {
-    // When interactive mode is enabled and an invoice is selected
-    await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
+  if (newValue) {
+    // Show toast message when interactive mode is enabled
+    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000 });
+    
+    if (selectedInvoice.value) {
+      // When interactive mode is enabled and an invoice is selected
+      await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
+    }
+  } else {
+    // Show toast message when interactive mode is disabled
+    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000 });
   }
 });
 
@@ -298,6 +310,7 @@ watch(selectedInvoice, (newInvoice) => {
 });
 </script>
 <template>
+    <Toast />
     <div class="grid">
         <div class="col-12">
             <div class="card p-4 mb-2">
