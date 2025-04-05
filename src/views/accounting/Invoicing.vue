@@ -10,7 +10,7 @@ import { useToast } from 'primevue/usetoast';
 const invoiceStore = useInvoiceStore();
 const customerStore = useCustomerStore();
 
-// Initialize the toast service
+// Initialize the toast service with a specific group
 const toast = useToast();
 
 // Reactive data
@@ -188,16 +188,16 @@ function getRowClass(data) {
 // Watch for changes to interactive mode
 watch(isInteractive, async (newValue) => {
   if (newValue) {
-    // Show toast message when interactive mode is enabled
-    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000 });
+    // Show toast message when interactive mode is enabled with specific group
+    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000, group: 'invoice-bottom' });
     
     if (selectedInvoice.value) {
       // When interactive mode is enabled and an invoice is selected
       await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
     }
   } else {
-    // Show toast message when interactive mode is disabled
-    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000 });
+    // Show toast message when interactive mode is disabled with specific group
+    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000, group: 'invoice-bottom' });
   }
 });
 
@@ -310,7 +310,7 @@ watch(selectedInvoice, (newInvoice) => {
 });
 </script>
 <template>
-    <Toast position="bottom-center" />
+    <Toast position="bottom-center" group="invoice-bottom" />
     <div class="grid">
         <div class="col-12">
             <div class="card p-4 mb-2">
