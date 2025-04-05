@@ -341,24 +341,25 @@ watch(selectedInvoice, (newInvoice) => {
             <div class="card">
                 <h5>Invoice Supplemental Report</h5>
                 
-                <div class="mb-4">
-                    <div class="flex flex-wrap align-items-center gap-3">
-                        <div class="w-full md:w-4">
-                            <MultiSelect 
-                                v-model="selectedCustomers" 
-                                :options="customerStore.customers" 
-                                optionLabel="name" 
-                                placeholder="Select Customers"
-                                display="chip"
-                                filter
-                                :maxSelectedLabels="3" 
-                                :disabled="isLoadingCustomers"
-                                class="w-full" />
-                        </div>
-                        <div class="ml-auto flex align-items-center">
-                            <label class="mr-2">Active/Full list</label>
-                            <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
-                        </div>
+                <div class="mb-4 p-2" style="display: flex; align-items: center;">
+                    <!-- MultiSelect taking exactly 35% width -->
+                    <div style="width: 35%;">
+                        <MultiSelect 
+                            v-model="selectedCustomers" 
+                            :options="customerStore.customers" 
+                            optionLabel="name" 
+                            placeholder="Select Customers"
+                            display="chip"
+                            filter
+                            :maxSelectedLabels="3" 
+                            :disabled="isLoadingCustomers"
+                            class="w-full" />
+                    </div>
+                    
+                    <!-- Fixed spacing between MultiSelect and toggle -->
+                    <div style="margin-left: 2rem; display: flex; align-items: center;">
+                        <label style="margin-right: 0.5rem;">Active/Full list</label>
+                        <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
                     </div>
                 </div>
                 
