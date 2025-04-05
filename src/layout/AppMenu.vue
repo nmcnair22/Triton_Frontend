@@ -23,6 +23,11 @@ const model = ref([
                 label: 'Dashboard',
                 icon: 'pi pi-fw pi-building-columns',
                 to: '/dashboard-banking'
+            },
+            {
+                label: 'Bill Import',
+                icon: 'pi pi-fw pi-file-import',
+                to: '/streamline/bill-import'
             }
         ]
     },
@@ -47,6 +52,39 @@ const model = ref([
                 label: 'Report Manager',
                 icon: 'pi pi-fw pi-table',
                 to: '/reporting/report-manager'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'WaveAI',
+        icon: 'pi pi-bolt',
+        items: [
+            {
+                label: 'Network News',
+                icon: 'pi pi-fw pi-globe',
+                items: [
+                    {
+                        label: 'Front Page',
+                        icon: 'pi pi-fw pi-list',
+                        to: '/apps/waveai/frontpage'
+                    },
+                    {
+                        label: 'Network',
+                        icon: 'pi pi-fw pi-server',
+                        to: '/apps/waveai/network'
+                    },
+                    {
+                        label: 'Dispatch',
+                        icon: 'pi pi-fw pi-send',
+                        to: '/apps/waveai/dispatch'
+                    },
+                    {
+                        label: 'Circuits',
+                        icon: 'pi pi-fw pi-sitemap',
+                        to: '/apps/waveai/circuits'
+                    }
+                ]
             }
         ]
     },

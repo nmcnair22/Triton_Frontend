@@ -26,6 +26,14 @@ const routes = [
                 component: () => import('@/views/dashboard/BankingView.vue')
             },
             {
+                path: '/streamline/bill-import',
+                name: 'bill-import',
+                meta: {
+                    breadcrumb: ['Streamline', 'Bill Import']
+                },
+                component: () => import('@/views/apps/BillImport.vue')
+            },
+            {
                 path: '/apps/blog/list',
                 component: () => import('@/views/apps/blog/List.vue')
             },
@@ -37,6 +45,26 @@ const routes = [
                 path: '/apps/blog/edit',
                 name: 'blog-edit',
                 component: () => import('@/views/apps/blog/Edit.vue')
+            },
+            {
+                path: '/apps/waveai/frontpage',
+                name: 'waveai-frontpage',
+                component: () => import('@/views/apps/waveai/FrontPage.vue')
+            },
+            {
+                path: '/apps/waveai/network',
+                name: 'waveai-network',
+                component: () => import('@/views/apps/waveai/Network.vue')
+            },
+            {
+                path: '/apps/waveai/dispatch',
+                name: 'waveai-dispatch',
+                component: () => import('@/views/apps/waveai/Dispatch.vue')
+            },
+            {
+                path: '/apps/waveai/circuits',
+                name: 'waveai-circuits',
+                component: () => import('@/views/apps/waveai/Circuits.vue')
             },
             {
                 path: '/apps/files',

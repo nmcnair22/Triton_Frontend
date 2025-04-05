@@ -606,7 +606,7 @@ watch(selectedInvoice, (newInvoice) => {
                                 
                                 <!-- Group Subtotal with simple bottom border -->
                                 <div class="border-top-2 border-surface-200 dark:border-surface-700 mb-4">
-                                    <div class="py-3" style="text-align: right; padding-right: 64px;">
+                                    <div class="py-3" style="text-align: right; padding-right: 32px;">
                                         <span class="font-medium">{{ group.groupType }} Subtotal: <span class="font-bold">{{ formatCurrency(group.total) }}</span></span>
                                     </div>
                                 </div>
