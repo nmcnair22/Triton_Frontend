@@ -67,8 +67,8 @@ export const useCustomerStore = defineStore('customer', () => {
     console.log('Starting active customers fetch with params:', params);
     
     try {
-      // Use the correct endpoint URL (with capital A and underscore)
-      const response = await ApiService.get('/Active_Customers', params);
+      // Use the correct endpoint URL - lowercase with underscore
+      const response = await ApiService.get('/active_customers', params);
       
       if (response.data && response.data.data) {
         console.log(`Retrieved ${response.data.data.length} active customers`);
