@@ -164,47 +164,10 @@ async function selectInvoice(id) {
     }
   } catch (err) {
     console.error(`Failed to load invoice #${id}:`, err);
-    // Fallback to demo data if API fails
-    loadDemoData();
+    // Don't fallback to demo data, just set error state
+    selectedInvoice.value = null;
+    products.value = [];
   }
-}
-
-// Load demo data if API is not available
-function loadDemoData() {
-  selectedInvoice.value = {
-    id: '09022023',
-    date: '04/19/2023',
-    customer: {
-      id: 'A123',
-      name: 'Amy Elsner',
-      company: 'AlphaHex',
-      address: 'Claire Williams, 148 Hope LanePalo Alto, CA 94304.'
-    },
-    subtotal: 216.00,
-    vat: 0,
-    total: 216.00
-  };
-  
-  products.value = [
-    {
-      description: 'Green T-Shirt',
-      quantity: '1',
-      price: '$49',
-      total: '$49'
-    },
-    {
-      description: 'Game Controller',
-      quantity: '1',
-      price: '$56',
-      total: '$56'
-    },
-    {
-      description: 'Mini Speakers',
-      quantity: '1',
-      price: '$72',
-      total: '$72'
-    }
-  ];
 }
 
 // Function to determine row class based on due date and status
