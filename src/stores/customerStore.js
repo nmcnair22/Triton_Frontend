@@ -59,6 +59,51 @@ export const useCustomerStore = defineStore('customer', () => {
     }
   }
 
+  // New function to fetch active customers
+  async function fetchActiveCustomers(params = {}) {
+    loading.value = true;
+    error.value = null;
+    
+    console.log('Starting active customers fetch with params:', params);
+    
+    try {
+      // Call the active customers endpoint instead of the regular customers endpoint
+      const response = await ApiService.get('/active-customers', params);
+      
+      if (response.data && response.data.data) {
+        console.log(`Retrieved ${response.data.data.length} active customers`);
+        
+        // Map the response data to your frontend customer format
+        customers.value = response.data.data.map(customer => ({
+          id: customer.id,
+          number: customer.number,
+          name: customer.displayName,
+          company: customer.type === 'Company' ? customer.displayName : '',
+          address: customer.addressLine1,
+          city: customer.city,
+          state: customer.state,
+          postalCode: customer.postalCode,
+          country: customer.country,
+          email: customer.email,
+          phoneNumber: customer.phoneNumber
+        }));
+        
+        console.log(`Total active customers after processing: ${customers.value.length}`);
+      } else {
+        console.log('Unexpected response format or no active customers in response:', response.data);
+        customers.value = [];
+      }
+      
+      return customers.value;
+    } catch (err) {
+      error.value = err.message || 'Failed to fetch active customers';
+      console.error('Error fetching active customers:', err);
+      return [];
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function fetchCustomer(id) {
     loading.value = true;
     error.value = null;
@@ -113,6 +158,7 @@ export const useCustomerStore = defineStore('customer', () => {
     
     // Actions
     fetchCustomers,
+    fetchActiveCustomers,
     fetchCustomer,
     resetState
   };
