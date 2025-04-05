@@ -96,6 +96,12 @@ export const useCustomerStore = defineStore('customer', () => {
       
       return customers.value;
     } catch (err) {
+      // If endpoint doesn't exist (404) or another error occurs, fallback to regular customers
+      if (err.response && err.response.status === 404) {
+        console.log('Active customers endpoint not found, falling back to regular customers');
+        return fetchCustomers(params);
+      }
+      
       error.value = err.message || 'Failed to fetch active customers';
       console.error('Error fetching active customers:', err);
       return [];

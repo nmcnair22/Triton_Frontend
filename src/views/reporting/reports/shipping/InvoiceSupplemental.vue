@@ -5,6 +5,7 @@ import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 import { useToast } from 'primevue/usetoast';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -72,8 +73,8 @@ const groupedProducts = ref([]);
 const groupNames = ref([]);
 const isRegrouping = ref(false);
 
-// Customer list type toggle
-const customerListType = ref('active'); // Default to active customers
+// Customer list type toggle - true = active, false = full
+const customerListType = ref(true);
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -97,7 +98,7 @@ onMounted(async () => {
 // Function to load customers based on selected list type
 async function loadCustomers() {
   try {
-    if (customerListType.value === 'active') {
+    if (customerListType.value) {
       console.log('Loading active customers');
       await customerStore.fetchActiveCustomers();
     } else {
@@ -341,14 +342,9 @@ watch(selectedInvoice, (newInvoice) => {
                 <h5>Invoice Supplemental Report</h5>
                 
                 <div class="flex align-items-center mb-3">
-                    <div class="flex align-items-center mr-3">
-                        <label for="customerListType" class="mr-2">Customer List:</label>
-                        <ToggleButton v-model="customerListType" 
-                                     onLabel="Active" 
-                                     offLabel="Full" 
-                                     onValue="active" 
-                                     offValue="full"
-                                     @change="onCustomerListTypeChange" />
+                    <div class="flex-none mr-4 flex align-items-center">
+                        <label class="mr-2">Active Customers Only:</label>
+                        <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
                     </div>
                     
                     <MultiSelect v-model="selectedCustomers" 
@@ -356,7 +352,7 @@ watch(selectedInvoice, (newInvoice) => {
                                optionLabel="name" 
                                placeholder="Select Customers" 
                                :disabled="isLoadingCustomers"
-                               class="w-full" />
+                               class="w-full md:w-6" />
                 </div>
                 
                 <div class="card p-4 mb-4">
