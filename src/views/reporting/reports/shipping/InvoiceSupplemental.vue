@@ -341,21 +341,31 @@ watch(selectedInvoice, (newInvoice) => {
             <div class="card">
                 <h5>Invoice Supplemental Report</h5>
                 
-                <div class="flex align-items-center mb-3">
-                    <div class="flex-none mr-4 flex align-items-center">
-                        <label class="mr-2">Active Customers Only:</label>
-                        <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
+                <div class="card-body p-0">
+                    <div class="formgrid grid">
+                        <div class="field col-12 md:col-6 lg:col-3 md:mb-0 mb-3">
+                            <div class="flex flex-column">
+                                <label class="text-sm font-medium mb-2">Customer Filter</label>
+                                <div class="p-inputgroup">
+                                    <span class="p-inputgroup-addon border-right-none bg-surface-50">
+                                        <div class="flex align-items-center gap-2">
+                                            <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
+                                            <label class="text-xs font-medium">Active Only</label>
+                                        </div>
+                                    </span>
+                                    <MultiSelect v-model="selectedCustomers" 
+                                              :options="customerStore.customers" 
+                                              optionLabel="name" 
+                                              placeholder="Select Customers" 
+                                              :disabled="isLoadingCustomers"
+                                              class="w-full flex-1" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <MultiSelect v-model="selectedCustomers" 
-                               :options="customerStore.customers" 
-                               optionLabel="name" 
-                               placeholder="Select Customers" 
-                               :disabled="isLoadingCustomers"
-                               class="w-full md:w-6" />
                 </div>
                 
-                <div class="card p-4 mb-4">
+                <div class="card p-4 mb-4 mt-4">
                     <DataTable v-model:selection="selectedCustomerInvoice" :value="customerInvoices || []" dataKey="id"
                              :paginator="true" :rows="lazyParams.rows" :totalRecords="totalInvoiceRecords"
                              :loading="isLoadingCustomerInvoices" :rowHover="true" stripedRows
