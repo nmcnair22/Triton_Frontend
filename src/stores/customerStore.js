@@ -20,68 +20,34 @@ export const useCustomerStore = defineStore('customer', () => {
   async function fetchCustomers(params = {}) {
     loading.value = true;
     error.value = null;
-    let allCustomers = [];
+    
+    console.log('Starting customer fetch with params:', params);
     
     try {
-      let hasMoreRecords = true;
-      let skip = 0;
-      const pageSize = 100; // Match our backend default
-      let pageCount = 0;
-      
-      console.log('Starting customer pagination fetch');
-      
-      // Continue fetching until we get all customers
-      while (hasMoreRecords) {
-        pageCount++;
-        // Add pagination parameters
-        const paginationParams = {
-          ...params,
-          $skip: skip,
-          pageSize: pageSize
-        };
+      const response = await ApiService.get('/customers', params);
+      // Handle the nested data structure in the API response
+      if (response.data && response.data.data && response.data.data.value) {
+        console.log(`Retrieved ${response.data.data.value.length} customers`);
         
-        console.log(`Fetching customer page ${pageCount} with params:`, paginationParams);
-        
-        const response = await ApiService.get('/customers', paginationParams);
-        
-        // Extract customers from this page
-        let pageCustomers = [];
-        if (response.data && response.data.data && response.data.data.value) {
-          pageCustomers = response.data.data.value.map(customer => ({
-            id: customer.id,
-            number: customer.number,
-            name: customer.displayName,
-            company: customer.type === 'Company' ? customer.displayName : '',
-            address: customer.addressLine1,
-            city: customer.city,
-            state: customer.state,
-            postalCode: customer.postalCode,
-            country: customer.country,
-            email: customer.email,
-            phoneNumber: customer.phoneNumber
-          }));
-          
-          console.log(`Retrieved ${pageCustomers.length} customers on page ${pageCount}`);
-          
-          // Add this page's customers to our collection
-          allCustomers = [...allCustomers, ...pageCustomers];
-          
-          // If we got fewer customers than pageSize, we're at the end
-          if (pageCustomers.length < pageSize) {
-            console.log(`Received ${pageCustomers.length} customers (< pageSize ${pageSize}), no more pages`);
-            hasMoreRecords = false;
-          }
-          
-          // Move to next page
-          skip += pageSize;
-        } else {
-          console.log('Unexpected response format or no customers in response:', response.data);
-          hasMoreRecords = false;
-        }
+        customers.value = response.data.data.value.map(customer => ({
+          id: customer.id,
+          number: customer.number,
+          name: customer.displayName, // Use displayName for the customer name
+          company: customer.type === 'Company' ? customer.displayName : '',
+          address: customer.addressLine1,
+          city: customer.city,
+          state: customer.state,
+          postalCode: customer.postalCode,
+          country: customer.country,
+          email: customer.email,
+          phoneNumber: customer.phoneNumber
+        }));
+      } else {
+        console.log('Unexpected response format or no customers in response:', response.data);
+        customers.value = [];
       }
       
-      customers.value = allCustomers;
-      console.log(`Total customers retrieved: ${customers.value.length}`);
+      console.log(`Total customers after fetch: ${customers.value.length}`);
       return customers.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch customers';
