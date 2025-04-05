@@ -20,28 +20,57 @@ export const useCustomerStore = defineStore('customer', () => {
   async function fetchCustomers(params = {}) {
     loading.value = true;
     error.value = null;
+    let allCustomers = [];
     
     try {
-      const response = await ApiService.get('/customers', params);
-      // Handle the nested data structure in the API response
-      if (response.data && response.data.data && response.data.data.value) {
-        customers.value = response.data.data.value.map(customer => ({
-          id: customer.id,
-          number: customer.number,
-          name: customer.displayName, // Use displayName for the customer name
-          company: customer.type === 'Company' ? customer.displayName : '',
-          address: customer.addressLine1,
-          city: customer.city,
-          state: customer.state,
-          postalCode: customer.postalCode,
-          country: customer.country,
-          email: customer.email,
-          phoneNumber: customer.phoneNumber
-        }));
-      } else {
-        customers.value = [];
-        console.error('Unexpected response format:', response.data);
+      let hasMoreRecords = true;
+      let skip = 0;
+      const pageSize = 100; // Match our backend default
+      
+      // Continue fetching until we get all customers
+      while (hasMoreRecords) {
+        // Add pagination parameters
+        const paginationParams = {
+          ...params,
+          $skip: skip,
+          pageSize: pageSize
+        };
+        
+        const response = await ApiService.get('/customers', paginationParams);
+        
+        // Extract customers from this page
+        let pageCustomers = [];
+        if (response.data && response.data.data && response.data.data.value) {
+          pageCustomers = response.data.data.value.map(customer => ({
+            id: customer.id,
+            number: customer.number,
+            name: customer.displayName,
+            company: customer.type === 'Company' ? customer.displayName : '',
+            address: customer.addressLine1,
+            city: customer.city,
+            state: customer.state,
+            postalCode: customer.postalCode,
+            country: customer.country,
+            email: customer.email,
+            phoneNumber: customer.phoneNumber
+          }));
+          
+          // Add this page's customers to our collection
+          allCustomers = [...allCustomers, ...pageCustomers];
+          
+          // If we got fewer customers than pageSize, we're at the end
+          if (pageCustomers.length < pageSize) {
+            hasMoreRecords = false;
+          }
+          
+          // Move to next page
+          skip += pageSize;
+        } else {
+          hasMoreRecords = false;
+        }
       }
+      
+      customers.value = allCustomers;
       return customers.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch customers';
