@@ -209,64 +209,107 @@ function getRowClass(data) {
   return '';
 }
 
-// Function to toggle interactive mode
-function toggleInteractive() {
-  isInteractive.value = !isInteractive.value;
-  if (isInteractive.value && selectedInvoice.value) {
-    loadEnrichedInvoiceData();
-  }
-}
-
-// Function to load enriched data for interactive mode
-async function loadEnrichedInvoiceData() {
-  if (!selectedInvoice.value) return;
-  
-  try {
-    await invoiceStore.fetchEnrichedInvoiceData(selectedInvoice.value.id);
-    // Group the data based on the selected option
-    regroupData();
-  } catch (err) {
-    console.error('Failed to load enriched invoice data:', err);
-  }
-}
-
-// Watch for group by changes
-watch(selectedGroupBy, () => {
-  if (isInteractive.value && selectedInvoice.value) {
-    regroupData();
+// Watch for changes to interactive mode
+watch(isInteractive, async (newValue) => {
+  if (newValue) {
+    // Show toast message when interactive mode is enabled with specific group
+    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000, group: 'invoice-bottom' });
+    
+    if (selectedInvoice.value) {
+      // When interactive mode is enabled and an invoice is selected
+      await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
+    }
+  } else {
+    // Show toast message when interactive mode is disabled with specific group
+    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000, group: 'invoice-bottom' });
   }
 });
 
-// Function to regroup data based on selected option
-function regroupData() {
-  isRegrouping.value = true;
-  const enrichedData = invoiceStore.enrichedInvoiceData;
+// Function to fetch enriched invoice data
+async function fetchEnrichedInvoiceData(documentNumber) {
+  if (!documentNumber) return;
   
-  if (!enrichedData || !enrichedData.length) {
-    groupedProducts.value = [];
-    isRegrouping.value = false;
-    return;
+  try {
+    await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
+    
+    // Enhanced logging to show all data
+    const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
+    if (enrichedInvoice) {
+      console.log('Fetched enriched invoice data:');
+      
+      // Log normalized data
+      console.log('- Normalized data:', enrichedInvoice.enrichedItems);
+      
+      // Log raw data
+      console.log('- Raw data:', enrichedInvoice.rawEnrichedItems);
+      
+      // Log specific fields from the first item to verify they're being captured
+      if (enrichedInvoice.rawEnrichedItems && enrichedInvoice.rawEnrichedItems.length > 0) {
+        const firstItem = enrichedInvoice.rawEnrichedItems[0];
+        console.log('Specific fields from first raw item:');
+        console.log('  Document_No:', firstItem.Document_No);
+        console.log('  Gen_Prod_Posting_Group:', firstItem.Gen_Prod_Posting_Group);
+        console.log('  Job_No:', firstItem.Job_No);
+        console.log('  Job_Task_No:', firstItem.Job_Task_No);
+        console.log('  CIS_ID:', firstItem.CIS_ID);
+        console.log('  Job_Contract_Entry_No:', firstItem.Job_Contract_Entry_No);
+      }
+      
+      // Group the data according to the current grouping option
+      groupEnrichedData();
+    }
+  } catch (err) {
+    console.error(`Failed to fetch enriched data for document ${documentNumber}:`, err);
   }
-  
-  // If grouping is set to none, just use the enriched data directly
-  if (selectedGroupBy.value.value === 'none') {
-    groupedProducts.value = enrichedData;
-    groupNames.value = ['All Items'];
-    isRegrouping.value = false;
-    return;
-  }
-  
-  // Otherwise group the data
-  const { groupedData, groupKeys } = groupInvoiceItems(enrichedData, selectedGroupBy.value.value);
-  groupedProducts.value = groupedData;
-  groupNames.value = groupKeys;
-  
-  isRegrouping.value = false;
 }
 
-// Function to format invoice status for display
+// Watch for changes to the groupBy selector
+watch(selectedGroupBy, () => {
+  if (isInteractive.value) {
+    groupEnrichedData();
+  }
+});
+
+// Function to group enriched data
+function groupEnrichedData() {
+  isRegrouping.value = true;
+  
+  try {
+    const enrichedItems = invoiceStore.currentEnrichedInvoice?.enrichedItems || [];
+    if (!enrichedItems.length) {
+      groupedProducts.value = [];
+      groupNames.value = [];
+      return;
+    }
+    
+    // If no grouping is selected, just use the enriched items directly
+    if (selectedGroupBy.value.value === 'none') {
+      groupedProducts.value = enrichedItems;
+      groupNames.value = ['All Items'];
+    } else {
+      // Otherwise, group the items by the selected property
+      const { groupedData, groupLabels } = groupInvoiceItems(
+        enrichedItems,
+        selectedGroupBy.value.value
+      );
+      
+      groupedProducts.value = groupedData;
+      groupNames.value = groupLabels;
+      
+      console.log(`Grouped data by ${selectedGroupBy.value.name}:`, groupedData);
+      console.log('Group names:', groupLabels);
+    }
+  } catch (error) {
+    console.error('Error while grouping data:', error);
+    groupedProducts.value = [];
+    groupNames.value = [];
+  } finally {
+    isRegrouping.value = false;
+  }
+}
+
 function formatStatus(status) {
-  switch (status.toLowerCase()) {
+  switch (status?.toLowerCase()) {
     case 'open':
       return 'Unpaid';
     case 'paid':
@@ -276,13 +319,13 @@ function formatStatus(status) {
     case 'void':
       return 'Void';
     default:
-      return status;
+      return status || 'Unknown';
   }
 }
 
-// Function to get a status severity class
+// Function to determine status badge severity
 function getStatusSeverity(status) {
-  switch (status.toLowerCase()) {
+  switch (status?.toLowerCase()) {
     case 'open':
       return 'warning';
     case 'paid':
@@ -292,21 +335,29 @@ function getStatusSeverity(status) {
     case 'void':
       return 'danger';
     default:
-      return 'info';
+      return 'secondary';
   }
 }
 </script>
 
 <template>
   <div class="card">
+    <!-- Header -->
     <div class="flex flex-column md:flex-row justify-content-between align-items-start pb-4 mb-4 border-bottom-1 surface-border">
       <div>
         <h1 class="mt-0 mb-2">Invoice Templates</h1>
         <h2 class="mt-0 mb-2 text-xl text-600 font-normal">Select a template to use for invoice generation</h2>
       </div>
+      
+      <div class="flex align-items-center mt-3 md:mt-0">
+        <div class="flex align-items-center" v-if="selectedInvoice">
+          <span class="mr-2">Interactive:</span>
+          <ToggleSwitch v-model="isInteractive" />
+        </div>
+      </div>
     </div>
-
-    <!-- Customer Filter Section -->
+    
+    <!-- Customer Selection and Filter Area -->
     <div class="flex align-items-center mb-4">
       <div style="width: 35%; margin-right: 2rem;">
         <MultiSelect 
@@ -326,14 +377,15 @@ function getStatusSeverity(status) {
         <label class="font-medium">Full list / Only active customers</label>
       </div>
     </div>
-
-    <!-- Invoices Table -->
+    
+    <!-- Invoices Data Table -->
     <DataTable 
       v-model:selection="selectedCustomerInvoice"
       v-model:filters="filters" 
       :value="customerInvoices" 
       selectionMode="single" 
       dataKey="id" 
+      class="p-datatable-sm" 
       :rows="lazyParams.rows" 
       :totalRecords="totalInvoiceRecords"
       :loading="isLoadingCustomerInvoices" 
@@ -505,69 +557,79 @@ function getStatusSeverity(status) {
         </div>
       </template>
     </DataTable>
-
-    <div v-if="selectedInvoice" class="mt-5">
-      <div class="flex justify-content-between align-items-center mb-4">
+    
+    <!-- Invoice Details Section -->
+    <div v-if="selectedInvoice" class="mt-4">
+      <div class="flex justify-content-between align-items-center mb-3">
         <h2 class="m-0">Invoice Details: {{ selectedInvoice.number }}</h2>
-        <ToggleSwitch v-model="isInteractive" @change="toggleInteractive" />
-        <span v-if="isInteractive" class="ml-2">Interactive Mode</span>
+        
+        <div class="flex align-items-center" v-if="isInteractive">
+          <Dropdown 
+            v-model="selectedGroupBy" 
+            :options="groupByOptions" 
+            optionLabel="name" 
+            placeholder="Group by" 
+            class="w-full md:w-14rem"
+          />
+        </div>
       </div>
       
-      <!-- Simple Mode Display -->
+      <!-- Simple View (Non-Interactive) -->
       <div v-if="!isInteractive">
+        <!-- Invoice Summary Section -->
         <div class="grid">
           <div class="col-12 md:col-6">
             <div class="flex flex-column gap-3">
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Number:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Number:</span>
                 <span>{{ selectedInvoice.number }}</span>
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Customer:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Customer:</span>
                 <span>{{ selectedInvoice.customerName }}</span>
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Issue Date:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Issue Date:</span>
                 <span>{{ formatDate(selectedInvoice.issueDate) }}</span>
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Due Date:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Due Date:</span>
                 <span>{{ formatDate(selectedInvoice.dueDate) }}</span>
               </div>
             </div>
           </div>
           <div class="col-12 md:col-6">
             <div class="flex flex-column gap-3">
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Status:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Status:</span>
                 <Tag 
                   :value="formatStatus(selectedInvoice.status)" 
                   :severity="getStatusSeverity(selectedInvoice.status)" 
                 />
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Total:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Total:</span>
                 <span>{{ formatCurrency(selectedInvoice.total) }}</span>
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Paid Amount:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Paid Amount:</span>
                 <span>{{ formatCurrency(selectedInvoice.paidAmount) }}</span>
               </div>
-              <div class="flex">
-                <label class="font-bold text-900 w-10rem">Balance:</label>
+              <div class="flex align-items-center">
+                <span class="font-bold text-900 w-10rem">Balance:</span>
                 <span class="font-bold">{{ formatCurrency(selectedInvoice.remainingAmount) }}</span>
               </div>
             </div>
           </div>
         </div>
         
-        <h3 class="mt-5">Invoice Items</h3>
+        <!-- Invoice Line Items -->
+        <h3>Invoice Items</h3>
         <DataTable 
           :value="products" 
           stripedRows 
           showGridlines 
-          responsiveLayout="scroll"
-          class="mb-5"
+          class="p-datatable-sm"
         >
           <Column field="description" header="Description"></Column>
           <Column field="quantity" header="Quantity" style="width: 10%"></Column>
@@ -584,45 +646,39 @@ function getStatusSeverity(status) {
         </DataTable>
       </div>
       
-      <!-- Interactive Mode Display -->
+      <!-- Interactive View -->
       <div v-else>
-        <div class="flex justify-content-between align-items-center mb-4">
-          <Dropdown 
-            v-model="selectedGroupBy" 
-            :options="groupByOptions" 
-            optionLabel="name" 
-            placeholder="Group by" 
-            class="w-full md:w-14rem"
-          />
-        </div>
-        
+        <!-- Loading State -->
         <div v-if="isLoadingEnrichedData || isRegrouping" class="flex flex-column align-items-center py-5">
           <i class="pi pi-spin pi-spinner text-5xl text-primary mb-4"></i>
           <span>Processing invoice data...</span>
         </div>
         
+        <!-- Error State -->
         <div v-else-if="enrichedError" class="p-4 border-round bg-red-50 text-red-700 my-4">
           <i class="pi pi-exclamation-triangle mr-2"></i>
           <span>Failed to load enriched invoice data. Please try again later.</span>
         </div>
         
+        <!-- Grouped Data Display -->
         <div v-else>
-          <TabView v-if="selectedGroupBy.value !== 'none'">
-            <TabPanel v-for="(group, index) in groupNames" :key="index" :header="group">
+          <!-- When grouping is applied -->
+          <TabView v-if="selectedGroupBy.value !== 'none' && groupNames.length > 0">
+            <TabPanel v-for="(groupName, i) in groupNames" :key="i" :header="groupName">
               <DataTable 
-                :value="groupedProducts[index]" 
+                :value="groupedProducts[i]" 
                 stripedRows 
                 showGridlines 
-                responsiveLayout="scroll"
+                class="p-datatable-sm"
               >
                 <Column field="description" header="Description"></Column>
-                <Column field="quantity" header="Quantity" style="width: 10%"></Column>
-                <Column field="rate" header="Rate" style="width: 15%">
+                <Column field="quantity" header="Quantity" style="width: 8%"></Column>
+                <Column field="rate" header="Rate" style="width: 12%">
                   <template #body="{ data }">
                     {{ formatCurrency(data.rate) }}
                   </template>
                 </Column>
-                <Column field="amount" header="Amount" style="width: 15%">
+                <Column field="amount" header="Amount" style="width: 12%">
                   <template #body="{ data }">
                     {{ formatCurrency(data.amount) }}
                   </template>
@@ -634,21 +690,22 @@ function getStatusSeverity(status) {
             </TabPanel>
           </TabView>
           
+          <!-- When no grouping is applied -->
           <DataTable 
             v-else
             :value="groupedProducts" 
             stripedRows 
             showGridlines 
-            responsiveLayout="scroll"
+            class="p-datatable-sm"
           >
             <Column field="description" header="Description"></Column>
-            <Column field="quantity" header="Quantity" style="width: 10%"></Column>
-            <Column field="rate" header="Rate" style="width: 15%">
+            <Column field="quantity" header="Quantity" style="width: 8%"></Column>
+            <Column field="rate" header="Rate" style="width: 12%">
               <template #body="{ data }">
                 {{ formatCurrency(data.rate) }}
               </template>
             </Column>
-            <Column field="amount" header="Amount" style="width: 15%">
+            <Column field="amount" header="Amount" style="width: 12%">
               <template #body="{ data }">
                 {{ formatCurrency(data.amount) }}
               </template>
@@ -661,21 +718,19 @@ function getStatusSeverity(status) {
       </div>
     </div>
     
+    <!-- Loading State for Invoice Selection -->
     <div v-else-if="selectedCustomerInvoice" class="flex flex-column align-items-center p-5">
       <i class="pi pi-spin pi-spinner text-5xl text-primary mb-4"></i>
       <span>Loading invoice details...</span>
     </div>
   </div>
   
+  <!-- Toast for notifications -->
   <Toast position="bottom-right" group="invoice-bottom" />
 </template>
 
 <style scoped>
-.p-dropdown-label {
-  display: flex;
-  align-items: center;
-}
-
+/* Customer badge styling */
 .customer-badge {
   border-radius: 2px;
   padding: 0.25em 0.5rem;
@@ -684,16 +739,29 @@ function getStatusSeverity(status) {
   letter-spacing: 0.3px;
 }
 
-.status-badge {
-  border-radius: 2px;
-  padding: 0.25em 0.5rem;
-  text-transform: uppercase;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.3px;
+/* Input styling */
+.p-input-icon-left {
+  width: 100%;
 }
 
 .p-inputtext {
   width: 100%;
+}
+
+/* Custom overflow handling for tables */
+.max-h-20rem {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+/* PrimeVue component overrides */
+:deep(.p-multiselect-token) {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.p-tabview-panels) {
+  padding: 1.25rem 0 !important;
 }
 </style> 
