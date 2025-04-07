@@ -40,6 +40,11 @@ const model = ref([
                 label: 'Invoicing',
                 icon: 'pi pi-fw pi-dollar',
                 to: '/accounting/invoicing'
+            },
+            {
+                label: 'Invoice Templates',
+                icon: 'pi pi-fw pi-file',
+                to: '/accounting/invoice-templates'
             }
         ]
     },

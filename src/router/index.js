@@ -378,6 +378,14 @@ const routes = [
                 component: () => import('@/views/accounting/Invoicing.vue')
             },
             {
+                path: '/accounting/invoice-templates',
+                name: 'accounting-invoice-templates',
+                meta: {
+                    breadcrumb: ['Accounting', 'Invoice Templates']
+                },
+                component: () => import('@/views/accounting/InvoiceTemplates.vue')
+            },
+            {
                 path: '/reporting/report-manager',
                 name: 'reporting-report-manager',
                 meta: {
