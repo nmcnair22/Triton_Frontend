@@ -10,6 +10,20 @@ import Select from 'primevue/select';
 import Chart from 'primevue/chart';
 import Button from 'primevue/button';
 import { useLayout } from '@/layout/composables/layout';
+import { Chart as ChartJS } from 'chart.js';
+
+// Optional import of ChartDataLabels - will use if available
+let ChartDataLabels;
+try {
+  ChartDataLabels = require('chartjs-plugin-datalabels');
+  if (ChartDataLabels.default) {
+    ChartDataLabels = ChartDataLabels.default;
+  }
+  // Register Chart.js plugins if available
+  ChartJS.register(ChartDataLabels);
+} catch (e) {
+  console.warn('chartjs-plugin-datalabels not available, labels will not be shown');
+}
 
 // Initialize the layout
 const { layoutConfig, isDarkTheme } = useLayout();
@@ -372,9 +386,37 @@ function setupChartData() {
   const textColor = documentStyle.getPropertyValue('--text-color');
   const textColorSecondary = documentStyle.getPropertyValue('--text-muted-color');
   const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
+  const fontFamily = documentStyle.getPropertyValue('--font-family');
   
   // Update customer stats based on customer invoices
   updateCustomerStats();
+  
+  // Create gradients for pie chart
+  const ctx = document.createElement('canvas').getContext('2d');
+  
+  const createGradient = (colorStart, colorEnd) => {
+    if (!ctx) return colorStart;
+    const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+    gradient.addColorStop(0, colorStart);
+    gradient.addColorStop(1, colorEnd);
+    return gradient;
+  };
+  
+  // Gradient colors for pie chart
+  const paidGradient = createGradient(
+    documentStyle.getPropertyValue('--p-green-400'),
+    documentStyle.getPropertyValue('--p-green-600')
+  );
+  
+  const openGradient = createGradient(
+    documentStyle.getPropertyValue('--p-blue-400'),
+    documentStyle.getPropertyValue('--p-blue-600')
+  );
+  
+  const overdueGradient = createGradient(
+    documentStyle.getPropertyValue('--p-red-400'),
+    documentStyle.getPropertyValue('--p-red-600')
+  );
   
   // Invoice Status Pie Chart
   invoiceStatusData.value = {
@@ -387,59 +429,108 @@ function setupChartData() {
           customerStats.totalOverdue
         ],
         backgroundColor: [
-          documentStyle.getPropertyValue('--p-green-500'),
-          documentStyle.getPropertyValue('--p-blue-500'),
-          documentStyle.getPropertyValue('--p-red-500')
+          paidGradient,
+          openGradient,
+          overdueGradient
         ],
         hoverBackgroundColor: [
-          documentStyle.getPropertyValue('--p-green-400'),
-          documentStyle.getPropertyValue('--p-blue-400'),
-          documentStyle.getPropertyValue('--p-red-400')
-        ]
+          documentStyle.getPropertyValue('--p-green-300'),
+          documentStyle.getPropertyValue('--p-blue-300'),
+          documentStyle.getPropertyValue('--p-red-300')
+        ],
+        borderColor: 'white',
+        borderWidth: 1
       }
     ]
   };
 
+  // Base options for the pie chart
   invoiceStatusOptions.value = {
-    cutout: '50%',
+    cutout: '60%',
     plugins: {
       legend: {
+        display: true,
+        position: 'bottom',
         labels: {
           usePointStyle: true,
           color: textColor,
           font: {
-            weight: 'bold'
-          }
-        },
-        position: 'bottom'
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return `${context.label}: ${formatCurrency(context.raw)}`;
+            family: fontFamily || "'Inter', sans-serif",
+            size: 11,
+            weight: '500'
+          },
+          padding: 10,
+          boxWidth: 8,
+          boxHeight: 8,
+          generateLabels: function(chart) {
+            const data = chart.data;
+            if (data.labels.length && data.datasets.length) {
+              const dataset = data.datasets[0];
+              const total = dataset.data.reduce((acc, value) => acc + value, 0);
+              
+              return data.labels.map((label, i) => {
+                const value = dataset.data[i];
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                // Use 1 decimal place max for the currency display in legend
+                const formattedValue = formatCurrency(value, true, 1);
+                
+                return {
+                  text: `${label}: ${formattedValue} (${percentage}%)`,
+                  fillStyle: dataset.backgroundColor[i],
+                  strokeStyle: dataset.borderColor,
+                  lineWidth: dataset.borderWidth,
+                  pointStyle: 'circle',
+                  hidden: false,
+                  index: i
+                };
+              });
+            }
+            return [];
           }
         }
       },
-      datalabels: {
-        formatter: (value, ctx) => {
-          let sum = 0;
-          let dataArr = ctx.chart.data.datasets[0].data;
-          dataArr.forEach(data => {
-            sum += data;
-          });
-          let percentage = sum === 0 ? 0 : (value*100 / sum).toFixed(1) + "%";
-          return percentage;
+      tooltip: {
+        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 12,
+          weight: '600'
         },
-        color: '#ffffff',
-        font: {
-          weight: 'bold'
+        bodyFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 11
+        },
+        callbacks: {
+          label: function(context) {
+            const value = context.raw;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+            // Use 1 decimal place max for the currency display in tooltip
+            return `${context.label}: ${formatCurrency(value, true, 1)} (${percentage}%)`;
+          }
         }
       }
     },
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: 10
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
   };
-
+  
+  // Add datalabels plugin configuration if available - but we're setting display to false
+  if (typeof ChartDataLabels !== 'undefined') {
+    invoiceStatusOptions.value.plugins.datalabels = {
+      display: false // Turn off datalabels in favor of tooltips and legend
+    };
+  }
+  
   // 6 Month Payment History Line Chart
   const months = getLast6Months();
   
@@ -448,31 +539,68 @@ function setupChartData() {
   const openData = months.map(() => Math.floor(Math.random() * 5000));
   const overdueData = months.map(() => Math.floor(Math.random() * 2000));
   
+  // Create gradient backgrounds for line charts
+  const paidBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-green-400') + '20', // 20 is hex for 12% opacity
+    'rgba(0, 0, 0, 0)'
+  );
+  
+  const openBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-blue-400') + '20',
+    'rgba(0, 0, 0, 0)'
+  );
+  
+  const overdueBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-red-400') + '20',
+    'rgba(0, 0, 0, 0)'
+  );
+  
   paymentHistoryData.value = {
     labels: months,
     datasets: [
       {
         label: 'Paid',
         data: paidData,
-        fill: false,
+        fill: true,
+        backgroundColor: paidBgGradient,
         borderColor: documentStyle.getPropertyValue('--p-green-500'),
-        backgroundColor: documentStyle.getPropertyValue('--p-green-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-green-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-green-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
         tension: 0.4
       },
       {
         label: 'Open',
         data: openData,
-        fill: false,
+        fill: true,
+        backgroundColor: openBgGradient,
         borderColor: documentStyle.getPropertyValue('--p-blue-500'),
-        backgroundColor: documentStyle.getPropertyValue('--p-blue-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-blue-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-blue-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
         tension: 0.4
       },
       {
         label: 'Overdue',
         data: overdueData,
-        fill: false,
+        fill: true,
+        backgroundColor: overdueBgGradient,
         borderColor: documentStyle.getPropertyValue('--p-red-500'),
-        backgroundColor: documentStyle.getPropertyValue('--p-red-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-red-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-red-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
         tension: 0.4
       }
     ]
@@ -481,15 +609,43 @@ function setupChartData() {
   paymentHistoryOptions.value = {
     plugins: {
       legend: {
+        display: true,
+        position: 'bottom',
+        align: 'center',
         labels: {
-          color: textColor
-        },
-        position: 'bottom'
+          usePointStyle: true,
+          color: textColor,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 11,
+            weight: '500'
+          },
+          padding: 15,
+          boxWidth: 8,
+          boxHeight: 8
+        }
       },
       tooltip: {
+        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
+        titleColor: documentStyle.getPropertyValue('--text-color'),
+        bodyColor: documentStyle.getPropertyValue('--text-color'),
+        borderColor: documentStyle.getPropertyValue('--surface-border'),
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 6,
+        titleFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 12,
+          weight: '600'
+        },
+        bodyFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 11
+        },
         callbacks: {
           label: function(context) {
-            return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+            // Use 1 decimal place max for the currency display in tooltip
+            return `${context.dataset.label}: ${formatCurrency(context.raw, true, 1)}`;
           }
         }
       }
@@ -497,28 +653,53 @@ function setupChartData() {
     scales: {
       x: {
         ticks: {
-          color: textColorSecondary
+          color: textColorSecondary,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 10
+          }
         },
         grid: {
-          color: surfaceBorder,
+          color: surfaceBorder + '30', // 30 is hex for 18% opacity
+          display: true,
           drawBorder: false
         }
       },
       y: {
         ticks: {
           color: textColorSecondary,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 10
+          },
           callback: function(value) {
-            return formatCurrency(value, false);
-          }
+            // Format with no more than 1 decimal place
+            return formatCurrency(value, false, 1);
+          },
+          maxTicksLimit: 5
         },
         grid: {
-          color: surfaceBorder,
+          color: surfaceBorder + '40', // 40 is hex for 25% opacity
+          display: true,
           drawBorder: false
-        }
+        },
+        beginAtZero: true
       }
     },
     responsive: true,
-    maintainAspectRatio: false
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    animations: {
+      tension: {
+        duration: 1000,
+        easing: 'easeOutQuad',
+        from: 0.8,
+        to: 0.4
+      }
+    }
   };
 }
 
@@ -900,7 +1081,7 @@ watch(customerInvoices, () => {
                             </div>
                         </div>
                         <Divider />
-                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap sm:flex-row flex-col">
+                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap-reverse">
                             <div class="flex-1">
                                 <div class="label-medium text-surface-500">Bill To:</div>
                                 <div class="mt-2 label-medium">{{ selectedInvoice?.customer?.company || '' }}</div>

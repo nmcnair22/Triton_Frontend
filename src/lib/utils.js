@@ -285,23 +285,38 @@ export const formatDate = (date, format = 'mm/dd/yyyy') => {
 /**
  * Format a number as currency with proper thousand separators
  * @param {number} amount - The amount to format
+ * @param {boolean} showSymbol - Whether to show the currency symbol
+ * @param {number} maxDecimals - Maximum number of decimal places
  * @param {string} [currency='USD'] - The currency to use
  * @param {string} [locale='en-US'] - The locale to use
  * @returns {string} The formatted currency or empty string if invalid
  */
-export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
-  if (amount === null || amount === undefined) return '';
+export const formatCurrency = (amount, showSymbol = true, maxDecimals = 2, currency = 'USD', locale = 'en-US') => {
+  if (amount === null || amount === undefined) {
+    return showSymbol ? '$0.00' : '0.00';
+  }
   
   try {
-    return new Intl.NumberFormat(locale, {
+    // Format with Intl.NumberFormat for consistent formatting
+    const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: maxDecimals
+    });
+    
+    const formatted = formatter.format(amount);
+    
+    // If we don't want to show the currency symbol, remove it
+    if (!showSymbol) {
+      return formatted.replace(/[^\d.,]/g, '').trim();
+    }
+    
+    return formatted;
   } catch (e) {
-    console.error('Error formatting currency:', e);
-    return '';
+    // Fallback simple formatting if Intl is not supported
+    const value = parseFloat(amount).toFixed(maxDecimals);
+    return showSymbol ? `$${value}` : value;
   }
 };
 
