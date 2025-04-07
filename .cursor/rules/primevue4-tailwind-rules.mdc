@@ -1,0 +1,134 @@
+---
+description: when styling a page or adding components
+globs: 
+alwaysApply: false
+---
+---
+glob: **/*.vue
+---
+
+# Styling Guidelines for PrimeVue 4 with Tailwind CSS
+
+This document provides detailed guidelines for styling PrimeVue 4 components using Tailwind CSS in this project. The project operates in styled mode with the `tailwindcss-primeui` plugin, ensuring seamless integration between PrimeVue's theme and Tailwind's utility-first approach. These rules aim to address previous styling inconsistencies by enforcing clear standards and providing actionable examples.
+
+## Layout and Spacing
+
+- Use Tailwind's utility classes for layout (e.g., `flex`, `grid`, `gap-[size]`, `p-[size]`, `m-[size]`) to structure components responsively.
+- Prefer grid layouts for multi-column designs and flexbox for alignment within rows or columns.
+- Maintain consistent spacing with `gap-4` for grids and `p-4` for padding unless specified otherwise.
+
+- **Example (Dashboard Grid Layout):**
+  ```html
+  <div class="grid grid-cols-12 gap-4">
+    <div v-for="(metric, i) in metrics" :key="i" class="col-span-12 md:col-span-6 lg:col-span-3">
+      <div class="card h-full">
+        <!-- content -->
+      </div>
+    </div>
+  </div>
+
+  Colors
+Use tailwindcss-primeui utility classes to align with PrimeVue's design tokens:
+Backgrounds: bg-primary-[50-950], bg-surface-[0-950] (e.g., bg-surface-100).
+
+Text: text-primary-[50-950], text-surface-[0-950] (e.g., text-surface-900).
+
+Borders: border-primary-[50-950], border-surface-[0-950] (e.g., border-surface-200).
+
+These classes ensure consistency with PrimeVue's theme and adapt to dark mode automatically.
+
+Example (Blog Card Styling):
+<div class="p-4 border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-700 rounded">
+  <!-- content -->
+</div>
+
+Customizing PrimeVue Components
+Use the passthrough (pt) feature to apply Tailwind classes to specific parts of PrimeVue components.
+
+Common adjustments include hiding elements (!hidden), setting widths (w-full), or overriding styles with ! for specificity.
+
+Refer to PrimeVue documentation for each component’s pt structure.
+<FileUpload
+  :pt="{
+    header: { class: '!hidden' },
+    root: { class: 'w-full !border-0' }
+  }"
+/>
+
+Theme Consistency in Configurations
+For JavaScript-driven configurations (e.g., charts), use documentStyle.getPropertyValue to fetch PrimeVue theme variables (e.g., --p-primary-600) instead of hardcoding colors.
+
+This ensures colors adapt to theme changes and dark mode.
+chartData.value = {
+  datasets: [
+    {
+      data: [300, 100],
+      backgroundColor: [
+        documentStyle.getPropertyValue('--p-primary-600'),
+        documentStyle.getPropertyValue('--p-primary-100')
+      ],
+      hoverBackgroundColor: [
+        documentStyle.getPropertyValue('--p-primary-700'),
+        documentStyle.getPropertyValue('--p-primary-200')
+      ],
+      borderColor: 'transparent'
+    }
+  ]
+};
+
+Dark Mode
+Rely on tailwindcss-primeui classes for automatic dark mode support (e.g., dark:bg-surface-700).
+
+For custom colors outside the plugin’s palette, use Tailwind’s dark: variant explicitly.
+
+Example (Text and Background):
+<span class="text-surface-900 dark:text-surface-0 bg-surface-100 dark:bg-surface-700">
+  <!-- content -->
+</span>
+
+Custom CSS
+Minimize custom CSS; use Tailwind classes whenever possible for consistency and maintainability.
+
+When custom CSS is unavoidable, scope it with <style scoped> and limit it to specific overrides (e.g., hover effects).
+
+Example (Hover Effect):
+<style scoped lang="scss">
+.remove-file-wrapper:hover {
+  .remove-button {
+    display: flex !important;
+  }
+}
+</style>
+Additional Guidelines
+Component Styling Patterns:
+Cards: Use card class with p-4 and rounded for consistency, as in your dashboard metrics.
+
+Buttons: Combine PrimeVue’s Button with Tailwind utilities like flex-1 or w-full for layout control.
+
+Lists: Style with list-none p-0 m-0 and add rounded and p-4 for items, as in your categories list.
+
+Responsive Design:
+Use Tailwind’s responsive prefixes (e.g., md:col-span-6, lg:col-span-3) to adapt layouts across breakpoints, as seen in your dashboard.
+
+File References:
+For additional context, refer to @file tailwind.config.js for plugin setup and @file src/assets/style.css for CSS layer order (tailwind-base, primevue, tailwind-utilities).
+
+Example: Full Component Styling (Metrics Card)
+
+<div class="col-span-12 md:col-span-6 lg:col-span-3">
+  <div class="card h-full">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-surface-900 dark:text-surface-0 text-xl font-semibold">{{ metric.title }}</span>
+      <Button @click="toggleMenuItem($event, i)" :icon="metric.icon" size="small" text rounded />
+    </div>
+    <div class="rounded bg-primary-500" :style="{ height: '6px' }">
+      <div class="!h-full rounded bg-primary-700" :style="{ width: '34%' }" />
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="text-surface-900 dark:text-surface-0 mt-4 text-md font-medium">{{ metric.files }}</span>
+      <span class="text-surface-900 dark:text-surface-0 mt-4 text-md font-medium">{{ metric.fileSize }}</span>
+    </div>
+  </div>
+</div>
+
+
