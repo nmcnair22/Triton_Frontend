@@ -6,6 +6,27 @@ import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 import { useToast } from 'primevue/usetoast';
 import ToggleSwitch from 'primevue/toggleswitch';
+import Select from 'primevue/select';
+import Chart from 'primevue/chart';
+import Button from 'primevue/button';
+import { useLayout } from '@/layout/composables/layout';
+import { Chart as ChartJS } from 'chart.js';
+
+// Optional import of ChartDataLabels - will use if available
+let ChartDataLabels;
+try {
+  ChartDataLabels = require('chartjs-plugin-datalabels');
+  if (ChartDataLabels.default) {
+    ChartDataLabels = ChartDataLabels.default;
+  }
+  // Register Chart.js plugins if available
+  ChartJS.register(ChartDataLabels);
+} catch (e) {
+  console.warn('chartjs-plugin-datalabels not available, labels will not be shown');
+}
+
+// Initialize the layout
+const { layoutConfig, isDarkTheme } = useLayout();
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -28,12 +49,32 @@ const products = ref([]);
 
 // Customer selection and invoices table
 const customers = computed(() => customerStore.customers);
-const selectedCustomers = ref(null);
+const selectedCustomer = ref(null);
 const customerInvoices = computed(() => invoiceStore.customerInvoices || []);
 const selectedCustomerInvoice = ref(null);
 const isLoadingCustomers = computed(() => customerStore.loading);
 const customerError = computed(() => customerStore.error);
 const isLoadingCustomerInvoices = computed(() => invoiceStore.loadingCustomerInvoices);
+
+// Chart data loading state
+const isLoadingChartData = ref(false);
+
+// Dashboard customer stats
+const customerStats = reactive({
+  totalOpen: 0,
+  totalPaid: 0,
+  totalOverdue: 0,
+  overdueCount: 0,
+  avgDaysToPay: 0,
+  openChange: 5, // Example values
+  paidChange: 10 // Example values
+});
+
+// Chart data and options
+const invoiceStatusData = ref(null);
+const invoiceStatusOptions = ref(null);
+const paymentHistoryData = ref(null);
+const paymentHistoryOptions = ref(null);
 
 // Filters for the invoice table
 const filters = ref({
@@ -106,7 +147,7 @@ async function loadCustomers() {
     }
     
     // Clear any previously selected customers when the list changes
-    selectedCustomers.value = null;
+    selectedCustomer.value = null;
   } catch (err) {
     console.error('Failed to load customers:', err);
   }
@@ -119,17 +160,15 @@ function onCustomerListTypeChange() {
 
 // Function to load customer invoices
 async function loadCustomerInvoices() {
-  if (!selectedCustomers.value || selectedCustomers.value.length === 0) {
+  if (!selectedCustomer.value) {
     return;
   }
   
   try {
-    // Build a filter query for multiple customer selections using 'or' conditions
-    const filterConditions = selectedCustomers.value.map(customer => 
-      `customerId eq ${customer.id}`
-    ).join(' or ');
+    // Build a filter query for the selected customer
+    const filterCondition = `customerId eq ${selectedCustomer.value.id}`;
     
-    await invoiceStore.fetchCustomerInvoices(filterConditions, {
+    await invoiceStore.fetchCustomerInvoices(filterCondition, {
       page: lazyParams.page,
       limit: lazyParams.rows,
       sortField: lazyParams.sortField,
@@ -146,6 +185,7 @@ async function loadCustomerInvoices() {
 function onCustomerChange() {
   selectedCustomerInvoice.value = null;
   loadCustomerInvoices();
+  refreshChartData();
 }
 
 // Handle pagination, sorting, filtering
@@ -326,6 +366,414 @@ watch(selectedInvoice, (newInvoice) => {
     fetchEnrichedInvoiceData(newInvoice.number || newInvoice.id);
   }
 });
+
+// Function to refresh chart data
+function refreshChartData() {
+  if (!selectedCustomer.value) return;
+  
+  isLoadingChartData.value = true;
+  
+  // This would ideally fetch real data from the API
+  setTimeout(() => {
+    setupChartData();
+    isLoadingChartData.value = false;
+  }, 500);
+}
+
+// Setup chart data with computed styles
+function setupChartData() {
+  const documentStyle = getComputedStyle(document.documentElement);
+  const textColor = documentStyle.getPropertyValue('--text-color');
+  const textColorSecondary = documentStyle.getPropertyValue('--text-muted-color');
+  const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
+  const fontFamily = documentStyle.getPropertyValue('--font-family');
+  
+  // Update customer stats based on customer invoices
+  updateCustomerStats();
+  
+  // Create gradients for pie chart
+  const ctx = document.createElement('canvas').getContext('2d');
+  
+  const createGradient = (colorStart, colorEnd) => {
+    if (!ctx) return colorStart;
+    const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+    gradient.addColorStop(0, colorStart);
+    gradient.addColorStop(1, colorEnd);
+    return gradient;
+  };
+  
+  // Gradient colors for pie chart
+  const paidGradient = createGradient(
+    documentStyle.getPropertyValue('--p-green-400'),
+    documentStyle.getPropertyValue('--p-green-600')
+  );
+  
+  const openGradient = createGradient(
+    documentStyle.getPropertyValue('--p-blue-400'),
+    documentStyle.getPropertyValue('--p-blue-600')
+  );
+  
+  const overdueGradient = createGradient(
+    documentStyle.getPropertyValue('--p-red-400'),
+    documentStyle.getPropertyValue('--p-red-600')
+  );
+  
+  // Invoice Status Pie Chart
+  invoiceStatusData.value = {
+    labels: ['Paid', 'Open', 'Overdue'],
+    datasets: [
+      {
+        data: [
+          customerStats.totalPaid,
+          customerStats.totalOpen - customerStats.totalOverdue,
+          customerStats.totalOverdue
+        ],
+        backgroundColor: [
+          paidGradient,
+          openGradient,
+          overdueGradient
+        ],
+        hoverBackgroundColor: [
+          documentStyle.getPropertyValue('--p-green-300'),
+          documentStyle.getPropertyValue('--p-blue-300'),
+          documentStyle.getPropertyValue('--p-red-300')
+        ],
+        borderColor: 'white',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  // Base options for the pie chart
+  invoiceStatusOptions.value = {
+    cutout: '60%',
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          color: textColor,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 11,
+            weight: '500'
+          },
+          padding: 10,
+          boxWidth: 8,
+          boxHeight: 8,
+          generateLabels: function(chart) {
+            const data = chart.data;
+            if (data.labels.length && data.datasets.length) {
+              const dataset = data.datasets[0];
+              const total = dataset.data.reduce((acc, value) => acc + value, 0);
+              
+              return data.labels.map((label, i) => {
+                const value = dataset.data[i];
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                // Use 1 decimal place max for the currency display in legend
+                const formattedValue = formatCurrency(value, true, 1);
+                
+                return {
+                  text: `${label}: ${formattedValue} (${percentage}%)`,
+                  fillStyle: dataset.backgroundColor[i],
+                  strokeStyle: dataset.borderColor,
+                  lineWidth: dataset.borderWidth,
+                  pointStyle: 'circle',
+                  hidden: false,
+                  index: i
+                };
+              });
+            }
+            return [];
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 12,
+          weight: '600'
+        },
+        bodyFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 11
+        },
+        callbacks: {
+          label: function(context) {
+            const value = context.raw;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+            // Use 1 decimal place max for the currency display in tooltip
+            return `${context.label}: ${formatCurrency(value, true, 1)} (${percentage}%)`;
+          }
+        }
+      }
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: {
+      padding: 10
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
+  };
+  
+  // Add datalabels plugin configuration if available - but we're setting display to false
+  if (typeof ChartDataLabels !== 'undefined') {
+    invoiceStatusOptions.value.plugins.datalabels = {
+      display: false // Turn off datalabels in favor of tooltips and legend
+    };
+  }
+  
+  // 6 Month Payment History Line Chart
+  const months = getLast6Months();
+  
+  // Generate sample data for the past 6 months
+  const paidData = months.map(() => Math.floor(Math.random() * 10000));
+  const openData = months.map(() => Math.floor(Math.random() * 5000));
+  const overdueData = months.map(() => Math.floor(Math.random() * 2000));
+  
+  // Create gradient backgrounds for line charts
+  const paidBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-green-400') + '20', // 20 is hex for 12% opacity
+    'rgba(0, 0, 0, 0)'
+  );
+  
+  const openBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-blue-400') + '20',
+    'rgba(0, 0, 0, 0)'
+  );
+  
+  const overdueBgGradient = createGradient(
+    documentStyle.getPropertyValue('--p-red-400') + '20',
+    'rgba(0, 0, 0, 0)'
+  );
+  
+  paymentHistoryData.value = {
+    labels: months,
+    datasets: [
+      {
+        label: 'Paid',
+        data: paidData,
+        fill: true,
+        backgroundColor: paidBgGradient,
+        borderColor: documentStyle.getPropertyValue('--p-green-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-green-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-green-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.4
+      },
+      {
+        label: 'Open',
+        data: openData,
+        fill: true,
+        backgroundColor: openBgGradient,
+        borderColor: documentStyle.getPropertyValue('--p-blue-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-blue-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-blue-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.4
+      },
+      {
+        label: 'Overdue',
+        data: overdueData,
+        fill: true,
+        backgroundColor: overdueBgGradient,
+        borderColor: documentStyle.getPropertyValue('--p-red-500'),
+        borderWidth: 2,
+        pointBackgroundColor: documentStyle.getPropertyValue('--p-red-500'),
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: documentStyle.getPropertyValue('--p-red-500'),
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.4
+      }
+    ]
+  };
+
+  paymentHistoryOptions.value = {
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        align: 'center',
+        labels: {
+          usePointStyle: true,
+          color: textColor,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 11,
+            weight: '500'
+          },
+          padding: 15,
+          boxWidth: 8,
+          boxHeight: 8
+        }
+      },
+      tooltip: {
+        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
+        titleColor: '#FFFFFF',
+        bodyColor: '#FFFFFF',
+        borderColor: documentStyle.getPropertyValue('--surface-border'),
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 6,
+        titleFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 12,
+          weight: '600'
+        },
+        bodyFont: {
+          family: fontFamily || "'Inter', sans-serif",
+          size: 11
+        },
+        callbacks: {
+          label: function(context) {
+            // Use 1 decimal place max for the currency display in tooltip
+            return `${context.dataset.label}: ${formatCurrency(context.raw, true, 1)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: textColorSecondary,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 10
+          }
+        },
+        grid: {
+          color: surfaceBorder + '30', // 30 is hex for 18% opacity
+          display: true,
+          drawBorder: false
+        }
+      },
+      y: {
+        ticks: {
+          color: textColorSecondary,
+          font: {
+            family: fontFamily || "'Inter', sans-serif",
+            size: 10
+          },
+          callback: function(value) {
+            // Format with no more than 1 decimal place
+            return formatCurrency(value, false, 1);
+          },
+          maxTicksLimit: 5
+        },
+        grid: {
+          color: surfaceBorder + '40', // 40 is hex for 25% opacity
+          display: true,
+          drawBorder: false
+        },
+        beginAtZero: true
+      }
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    animations: {
+      tension: {
+        duration: 1000,
+        easing: 'easeOutQuad',
+        from: 0.8,
+        to: 0.4
+      }
+    }
+  };
+}
+
+// Function to get last 6 months names
+function getLast6Months() {
+  const months = [];
+  const date = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const month = new Date(date.getFullYear(), date.getMonth() - i, 1);
+    months.push(month.toLocaleString('default', { month: 'short' }));
+  }
+  return months;
+}
+
+// Update customer stats based on selected customer's invoices
+function updateCustomerStats() {
+  if (!customerInvoices.value || customerInvoices.value.length === 0) {
+    // Set default values if no invoices
+    customerStats.totalOpen = 0;
+    customerStats.totalPaid = 0;
+    customerStats.totalOverdue = 0;
+    customerStats.overdueCount = 0;
+    customerStats.avgDaysToPay = 0;
+    return;
+  }
+
+  // Calculate total open and paid amounts
+  let openAmount = 0;
+  let paidAmount = 0;
+  let overdueAmount = 0;
+  let overdueCount = 0;
+  
+  // Current date for overdue calculation
+  const currentDate = new Date();
+
+  customerInvoices.value.forEach(invoice => {
+    if (invoice.status === 'paid') {
+      paidAmount += invoice.total;
+    } else {
+      openAmount += invoice.total;
+      
+      // Check if invoice is overdue
+      const dueDate = new Date(invoice.dueDate);
+      if (dueDate < currentDate) {
+        overdueAmount += invoice.remainingAmount;
+        overdueCount++;
+      }
+    }
+  });
+
+  // Update stats
+  customerStats.totalOpen = openAmount;
+  customerStats.totalPaid = paidAmount;
+  customerStats.totalOverdue = overdueAmount;
+  customerStats.overdueCount = overdueCount;
+  
+  // Calculate average days to pay (sample calculation - would be more accurate with real data)
+  customerStats.avgDaysToPay = 15; // Example value
+}
+
+// Watch for changes in selected customer or theme to update charts
+watch([selectedCustomer, () => layoutConfig.primary, isDarkTheme], () => {
+  if (selectedCustomer.value) {
+    setupChartData();
+  }
+});
+
+// Watch for changes in customer invoices to update dashboard stats
+watch(customerInvoices, () => {
+  if (customerInvoices.value && selectedCustomer.value) {
+    updateCustomerStats();
+    setupChartData();
+  }
+});
 </script>
 <template>
     <Toast position="bottom-center" group="invoice-bottom" />
@@ -335,25 +783,134 @@ watch(selectedInvoice, (newInvoice) => {
                 <h5>Invoicing</h5>
                 
                 <div class="mb-4 p-2" style="display: flex; align-items: center;">
-                    <!-- MultiSelect taking exactly 35% width -->
+                    <!-- Select taking exactly 35% width -->
                     <div style="width: 35%;">
-                        <MultiSelect 
-                            v-model="selectedCustomers" 
+                        <Select 
+                            v-model="selectedCustomer" 
                             :options="customerStore.customers" 
                             optionLabel="name" 
-                            placeholder="Select Customers"
-                            display="chip"
+                            placeholder="Select Customer"
                             filter
-                            :maxSelectedLabels="3" 
                             :disabled="isLoadingCustomers"
                             @change="onCustomerChange"
                             class="w-full" />
                     </div>
                     
-                    <!-- Fixed spacing between MultiSelect and toggle -->
+                    <!-- Fixed spacing between Select and toggle -->
                     <div style="margin-left: 2rem; display: flex; align-items: center;">
                         <label style="margin-right: 0.5rem;">Full list / Only active customers</label>
                         <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
+                    </div>
+                </div>
+                
+                <!-- Invoice Dashboard Charts - Only visible when a customer is selected -->
+                <div v-if="selectedCustomer" class="card mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-surface-900 dark:text-surface-0 text-xl font-semibold">{{ selectedCustomer.name }}'s Invoice Summary</span>
+                        <Button icon="pi pi-refresh" text rounded @click="refreshChartData" :disabled="isLoadingChartData" />
+                    </div>
+                    
+                    <div class="grid grid-cols-12 gap-4">
+                        <!-- Stats Cards - 4 cards in a 2x2 grid spanning 4 columns -->
+                        <div class="col-span-12 lg:col-span-4 xl:col-span-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Total Open -->
+                                <div class="col-span-1">
+                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Total Open</span>
+                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalOpen) }}</div>
+                                            </div>
+                                            <i class="pi pi-dollar text-green-500 text-xl"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-center">
+                                            <i class="pi pi-arrow-up text-green-500 text-xs mr-1" v-if="customerStats.openChange > 0"></i>
+                                            <i class="pi pi-arrow-down text-red-500 text-xs mr-1" v-else-if="customerStats.openChange < 0"></i>
+                                            <i class="pi pi-minus text-500 text-xs mr-1" v-else></i>
+                                            <span class="text-xs" :class="customerStats.openChange > 0 ? 'text-green-500' : (customerStats.openChange < 0 ? 'text-red-500' : 'text-500')">
+                                                {{ Math.abs(customerStats.openChange) }}% since last month
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Paid -->
+                                <div class="col-span-1">
+                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Total Paid</span>
+                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalPaid) }}</div>
+                                            </div>
+                                            <i class="pi pi-check-circle text-blue-500 text-xl"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-center">
+                                            <i class="pi pi-arrow-up text-green-500 text-xs mr-1" v-if="customerStats.paidChange > 0"></i>
+                                            <i class="pi pi-arrow-down text-red-500 text-xs mr-1" v-else-if="customerStats.paidChange < 0"></i>
+                                            <i class="pi pi-minus text-500 text-xs mr-1" v-else></i>
+                                            <span class="text-xs" :class="customerStats.paidChange > 0 ? 'text-green-500' : (customerStats.paidChange < 0 ? 'text-red-500' : 'text-500')">
+                                                {{ Math.abs(customerStats.paidChange) }}% since last month
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Overdue -->
+                                <div class="col-span-1">
+                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Overdue</span>
+                                                <div class="text-red-500 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalOverdue) }}</div>
+                                            </div>
+                                            <i class="pi pi-exclamation-circle text-red-500 text-xl"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-center">
+                                            <i class="pi pi-calendar text-500 text-xs mr-1"></i>
+                                            <span class="text-xs text-500">{{ customerStats.overdueCount }} invoice(s) overdue</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Average Days to Pay -->
+                                <div class="col-span-1">
+                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Avg Days to Pay</span>
+                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ customerStats.avgDaysToPay }} days</div>
+                                            </div>
+                                            <i class="pi pi-calendar-check text-primary text-xl"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-center">
+                                            <i class="pi pi-chart-line text-500 text-xs mr-1"></i>
+                                            <span class="text-xs text-500">Based on last 6 months</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Invoice Status Pie Chart -->
+                        <div class="col-span-12 lg:col-span-3">
+                            <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                <span class="text-surface-900 dark:text-surface-0 text-sm font-semibold">Invoice Status</span>
+                                <div style="height: 180px" class="flex justify-center">
+                                    <Chart type="pie" :data="invoiceStatusData" :options="invoiceStatusOptions" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 6 Month Payment History Line Chart -->
+                        <div class="col-span-12 lg:col-span-5 xl:col-span-6">
+                            <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                                <span class="text-surface-900 dark:text-surface-0 text-sm font-semibold">6 Month Payment History</span>
+                                <div style="height: 180px">
+                                    <Chart type="line" :data="paymentHistoryData" :options="paymentHistoryOptions" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -382,8 +939,8 @@ watch(selectedInvoice, (newInvoice) => {
                         <template #empty>
                             <div class="flex flex-column align-items-center p-5">
                                 <i class="pi pi-file text-5xl text-primary mb-3"></i>
-                                <span v-if="!selectedCustomers || selectedCustomers.length === 0" class="text-lg">Please select a customer above to view invoices</span>
-                                <span v-else class="text-lg">No invoices found for the selected customer(s)</span>
+                                <span v-if="!selectedCustomer" class="text-lg">Please select a customer above to view invoices</span>
+                                <span v-else class="text-lg">No invoices found for the selected customer</span>
                             </div>
                         </template>
                         <template #loading>Loading customer invoices...</template>
@@ -474,7 +1031,7 @@ watch(selectedInvoice, (newInvoice) => {
                     <!-- Invoice content -->
                     <div v-else-if="selectedInvoice">
                         <!-- Interactive tools panel - only shows when interactive mode is enabled -->
-                        <div v-if="isInteractive" class="mb-4 p-3 border-1 border-surface-200 dark:border-surface-700 border-round bg-surface-50 dark:bg-surface-800">
+                        <div v-if="isInteractive" class="mb-4 p-3 border-1 border-surface-200 dark:border-surface-700">
                             <h5>Interactive Tools</h5>
                             <div class="field grid">
                                 <label for="groupBy" class="col-12 md:col-2 md:mb-0 mb-2 font-medium">Group By:</label>
@@ -524,7 +1081,7 @@ watch(selectedInvoice, (newInvoice) => {
                             </div>
                         </div>
                         <Divider />
-                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap sm:flex-row flex-col">
+                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap-reverse">
                             <div class="flex-1">
                                 <div class="label-medium text-surface-500">Bill To:</div>
                                 <div class="mt-2 label-medium">{{ selectedInvoice?.customer?.company || '' }}</div>

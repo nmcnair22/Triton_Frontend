@@ -627,8 +627,8 @@ function setupChartData() {
       },
       tooltip: {
         backgroundColor: documentStyle.getPropertyValue('--surface-900'),
-        titleColor: documentStyle.getPropertyValue('--text-color'),
-        bodyColor: documentStyle.getPropertyValue('--text-color'),
+        titleColor: '#FFFFFF',
+        bodyColor: '#FFFFFF',
         borderColor: documentStyle.getPropertyValue('--surface-border'),
         borderWidth: 1,
         padding: 10,
