@@ -554,9 +554,32 @@ export const useInvoiceStore = defineStore('invoice', () => {
   // Download a generated file
   async function downloadGeneratedFile(fileId, fileType = 'pdf', subtype = null) {
     try {
-      const success = await InvoiceService.downloadGeneratedFile(fileId, fileType, subtype);
+      console.log(`Downloading file: ID=${fileId}, Type=${fileType}, Subtype=${subtype || 'none'}`);
+      
+      // For composite IDs, extract the parts
+      let jobId = fileId;
+      let actualFileType = fileType;
+      let actualSubtype = subtype;
+      
+      // Check if fileId contains our composite format (jobId_type_subtype)
+      if (typeof fileId === 'string' && fileId.includes('_')) {
+        const parts = fileId.split('_');
+        if (parts.length >= 2) {
+          jobId = parts[0];
+          actualFileType = parts[1] || fileType;
+          
+          if (parts.length > 2) {
+            actualSubtype = parts.slice(2).join('_');
+          }
+        }
+      }
+      
+      console.log(`Processed download parameters: JobID=${jobId}, ActualType=${actualFileType}, ActualSubtype=${actualSubtype || 'none'}`);
+      
+      const success = await InvoiceService.downloadGeneratedFile(jobId, actualFileType, actualSubtype);
       return success;
     } catch (err) {
+      console.error('Error downloading file:', err);
       return false;
     }
   }

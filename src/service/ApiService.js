@@ -113,7 +113,22 @@ export const InvoiceService = {
     if (invoiceNumber) {
       params.invoice_number = invoiceNumber;
     }
-    return ApiService.get('/invoice-templates/available', params);
+    console.log('getAvailableTemplates API call with params:', params);
+    console.log('API URL:', `${apiClient.defaults.baseURL}/invoice-templates/available`);
+    
+    return ApiService.get('/invoice-templates/available', params)
+      .then(response => {
+        console.log('getAvailableTemplates raw response:', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('getAvailableTemplates API error:', error);
+        console.error('Error config:', error.config);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+        }
+        throw error;
+      });
   },
   
   // Generate a document from a template for an invoice
@@ -131,6 +146,12 @@ export const InvoiceService = {
   
   // Download a generated file
   downloadGeneratedFile(jobId, fileType = 'pdf', subtype = null) {
+    // Get the current authentication token
+    const token = AuthService.getToken();
+    // Remove 'Bearer ' prefix if present
+    const tokenValue = token ? token.replace('Bearer ', '') : '';
+    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
+    
     let url = `/invoice-templates/download/${jobId}/${fileType}`;
     
     // If subtype is provided (for PDF files like 'summary', 'consolidated', etc.), add it to the URL
@@ -138,12 +159,38 @@ export const InvoiceService = {
       url += `/${subtype}`;
     }
     
+    // Add token parameter
+    url += tokenParam;
+    
     console.log('Download URL:', url);
     
-    return ApiService.get(url, { responseType: 'blob' })
+    // Determine the proper MIME type based on fileType
+    const mimeTypes = {
+      'pdf': 'application/pdf',
+      'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'word': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    };
+    
+    // Determine the proper file extension based on fileType
+    const fileExtensions = {
+      'pdf': 'pdf',
+      'excel': 'xlsx',
+      'word': 'docx'
+    };
+    
+    // Set default extension based on fileType
+    const defaultExtension = fileExtensions[fileType] || fileType;
+    
+    return ApiService.get(url, { 
+      responseType: 'blob',
+      headers: {
+        'Accept': mimeTypes[fileType] || 'application/octet-stream'
+      }
+    })
     .then(response => {
-      // Create a blob URL from the binary data
-      const blob = new Blob([response.data]);
+      // Get the blob with the correct type
+      const contentType = response.headers['content-type'] || mimeTypes[fileType] || 'application/octet-stream';
+      const blob = new Blob([response.data], { type: contentType });
       const url = window.URL.createObjectURL(blob);
       
       // Create a link and trigger the download
@@ -151,28 +198,66 @@ export const InvoiceService = {
       a.href = url;
       
       // Get filename from Content-Disposition header or use a default
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = `document.${fileType}`;
+      let filename = `document.${defaultExtension}`;
       
+      // Parse the Content-Disposition header to extract the filename
+      const contentDisposition = response.headers['content-disposition'];
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename=(.+)/);
-        if (filenameMatch && filenameMatch.length === 2) {
-          filename = filenameMatch[1];
+        // More robust regex that handles different Content-Disposition formats
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(contentDisposition);
+        
+        if (matches && matches[1]) {
+          // Clean up the filename by removing quotes if present
+          filename = matches[1].replace(/['"]/g, '').trim();
+          
+          // Ensure proper file extension
+          if (!filename.endsWith(`.${defaultExtension}`)) {
+            filename = `${filename}.${defaultExtension}`;
+          }
         }
+      } else {
+        // Use job ID and type to create a reasonable filename
+        filename = `document_${jobId}_${fileType}.${defaultExtension}`;
       }
+      
+      console.log('Download filename:', filename);
       
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
       
       return true;
+    })
+    .catch(error => {
+      console.error('Download error:', error);
+      throw error;
     });
   },
   
   // Get file preview URL
   getFilePreviewUrl(fileId, fileType = 'pdf', subtype = null) {
+    // Get the current authentication token
+    const token = AuthService.getToken();
+    // Remove 'Bearer ' prefix if present
+    const tokenValue = token ? token.replace('Bearer ', '') : '';
+    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
+    
+    console.log('Creating preview URL with token param:', {
+      fileId,
+      fileType,
+      subtype,
+      hasToken: !!tokenValue
+    });
+    
+    let url = '';
+    
     // Check if fileId contains our composite format
     if (typeof fileId === 'string' && fileId.includes('_')) {
       const parts = fileId.split('_');
@@ -184,21 +269,29 @@ export const InvoiceService = {
         // For PDF files with subtypes
         if (type === 'pdf' && parts.length > 2) {
           const subtype = parts.slice(2).join('_');
-          return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${subtype}`;
+          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${subtype}${tokenParam}`;
         }
-        
         // For Excel files with index
-        if (type === 'excel' && parts.length > 2) {
+        else if (type === 'excel' && parts.length > 2) {
           const index = parts.slice(2).join('_');
-          return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${index}`;
+          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${index}${tokenParam}`;
         }
-        
-        return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}`;
+        else {
+          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}${tokenParam}`;
+        }
+      }
+      else {
+        // Fallback to original behavior for compatibility
+        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
       }
     }
+    else {
+      // Fallback to original behavior for compatibility
+      url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
+    }
     
-    // Fallback to original behavior for compatibility
-    return `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}`;
+    console.log('Preview URL constructed:', url);
+    return url;
   },
   
   // Get all documents for a specific customer

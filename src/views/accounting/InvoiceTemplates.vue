@@ -959,6 +959,8 @@ async function downloadFile(file) {
   let fileType = 'pdf'; // default
   if (file.fileType) {
     fileType = file.fileType;
+  } else if (file.originalData?.type) {
+    fileType = file.originalData.type;
   } else if (file.filename) {
     const filename = file.filename.toLowerCase();
     if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
@@ -968,18 +970,39 @@ async function downloadFile(file) {
     } else if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
       fileType = 'word';
     }
-  } else if (file.originalData?.type) {
-    fileType = file.originalData.type;
   }
   
+  // Get the subtype/fileCategory if available (important for PDF downloads)
+  let subtype = null;
+  if (file.fileCategory) {
+    subtype = file.fileCategory;
+  } else if (file.originalData?.subtype) {
+    subtype = file.originalData.subtype;
+  } else if (typeof fileId === 'string' && fileId.includes('_') && fileId.split('_').length > 2) {
+    // Try to extract subtype from composite ID (jobId_type_subtype)
+    const parts = fileId.split('_');
+    if (parts.length > 2) {
+      subtype = parts.slice(2).join('_');
+    }
+  }
+  
+  console.log('Downloading file with:', { fileId, fileType, subtype, filename: file.filename });
+  
   try {
-    const success = await invoiceStore.downloadGeneratedFile(fileId, fileType);
+    const success = await invoiceStore.downloadGeneratedFile(fileId, fileType, subtype);
     if (!success) {
       toast.add({ 
         severity: 'error', 
         summary: 'Error', 
         detail: 'Failed to download file', 
         life: 3000 
+      });
+    } else {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Success', 
+        detail: 'File downloaded successfully', 
+        life: 2000 
       });
     }
   } catch (err) {
