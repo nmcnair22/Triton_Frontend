@@ -995,6 +995,17 @@ async function downloadFile(file) {
 function onIframeLoad(event) {
   previewError.value = false;
   
+  // Ensure the iframe takes the full container height
+  if (previewIframe.value) {
+    // Set a timeout to ensure the iframe resizes properly after content loads
+    setTimeout(() => {
+      const container = previewIframe.value.parentElement;
+      if (container && container.clientHeight) {
+        previewIframe.value.style.height = `${container.clientHeight}px`;
+      }
+    }, 100);
+  }
+  
   // Check if we got an error page by looking at the content
   try {
     const iframeDoc = previewIframe.value.contentDocument || previewIframe.value.contentWindow.document;
@@ -1435,11 +1446,18 @@ async function onCustomerSelect(event) {
                                         <div v-for="(file, index) in generatedFiles" :key="file?.id || index" 
                                              class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
                                             <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon and background -->
-                                                <div class="p-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                                                <!-- File header with icon and background, color-coded by file type -->
+                                                <div class="py-2 px-3" 
+                                                     :class="[
+                                                        file.fileType === 'excel' || (file.originalData?.type === 'excel') ? 
+                                                            'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800' : 
+                                                        file.fileType === 'pdf' || (file.originalData?.type === 'pdf') ? 
+                                                            'bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800' :
+                                                            'bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700'
+                                                     ]">
                                                     <div class="flex items-center">
-                                                        <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
-                                                        <span class="font-medium truncate flex-1">
+                                                        <i :class="[getFileIcon(file), 'text-xl mr-2']"></i>
+                                                        <span class="font-medium truncate flex-1 text-sm">
                                                             {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
                                                         </span>
                                                     </div>
@@ -1497,11 +1515,18 @@ async function onCustomerSelect(event) {
                                         <div v-for="(file, index) in customerDocuments" :key="file?.id || index" 
                                              class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
                                             <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon and background -->
-                                                <div class="p-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                                                <!-- File header with icon and background, color-coded by file type -->
+                                                <div class="py-2 px-3" 
+                                                     :class="[
+                                                        file.fileType === 'excel' || (file.originalData?.type === 'excel') ? 
+                                                            'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800' : 
+                                                        file.fileType === 'pdf' || (file.originalData?.type === 'pdf') ? 
+                                                            'bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800' :
+                                                            'bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700'
+                                                     ]">
                                                     <div class="flex items-center">
-                                                        <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
-                                                        <span class="font-medium truncate flex-1">
+                                                        <i :class="[getFileIcon(file), 'text-xl mr-2']"></i>
+                                                        <span class="font-medium truncate flex-1 text-sm">
                                                             {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
                                                         </span>
                                                     </div>
@@ -1590,6 +1615,7 @@ async function onCustomerSelect(event) {
                         @load="onIframeLoad"
                         @error="onIframeError"
                         ref="previewIframe"
+                        style="min-height: 100%;"
                     ></iframe>
                     
                     <!-- Fallback if preview fails -->
@@ -1614,3 +1640,47 @@ async function onCustomerSelect(event) {
         </div>
     </Dialog>
 </template>
+
+<style scoped>
+/* Fix for PDF preview to take up full modal height */
+:deep(.p-dialog-content) {
+  display: flex;
+  flex-direction: column;
+  height: calc(80vh - 6rem) !important; /* Account for header and footer */
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  overflow: hidden;
+}
+
+/* Ensure the iframe container takes full height */
+:deep(.p-dialog-content) > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Fix for iframe to correctly display PDF */
+iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: none;
+}
+
+/* For dark mode PDF preview contrast */
+:deep(.p-dialog) {
+  background-color: var(--surface-card);
+}
+
+/* Fix spacing for file cards */
+.file-card-header {
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure consistent spacing in file cards */
+.file-metadata {
+  min-height: 120px;
+}
+</style>
