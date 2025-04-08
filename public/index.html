@@ -45,6 +45,13 @@
                             if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
                                 console.log('Auth data in URL at root, redirecting to dashboard');
                                 window.location.href = '/';
+                            } else {
+                                // For other pages, just clear the hash but preserve history state
+                                history.replaceState(
+                                    history.state || {},
+                                    document.title,
+                                    window.location.pathname + window.location.search
+                                );
                             }
                         }
                         return;

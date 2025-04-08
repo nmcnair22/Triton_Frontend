@@ -198,7 +198,12 @@ export const AuthService = {
         localStorage.removeItem('auth_state');
         
         // Clear the URL hash to avoid it being reused or bookmarked
-        history.replaceState(null, null, ' ');
+        // But preserve the existing history state
+        history.replaceState(
+          history.state || {},
+          document.title,
+          window.location.pathname + window.location.search
+        );
         
         return { success: true };
       }
