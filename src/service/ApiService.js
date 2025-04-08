@@ -105,5 +105,109 @@ export const InvoiceService = {
   // Delete an invoice
   deleteInvoice(id) {
     return ApiService.delete(`/invoices/${id}`);
+  },
+  
+  // Get available templates for a client and optional invoice number
+  getAvailableTemplates(clientId, invoiceNumber = null) {
+    const params = { client_id: clientId };
+    if (invoiceNumber) {
+      params.invoice_number = invoiceNumber;
+    }
+    return ApiService.get('/invoice-templates/available', params);
+  },
+  
+  // Generate a document from a template for an invoice
+  generateTemplate(invoiceNumber, templateId) {
+    return ApiService.post('/invoice-templates/generate', {
+      invoice_number: invoiceNumber,
+      template_id: templateId
+    });
+  },
+  
+  // Get generated files for an invoice
+  getGeneratedFiles(invoiceNumber) {
+    return ApiService.get(`/invoice-templates/files/${invoiceNumber}`);
+  },
+  
+  // Download a generated file
+  downloadGeneratedFile(jobId, fileType = 'pdf', subtype = null) {
+    let url = `/invoice-templates/download/${jobId}/${fileType}`;
+    
+    // If subtype is provided (for PDF files like 'summary', 'consolidated', etc.), add it to the URL
+    if (subtype) {
+      url += `/${subtype}`;
+    }
+    
+    console.log('Download URL:', url);
+    
+    return ApiService.get(url, { responseType: 'blob' })
+    .then(response => {
+      // Create a blob URL from the binary data
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a link and trigger the download
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Get filename from Content-Disposition header or use a default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `document.${fileType}`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename=(.+)/);
+        if (filenameMatch && filenameMatch.length === 2) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      return true;
+    });
+  },
+  
+  // Get file preview URL
+  getFilePreviewUrl(fileId, fileType = 'pdf', subtype = null) {
+    // Check if fileId contains our composite format
+    if (typeof fileId === 'string' && fileId.includes('_')) {
+      const parts = fileId.split('_');
+      if (parts.length >= 2) {
+        // Extract jobId and file type from the composite ID
+        const jobId = parts[0];
+        const type = parts[1] || fileType;
+        
+        // For PDF files with subtypes
+        if (type === 'pdf' && parts.length > 2) {
+          const subtype = parts.slice(2).join('_');
+          return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${subtype}`;
+        }
+        
+        // For Excel files with index
+        if (type === 'excel' && parts.length > 2) {
+          const index = parts.slice(2).join('_');
+          return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${index}`;
+        }
+        
+        return `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}`;
+      }
+    }
+    
+    // Fallback to original behavior for compatibility
+    return `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}`;
+  },
+  
+  // Get all documents for a specific customer
+  getCustomerDocuments(customerNumber, limit = 50, offset = 0) {
+    return ApiService.get(`/invoice-templates/customer-documents?customer_number=${customerNumber}&limit=${limit}&offset=${offset}`);
+  },
+  
+  // Get all documents for a specific invoice
+  getInvoiceDocuments(invoiceNumber) {
+    return ApiService.get(`/invoice-templates/invoice-documents?invoice_number=${invoiceNumber}`);
   }
 }; 

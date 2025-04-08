@@ -14,6 +14,19 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const error = ref(null);
   const customerInvoicesError = ref(null);
   const enrichedInvoiceError = ref(null);
+  
+  // Template state
+  const availableTemplates = ref([]);
+  const loadingTemplates = ref(false);
+  const templatesError = ref(null);
+  const generatedFiles = ref([]);
+  const loadingGeneratedFiles = ref(false);
+  const generatedFilesError = ref(null);
+  const generatingTemplate = ref(false);
+  const generateTemplateError = ref(null);
+  const customerDocuments = ref([]);
+  const loadingCustomerDocuments = ref(false);
+  const customerDocumentsError = ref(null);
 
   // Getters
   const getInvoiceById = computed(() => {
@@ -323,6 +336,295 @@ export const useInvoiceStore = defineStore('invoice', () => {
     enrichedInvoiceError.value = null;
   }
 
+  // Template Actions
+  
+  // Fetch available templates for a client and optionally an invoice number
+  async function fetchAvailableTemplates(clientId, invoiceNumber = null) {
+    if (!clientId) {
+      templatesError.value = 'Client ID is required';
+      availableTemplates.value = [];
+      return [];
+    }
+    
+    loadingTemplates.value = true;
+    templatesError.value = null;
+    
+    try {
+      const response = await InvoiceService.getAvailableTemplates(clientId, invoiceNumber);
+      
+      if (response.data && response.data.success && response.data.data) {
+        availableTemplates.value = response.data.data;
+        return availableTemplates.value;
+      } else {
+        availableTemplates.value = [];
+        console.error('Unexpected response format:', response.data);
+        templatesError.value = 'Failed to load available templates';
+        return [];
+      }
+    } catch (err) {
+      templatesError.value = err.message || 'Failed to fetch available templates';
+      console.error('Error fetching available templates:', err);
+      availableTemplates.value = [];
+      return [];
+    } finally {
+      loadingTemplates.value = false;
+    }
+  }
+  
+  // Generate a document from a template for an invoice
+  async function generateTemplate(invoiceNumber, templateId) {
+    if (!invoiceNumber || !templateId) {
+      generateTemplateError.value = 'Invoice number and template ID are required';
+      return null;
+    }
+    
+    generatingTemplate.value = true;
+    generateTemplateError.value = null;
+    
+    try {
+      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
+      
+      if (response.data && response.data.success && response.data.data) {
+        // After successful generation, refresh the list of generated files
+        await fetchGeneratedFiles(invoiceNumber);
+        return response.data.data;
+      } else {
+        console.error('Unexpected response format:', response.data);
+        generateTemplateError.value = 'Failed to generate template';
+        return null;
+      }
+    } catch (err) {
+      generateTemplateError.value = err.message || 'Failed to generate template';
+      console.error('Error generating template:', err);
+      return null;
+    } finally {
+      generatingTemplate.value = false;
+    }
+  }
+  
+  // Fetch generated files for an invoice
+  async function fetchGeneratedFiles(invoiceNumber) {
+    if (!invoiceNumber) {
+      generatedFilesError.value = 'Invoice number is required';
+      generatedFiles.value = [];
+      return [];
+    }
+    
+    loadingGeneratedFiles.value = true;
+    generatedFilesError.value = null;
+    
+    try {
+      const response = await InvoiceService.getInvoiceDocuments(invoiceNumber);
+      console.log('Invoice documents response:', response.data);
+      
+      if (response.data && response.data.success) {
+        // Add detailed logging to understand the structure
+        console.log('Documents structure:', JSON.stringify(response.data.documents));
+        
+        let processedFiles = [];
+        
+        // Check if documents is a single job object
+        if (response.data.documents && response.data.documents.outputs) {
+          const job = response.data.documents;
+          processedFiles = extractFilesFromJob(job);
+        } 
+        // Check if documents is an array of jobs
+        else if (Array.isArray(response.data.documents)) {
+          response.data.documents.forEach(job => {
+            if (job && job.outputs) {
+              processedFiles.push(...extractFilesFromJob(job));
+            }
+          });
+        }
+        // Check if documents is an object containing jobs (with job_id keys)
+        else if (typeof response.data.documents === 'object') {
+          Object.values(response.data.documents).forEach(job => {
+            if (job && job.outputs) {
+              processedFiles.push(...extractFilesFromJob(job));
+            }
+          });
+        }
+        // Fallback for legacy format
+        else if (Array.isArray(response.data.jobs)) {
+          response.data.jobs.forEach(job => {
+            if (job && job.outputs) {
+              processedFiles.push(...extractFilesFromJob(job));
+            }
+          });
+        }
+        
+        console.log('Processed files:', processedFiles);
+        
+        generatedFiles.value = processedFiles;
+        return processedFiles;
+      } else {
+        generatedFiles.value = [];
+        console.error('Unexpected response format:', response.data);
+        generatedFilesError.value = response.data.message || 'Failed to load generated files';
+        return [];
+      }
+    } catch (err) {
+      generatedFilesError.value = err.message || 'Failed to fetch generated files';
+      console.error('Error fetching generated files:', err);
+      generatedFiles.value = [];
+      return [];
+    } finally {
+      loadingGeneratedFiles.value = false;
+    }
+  }
+  
+  // Helper function to extract files from a job's outputs structure
+  function extractFilesFromJob(job) {
+    const files = [];
+    
+    if (!job.outputs) return files;
+    
+    // Process PDF files which are in an object with keys like 'summary', 'consolidated', etc.
+    if (job.outputs.pdf && typeof job.outputs.pdf === 'object') {
+      Object.entries(job.outputs.pdf).forEach(([type, path]) => {
+        // Extract filename from path (e.g., "invoices/MRC00926/APR_2025_MRC_Summary.pdf" -> "APR_2025_MRC_Summary.pdf")
+        const filename = path.split('/').pop() || path;
+        files.push({
+          id: `${job.job_id}_pdf_${type}`,
+          job_id: job.job_id,
+          filename: filename,
+          fullPath: path, 
+          created_at: job.created_at,
+          template_name: job.template,
+          invoice_number: job.invoice_number,
+          fileType: 'pdf',
+          fileCategory: type,
+          icon: 'pi pi-file-pdf',
+          originalData: { ...job, type: 'pdf', subtype: type, path: path }
+        });
+      });
+    }
+    
+    // Process Excel files which are in an array
+    if (job.outputs.excel && Array.isArray(job.outputs.excel)) {
+      job.outputs.excel.forEach((path, index) => {
+        // Extract filename from path
+        const filename = path.split('/').pop() || path;
+        files.push({
+          id: `${job.job_id}_excel_${index}`,
+          job_id: job.job_id,
+          filename: filename,
+          fullPath: path,
+          created_at: job.created_at,
+          template_name: job.template,
+          invoice_number: job.invoice_number,
+          fileType: 'excel',
+          icon: 'pi pi-file-excel',
+          originalData: { ...job, type: 'excel', index: index, path: path }
+        });
+      });
+    }
+    
+    return files;
+  }
+  
+  // Fetch all documents for a customer
+  async function fetchCustomerDocuments(customerNumber) {
+    if (!customerNumber) {
+      customerDocumentsError.value = 'Customer number is required';
+      customerDocuments.value = [];
+      return [];
+    }
+    
+    loadingCustomerDocuments.value = true;
+    customerDocumentsError.value = null;
+    
+    try {
+      const response = await InvoiceService.getCustomerDocuments(customerNumber);
+      console.log('Customer documents response:', response.data);
+      
+      if (response.data && response.data.success) {
+        console.log('Customer documents structure:', JSON.stringify(response.data.documents));
+        
+        let processedFiles = [];
+        
+        // Handle different response structures
+        if (Array.isArray(response.data.documents)) {
+          response.data.documents.forEach(job => {
+            if (job && job.outputs) {
+              processedFiles.push(...extractFilesFromJob(job));
+            }
+          });
+        } else if (response.data.documents && typeof response.data.documents === 'object') {
+          Object.values(response.data.documents).forEach(job => {
+            if (job && job.outputs) {
+              processedFiles.push(...extractFilesFromJob(job));
+            }
+          });
+        }
+        
+        console.log('Processed customer files:', processedFiles);
+        
+        customerDocuments.value = processedFiles;
+        return processedFiles;
+      } else {
+        customerDocuments.value = [];
+        console.error('Unexpected response format:', response.data);
+        customerDocumentsError.value = response.data.message || 'Failed to load customer documents';
+        return [];
+      }
+    } catch (err) {
+      customerDocumentsError.value = err.message || 'Failed to fetch customer documents';
+      console.error('Error fetching customer documents:', err);
+      customerDocuments.value = [];
+      return [];
+    } finally {
+      loadingCustomerDocuments.value = false;
+    }
+  }
+  
+  // Download a generated file
+  async function downloadGeneratedFile(fileId, fileType = 'pdf') {
+    try {
+      // Parse the composite fileId to extract the actual job_id and file info
+      let jobId, type, subtype;
+      
+      if (fileId.includes('_')) {
+        // Parse our composite ID format: "{job_id}_{type}_{subtype or index}"
+        const parts = fileId.split('_');
+        if (parts.length >= 2) {
+          // First part is the job_id, second is the file type
+          jobId = parts[0];
+          type = parts[1] || fileType;
+          // Subsequent parts might be subtype or index
+          if (parts.length > 2) {
+            subtype = parts.slice(2).join('_');
+          }
+        } else {
+          jobId = fileId; // Fallback
+          type = fileType;
+        }
+      } else {
+        // Legacy format or direct job_id
+        jobId = fileId;
+        type = fileType;
+      }
+      
+      // Call the service with the extracted job_id and type
+      const success = await InvoiceService.downloadGeneratedFile(jobId, type, subtype);
+      return success;
+    } catch (err) {
+      console.error('Error downloading file:', err);
+      return false;
+    }
+  }
+  
+  // Reset template state
+  function resetTemplateState() {
+    availableTemplates.value = [];
+    templatesError.value = null;
+    generatedFiles.value = [];
+    generatedFilesError.value = null;
+    generateTemplateError.value = null;
+    customerDocuments.value = [];
+    customerDocumentsError.value = null;
+  }
+
   return {
     // State
     invoices,
@@ -335,6 +637,19 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error,
     customerInvoicesError,
     enrichedInvoiceError,
+    
+    // Template state
+    availableTemplates,
+    loadingTemplates,
+    templatesError,
+    generatedFiles,
+    loadingGeneratedFiles,
+    generatedFilesError,
+    generatingTemplate,
+    generateTemplateError,
+    customerDocuments,
+    loadingCustomerDocuments,
+    customerDocumentsError,
     
     // Getters
     getInvoiceById,
@@ -349,6 +664,14 @@ export const useInvoiceStore = defineStore('invoice', () => {
     createInvoice,
     updateInvoice,
     deleteInvoice,
-    resetState
+    resetState,
+    
+    // Template actions
+    fetchAvailableTemplates,
+    generateTemplate,
+    fetchGeneratedFiles,
+    fetchCustomerDocuments,
+    downloadGeneratedFile,
+    resetTemplateState
   };
 }); 

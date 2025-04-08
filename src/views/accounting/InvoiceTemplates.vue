@@ -5,32 +5,31 @@ import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 import { useToast } from 'primevue/usetoast';
+import { InvoiceService } from '@/service/ApiService';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
-import Chart from 'primevue/chart';
 import Button from 'primevue/button';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
+import InputNumber from 'primevue/inputnumber';
+import DatePicker from 'primevue/datepicker';
+import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
+import Message from 'primevue/message';
+import Divider from 'primevue/divider';
+import Toast from 'primevue/toast';
 import { useLayout } from '@/layout/composables/layout';
-import { Chart as ChartJS } from 'chart.js';
-
-// Optional import of ChartDataLabels - will use if available
-let ChartDataLabels;
-try {
-  ChartDataLabels = require('chartjs-plugin-datalabels');
-  if (ChartDataLabels.default) {
-    ChartDataLabels = ChartDataLabels.default;
-  }
-  // Register Chart.js plugins if available
-  ChartJS.register(ChartDataLabels);
-} catch (e) {
-  console.warn('chartjs-plugin-datalabels not available, labels will not be shown');
-}
-
-// Initialize the layout
-const { layoutConfig, isDarkTheme } = useLayout();
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
 const customerStore = useCustomerStore();
+
+// Initialize the layout
+const { isDarkTheme } = useLayout();
 
 // Initialize the toast service with a specific group
 const toast = useToast();
@@ -116,6 +115,25 @@ const isRegrouping = ref(false);
 // Customer list type toggle - true = active, false = full
 const customerListType = ref(true);
 
+// Template state
+const selectedTemplate = ref(null);
+const availableTemplates = computed(() => invoiceStore.availableTemplates || []);
+const isLoadingTemplates = computed(() => invoiceStore.loadingTemplates);
+const templatesError = computed(() => invoiceStore.templatesError);
+const generatedFiles = computed(() => invoiceStore.generatedFiles || []);
+const isLoadingGeneratedFiles = computed(() => invoiceStore.loadingGeneratedFiles);
+const generatedFilesError = computed(() => invoiceStore.generatedFilesError);
+const isGeneratingTemplate = computed(() => invoiceStore.generatingTemplate);
+const generateTemplateError = computed(() => invoiceStore.generateTemplateError);
+const customerDocuments = computed(() => invoiceStore.customerDocuments || []);
+const isLoadingCustomerDocuments = computed(() => invoiceStore.loadingCustomerDocuments);
+const customerDocumentsError = computed(() => invoiceStore.customerDocumentsError);
+
+// File preview
+const selectedFile = ref(null);
+const showFilePreview = ref(false);
+const activeDocumentTab = ref('customer'); // 'customer' or 'invoice'
+
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
   lazyParams.rows = event.rows;
@@ -131,8 +149,18 @@ function onSort(event) {
 
 // Fetch customers when component mounts
 onMounted(async () => {
-  // Only load customers initially, wait for customer selection to fetch invoices
-  await loadCustomers();
+  try {
+    // Only load customers initially, wait for customer selection to fetch invoices
+    await loadCustomers();
+  } catch (error) {
+    console.error('Error loading initial data:', error);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load initial data', 
+      life: 3000 
+    });
+  }
 });
 
 // Function to load customers based on selected list type
@@ -148,6 +176,8 @@ async function loadCustomers() {
     
     // Clear any previously selected customers when the list changes
     selectedCustomer.value = null;
+    selectedCustomerInvoice.value = null;
+    selectedTemplate.value = null;
   } catch (err) {
     console.error('Failed to load customers:', err);
   }
@@ -182,10 +212,18 @@ async function loadCustomerInvoices() {
 }
 
 // Handle customer selection change
-function onCustomerChange() {
+async function onCustomerChange() {
   selectedCustomerInvoice.value = null;
-  loadCustomerInvoices();
-  refreshChartData();
+  selectedTemplate.value = null;
+  activeDocumentTab.value = 'customer';
+  await loadCustomerInvoices();
+  
+  // Load available templates for the selected customer
+  if (selectedCustomer.value) {
+    await loadAvailableTemplates(selectedCustomer.value.id);
+    // Load customer documents using the customer number
+    await loadCustomerDocuments(selectedCustomer.value.number);
+  }
 }
 
 // Handle pagination, sorting, filtering
@@ -210,9 +248,16 @@ function clearFilter() {
 }
 
 // Handle customer invoice selection change
-function onCustomerInvoiceSelect() {
+async function onCustomerInvoiceSelect() {
   if (selectedCustomerInvoice.value) {
-    selectInvoice(selectedCustomerInvoice.value.id);
+    activeDocumentTab.value = 'invoice';
+    // Load generated files for the selected invoice
+    await loadGeneratedFiles(selectedCustomerInvoice.value.number);
+    
+    // If there's a customer ID, refine the template list
+    if (selectedCustomer.value && selectedCustomerInvoice.value.number) {
+      await loadAvailableTemplates(selectedCustomer.value.id, selectedCustomerInvoice.value.number);
+    }
   }
 }
 
@@ -761,7 +806,7 @@ function updateCustomerStats() {
 }
 
 // Watch for changes in selected customer or theme to update charts
-watch([selectedCustomer, () => layoutConfig.primary, isDarkTheme], () => {
+watch([selectedCustomer, () => document.documentElement.getAttribute('data-theme') === 'dark'], () => {
   if (selectedCustomer.value) {
     setupChartData();
   }
@@ -774,13 +819,303 @@ watch(customerInvoices, () => {
     setupChartData();
   }
 });
+
+// Function to load available templates
+async function loadAvailableTemplates(clientId, invoiceNumber = null) {
+  if (!clientId) return;
+  
+  try {
+    await invoiceStore.fetchAvailableTemplates(clientId, invoiceNumber);
+    
+    // Auto-select template if only one is available
+    if (availableTemplates.value.length === 1) {
+      selectedTemplate.value = availableTemplates.value[0];
+    } else if (availableTemplates.value.length === 0) {
+      selectedTemplate.value = null;
+    }
+  } catch (err) {
+    console.error('Error loading available templates:', err);
+    selectedTemplate.value = null;
+  }
+}
+
+// Function to load customer documents
+async function loadCustomerDocuments(customerNumber) {
+  if (!customerNumber) {
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Warning', 
+      detail: 'Customer number is required to load documents', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  try {
+    await invoiceStore.fetchCustomerDocuments(customerNumber);
+    
+    // Check for errors after loading
+    if (invoiceStore.customerDocumentsError) {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: invoiceStore.customerDocumentsError, 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error loading customer documents:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to load customer documents', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to load generated files for an invoice
+async function loadGeneratedFiles(invoiceNumber) {
+  if (!invoiceNumber) {
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Warning', 
+      detail: 'Invoice number is required to load documents', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  try {
+    await invoiceStore.fetchGeneratedFiles(invoiceNumber);
+    
+    // Check for errors after loading
+    if (invoiceStore.generatedFilesError) {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: invoiceStore.generatedFilesError, 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error loading generated files:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to load invoice documents', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to generate a template document
+async function generateTemplateDocument() {
+  if (!selectedCustomerInvoice.value || !selectedTemplate.value) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Please select both an invoice and a template to generate', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  try {
+    const result = await invoiceStore.generateTemplate(
+      selectedCustomerInvoice.value.number, 
+      selectedTemplate.value.id
+    );
+    
+    if (result) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Template Generated', 
+        detail: 'Template document has been generated successfully', 
+        life: 3000 
+      });
+      
+      // Refresh the file list
+      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
+      
+      // Switch to the invoice documents tab
+      activeDocumentTab.value = 'invoice';
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: generateTemplateError.value || 'Failed to generate template document', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error generating template:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to generate template document', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to download a generated file
+async function downloadFile(file) {
+  if (!file || (!file.id && !file.originalData?.id)) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'File ID is missing', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  // Get the file ID from either the main object or the original data
+  const fileId = file.id || file.originalData?.id || 'unknown';
+  
+  // Determine file type based on various properties
+  let fileType = 'pdf'; // default
+  if (file.fileType) {
+    fileType = file.fileType;
+  } else if (file.filename) {
+    const filename = file.filename.toLowerCase();
+    if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+      fileType = 'excel';
+    } else if (filename.endsWith('.pdf')) {
+      fileType = 'pdf';
+    } else if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
+      fileType = 'word';
+    }
+  } else if (file.originalData?.type) {
+    fileType = file.originalData.type;
+  }
+  
+  try {
+    const success = await invoiceStore.downloadGeneratedFile(fileId, fileType);
+    if (!success) {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'Failed to download file', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error downloading file:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to download file', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to preview a file
+function previewFile(file) {
+  if (!file) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Invalid file data', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  // Check if the file has an ID for preview
+  if (!file.id && !file.originalData?.id) {
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Warning', 
+      detail: 'This file cannot be previewed', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  // Log the file being previewed
+  console.log('Previewing file:', file);
+  
+  selectedFile.value = file;
+  showFilePreview.value = true;
+}
+
+// Get file icon based on file type
+function getFileIcon(file) {
+  if (!file) {
+    return 'pi pi-file'; // Default icon if file is missing
+  }
+  
+  // First check if we already assigned an icon when processing the file
+  if (file.icon) {
+    return file.icon;
+  }
+  
+  // Then check the fileType property
+  if (file.fileType) {
+    if (file.fileType === 'pdf') return 'pi pi-file-pdf';
+    if (file.fileType === 'excel') return 'pi pi-file-excel';
+    if (file.fileType === 'word') return 'pi pi-file-word';
+  }
+  
+  // Then check filename
+  if (file.filename) {
+    const filename = file.filename.toLowerCase();
+    if (filename.endsWith('.pdf')) return 'pi pi-file-pdf';
+    if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) return 'pi pi-file-excel';
+    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return 'pi pi-file-word';
+  }
+  
+  // Finally check fullPath if available
+  if (file.fullPath) {
+    const path = file.fullPath.toLowerCase();
+    if (path.endsWith('.pdf')) return 'pi pi-file-pdf';
+    if (path.endsWith('.xlsx') || path.endsWith('.xls')) return 'pi pi-file-excel';
+    if (path.endsWith('.docx') || path.endsWith('.doc')) return 'pi pi-file-word';
+  }
+  
+  return 'pi pi-file'; // Default icon
+}
+
+// Function to get a badge for template type
+function getTemplateTypeBadge(type) {
+  if (!type) return { severity: 'info', label: 'Unknown' };
+  
+  const typeMap = {
+    'nrc': { severity: 'success', label: 'NRC' },
+    'mrc': { severity: 'info', label: 'MRC' },
+    'invoice': { severity: 'primary', label: 'Invoice' },
+    'report': { severity: 'warning', label: 'Report' }
+  };
+  
+  return typeMap[type.toLowerCase()] || { severity: 'secondary', label: type };
+}
+
+// Watch for changes in selectedCustomerInvoice to update the available templates
+watch(selectedCustomerInvoice, async (newInvoice) => {
+  if (newInvoice && selectedCustomer.value) {
+    await loadAvailableTemplates(selectedCustomer.value.id, newInvoice.number);
+  }
+});
+
+// Watch for changes in selectedCustomer to update the available templates
+watch(selectedCustomer, (newCustomer) => {
+  if (newCustomer) {
+    // Reset selected invoice and template
+    selectedCustomerInvoice.value = null;
+    selectedTemplate.value = null;
+  }
+});
 </script>
+
 <template>
-    <Toast position="bottom-center" group="invoice-bottom" />
+    <Toast position="bottom-center" />
     <div class="grid">
         <div class="col-12">
             <div class="card">
-                <h5>Invoicing</h5>
+                <h5>Invoice Templates</h5>
                 
                 <div class="mb-4 p-2" style="display: flex; align-items: center;">
                     <!-- Select taking exactly 35% width -->
@@ -803,117 +1138,7 @@ watch(customerInvoices, () => {
                     </div>
                 </div>
                 
-                <!-- Invoice Dashboard Charts - Only visible when a customer is selected -->
-                <div v-if="selectedCustomer" class="card mb-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-surface-900 dark:text-surface-0 text-xl font-semibold">{{ selectedCustomer.name }}'s Invoice Summary</span>
-                        <Button icon="pi pi-refresh" text rounded @click="refreshChartData" :disabled="isLoadingChartData" />
-                    </div>
-                    
-                    <div class="grid grid-cols-12 gap-4">
-                        <!-- Stats Cards - 4 cards in a 2x2 grid spanning 4 columns -->
-                        <div class="col-span-12 lg:col-span-4 xl:col-span-3">
-                            <div class="grid grid-cols-2 gap-3">
-                                <!-- Total Open -->
-                                <div class="col-span-1">
-                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Total Open</span>
-                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalOpen) }}</div>
-                                            </div>
-                                            <i class="pi pi-dollar text-green-500 text-xl"></i>
-                                        </div>
-                                        <div class="mt-2 flex items-center">
-                                            <i class="pi pi-arrow-up text-green-500 text-xs mr-1" v-if="customerStats.openChange > 0"></i>
-                                            <i class="pi pi-arrow-down text-red-500 text-xs mr-1" v-else-if="customerStats.openChange < 0"></i>
-                                            <i class="pi pi-minus text-500 text-xs mr-1" v-else></i>
-                                            <span class="text-xs" :class="customerStats.openChange > 0 ? 'text-green-500' : (customerStats.openChange < 0 ? 'text-red-500' : 'text-500')">
-                                                {{ Math.abs(customerStats.openChange) }}% since last month
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Total Paid -->
-                                <div class="col-span-1">
-                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Total Paid</span>
-                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalPaid) }}</div>
-                                            </div>
-                                            <i class="pi pi-check-circle text-blue-500 text-xl"></i>
-                                        </div>
-                                        <div class="mt-2 flex items-center">
-                                            <i class="pi pi-arrow-up text-green-500 text-xs mr-1" v-if="customerStats.paidChange > 0"></i>
-                                            <i class="pi pi-arrow-down text-red-500 text-xs mr-1" v-else-if="customerStats.paidChange < 0"></i>
-                                            <i class="pi pi-minus text-500 text-xs mr-1" v-else></i>
-                                            <span class="text-xs" :class="customerStats.paidChange > 0 ? 'text-green-500' : (customerStats.paidChange < 0 ? 'text-red-500' : 'text-500')">
-                                                {{ Math.abs(customerStats.paidChange) }}% since last month
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Overdue -->
-                                <div class="col-span-1">
-                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Overdue</span>
-                                                <div class="text-red-500 text-lg font-medium mt-1">{{ formatCurrency(customerStats.totalOverdue) }}</div>
-                                            </div>
-                                            <i class="pi pi-exclamation-circle text-red-500 text-xl"></i>
-                                        </div>
-                                        <div class="mt-2 flex items-center">
-                                            <i class="pi pi-calendar text-500 text-xs mr-1"></i>
-                                            <span class="text-xs text-500">{{ customerStats.overdueCount }} invoice(s) overdue</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Average Days to Pay -->
-                                <div class="col-span-1">
-                                    <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <span class="text-surface-600 dark:text-surface-300 text-sm">Avg Days to Pay</span>
-                                                <div class="text-surface-900 dark:text-surface-0 text-lg font-medium mt-1">{{ customerStats.avgDaysToPay }} days</div>
-                                            </div>
-                                            <i class="pi pi-calendar-check text-primary text-xl"></i>
-                                        </div>
-                                        <div class="mt-2 flex items-center">
-                                            <i class="pi pi-chart-line text-500 text-xs mr-1"></i>
-                                            <span class="text-xs text-500">Based on last 6 months</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Invoice Status Pie Chart -->
-                        <div class="col-span-12 lg:col-span-3">
-                            <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                <span class="text-surface-900 dark:text-surface-0 text-sm font-semibold">Invoice Status</span>
-                                <div style="height: 180px" class="flex justify-center">
-                                    <Chart type="pie" :data="invoiceStatusData" :options="invoiceStatusOptions" />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 6 Month Payment History Line Chart -->
-                        <div class="col-span-12 lg:col-span-5 xl:col-span-6">
-                            <div class="p-3 rounded bg-white dark:bg-surface-800 shadow-sm h-full border border-surface-200 dark:border-surface-700">
-                                <span class="text-surface-900 dark:text-surface-0 text-sm font-semibold">6 Month Payment History</span>
-                                <div style="height: 180px">
-                                    <Chart type="line" :data="paymentHistoryData" :options="paymentHistoryOptions" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
+                <!-- Invoice Table -->
                 <div class="card p-4 mb-4">
                     <DataTable v-model:selection="selectedCustomerInvoice" :value="customerInvoices || []" dataKey="id"
                              :paginator="true" :rows="lazyParams.rows" :totalRecords="totalInvoiceRecords"
@@ -1014,193 +1239,272 @@ watch(customerInvoices, () => {
                         </Column>
                     </DataTable>
                 </div>
-            </div>
-            
-            <div class="col-12 mt-4">
-                <div class="card p-5 overflow-auto shadow-[0px_1px_2px_0px_rgba(18,18,23,0.05)]">
-                    <!-- Loading state -->
-                    <div v-if="isLoading" class="flex justify-center items-center p-4">
-                        <ProgressSpinner />
+                
+                <!-- Template and Files Section -->
+                <div class="grid grid-cols-12 gap-4">
+                    <!-- Available Templates Section -->
+                    <div class="col-span-12 md:col-span-5 xl:col-span-4">
+                        <div class="card">
+                            <div class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Available Templates</div>
+                            
+                            <!-- Loading templates message -->
+                            <div v-if="isLoadingTemplates" class="flex justify-center items-center p-4">
+                                <ProgressSpinner style="width: 50px; height: 50px" />
+                                <span class="ml-3">Loading templates...</span>
+                            </div>
+                            
+                            <!-- Error loading templates -->
+                            <div v-else-if="templatesError" class="p-4 flex flex-col items-center justify-center">
+                                <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
+                                <div class="text-lg text-yellow-500">{{ templatesError }}</div>
+                            </div>
+                            
+                            <!-- No templates available message -->
+                            <div v-else-if="!selectedCustomer" class="p-4 flex flex-col items-center justify-center">
+                                <i class="pi pi-users text-4xl text-primary mb-3"></i>
+                                <div class="text-lg">Select a customer to see available templates</div>
+                            </div>
+                            
+                            <!-- No templates for selected customer -->
+                            <div v-else-if="availableTemplates.length === 0" class="p-4 flex flex-col items-center justify-center">
+                                <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
+                                <div class="text-lg">No templates available for this customer</div>
+                                <div v-if="selectedCustomerInvoice" class="text-sm text-surface-600 dark:text-surface-400 mt-2">
+                                    Try selecting a different invoice or customer
+                                </div>
+                            </div>
+                            
+                            <!-- Templates list -->
+                            <div v-else>
+                                <ul class="list-none p-0 m-0">
+                                    <li v-for="template in availableTemplates" :key="template.id" 
+                                        class="p-3 mb-2 flex items-center justify-between cursor-pointer rounded hover:bg-surface-100 dark:hover:bg-surface-700"
+                                        :class="{ 'bg-surface-100 dark:bg-surface-700': selectedTemplate?.id === template.id }"
+                                        @click="selectedTemplate = template">
+                                        <div class="flex items-center">
+                                            <i class="pi pi-file-pdf text-2xl mr-3" v-if="template.output_format === 'pdf'"></i>
+                                            <i class="pi pi-file-excel text-2xl mr-3" v-else-if="template.output_format === 'excel'"></i>
+                                            <i class="pi pi-file text-2xl mr-3" v-else></i>
+                                            <div>
+                                                <div class="text-surface-900 dark:text-surface-0 font-medium">{{ template.name }}</div>
+                                                <div class="text-surface-600 dark:text-surface-400 text-sm">{{ template.description || 'No description' }}</div>
+                                            </div>
+                                        </div>
+                                        <Tag v-if="template.type" :severity="getTemplateTypeBadge(template.type).severity">
+                                            {{ getTemplateTypeBadge(template.type).label }}
+                                        </Tag>
+                                    </li>
+                                </ul>
+                                
+                                <!-- Generate template button -->
+                                <div class="mt-4">
+                                    <Button 
+                                        label="Generate Template" 
+                                        icon="pi pi-file-export" 
+                                        class="w-full" 
+                                        :disabled="!selectedTemplate || !selectedCustomerInvoice || isGeneratingTemplate" 
+                                        :loading="isGeneratingTemplate"
+                                        @click="generateTemplateDocument" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Error message -->
-                    <div v-else-if="error" class="flex justify-center items-center p-4">
-                        <Message severity="info">Please select an invoice from the table above to view details</Message>
-                    </div>
-                    
-                    <!-- Invoice content -->
-                    <div v-else-if="selectedInvoice">
-                        <!-- Interactive tools panel - only shows when interactive mode is enabled -->
-                        <div v-if="isInteractive" class="mb-4 p-3 border-1 border-surface-200 dark:border-surface-700">
-                            <h5>Interactive Tools</h5>
-                            <div class="field grid">
-                                <label for="groupBy" class="col-12 md:col-2 md:mb-0 mb-2 font-medium">Group By:</label>
-                                <div class="col-12 md:col-10">
-                                    <Select 
-                                        id="groupBy"
-                                        v-model="selectedGroupBy" 
-                                        :options="groupByOptions" 
-                                        optionLabel="name" 
-                                        placeholder="Select Grouping"
-                                        class="w-full"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-start pt-6 px-6 pb-9 gap-6 flex-wrap-reverse">
-                            <div class="flex-1">
-                                <svg class="fill-surface-950 dark:fill-surface-0" width="125" height="32" viewBox="0 0 125 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M26.8844 16C27.5005 16 28.0045 15.4997 27.9555 14.8856C27.7658 12.5094 26.9717 10.2143 25.6405 8.222C24.1022 5.91972 21.9157 4.12531 19.3575 3.06569C16.7994 2.00607 13.9844 1.72882 11.2687 2.26901C8.55298 2.8092 6.05843 4.14257 4.1005 6.1005C2.14257 8.05843 0.809203 10.553 0.269011 13.2687C-0.27118 15.9844 0.00606599 18.7994 1.06569 21.3575C2.12531 23.9157 3.91972 26.1022 6.222 27.6405C8.21425 28.9717 10.5094 29.7658 12.8856 29.9555C13.4997 30.0045 14 29.5005 14 28.8844V25.5155C14 24.8994 13.4983 24.4076 12.8877 24.326C11.6208 24.1567 10.4041 23.6998 9.33319 22.9843C7.95182 22.0613 6.87517 20.7494 6.2394 19.2145C5.60362 17.6796 5.43728 15.9906 5.76139 14.3612C6.08551 12.7318 6.88553 11.235 8.06028 10.0603C9.23504 8.88553 10.7318 8.08551 12.3612 7.76139C13.9906 7.43728 15.6796 7.60362 17.2145 8.2394C18.7494 8.87517 20.0613 9.95182 20.9843 11.3332C21.6998 12.4041 22.1567 13.6208 22.326 14.8877C22.4076 15.4983 22.8994 16 23.5155 16H26.8844Z"
-                                    />
-                                    <path
-                                        d="M20.3442 17.9561C20.4501 17.6123 20.1787 17.2829 19.819 17.2829H16.3982C15.7821 17.2829 15.2826 17.7823 15.2826 18.3984V21.8191C15.2826 22.1788 15.612 22.4502 15.9558 22.3443C18.0484 21.6999 19.6997 20.0487 20.3442 17.9561Z"
-                                    />
-                                    <path
-                                        d="M23.1621 17.2829C22.6154 17.2829 22.1582 17.6844 22.013 18.2115C21.2385 21.0236 19.0234 23.2387 16.2113 24.0131C15.6842 24.1582 15.2826 24.6155 15.2826 25.1622V28.8845C15.2826 29.5006 15.7821 30 16.3982 30H18.6292C19.2453 30 19.7448 29.5006 19.7448 28.8845V25.0941C19.7448 24.8904 19.991 24.7885 20.135 24.9325L24.4655 29.263C24.9011 29.6986 25.6075 29.6986 26.0431 29.263L27.2627 28.0434C27.6983 27.6077 27.6983 26.9014 27.2627 26.4658L22.9322 22.1353C22.7882 21.9913 22.8902 21.745 23.0938 21.745H26.8842C27.5003 21.745 27.9997 21.2456 27.9997 20.6295V18.3984C27.9997 17.7823 27.5003 17.2829 26.8842 17.2829H23.1621Z"
-                                    />
-                                    <path
-                                        d="M47.624 10.048C44.144 10.048 42.152 12.568 42.152 16.36C42.152 20.272 44.408 22.408 47.648 22.408C50.696 22.408 52.544 20.728 52.544 17.92V17.848H47.24V15.136H55.4V25H52.808L52.616 22.984C51.656 24.328 49.664 25.264 47.288 25.264C42.368 25.264 38.936 21.688 38.936 16.288C38.936 10.96 42.416 7.168 47.696 7.168C51.704 7.168 54.8 9.496 55.304 13.072H52.064C51.512 11.008 49.736 10.048 47.624 10.048ZM63.3494 25.312C59.8214 25.312 57.3494 22.744 57.3494 19.072C57.3494 15.352 59.7734 12.784 63.2534 12.784C66.8054 12.784 69.0614 15.16 69.0614 18.856V19.744L60.1334 19.768C60.3494 21.856 61.4534 22.912 63.3974 22.912C65.0054 22.912 66.0614 22.288 66.3974 21.16H69.1094C68.6054 23.752 66.4454 25.312 63.3494 25.312ZM63.2774 15.184C61.5494 15.184 60.4934 16.12 60.2054 17.896H66.1574C66.1574 16.264 65.0294 15.184 63.2774 15.184ZM74.0928 25H71.1648V13.144H73.8768L74.1168 14.68C74.8608 13.48 76.3008 12.784 77.9088 12.784C80.8848 12.784 82.4208 14.632 82.4208 17.704V25H79.4928V18.4C79.4928 16.408 78.5088 15.448 76.9968 15.448C75.1968 15.448 74.0928 16.696 74.0928 18.616V25ZM90.3616 25.312C86.8336 25.312 84.3616 22.744 84.3616 19.072C84.3616 15.352 86.7856 12.784 90.2656 12.784C93.8176 12.784 96.0736 15.16 96.0736 18.856V19.744L87.1456 19.768C87.3616 21.856 88.4656 22.912 90.4096 22.912C92.0176 22.912 93.0736 22.288 93.4096 21.16H96.1216C95.6176 23.752 93.4576 25.312 90.3616 25.312ZM90.2896 15.184C88.5616 15.184 87.5056 16.12 87.2176 17.896H93.1696C93.1696 16.264 92.0416 15.184 90.2896 15.184ZM97.265 21.4H100.049C100.073 22.432 100.841 23.08 102.185 23.08C103.553 23.08 104.297 22.528 104.297 21.664C104.297 21.064 103.985 20.632 102.929 20.392L100.793 19.888C98.657 19.408 97.625 18.4 97.625 16.504C97.625 14.176 99.593 12.784 102.329 12.784C104.993 12.784 106.793 14.32 106.817 16.624H104.033C104.009 15.616 103.337 14.968 102.209 14.968C101.057 14.968 100.385 15.496 100.385 16.384C100.385 17.056 100.913 17.488 101.921 17.728L104.057 18.232C106.049 18.688 107.057 19.6 107.057 21.424C107.057 23.824 105.017 25.312 102.089 25.312C99.137 25.312 97.265 23.728 97.265 21.4ZM110.51 10.768C109.502 10.768 108.71 9.976 108.71 8.992C108.71 8.008 109.502 7.24 110.51 7.24C111.47 7.24 112.262 8.008 112.262 8.992C112.262 9.976 111.47 10.768 110.51 10.768ZM109.046 25V13.144H111.974V25H109.046ZM113.847 21.4H116.631C116.655 22.432 117.423 23.08 118.767 23.08C120.135 23.08 120.879 22.528 120.879 21.664C120.879 21.064 120.567 20.632 119.511 20.392L117.375 19.888C115.239 19.408 114.207 18.4 114.207 16.504C114.207 14.176 116.175 12.784 118.911 12.784C121.575 12.784 123.375 14.32 123.399 16.624H120.615C120.591 15.616 119.919 14.968 118.791 14.968C117.639 14.968 116.967 15.496 116.967 16.384C116.967 17.056 117.495 17.488 118.503 17.728L120.639 18.232C122.631 18.688 123.639 19.6 123.639 21.424C123.639 23.824 121.599 25.312 118.671 25.312C115.719 25.312 113.847 23.728 113.847 21.4Z"
-                                    />
-                                </svg>
-                                <div class="mt-3 body-xsmall text-left">CIS<br>1023 Calle Sombra Unit B San Clemente, CA 92673</div>
-                            </div>
-                            <div class="flex flex-col text-right">
-                                <ToggleButton 
-                                    v-model="isInteractive" 
-                                    onLabel="Interactive On" 
-                                    offLabel="Interactive Off" 
-                                    onIcon="pi pi-check" 
-                                    offIcon="pi pi-times" 
-                                    :class="isInteractive ? 'p-button-outlined p-button-success' : 'p-button-outlined p-button-help'"
-                                    class="mb-4"
-                                />
-                                <h1 class="title-h6">Invoice</h1>
-                                <span class="mt-1.5 body-medium">{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</span>
-                            </div>
-                        </div>
-                        <Divider />
-                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap-reverse">
-                            <div class="flex-1">
-                                <div class="label-medium text-surface-500">Bill To:</div>
-                                <div class="mt-2 label-medium">{{ selectedInvoice?.customer?.company || '' }}</div>
-                                <div class="body-small text-left mt-0.5" v-html="selectedInvoice?.customer?.address.replace(/\n/g, '<br />') || ''"></div>
-                            </div>
-                            <div class="flex flex-col gap-3 min-w-64">
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Client Name</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ selectedInvoice?.customer?.name || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Date</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ formatDate(selectedInvoice?.date) || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Due Date</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ formatDate(selectedInvoice?.dueDate) || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Customer</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ selectedInvoice?.customer?.id || '' }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <Divider />
-                        <!-- Invoice Items Section -->
-                        <div>
-                            <!-- Regrouping loading state -->
-                            <div v-if="isRegrouping" class="flex justify-center items-center p-4">
-                                <ProgressSpinner />
-                            </div>
-
-                            <!-- Standard non-grouped display (when interactive is off or no grouping selected) -->
-                            <DataTable v-else-if="!isInteractive || selectedGroupBy.value === 'none'" 
-                                     :value="products" tableStyle="min-width: 50rem">
-                                <Column field="description" header="Description" />
-                                <Column field="quantity" header="Quantity" />
-                                <Column field="price" header="Unit Price" />
-                                <Column field="total" header="Amount" />
-                            </DataTable>
-
-                            <!-- Grouped display (when interactive is on and grouping is selected) -->
-                            <div v-else-if="groupedProducts.length > 0" class="grouped-invoice">
-                                <div v-for="(group, index) in groupedProducts" :key="index" class="mb-5">
-                                    <!-- Group Header -->
-                                    <div class="flex justify-content-between align-items-center p-3 bg-surface-100 dark:bg-surface-800 mb-2 rounded">
-                                        <h3 class="m-0 text-lg font-medium">
-                                            <span class="font-bold">{{ group.groupType }}</span> : {{ group.name }}
-                                        </h3>
+                    <!-- Generated Files Section -->
+                    <div class="col-span-12 md:col-span-7 xl:col-span-8">
+                        <div class="card">
+                            <div class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Document Library</div>
+                            
+                            <!-- Document Type Tabs -->
+                            <div class="flex justify-between items-center mb-4 border-b border-surface-200 dark:border-surface-700">
+                                <div class="flex">
+                                    <div class="pb-3 px-4 cursor-pointer font-medium border-b-2"
+                                         :class="[activeDocumentTab === 'customer' ? 'border-primary-500 text-primary-500' : 'border-transparent']"
+                                         @click="activeDocumentTab = 'customer'">
+                                        Customer Documents
                                     </div>
-                                    
-                                    <!-- Group Items DataTable -->
-                                    <DataTable :value="group.items.map(item => ({
-                                        description: item.description,
-                                        quantity: item.quantity.toString(),
-                                        price: formatCurrency(item.unitPrice),
-                                        total: formatCurrency(item.amountIncludingTax)
-                                    }))" class="mb-0" tableStyle="min-width: 50rem">
-                                        <Column field="description" header="Description" />
-                                        <Column field="quantity" header="Quantity" class="text-center" style="text-align: center;" />
-                                        <Column field="price" header="Unit Price" />
-                                        <Column field="total" header="Amount" />
-                                    </DataTable>
-                                    
-                                    <!-- Group Subtotal with simple bottom border -->
-                                    <div class="border-top-2 border-surface-200 dark:border-surface-700 mb-4">
-                                        <div class="py-3" style="text-align: right; padding-right: 32px;">
-                                            <span class="font-medium">{{ group.groupType }} Subtotal: <span class="font-bold">{{ formatCurrency(group.total) }}</span></span>
+                                    <div class="pb-3 px-4 font-medium border-b-2"
+                                         :class="[
+                                            activeDocumentTab === 'invoice' ? 'border-primary-500 text-primary-500' : 'border-transparent',
+                                            !selectedCustomerInvoice ? 'text-surface-400 cursor-not-allowed' : 'cursor-pointer'
+                                         ]"
+                                         @click="selectedCustomerInvoice && (activeDocumentTab = 'invoice')">
+                                        Invoice Documents
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Loading files message -->
+                            <div v-if="isLoadingGeneratedFiles || isLoadingCustomerDocuments" class="flex justify-center items-center p-4">
+                                <ProgressSpinner style="width: 50px; height: 50px" />
+                                <span class="ml-3">Loading documents...</span>
+                            </div>
+                            
+                            <!-- Error loading files -->
+                            <div v-else-if="generatedFilesError || customerDocumentsError" class="p-4 flex flex-col items-center justify-center">
+                                <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
+                                <div class="text-lg text-yellow-500">{{ generatedFilesError || customerDocumentsError }}</div>
+                            </div>
+                            
+                            <!-- No customer selected message -->
+                            <div v-else-if="!selectedCustomer" class="p-4 flex flex-col items-center justify-center">
+                                <i class="pi pi-users text-4xl text-primary mb-3"></i>
+                                <div class="text-lg">Select a customer to see documents</div>
+                            </div>
+                            
+                            <!-- Invoice Documents View -->
+                            <div v-else-if="activeDocumentTab === 'invoice'">
+                                <!-- No files generated message -->
+                                <div v-if="generatedFiles.length === 0" class="p-4 flex flex-col items-center justify-center">
+                                    <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
+                                    <div class="text-lg">No documents have been generated for this invoice</div>
+                                    <div class="text-sm text-surface-600 dark:text-surface-400 mt-2">
+                                        Select a template and click "Generate Template" to create documents
+                                    </div>
+                                </div>
+                                
+                                <!-- Files grid for invoice documents -->
+                                <div v-else>
+                                    <div class="mb-3 text-lg font-medium">
+                                        Invoice #{{ selectedCustomerInvoice.number }} Documents
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                                        <div v-for="(file, index) in generatedFiles" :key="file?.id || index" 
+                                             class="p-3 border border-surface-200 dark:border-surface-700 rounded shadow-sm transition-all duration-200 hover:shadow-md">
+                                            <div v-if="file" class="flex flex-col h-full">
+                                                <!-- File header with icon -->
+                                                <div class="flex items-center mb-3">
+                                                    <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
+                                                    <span class="font-medium truncate flex-1">
+                                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                                    </span>
+                                                </div>
+                                                
+                                                <!-- File metadata -->
+                                                <div class="text-sm text-surface-600 dark:text-surface-400 mb-2 flex-1">
+                                                    <div class="mb-1">
+                                                        <i class="pi pi-calendar mr-1"></i>
+                                                        <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
+                                                    </div>
+                                                    <div v-if="file.fileCategory" class="mb-1">
+                                                        <i class="pi pi-file mr-1"></i>
+                                                        <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
+                                                    </div>
+                                                    <div v-if="file.template_name" class="truncate">
+                                                        <i class="pi pi-tag mr-1"></i>
+                                                        <span>{{ file.template_name }}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- File actions -->
+                                                <div class="flex justify-between mt-2">
+                                                    <Button icon="pi pi-eye" text rounded @click="previewFile(file)" />
+                                                    <Button icon="pi pi-download" text rounded @click="downloadFile(file)" />
+                                                </div>
+                                            </div>
+                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400">
+                                                <i class="pi pi-file-excel text-3xl mb-2"></i>
+                                                <span>Invalid file data</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Divider between groups (except for the last one) -->
-                                    <Divider v-if="index < groupedProducts.length - 1" class="border-2 border-surface-200 dark:border-surface-700 my-4" />
                                 </div>
                             </div>
                             
-                            <!-- No items message -->
-                            <div v-else class="p-4 text-center text-surface-400">
-                                No items found for this invoice
-                            </div>
-                            
-                            <div class="py-6 px-4 flex items-start gap-6 flex-wrap sm:flex-row flex-col">
-                                <div class="flex-1 body-small text-left text-surface-950 dark:text-surface-0">
-                                    <div v-if="selectedInvoice?.status" class="flex align-items-center gap-2">
-                                        <span class="font-bold">Status:</span>
-                                        <Tag :value="selectedInvoice.status" 
-                                             :severity="selectedInvoice.status === 'open' ? 'info' : (selectedInvoice.status === 'paid' ? 'success' : 'warning')"
-                                             class="text-base"></Tag>
+                            <!-- Customer Documents View -->
+                            <div v-else-if="activeDocumentTab === 'customer'">
+                                <!-- No customer documents message -->
+                                <div v-if="customerDocuments.length === 0" class="p-4 flex flex-col items-center justify-center">
+                                    <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
+                                    <div class="text-lg">No documents found for this customer</div>
+                                    <div class="text-sm text-surface-600 dark:text-surface-400 mt-2">
+                                        Select an invoice and generate templates to create documents
                                     </div>
                                 </div>
-                                <div class="flex flex-col gap-3 min-w-52">
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Subtotal</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
+                                
+                                <!-- Files grid for customer documents -->
+                                <div v-else>
+                                    <div class="mb-3 text-lg font-medium">
+                                        {{ selectedCustomer.name }} Documents
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Tax ({{ selectedInvoice?.vatRate || 0 }}%)</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.vat) }}</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Total</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.total) }}</span>
-                                    </div>
-                                    <div class="flex items-center justify-between" v-if="selectedInvoice?.remainingAmount > 0">
-                                        <span class="label-small text-red-500 font-medium">Amount Due</span>
-                                        <span class="text-red-500 font-medium">{{ formatCurrency(selectedInvoice?.remainingAmount) }}</span>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                                        <div v-for="(file, index) in customerDocuments" :key="file?.id || index" 
+                                             class="p-3 border border-surface-200 dark:border-surface-700 rounded shadow-sm transition-all duration-200 hover:shadow-md">
+                                            <div v-if="file" class="flex flex-col h-full">
+                                                <!-- File header with icon -->
+                                                <div class="flex items-center mb-3">
+                                                    <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
+                                                    <span class="font-medium truncate flex-1">
+                                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                                    </span>
+                                                </div>
+                                                
+                                                <!-- File metadata -->
+                                                <div class="text-sm text-surface-600 dark:text-surface-400 mb-2 flex-1">
+                                                    <div class="mb-1">
+                                                        <i class="pi pi-calendar mr-1"></i>
+                                                        <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
+                                                    </div>
+                                                    <div class="mb-1" v-if="file.invoice_number">
+                                                        <i class="pi pi-file-invoice mr-1"></i>
+                                                        <span>Invoice #{{ file.invoice_number }}</span>
+                                                    </div>
+                                                    <div v-if="file.fileCategory" class="mb-1">
+                                                        <i class="pi pi-file mr-1"></i>
+                                                        <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
+                                                    </div>
+                                                    <div v-if="file.template_name" class="truncate">
+                                                        <i class="pi pi-tag mr-1"></i>
+                                                        <span>{{ file.template_name }}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- File actions -->
+                                                <div class="flex justify-between mt-2">
+                                                    <Button icon="pi pi-eye" text rounded @click="previewFile(file)" />
+                                                    <Button icon="pi pi-download" text rounded @click="downloadFile(file)" />
+                                                </div>
+                                            </div>
+                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400">
+                                                <i class="pi pi-file-excel text-3xl mb-2"></i>
+                                                <span>Invalid file data</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- No invoice selected state -->
-                    <div v-else class="flex flex-column align-items-center p-5">
-                        <i class="pi pi-file text-5xl text-primary mb-3"></i>
-                        <span class="text-lg">Please select an invoice from the table above to view details</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- File Preview Dialog -->
+    <Dialog v-model:visible="showFilePreview" :style="{ width: '90vw', height: '80vh' }" modal header="File Preview" :closable="true">
+        <div v-if="selectedFile" class="w-full h-full flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+                <div class="font-medium text-lg flex items-center">
+                    <i :class="[getFileIcon(selectedFile), 'mr-2']"></i>
+                    {{ selectedFile.filename || selectedFile.fullPath?.split('/').pop() || 'Unnamed file' }}
+                    <span class="ml-3 text-sm text-400">{{ formatDate(selectedFile.created_at) }}</span>
+                </div>
+                <Button icon="pi pi-download" text @click="downloadFile(selectedFile)" />
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <!-- PDF Preview iframe - only for PDFs -->
+                <iframe v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
+                        :src="InvoiceService.getFilePreviewUrl(selectedFile.id, selectedFile.fileType || selectedFile.originalData?.type, selectedFile.fileCategory || selectedFile.originalData?.subtype)" 
+                        class="w-full h-full border-0"
+                        title="PDF Preview"></iframe>
+                
+                <!-- For other file types, show a download prompt -->
+                <div v-else class="flex flex-col items-center justify-center h-full">
+                    <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
+                    <p class="text-xl mb-4">This file type cannot be previewed directly</p>
+                    <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
+                </div>
+            </div>
+        </div>
+    </Dialog>
 </template>
