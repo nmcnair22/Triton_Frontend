@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import AppBreadcrumb from './AppBreadcrumb.vue';
 import { useUserStore } from '@/stores/userStore';
 import { useRouter } from 'vue-router';
+import { hasPermission } from '@/utils/rbac';
 
 const { layoutState, isDarkTheme, toggleMenu, toggleConfigSidebar } = useLayout();
 const userStore = useUserStore();
@@ -192,33 +193,27 @@ function handleLogout() {
                     >
                         <ul class="flex flex-col gap-1">
                             <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                <router-link to="/profile" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
                                     <i class="pi pi-user" />
-                                    <span>Profile</span>
-                                </a>
+                                    <span>My Profile</span>
+                                </router-link>
                             </li>
-                            <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
-                                    <i class="pi pi-cog" />
-                                    <span>Settings</span>
-                                </a>
+                            <li v-if="hasPermission('users.view')">
+                                <router-link to="/user-management" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                    <i class="pi pi-users" />
+                                    <span>User Management</span>
+                                </router-link>
                             </li>
-                            <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
-                                    <i class="pi pi-calendar" />
-                                    <span>Calendar</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
-                                    <i class="pi pi-inbox" />
-                                    <span>Inbox</span>
-                                </a>
+                            <li v-if="hasPermission('roles.view')">
+                                <router-link to="/user-management/roles" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                    <i class="pi pi-shield" />
+                                    <span>Role Management</span>
+                                </router-link>
                             </li>
                             <li>
                                 <a @click="handleLogout" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
-                                    <i class="pi pi-power-off" />
-                                    <span>Log out</span>
+                                    <i class="pi pi-sign-out" />
+                                    <span>Sign Out</span>
                                 </a>
                             </li>
                         </ul>

@@ -1,7 +1,9 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { nextTick, onBeforeMount, ref, watch } from 'vue';
+import { nextTick, onBeforeMount, ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { hasPermission } from '@/utils/rbac';
+
 const route = useRoute();
 
 const { layoutConfig, layoutState, setActiveMenuItem, toggleMenu, isHorizontal, isSlim, isCompact, isDesktop, isStatic } = useLayout();
@@ -33,6 +35,45 @@ const isActiveMenu = ref(false);
 const itemKey = ref(null);
 const subMenuRef = ref(null);
 const menuItemRef = ref(null);
+
+// Check if the item should be visible based on permissions
+const isVisible = computed(() => {
+    // If no permissionGuard is set or the item is explicitly marked as visible, show it
+    if (!props.item.permissionGuard || props.item.visible === true) {
+        return true;
+    }
+    
+    // If the item has a permissionGuard, check the permission
+    return hasPermission(props.item.permissionGuard);
+});
+
+// Check if any child items are visible
+const hasVisibleChildren = computed(() => {
+    if (!props.item.items || !props.item.items.length) {
+        return false;
+    }
+    
+    return props.item.items.some(child => {
+        // If no permissionGuard is set or the item is explicitly marked as visible, it's visible
+        if (!child.permissionGuard || child.visible === true) {
+            return true;
+        }
+        
+        // If the item has a permissionGuard, check the permission
+        return hasPermission(child.permissionGuard);
+    });
+});
+
+// Determine if the menu item should be displayed
+const shouldDisplay = computed(() => {
+    // If the item has no children, check if it's visible
+    if (!props.item.items || !props.item.items.length) {
+        return isVisible.value;
+    }
+    
+    // If the item has children, show it if it's visible or if it has any visible children
+    return isVisible.value && hasVisibleChildren.value;
+});
 
 onBeforeMount(() => {
     itemKey.value = props.parentItemKey ? props.parentItemKey + '-' + props.index : String(props.index);
@@ -186,10 +227,10 @@ const checkActiveRoute = (item) => {
 </script>
 
 <template>
-    <li ref="menuItemRef" :class="{ 'layout-root-menuitem': root, 'active-menuitem': isStatic ? !root && isActiveMenu : isActiveMenu }">
-        <div v-if="root && item.visible !== false" class="layout-menuitem-root-text">{{ item.label }}</div>
+    <li v-if="shouldDisplay" ref="menuItemRef" :class="{ 'layout-root-menuitem': root, 'active-menuitem': isStatic ? !root && isActiveMenu : isActiveMenu }">
+        <div v-if="root && isVisible" class="layout-menuitem-root-text">{{ item.label }}</div>
         <a
-            v-if="(!item.to || item.items) && item.visible !== false"
+            v-if="(!item.to || item.items) && isVisible"
             :href="item.url"
             @click="itemClick($event, item, index)"
             :class="item.class"
@@ -203,7 +244,7 @@ const checkActiveRoute = (item) => {
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items" />
         </a>
         <router-link
-            v-if="item.to && !item.items && item.visible !== false"
+            v-if="item.to && !item.items && isVisible"
             @click="itemClick($event, item, index)"
             :class="[item.class, { 'active-route': checkActiveRoute(item) }]"
             tabindex="0"
@@ -216,7 +257,7 @@ const checkActiveRoute = (item) => {
             <i class="pi pi-fw pi-angle-down layout-submenu-toggler" v-if="item.items" />
         </router-link>
 
-        <ul ref="subMenuRef" :class="{ 'layout-root-submenulist': root }" v-if="item.items && item.visible !== false">
+        <ul ref="subMenuRef" :class="{ 'layout-root-submenulist': root }" v-if="item.items && hasVisibleChildren">
             <app-menu-item v-for="(child, i) in item.items" :key="child" :index="i" :item="child" :parentItemKey="itemKey" :root="false" :rootIndex="props.index" />
         </ul>
     </li>

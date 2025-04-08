@@ -393,17 +393,37 @@ const model = ref([
     { separator: true },
     {
         label: 'User Management',
-        icon: 'pi pi-fw pi-user',
+        icon: 'pi pi-fw pi-users',
+        permissionGuard: 'users.view',
         items: [
             {
-                label: 'List',
-                icon: 'pi pi-fw pi-list',
-                to: '/profile/list'
+                label: 'Users',
+                icon: 'pi pi-fw pi-user',
+                to: '/user-management',
+                permissionGuard: 'users.view'
             },
             {
-                label: 'Create',
-                icon: 'pi pi-fw pi-plus',
-                to: '/profile/create'
+                label: 'Create User',
+                icon: 'pi pi-fw pi-user-plus',
+                to: '/user-management/create',
+                permissionGuard: 'users.create'
+            },
+            {
+                label: 'Roles',
+                icon: 'pi pi-fw pi-shield',
+                to: '/user-management/roles',
+                permissionGuard: 'roles.view'
+            },
+            {
+                label: 'Create Role',
+                icon: 'pi pi-fw pi-plus-circle',
+                to: '/user-management/roles/create',
+                permissionGuard: 'roles.create'
+            },
+            {
+                label: 'My Profile',
+                icon: 'pi pi-fw pi-user-edit',
+                to: '/profile'
             }
         ]
     }
