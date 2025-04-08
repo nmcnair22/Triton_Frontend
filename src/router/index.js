@@ -392,6 +392,14 @@ const routes = [
                     breadcrumb: ['Reporting', 'Report Manager']
                 },
                 component: () => import('@/views/reporting/ReportManager.vue')
+            },
+            {
+                path: '/todo',
+                name: 'todo',
+                meta: {
+                    breadcrumb: ['Todo List']
+                },
+                component: () => import('@/views/TodoPage.vue')
             }
         ],
         meta: { requiresAuth: true }

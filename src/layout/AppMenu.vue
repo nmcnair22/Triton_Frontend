@@ -154,6 +154,11 @@ const model = ref([
                 label: 'Task List',
                 icon: 'pi pi-fw pi-check-square',
                 to: '/apps/tasklist'
+            },
+            {
+                label: 'Todo List',
+                icon: 'pi pi-fw pi-check-square',
+                to: '/todo'
             }
         ]
     },
