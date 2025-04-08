@@ -67,6 +67,18 @@ export const AuthService = {
     return null;
   },
   
+  // Get current user profile from API (for backward compatibility)
+  async getCurrentUser() {
+    try {
+      const response = await authClient.get('/user');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      // If API fails, return the stored user data as fallback
+      return this.getUserData();
+    }
+  },
+  
   // Login with email and password
   async login(email, password) {
     try {
