@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const BASE_URL = API_URL.replace('/api', ''); // Base URL without /api for web routes
+const SPA_CALLBACK_PATH = '/auth/microsoft-callback'; // Frontend callback route
 
 // Create axios instance for auth operations
 const authClient = axios.create({
@@ -27,6 +28,9 @@ export const AuthService = {
   setToken(newToken) {
     token.value = newToken;
     localStorage.setItem('auth_token', newToken);
+    
+    // Also update axios default headers
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
   },
   
   // Get the current user
@@ -45,11 +49,29 @@ export const AuthService = {
     return !!token.value;
   },
   
+  // Check if user is logged in (alias for isAuthenticated for backward compatibility)
+  isLoggedIn() {
+    return this.isAuthenticated();
+  },
+  
+  // Get current user data from localStorage (for backward compatibility)
+  getUserData() {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        return JSON.parse(userData);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  },
+  
   // Login with email and password
   async login(email, password) {
     try {
-      // Change to use api-login endpoint which returns tokens
-      const response = await authClient.post('/api-login', {
+      // Change to use login endpoint
+      const response = await authClient.post('/login', {
         email,
         password
       });
@@ -57,9 +79,6 @@ export const AuthService = {
       if (response.data.token) {
         this.setToken(response.data.token);
         this.setUser(response.data.user);
-        
-        // Set token for all future API calls
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       }
       
       return response.data;
@@ -69,13 +88,24 @@ export const AuthService = {
     }
   },
   
-  // Microsoft OAuth login - uses direct link to web route, not API
+  // Microsoft OAuth login with SPA-friendly approach
   redirectToMicrosoftLogin() {
-    // Use the exact URL that works in your test page
-    window.location.href = `${BASE_URL}/auth/azure`;
+    // Generate a random state for security
+    const state = Math.random().toString(36).substring(2, 15);
     
-    // Log the URL being accessed to help with debugging
-    console.log(`Redirecting to Microsoft login at: ${BASE_URL}/auth/azure`);
+    // Store state in localStorage to verify later
+    localStorage.setItem('auth_state', state);
+    
+    // Define the callback URL for our SPA (where we want to be redirected after auth)
+    const redirectUri = encodeURIComponent(`${window.location.origin}${SPA_CALLBACK_PATH}`);
+    
+    // Build the auth URL with SPA-specific parameters
+    const authUrl = `${BASE_URL}/auth/azure?state=${state}&redirect_uri=${redirectUri}&from_spa=true`;
+    
+    console.log(`Redirecting to Microsoft login at: ${authUrl}`);
+    
+    // Redirect to the auth URL
+    window.location.href = authUrl;
   },
   
   // Logout function
@@ -102,124 +132,72 @@ export const AuthService = {
   clearSession() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('auth_state');
     delete axios.defaults.headers.common['Authorization'];
+    token.value = null;
+    user.value = null;
   },
   
-  // Get current user profile
-  async getCurrentUser() {
-    try {
-      const response = await authClient.get('/user');
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-  
-  // Check if user is logged in
-  isLoggedIn() {
-    return !!localStorage.getItem('auth_token');
-  },
-  
-  // Get current user data from localStorage
-  getUserData() {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        return JSON.parse(userData);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  },
-  
-  // Handle the Microsoft callback (called from the callback page)
-  async handleMicrosoftCallback(code) {
-    try {
-      // For direct web route authentication, the backend typically 
-      // returns the token directly in the response or in the URL hash
-      // We can adapt to either approach
+  // Handle the URL hash-based authentication response
+  handleAuthFromUrlHash() {
+    // Check if there's a hash in the URL
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
-      // If token is in URL hash or query params, extract it
-      if (code) {
-        // Use the correct callback endpoint
-        const response = await fetch(`${BASE_URL}/auth/callback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include', // Include cookies for CSRF/session
-          body: JSON.stringify({ code })
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Microsoft login failed');
-        }
-        
-        const data = await response.json();
-        
-        // Store the token and user
-        if (data.token) {
-          this.setToken(data.token);
-          this.setUser(data.user);
-          axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-          return data;
-        } else {
-          throw new Error('No token received from server');
-        }
-      } else {
-        throw new Error('No authorization code received');
+      // Check for errors
+      if (hashParams.has('error')) {
+        const error = decodeURIComponent(hashParams.get('error'));
+        console.error('Authentication error:', error);
+        return { success: false, error };
       }
-    } catch (error) {
-      console.error('Error handling Microsoft callback:', error);
-      throw error;
+      
+      // Look for token
+      const newToken = hashParams.get('token');
+      if (newToken) {
+        // Set the token
+        this.setToken(newToken);
+        
+        // Check for user data
+        if (hashParams.has('user')) {
+          try {
+            // User data is base64 encoded JSON
+            const userData = JSON.parse(atob(hashParams.get('user')));
+            this.setUser(userData);
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
+        
+        // Verify state if provided
+        const state = hashParams.get('state');
+        const storedState = localStorage.getItem('auth_state');
+        
+        if (state && storedState && state !== storedState) {
+          // State mismatch - possible CSRF attack
+          console.error('State mismatch in auth callback');
+          this.clearSession();
+          return { 
+            success: false, 
+            error: 'Security validation failed. Please try again.' 
+          };
+        }
+        
+        // Clear the state after use
+        localStorage.removeItem('auth_state');
+        
+        // Clear the URL hash to avoid it being reused or bookmarked
+        history.replaceState(null, null, ' ');
+        
+        return { success: true };
+      }
     }
-  },
-  
-  // Check if token is expired
-  isTokenExpired() {
-    if (!token.value) return true;
     
-    try {
-      const tokenData = JSON.parse(atob(token.value.split('.')[1]));
-      return tokenData.exp < Date.now() / 1000;
-    } catch (e) {
-      return true;
-    }
-  },
-  
-  // Refresh the token
-  async refreshToken() {
-    try {
-      const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token.value}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include' // Include cookies for CSRF/session
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to refresh token');
-      }
-      
-      const data = await response.json();
-      this.setToken(data.token);
-      
-      return data.token;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      this.clearSession();
-      throw error;
-    }
+    return { success: false, error: 'No authentication data found' };
   },
   
   // Set up interceptors to handle authentication
   setupInterceptors() {
+    // Get token from localStorage and set in axios defaults
     const token = this.getToken();
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -229,8 +207,9 @@ export const AuthService = {
     axios.interceptors.response.use(
       (response) => response,
       (error) => {
+        // Handle unauthorized responses
         if (error.response && error.response.status === 401) {
-          // Token expired or invalid, logout user
+          console.error('Unauthorized API request - logging out');
           this.clearSession();
           window.location.href = '/auth/login';
         }

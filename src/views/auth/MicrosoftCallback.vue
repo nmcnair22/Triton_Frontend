@@ -12,7 +12,35 @@ const debugInfo = ref({});
 
 onMounted(async () => {
   console.log('Microsoft callback page loaded');
+  
   try {
+    // First check for auth data in URL hash using the new method
+    const result = AuthService.handleAuthFromUrlHash();
+    
+    // Check if we successfully got auth data from URL hash
+    if (result.success) {
+      console.log('Successfully authenticated via URL hash');
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push({ name: 'dashboard-marketing' });
+      }, 500);
+      return;
+    }
+    
+    // If we have an error from the hash handler, show it
+    if (result.error) {
+      error.value = result.error;
+      loading.value = false;
+      return;
+    }
+    
+    // If we get here, we couldn't find auth data in the URL hash,
+    // so we'll try other methods
+    
+    // Log the full URL for debugging
+    console.log('No URL hash auth data found, URL:', window.location.href);
+    
     // Check if we have JSON data directly in the page content
     const pageContent = document.body.textContent || '';
     if (pageContent.trim().startsWith('{') && pageContent.includes('"token"')) {
@@ -39,9 +67,6 @@ onMounted(async () => {
       }
     }
     
-    // Log the full URL for debugging
-    console.log('Current URL:', window.location.href);
-    
     // Check if authentication data is directly in the URL or hash
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -58,8 +83,6 @@ onMounted(async () => {
     
     // Check for various ways the auth might be returned
     const code = urlParams.get('code');
-    const token = urlParams.get('token') || hashParams.get('token') || hashParams.get('access_token');
-    const userId = urlParams.get('user_id') || hashParams.get('user_id');
     const errorParam = urlParams.get('error') || hashParams.get('error');
     
     // Check for error parameter
@@ -70,59 +93,10 @@ onMounted(async () => {
       return;
     }
     
-    // Case 1: We have direct token access
-    if (token) {
-      console.log('Token found directly in URL/hash');
-      
-      // If user info is also provided, set it
-      if (userId) {
-        try {
-          // Try to get user info from URL or make API call to fetch it
-          const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/user/${userId}`, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json'
-            }
-          });
-          
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            AuthService.setUser(userData);
-          }
-        } catch (userError) {
-          console.error('Error fetching user data:', userError);
-          // Continue anyway with the token
-        }
-      }
-      
-      // Store token and redirect
-      AuthService.setToken(token);
-      setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
-      return;
-    }
-    
-    // Case 2: We have a code that needs to be exchanged
-    else if (code) {
-      console.log('Authorization code found, exchanging for token');
-      try {
-        // Exchange the code for a token
-        await AuthService.handleMicrosoftCallback(code);
-        
-        // Redirect to dashboard
-        setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
-        return;
-      } catch (codeError) {
-        console.error('Error exchanging code:', codeError);
-        error.value = codeError.message;
-        loading.value = false;
-        return;
-      }
-    }
-    
     // Case 3: Check if we might have been redirected with user data already set
     // This would happen if the backend set cookies/localstorage and redirected
-    else if (AuthService.isLoggedIn()) {
-      console.log('Already logged in, redirecting to dashboard');
+    if (AuthService.isAuthenticated()) {
+      console.log('Already authenticated, redirecting to dashboard');
       setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
       return;
     }

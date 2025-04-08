@@ -507,12 +507,12 @@ const router = createRouter({
 // Navigation guard for authentication
 router.beforeEach((to, from, next) => {
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-    const isLoggedIn = AuthService.isLoggedIn();
+    const isAuthenticated = AuthService.isAuthenticated();
     
-    if (requiresAuth && !isLoggedIn) {
+    if (requiresAuth && !isAuthenticated) {
         // Redirect to login page if not logged in and trying to access a protected route
         next({ name: 'login' });
-    } else if (to.name === 'login' && isLoggedIn) {
+    } else if (to.name === 'login' && isAuthenticated) {
         // Redirect to dashboard if already logged in and trying to access login page
         next({ name: 'dashboard-marketing' });
     } else {

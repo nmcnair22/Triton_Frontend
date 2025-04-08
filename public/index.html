@@ -12,7 +12,46 @@
             // Auto-handle authentication response from Microsoft OAuth
             document.addEventListener('DOMContentLoaded', function() {
                 try {
+                    // Handle URL fragment-based authentication (SPA style)
+                    if (window.location.hash && (window.location.hash.includes('token=') || window.location.hash.includes('error='))) {
+                        console.log('Detected authentication data in URL hash');
+                        
+                        // Parse the hash fragment (remove the leading #)
+                        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                        
+                        // Check for error first
+                        if (hashParams.has('error')) {
+                            console.error('Auth error:', hashParams.get('error'));
+                            return; // Let the SPA handle the error display
+                        }
+                        
+                        // Extract token
+                        const token = hashParams.get('token');
+                        if (token) {
+                            // Save token
+                            localStorage.setItem('auth_token', token);
+                            
+                            // Check for user data (base64 encoded)
+                            if (hashParams.has('user')) {
+                                try {
+                                    const userData = JSON.parse(atob(hashParams.get('user')));
+                                    localStorage.setItem('user', JSON.stringify(userData));
+                                } catch (e) {
+                                    console.error('Error parsing user data:', e);
+                                }
+                            }
+                            
+                            // If this is the bare domain (not the callback page), redirect to dashboard
+                            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                                console.log('Auth data in URL at root, redirecting to dashboard');
+                                window.location.href = '/';
+                            }
+                        }
+                        return;
+                    }
+
                     // Check if the page content appears to be JSON with authentication data
+                    // This handles direct API responses that render as JSON
                     const content = document.body.textContent || '';
                     if (content.trim().startsWith('{') && 
                         (content.includes('"token"') || content.includes('"user"'))) {
