@@ -138,6 +138,7 @@ const previewUrl = ref('');
 const previewIframe = ref(null);
 const previewError = ref(false);
 const previewErrorMessage = ref('');
+const previewLoaded = ref(false);
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -1129,6 +1130,19 @@ async function onCustomerSelect(event) {
   // Load templates for this customer
   await loadTemplates();
 }
+
+// Function to handle iframe load success
+function onIframeLoad(event) {
+  previewLoaded.value = true;
+  previewError.value = false;
+}
+
+// Function to handle iframe load failure
+function onIframeError(event) {
+  previewError.value = true;
+  previewLoaded.value = false;
+  previewErrorMessage.value = 'Failed to load preview';
+}
 </script>
 
 <template>
@@ -1546,21 +1560,24 @@ async function onCustomerSelect(event) {
             </Message>
             
             <div class="flex-1 overflow-hidden">
-                <!-- PDF Preview using embed - only for PDFs -->
+                <!-- PDF Preview iframe - only for PDFs -->
                 <div v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
-                     class="w-full h-full relative">
+                     class="w-full h-full relative" style="height: calc(70vh - 6rem);">
                     <div v-if="!previewError" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800 z-0">
                         <ProgressSpinner class="w-12 h-12" />
                         <span class="ml-2">Loading preview...</span>
                     </div>
                     
-                    <embed 
+                    <iframe 
                         v-if="!previewError"
                         :src="previewUrl" 
-                        type="application/pdf"
-                        class="w-full h-full relative z-10"
-                        style="min-height: 100%;"
-                    />
+                        class="w-full h-full border-0 relative z-10"
+                        title="PDF Preview"
+                        @load="onIframeLoad"
+                        @error="onIframeError"
+                        ref="previewIframe"
+                        style="height: calc(70vh - 6rem) !important; min-height: 400px !important;"
+                    ></iframe>
                     
                     <!-- Fallback if preview fails -->
                     <div v-if="previewError" class="flex flex-col items-center justify-center h-full">
@@ -1594,40 +1611,22 @@ async function onCustomerSelect(event) {
 <style scoped>
 /* Fix for PDF preview to take up full modal height */
 :deep(.p-dialog-content) {
-  display: flex;
-  flex-direction: column;
-  height: calc(80vh - 6rem) !important; /* Account for header and footer */
-  padding: 0 1.5rem 1.5rem 1.5rem;
   overflow: hidden;
+  height: auto !important;
+  padding-bottom: 0 !important;
 }
 
-/* Ensure the content container takes full height */
-:deep(.p-dialog-content) > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+/* Make sure iframe takes full height */
+iframe {
+  width: 100%; 
   height: 100%;
-}
-
-/* Fix for embed to correctly display PDF */
-embed {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 400px;
   border: none;
+  display: block;
 }
 
-/* For dark mode PDF preview contrast */
-:deep(.p-dialog) {
-  background-color: var(--surface-card);
-}
-
-/* Fix padding for dialogs on mobile */
-@media (max-width: 768px) {
-  :deep(.p-dialog-content) {
-    padding: 0 1rem 1rem 1rem;
-  }
+/* Excel preview container styles */
+.excel-preview :deep(.p-datatable) {
+  height: 100%;
 }
 
 /* Fix spacing for file cards */
