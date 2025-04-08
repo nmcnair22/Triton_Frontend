@@ -6,6 +6,7 @@ import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 import { useToast } from 'primevue/usetoast';
 import { InvoiceService } from '@/service/ApiService';
+import ExcelPreview from '@/components/ExcelPreview.vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -991,60 +992,6 @@ async function downloadFile(file) {
   }
 }
 
-// Function to handle iframe load success
-function onIframeLoad(event) {
-  previewError.value = false;
-  
-  // Ensure the iframe takes the full container height
-  if (previewIframe.value) {
-    // Set a timeout to ensure the iframe resizes properly after content loads
-    setTimeout(() => {
-      const container = previewIframe.value.parentElement;
-      if (container && container.clientHeight) {
-        previewIframe.value.style.height = `${container.clientHeight}px`;
-      }
-    }, 100);
-  }
-  
-  // Check if we got an error page by looking at the content
-  try {
-    const iframeDoc = previewIframe.value.contentDocument || previewIframe.value.contentWindow.document;
-    if (iframeDoc && iframeDoc.body) {
-      const bodyText = iframeDoc.body.textContent || '';
-      
-      // Look for error indicators in the response
-      if (bodyText.includes('Unauthorized') || 
-          bodyText.includes('Not Found') || 
-          bodyText.includes('Internal Server Error')) {
-        previewError.value = true;
-        previewErrorMessage.value = 'Server returned an error: ' + bodyText.substring(0, 100);
-        
-        toast.add({ 
-          severity: 'error', 
-          summary: 'Preview Failed', 
-          detail: previewErrorMessage.value, 
-          life: 5000 
-        });
-      }
-    }
-  } catch (err) {
-    // Security restrictions might prevent accessing iframe content
-  }
-}
-
-// Function to handle iframe load failure
-function onIframeError(event) {
-  previewError.value = true;
-  previewErrorMessage.value = 'Failed to load preview';
-  
-  toast.add({ 
-    severity: 'error', 
-    summary: 'Preview Failed', 
-    detail: 'The file preview could not be loaded. Try downloading the file instead.', 
-    life: 5000 
-  });
-}
-
 // Function to preview a file
 function previewFile(file) {
   if (!file) {
@@ -1599,7 +1546,7 @@ async function onCustomerSelect(event) {
             </Message>
             
             <div class="flex-1 overflow-hidden">
-                <!-- PDF Preview iframe - only for PDFs -->
+                <!-- PDF Preview using embed - only for PDFs -->
                 <div v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
                      class="w-full h-full relative">
                     <div v-if="!previewError" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800 z-0">
@@ -1607,16 +1554,13 @@ async function onCustomerSelect(event) {
                         <span class="ml-2">Loading preview...</span>
                     </div>
                     
-                    <iframe 
+                    <embed 
                         v-if="!previewError"
                         :src="previewUrl" 
-                        class="w-full h-full border-0 relative z-10"
-                        title="PDF Preview"
-                        @load="onIframeLoad"
-                        @error="onIframeError"
-                        ref="previewIframe"
+                        type="application/pdf"
+                        class="w-full h-full relative z-10"
                         style="min-height: 100%;"
-                    ></iframe>
+                    />
                     
                     <!-- Fallback if preview fails -->
                     <div v-if="previewError" class="flex flex-col items-center justify-center h-full">
@@ -1628,6 +1572,12 @@ async function onCustomerSelect(event) {
                         </p>
                         <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
                     </div>
+                </div>
+                
+                <!-- Excel Preview - only for Excel files -->
+                <div v-else-if="selectedFile && (selectedFile.fileType === 'excel' || selectedFile.originalData?.type === 'excel')"
+                     class="w-full h-full">
+                    <ExcelPreview :file="selectedFile" :fileUrl="previewUrl" />
                 </div>
                 
                 <!-- For other file types, show a download prompt -->
@@ -1651,7 +1601,7 @@ async function onCustomerSelect(event) {
   overflow: hidden;
 }
 
-/* Ensure the iframe container takes full height */
+/* Ensure the content container takes full height */
 :deep(.p-dialog-content) > div {
   flex: 1;
   display: flex;
@@ -1659,8 +1609,8 @@ async function onCustomerSelect(event) {
   height: 100%;
 }
 
-/* Fix for iframe to correctly display PDF */
-iframe {
+/* Fix for embed to correctly display PDF */
+embed {
   flex: 1;
   width: 100%;
   height: 100%;
@@ -1671,6 +1621,13 @@ iframe {
 /* For dark mode PDF preview contrast */
 :deep(.p-dialog) {
   background-color: var(--surface-card);
+}
+
+/* Fix padding for dialogs on mobile */
+@media (max-width: 768px) {
+  :deep(.p-dialog-content) {
+    padding: 0 1rem 1rem 1rem;
+  }
 }
 
 /* Fix spacing for file cards */
