@@ -95,298 +95,300 @@ const model = ref([
     },
     { separator: true },
     {
-        label: 'Apps',
-        icon: 'pi pi-th-large',
+        label: 'Other Page Elements',
+        icon: 'pi pi-fw pi-sitemap',
         items: [
             {
-                label: 'Blog',
-                icon: 'pi pi-fw pi-comment',
+                label: 'Apps',
+                icon: 'pi pi-th-large',
                 items: [
+                    {
+                        label: 'Blog',
+                        icon: 'pi pi-fw pi-comment',
+                        items: [
+                            {
+                                label: 'List',
+                                icon: 'pi pi-fw pi-image',
+                                to: '/apps/blog/list'
+                            },
+                            {
+                                label: 'Detail',
+                                icon: 'pi pi-fw pi-list',
+                                to: '/apps/blog/detail'
+                            },
+                            {
+                                label: 'Edit',
+                                icon: 'pi pi-fw pi-pencil',
+                                to: '/apps/blog/edit'
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Chat',
+                        icon: 'pi pi-fw pi-comments',
+                        to: '/apps/chat'
+                    },
+                    {
+                        label: 'Files',
+                        icon: 'pi pi-fw pi-folder',
+                        to: '/apps/files'
+                    },
+                    {
+                        label: 'Mail',
+                        icon: 'pi pi-fw pi-envelope',
+                        items: [
+                            {
+                                label: 'Inbox',
+                                icon: 'pi pi-fw pi-inbox',
+                                to: '/apps/mail/inbox'
+                            },
+                            {
+                                label: 'Compose',
+                                icon: 'pi pi-fw pi-pencil',
+                                to: '/apps/mail/compose'
+                            },
+                            {
+                                label: 'Detail',
+                                icon: 'pi pi-fw pi-comment',
+                                to: '/apps/mail/detail/1000'
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Task List',
+                        icon: 'pi pi-fw pi-check-square',
+                        to: '/apps/tasklist'
+                    },
+                    {
+                        label: 'Todo List',
+                        icon: 'pi pi-fw pi-check-square',
+                        to: '/todo'
+                    }
+                ]
+            },
+            {
+                label: 'UI Kit',
+                icon: 'pi pi-fw pi-star-fill',
+                items: [
+                    {
+                        label: 'Form Layout',
+                        icon: 'pi pi-fw pi-id-card',
+                        to: '/uikit/formlayout'
+                    },
+                    {
+                        label: 'Input',
+                        icon: 'pi pi-fw pi-check-square',
+                        to: '/uikit/input'
+                    },
+                    {
+                        label: 'Button',
+                        icon: 'pi pi-fw pi-box',
+                        to: '/uikit/button'
+                    },
+                    {
+                        label: 'Table',
+                        icon: 'pi pi-fw pi-table',
+                        to: '/uikit/table'
+                    },
                     {
                         label: 'List',
-                        icon: 'pi pi-fw pi-image',
-                        to: '/apps/blog/list'
-                    },
-                    {
-                        label: 'Detail',
                         icon: 'pi pi-fw pi-list',
-                        to: '/apps/blog/detail'
+                        to: '/uikit/list'
                     },
                     {
-                        label: 'Edit',
-                        icon: 'pi pi-fw pi-pencil',
-                        to: '/apps/blog/edit'
-                    }
-                ]
-            },
-            {
-                label: 'Chat',
-                icon: 'pi pi-fw pi-comments',
-                to: '/apps/chat'
-            },
-            {
-                label: 'Files',
-                icon: 'pi pi-fw pi-folder',
-                to: '/apps/files'
-            },
-            {
-                label: 'Mail',
-                icon: 'pi pi-fw pi-envelope',
-                items: [
-                    {
-                        label: 'Inbox',
-                        icon: 'pi pi-fw pi-inbox',
-                        to: '/apps/mail/inbox'
+                        label: 'Tree',
+                        icon: 'pi pi-fw pi-share-alt',
+                        to: '/uikit/tree'
                     },
                     {
-                        label: 'Compose',
-                        icon: 'pi pi-fw pi-pencil',
-                        to: '/apps/mail/compose'
+                        label: 'Panel',
+                        icon: 'pi pi-fw pi-tablet',
+                        to: '/uikit/panel'
                     },
                     {
-                        label: 'Detail',
+                        label: 'Overlay',
+                        icon: 'pi pi-fw pi-clone',
+                        to: '/uikit/overlay'
+                    },
+                    {
+                        label: 'Media',
+                        icon: 'pi pi-fw pi-image',
+                        to: '/uikit/media'
+                    },
+                    {
+                        label: 'Menu',
+                        icon: 'pi pi-fw pi-bars',
+                        to: '/uikit/menu'
+                    },
+                    {
+                        label: 'Message',
                         icon: 'pi pi-fw pi-comment',
-                        to: '/apps/mail/detail/1000'
+                        to: '/uikit/message'
+                    },
+                    {
+                        label: 'File',
+                        icon: 'pi pi-fw pi-file',
+                        to: '/uikit/file'
+                    },
+                    {
+                        label: 'Chart',
+                        icon: 'pi pi-fw pi-chart-bar',
+                        to: '/uikit/charts'
+                    },
+                    {
+                        label: 'Timeline',
+                        icon: 'pi pi-fw pi-calendar',
+                        to: '/uikit/timeline'
+                    },
+                    {
+                        label: 'Misc',
+                        icon: 'pi pi-fw pi-circle-off',
+                        to: '/uikit/misc'
                     }
                 ]
             },
             {
-                label: 'Task List',
-                icon: 'pi pi-fw pi-check-square',
-                to: '/apps/tasklist'
-            },
-            {
-                label: 'Todo List',
-                icon: 'pi pi-fw pi-check-square',
-                to: '/todo'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'UI Kit',
-        icon: 'pi pi-fw pi-star-fill',
-        items: [
-            {
-                label: 'Form Layout',
-                icon: 'pi pi-fw pi-id-card',
-                to: '/uikit/formlayout'
-            },
-            {
-                label: 'Input',
-                icon: 'pi pi-fw pi-check-square',
-                to: '/uikit/input'
-            },
-            {
-                label: 'Button',
-                icon: 'pi pi-fw pi-box',
-                to: '/uikit/button'
-            },
-            {
-                label: 'Table',
-                icon: 'pi pi-fw pi-table',
-                to: '/uikit/table'
-            },
-            {
-                label: 'List',
-                icon: 'pi pi-fw pi-list',
-                to: '/uikit/list'
-            },
-            {
-                label: 'Tree',
-                icon: 'pi pi-fw pi-share-alt',
-                to: '/uikit/tree'
-            },
-            {
-                label: 'Panel',
-                icon: 'pi pi-fw pi-tablet',
-                to: '/uikit/panel'
-            },
-            {
-                label: 'Overlay',
-                icon: 'pi pi-fw pi-clone',
-                to: '/uikit/overlay'
-            },
-            {
-                label: 'Media',
-                icon: 'pi pi-fw pi-image',
-                to: '/uikit/media'
-            },
-            {
-                label: 'Menu',
-                icon: 'pi pi-fw pi-bars',
-                to: '/uikit/menu'
-            },
-            {
-                label: 'Message',
-                icon: 'pi pi-fw pi-comment',
-                to: '/uikit/message'
-            },
-            {
-                label: 'File',
-                icon: 'pi pi-fw pi-file',
-                to: '/uikit/file'
-            },
-            {
-                label: 'Chart',
-                icon: 'pi pi-fw pi-chart-bar',
-                to: '/uikit/charts'
-            },
-            {
-                label: 'Timeline',
-                icon: 'pi pi-fw pi-calendar',
-                to: '/uikit/timeline'
-            },
-            {
-                label: 'Misc',
-                icon: 'pi pi-fw pi-circle-off',
-                to: '/uikit/misc'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Pages',
-        icon: 'pi pi-fw pi-briefcase',
-        items: [
-            {
-                label: 'Landing',
-                icon: 'pi pi-fw pi-globe',
-                to: '/landing'
-            },
-            {
-                label: 'Auth',
-                icon: 'pi pi-fw pi-user',
+                label: 'Pages',
+                icon: 'pi pi-fw pi-briefcase',
                 items: [
                     {
-                        label: 'Login',
-                        icon: 'pi pi-fw pi-sign-in',
-                        to: '/auth/login'
+                        label: 'Landing',
+                        icon: 'pi pi-fw pi-globe',
+                        to: '/landing'
                     },
                     {
-                        label: 'Error',
-                        icon: 'pi pi-fw pi-times-circle',
-                        to: '/auth/error'
+                        label: 'Auth',
+                        icon: 'pi pi-fw pi-user',
+                        items: [
+                            {
+                                label: 'Login',
+                                icon: 'pi pi-fw pi-sign-in',
+                                to: '/auth/login'
+                            },
+                            {
+                                label: 'Error',
+                                icon: 'pi pi-fw pi-times-circle',
+                                to: '/auth/error'
+                            },
+                            {
+                                label: 'Access Denied',
+                                icon: 'pi pi-fw pi-lock',
+                                to: '/auth/access'
+                            },
+                            {
+                                label: 'Register',
+                                icon: 'pi pi-fw pi-user-plus',
+                                to: '/auth/register'
+                            },
+                            {
+                                label: 'Forgot Password',
+                                icon: 'pi pi-fw pi-question',
+                                to: '/auth/forgot-password'
+                            },
+                            {
+                                label: 'New Password',
+                                icon: 'pi pi-fw pi-cog',
+                                to: '/auth/new-password'
+                            },
+                            {
+                                label: 'Verification',
+                                icon: 'pi pi-fw pi-envelope',
+                                to: '/auth/register/verification'
+                            },
+                            {
+                                label: 'Lock Screen',
+                                icon: 'pi pi-fw pi-eye-slash',
+                                to: '/auth/lock-screen'
+                            }
+                        ]
                     },
                     {
-                        label: 'Access Denied',
-                        icon: 'pi pi-fw pi-lock',
-                        to: '/auth/access'
+                        label: 'Crud',
+                        icon: 'pi pi-fw pi-pencil',
+                        to: '/pages/crud'
                     },
                     {
-                        label: 'Register',
-                        icon: 'pi pi-fw pi-user-plus',
-                        to: '/auth/register'
+                        label: 'Invoice Sample',
+                        icon: 'pi pi-fw pi-dollar',
+                        to: '/pages/invoice'
                     },
                     {
-                        label: 'Forgot Password',
+                        label: 'About Us',
+                        icon: 'pi pi-fw pi-user',
+                        to: '/pages/aboutus'
+                    },
+                    {
+                        label: 'Help',
+                        icon: 'pi pi-fw pi-question-circle',
+                        to: '/pages/help'
+                    },
+                    {
+                        label: 'Oops',
+                        icon: 'pi pi-fw pi-exclamation-circle',
+                        to: '/auth/oops'
+                    },
+                    {
+                        label: 'Not Found',
+                        icon: 'pi pi-fw pi-exclamation-circle',
+                        to: '/pages/notfound'
+                    },
+                    {
+                        label: 'Empty',
+                        icon: 'pi pi-fw pi-circle-off',
+                        to: '/pages/empty'
+                    },
+                    {
+                        label: 'FAQ',
                         icon: 'pi pi-fw pi-question',
-                        to: '/auth/forgot-password'
+                        to: '/pages/faq'
                     },
                     {
-                        label: 'New Password',
-                        icon: 'pi pi-fw pi-cog',
-                        to: '/auth/new-password'
-                    },
-                    {
-                        label: 'Verification',
-                        icon: 'pi pi-fw pi-envelope',
-                        to: '/auth/register/verification'
-                    },
-                    {
-                        label: 'Lock Screen',
-                        icon: 'pi pi-fw pi-eye-slash',
-                        to: '/auth/lock-screen'
+                        label: 'Contact Us',
+                        icon: 'pi pi-fw pi-phone',
+                        to: '/landing/contact'
                     }
                 ]
             },
-
             {
-                label: 'Crud',
-                icon: 'pi pi-fw pi-pencil',
-                to: '/pages/crud'
-            },
-            {
-                label: 'Invoice Sample',
-                icon: 'pi pi-fw pi-dollar',
-                to: '/pages/invoice'
-            },
-            {
-                label: 'About Us',
-                icon: 'pi pi-fw pi-user',
-                to: '/pages/aboutus'
-            },
-            {
-                label: 'Help',
-                icon: 'pi pi-fw pi-question-circle',
-                to: '/pages/help'
-            },
-            {
-                label: 'Oops',
-                icon: 'pi pi-fw pi-exclamation-circle',
-                to: '/auth/oops'
-            },
-            {
-                label: 'Not Found',
-                icon: 'pi pi-fw pi-exclamation-circle',
-                to: '/pages/notfound'
-            },
-            {
-                label: 'Empty',
-                icon: 'pi pi-fw pi-circle-off',
-                to: '/pages/empty'
-            },
-            {
-                label: 'FAQ',
-                icon: 'pi pi-fw pi-question',
-                to: '/pages/faq'
-            },
-            {
-                label: 'Contact Us',
-                icon: 'pi pi-fw pi-phone',
-                to: '/landing/contact'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'E-Commerce',
-        icon: 'pi pi-fw pi-wallet',
-        items: [
-            {
-                label: 'Product Overview',
-                icon: 'pi pi-fw pi-image',
-                to: '/ecommerce/product-overview'
-            },
-            {
-                label: 'Product List',
-                icon: 'pi pi-fw pi-list',
-                to: '/ecommerce/product-list'
-            },
-            {
-                label: 'New Product',
-                icon: 'pi pi-fw pi-plus',
-                to: '/ecommerce/new-product'
-            },
-            {
-                label: 'Shopping Cart',
-                icon: 'pi pi-fw pi-shopping-cart',
-                to: '/ecommerce/shopping-cart'
-            },
-            {
-                label: 'Checkout Form',
-                icon: 'pi pi-fw pi-check-square',
-                to: '/ecommerce/checkout-form'
-            },
-            {
-                label: 'Order History',
-                icon: 'pi pi-fw pi-history',
-                to: '/ecommerce/order-history'
-            },
-            {
-                label: 'Order Summary',
-                icon: 'pi pi-fw pi-file',
-                to: '/ecommerce/order-summary'
+                label: 'E-Commerce',
+                icon: 'pi pi-fw pi-wallet',
+                items: [
+                    {
+                        label: 'Product Overview',
+                        icon: 'pi pi-fw pi-image',
+                        to: '/ecommerce/product-overview'
+                    },
+                    {
+                        label: 'Product List',
+                        icon: 'pi pi-fw pi-list',
+                        to: '/ecommerce/product-list'
+                    },
+                    {
+                        label: 'New Product',
+                        icon: 'pi pi-fw pi-plus',
+                        to: '/ecommerce/new-product'
+                    },
+                    {
+                        label: 'Shopping Cart',
+                        icon: 'pi pi-fw pi-shopping-cart',
+                        to: '/ecommerce/shopping-cart'
+                    },
+                    {
+                        label: 'Checkout Form',
+                        icon: 'pi pi-fw pi-check-square',
+                        to: '/ecommerce/checkout-form'
+                    },
+                    {
+                        label: 'Order History',
+                        icon: 'pi pi-fw pi-history',
+                        to: '/ecommerce/order-history'
+                    },
+                    {
+                        label: 'Order Summary',
+                        icon: 'pi pi-fw pi-file',
+                        to: '/ecommerce/order-summary'
+                    }
+                ]
             }
         ]
     },

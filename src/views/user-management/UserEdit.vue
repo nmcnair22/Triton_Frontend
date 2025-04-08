@@ -1,13 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import MultiSelect from 'primevue/multiselect';
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const userManagementStore = useUserManagementStore();
+
+// Get user ID from route params
+const userId = route.params.id;
 
 // Form data
 const formData = ref({
@@ -29,6 +33,7 @@ const errors = ref({});
 const roles = ref([]);
 const avatarFile = ref(null);
 const isSubmitting = ref(false);
+const isLoading = ref(true);
 
 // Initialize data on component mount
 onMounted(async () => {
@@ -36,17 +41,91 @@ onMounted(async () => {
         // Fetch roles from the API
         await userManagementStore.fetchRoles();
         roles.value = userManagementStore.roles;
-        console.log('Available roles:', roles.value);
+        
+        // Fetch user data
+        await fetchUserData();
     } catch (error) {
-        console.error('Error fetching roles:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
             detail: 'Failed to load form data',
             life: 3000
         });
+    } finally {
+        isLoading.value = false;
     }
 });
+
+// Fetch user data
+async function fetchUserData() {
+    try {
+        const userData = await userManagementStore.fetchUser(userId);
+        
+        // Debug user data from API
+        console.log('=== DEBUG USER DATA ===');
+        console.log('User data from API:', userData);
+        console.log('Available roles:', roles.value);
+        
+        // Prepare roles array
+        let userRoles = [];
+        
+        // If user has roles array
+        if (userData.roles && Array.isArray(userData.roles) && userData.roles.length > 0) {
+            console.log('User has roles array:', userData.roles);
+            
+            // Map user roles to the equivalent roles in the roles.value array
+            // This ensures proper matching with the dropdown options
+            userRoles = userData.roles.map(userRole => {
+                // Find the matching role from the available roles array
+                const matchingRole = roles.value.find(r => r.id === userRole.id || r.name === userRole.name);
+                if (matchingRole) {
+                    return matchingRole;
+                }
+                return userRole;
+            });
+        } 
+        // If user has a single role string
+        else if (userData.role) {
+            console.log('User has single role string:', userData.role);
+            // Find the role object that matches the role name
+            const roleObj = roles.value.find(r => r.name === userData.role);
+            if (roleObj) {
+                userRoles = [roleObj];
+            } else {
+                // If role not found in available roles, create a temporary object
+                console.log('Creating temporary role object for:', userData.role);
+                userRoles = [{ name: userData.role, id: 0 }];
+            }
+        }
+        
+        console.log('Final userRoles:', userRoles);
+        
+        // Populate form data from user data
+        formData.value = {
+            name: userData.name || '',
+            email: userData.email || '',
+            password: '', // Don't include password in edit form
+            password_confirmation: '',
+            roles: userRoles,
+            city: userData.city || '',
+            state: userData.state || '',
+            bio: userData.bio || '',
+            website: userData.website || '',
+            status: userData.status || 'active',
+            avatar: null // Don't include avatar file in edit form
+        };
+        
+        console.log('Form data after population:', formData.value);
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to load user data: ${error.message}`,
+            life: 3000
+        });
+    }
+}
 
 // Handle avatar file upload
 const handleFileUpload = (event) => {
@@ -70,15 +149,11 @@ const validateForm = () => {
         newErrors.email = 'Invalid email format';
     }
     
-    if (!formData.value.password) {
-        newErrors.password = 'Password is required';
-    } else if (formData.value.password.length < 8) {
+    if (formData.value.password && formData.value.password.length < 8) {
         newErrors.password = 'Password must be at least 8 characters';
     }
     
-    if (!formData.value.password_confirmation) {
-        newErrors.password_confirmation = 'Please confirm your password';
-    } else if (formData.value.password !== formData.value.password_confirmation) {
+    if (formData.value.password && formData.value.password !== formData.value.password_confirmation) {
         newErrors.password_confirmation = 'Passwords do not match';
     }
     
@@ -108,8 +183,19 @@ const handleSubmit = async () => {
         // Create form data with avatar if provided
         const userData = { ...formData.value };
         
-        // Format roles data for API
+        // Format roles data for API - either send role IDs or role objects based on API requirements
         if (userData.roles && Array.isArray(userData.roles)) {
+            // Option 1: Send role IDs array
+            // userData.role_ids = userData.roles.map(role => role.id);
+            
+            // Option 2: Keep role objects as is (if API expects full role objects)
+            // No change needed
+            
+            // Option 3: Send single role string if API expects it
+            // if (userData.roles.length > 0) {
+            //    userData.role = userData.roles[0].name;
+            // }
+            
             console.log('Submitting roles:', userData.roles);
         }
         
@@ -118,24 +204,30 @@ const handleSubmit = async () => {
             userData.avatar = avatarFile.value;
         }
         
+        // Remove password fields if not provided
+        if (!userData.password) {
+            delete userData.password;
+            delete userData.password_confirmation;
+        }
+        
         // Submit the form data
-        await userManagementStore.createUser(userData);
+        await userManagementStore.updateUser(userId, userData);
         
         toast.add({
             severity: 'success',
             summary: 'Success',
-            detail: 'User created successfully',
+            detail: 'User updated successfully',
             life: 3000
         });
         
         // Redirect to user management page
         router.push({ name: 'user-management' });
     } catch (error) {
-        console.error('Error creating user:', error);
+        console.error('Error updating user:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: error.message || 'Failed to create user',
+            detail: error.message || 'Failed to update user',
             life: 3000
         });
     } finally {
@@ -146,14 +238,16 @@ const handleSubmit = async () => {
 
 <template>
     <div class="card">
-        <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">Create User</span>
+        <span class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-6 block">Edit User</span>
         
-        <div class="p-fluid">
+        <ProgressSpinner v-if="isLoading" class="w-12 h-12 mx-auto my-8" />
+        
+        <div v-else class="p-fluid">
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 lg:col-span-2">
                     <div class="text-surface-900 dark:text-surface-0 font-medium text-xl mb-4">Profile</div>
                     <p class="m-0 p-0 text-surface-600 dark:text-surface-200 leading-normal mr-4">
-                        Create a new user account with appropriate role and permissions.
+                        Edit user information and role assignment.
                     </p>
                 </div>
                 
@@ -229,9 +323,15 @@ const handleSubmit = async () => {
                             <small v-if="errors.roles" class="p-error block mt-1">{{ errors.roles }}</small>
                         </div>
                         
+                        <!-- Password heading (optional for editing) -->
+                        <div class="col-span-12 mt-2">
+                            <h3 class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Change Password (Optional)</h3>
+                            <p class="text-surface-600 dark:text-surface-400 mb-4">Leave blank to keep the current password.</p>
+                        </div>
+                        
                         <!-- Password -->
                         <div class="mb-4 col-span-12 md:col-span-6">
-                            <label for="password" class="font-medium text-surface-900 dark:text-surface-0 block mb-2">Password</label>
+                            <label for="password" class="font-medium text-surface-900 dark:text-surface-0 block mb-2">New Password</label>
                             <Password 
                                 id="password" 
                                 v-model="formData.password" 
@@ -245,7 +345,7 @@ const handleSubmit = async () => {
                         
                         <!-- Password Confirmation -->
                         <div class="mb-4 col-span-12 md:col-span-6">
-                            <label for="password_confirmation" class="font-medium text-surface-900 dark:text-surface-0 block mb-2">Confirm Password</label>
+                            <label for="password_confirmation" class="font-medium text-surface-900 dark:text-surface-0 block mb-2">Confirm New Password</label>
                             <Password 
                                 id="password_confirmation" 
                                 v-model="formData.password_confirmation" 
@@ -290,6 +390,10 @@ const handleSubmit = async () => {
                                     <RadioButton v-model="formData.status" inputId="status_inactive" name="status" value="inactive" />
                                     <label for="status_inactive">Inactive</label>
                                 </div>
+                                <div class="field-radiobutton">
+                                    <RadioButton v-model="formData.status" inputId="status_suspended" name="status" value="suspended" />
+                                    <label for="status_suspended">Suspended</label>
+                                </div>
                             </div>
                         </div>
                         
@@ -297,8 +401,8 @@ const handleSubmit = async () => {
                         <div class="col-span-12">
                             <Button 
                                 type="submit" 
-                                label="Create User" 
-                                icon="pi pi-user-plus" 
+                                label="Update User" 
+                                icon="pi pi-save" 
                                 :loading="isSubmitting"
                                 class="w-auto mt-4"
                             />
@@ -317,4 +421,4 @@ const handleSubmit = async () => {
             </div>
         </div>
     </div>
-</template>
+</template> 
