@@ -8,6 +8,50 @@
         <link rel="icon" href="<%= BASE_URL %>favicon.ico" />
         <title>Triton Admin Template</title>
         <link id="theme-link" rel="stylesheet" href="<%= BASE_URL %>theme/theme-light.css" />
+        <script>
+            // Auto-handle authentication response from Microsoft OAuth
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    // Check if the page content appears to be JSON with authentication data
+                    const content = document.body.textContent || '';
+                    if (content.trim().startsWith('{') && 
+                        (content.includes('"token"') || content.includes('"user"'))) {
+                        
+                        console.log('Detected JSON auth response');
+                        try {
+                            // Try to parse the JSON
+                            const authData = JSON.parse(content);
+                            
+                            // If we have token and user data, save it and redirect
+                            if (authData.token && authData.user) {
+                                // Save auth data to localStorage
+                                localStorage.setItem('auth_token', authData.token);
+                                localStorage.setItem('user', JSON.stringify(authData.user));
+                                
+                                console.log('Saved auth data, redirecting to dashboard');
+                                
+                                // Clear the page content to avoid confusion
+                                document.body.innerHTML = `
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+                                        <h1>Login Successful</h1>
+                                        <p>Redirecting to dashboard...</p>
+                                    </div>
+                                `;
+                                
+                                // Redirect to the dashboard after a short delay
+                                setTimeout(function() {
+                                    window.location.href = '/';
+                                }, 1000);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing authentication data:', e);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error in auth auto-handler:', e);
+                }
+            });
+        </script>
     </head>
     <body>
         <div id="app">
