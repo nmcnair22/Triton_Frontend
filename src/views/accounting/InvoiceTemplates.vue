@@ -133,6 +133,10 @@ const customerDocumentsError = computed(() => invoiceStore.customerDocumentsErro
 const selectedFile = ref(null);
 const showFilePreview = ref(false);
 const activeDocumentTab = ref('customer'); // 'customer' or 'invoice'
+const previewUrl = ref('');
+const previewIframe = ref(null);
+const previewError = ref(false);
+const previewErrorMessage = ref('');
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -167,10 +171,8 @@ onMounted(async () => {
 async function loadCustomers() {
   try {
     if (customerListType.value) {
-      console.log('Loading active customers');
       await customerStore.fetchActiveCustomers();
     } else {
-      console.log('Loading all customers');
       await customerStore.fetchCustomers();
     }
     
@@ -179,7 +181,12 @@ async function loadCustomers() {
     selectedCustomerInvoice.value = null;
     selectedTemplate.value = null;
   } catch (err) {
-    console.error('Failed to load customers:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load customers', 
+      life: 3000 
+    });
   }
 }
 
@@ -311,41 +318,8 @@ async function fetchEnrichedInvoiceData(documentNumber) {
   try {
     await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
     
-    // Enhanced logging to show all data
     const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
     if (enrichedInvoice) {
-      console.log('Fetched enriched invoice data:');
-      
-      // Log normalized data
-      console.log('- Normalized data:', enrichedInvoice.enrichedItems);
-      
-      // Log raw data
-      console.log('- Raw data:', enrichedInvoice.rawEnrichedItems);
-      
-      // Log specific fields from the first item to verify they're being captured
-      if (enrichedInvoice.rawEnrichedItems && enrichedInvoice.rawEnrichedItems.length > 0) {
-        const firstItem = enrichedInvoice.rawEnrichedItems[0];
-        console.log('Specific fields from first raw item:');
-        console.log('  Document_No:', firstItem.Document_No);
-        console.log('  Gen_Prod_Posting_Group:', firstItem.Gen_Prod_Posting_Group);
-        console.log('  Job_No:', firstItem.Job_No);
-        console.log('  Job_Task_No:', firstItem.Job_Task_No);
-        console.log('  CIS_ID:', firstItem.CIS_ID);
-        console.log('  Job_Contract_Entry_No:', firstItem.Job_Contract_Entry_No);
-        
-        // Log the same fields from the mapped data for comparison
-        if (enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
-          const firstMappedItem = enrichedInvoice.enrichedItems[0];
-          console.log('Same fields from first mapped item:');
-          console.log('  documentNo:', firstMappedItem.documentNo);
-          console.log('  genProdPostingGroup:', firstMappedItem.genProdPostingGroup);
-          console.log('  jobNo:', firstMappedItem.jobNo);
-          console.log('  jobTaskNo:', firstMappedItem.jobTaskNo);
-          console.log('  cisId:', firstMappedItem.cisId);
-          console.log('  jobContractEntryNo:', firstMappedItem.jobContractEntryNo);
-        }
-      }
-      
       // Update products with the enriched data
       if (enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
         products.value = enrichedInvoice.enrichedItems.map(item => ({
@@ -362,7 +336,12 @@ async function fetchEnrichedInvoiceData(documentNumber) {
       }
     }
   } catch (err) {
-    console.error('Error fetching enriched invoice data:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load enriched invoice data', 
+      life: 3000 
+    });
   }
 }
 
@@ -1012,6 +991,49 @@ async function downloadFile(file) {
   }
 }
 
+// Function to handle iframe load success
+function onIframeLoad(event) {
+  previewError.value = false;
+  
+  // Check if we got an error page by looking at the content
+  try {
+    const iframeDoc = previewIframe.value.contentDocument || previewIframe.value.contentWindow.document;
+    if (iframeDoc && iframeDoc.body) {
+      const bodyText = iframeDoc.body.textContent || '';
+      
+      // Look for error indicators in the response
+      if (bodyText.includes('Unauthorized') || 
+          bodyText.includes('Not Found') || 
+          bodyText.includes('Internal Server Error')) {
+        previewError.value = true;
+        previewErrorMessage.value = 'Server returned an error: ' + bodyText.substring(0, 100);
+        
+        toast.add({ 
+          severity: 'error', 
+          summary: 'Preview Failed', 
+          detail: previewErrorMessage.value, 
+          life: 5000 
+        });
+      }
+    }
+  } catch (err) {
+    // Security restrictions might prevent accessing iframe content
+  }
+}
+
+// Function to handle iframe load failure
+function onIframeError(event) {
+  previewError.value = true;
+  previewErrorMessage.value = 'Failed to load preview';
+  
+  toast.add({ 
+    severity: 'error', 
+    summary: 'Preview Failed', 
+    detail: 'The file preview could not be loaded. Try downloading the file instead.', 
+    life: 5000 
+  });
+}
+
 // Function to preview a file
 function previewFile(file) {
   if (!file) {
@@ -1035,8 +1057,16 @@ function previewFile(file) {
     return;
   }
   
-  // Log the file being previewed
-  console.log('Previewing file:', file);
+  // Reset error states
+  previewError.value = false;
+  previewErrorMessage.value = '';
+  
+  // Generate the preview URL ahead of time
+  previewUrl.value = InvoiceService.getFilePreviewUrl(
+    file.id, 
+    file.fileType || file.originalData?.type, 
+    file.fileCategory || file.originalData?.subtype
+  );
   
   selectedFile.value = file;
   showFilePreview.value = true;
@@ -1108,6 +1138,39 @@ watch(selectedCustomer, (newCustomer) => {
     selectedTemplate.value = null;
   }
 });
+
+// Inside the component, add a function to load templates
+async function loadTemplates() {
+  if (!selectedCustomer.value) {
+    return;
+  }
+  
+  try {
+    await invoiceStore.fetchAvailableTemplates(selectedCustomer.value.id);
+  } catch (error) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load templates', 
+      life: 3000 
+    });
+  }
+}
+
+// Customer selection change handler
+async function onCustomerSelect(event) {
+  selectedCustomer.value = event.value;
+  selectedTemplate.value = null;
+  
+  // Reset invoice selection
+  selectedCustomerInvoice.value = null;
+  
+  // Load customer's invoices
+  await loadCustomerInvoices();
+  
+  // Load templates for this customer
+  await loadTemplates();
+}
 </script>
 
 <template>
@@ -1278,13 +1341,13 @@ watch(selectedCustomer, (newCustomer) => {
                             <div v-else>
                                 <ul class="list-none p-0 m-0">
                                     <li v-for="template in availableTemplates" :key="template.id" 
-                                        class="p-3 mb-2 flex items-center justify-between cursor-pointer rounded hover:bg-surface-100 dark:hover:bg-surface-700"
-                                        :class="{ 'bg-surface-100 dark:bg-surface-700': selectedTemplate?.id === template.id }"
+                                        class="p-3 mb-2 flex items-center justify-between cursor-pointer border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all hover:shadow hover:bg-surface-50 dark:hover:bg-surface-800"
+                                        :class="{ 'bg-surface-50 dark:bg-surface-800 border-primary-300 dark:border-primary-700': selectedTemplate?.id === template.id }"
                                         @click="selectedTemplate = template">
                                         <div class="flex items-center">
-                                            <i class="pi pi-file-pdf text-2xl mr-3" v-if="template.output_format === 'pdf'"></i>
-                                            <i class="pi pi-file-excel text-2xl mr-3" v-else-if="template.output_format === 'excel'"></i>
-                                            <i class="pi pi-file text-2xl mr-3" v-else></i>
+                                            <i class="pi pi-file-pdf text-2xl mr-3 text-primary-500" v-if="template.output_format === 'pdf'"></i>
+                                            <i class="pi pi-file-excel text-2xl mr-3 text-green-500" v-else-if="template.output_format === 'excel'"></i>
+                                            <i class="pi pi-file text-2xl mr-3 text-blue-500" v-else></i>
                                             <div>
                                                 <div class="text-surface-900 dark:text-surface-0 font-medium">{{ template.name }}</div>
                                                 <div class="text-surface-600 dark:text-surface-400 text-sm">{{ template.description || 'No description' }}</div>
@@ -1318,14 +1381,14 @@ watch(selectedCustomer, (newCustomer) => {
                             <!-- Document Type Tabs -->
                             <div class="flex justify-between items-center mb-4 border-b border-surface-200 dark:border-surface-700">
                                 <div class="flex">
-                                    <div class="pb-3 px-4 cursor-pointer font-medium border-b-2"
-                                         :class="[activeDocumentTab === 'customer' ? 'border-primary-500 text-primary-500' : 'border-transparent']"
+                                    <div class="pb-3 px-4 cursor-pointer font-medium border-b-2 transition-colors duration-200"
+                                         :class="[activeDocumentTab === 'customer' ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400']"
                                          @click="activeDocumentTab = 'customer'">
                                         Customer Documents
                                     </div>
-                                    <div class="pb-3 px-4 font-medium border-b-2"
+                                    <div class="pb-3 px-4 font-medium border-b-2 transition-colors duration-200"
                                          :class="[
-                                            activeDocumentTab === 'invoice' ? 'border-primary-500 text-primary-500' : 'border-transparent',
+                                            activeDocumentTab === 'invoice' ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400',
                                             !selectedCustomerInvoice ? 'text-surface-400 cursor-not-allowed' : 'cursor-pointer'
                                          ]"
                                          @click="selectedCustomerInvoice && (activeDocumentTab = 'invoice')">
@@ -1370,39 +1433,42 @@ watch(selectedCustomer, (newCustomer) => {
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                                         <div v-for="(file, index) in generatedFiles" :key="file?.id || index" 
-                                             class="p-3 border border-surface-200 dark:border-surface-700 rounded shadow-sm transition-all duration-200 hover:shadow-md">
+                                             class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
                                             <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon -->
-                                                <div class="flex items-center mb-3">
-                                                    <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
-                                                    <span class="font-medium truncate flex-1">
-                                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                                    </span>
+                                                <!-- File header with icon and background -->
+                                                <div class="p-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                                                    <div class="flex items-center">
+                                                        <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
+                                                        <span class="font-medium truncate flex-1">
+                                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 
                                                 <!-- File metadata -->
-                                                <div class="text-sm text-surface-600 dark:text-surface-400 mb-2 flex-1">
-                                                    <div class="mb-1">
-                                                        <i class="pi pi-calendar mr-1"></i>
+                                                <div class="p-3 text-sm text-surface-600 dark:text-surface-400 flex-1">
+                                                    <div class="mb-2 flex items-center">
+                                                        <i class="pi pi-calendar text-sm mr-2"></i>
                                                         <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
                                                     </div>
-                                                    <div v-if="file.fileCategory" class="mb-1">
-                                                        <i class="pi pi-file mr-1"></i>
+                                                    <div v-if="file.fileCategory" class="mb-2 flex items-center">
+                                                        <i class="pi pi-file text-sm mr-2"></i>
                                                         <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
                                                     </div>
-                                                    <div v-if="file.template_name" class="truncate">
-                                                        <i class="pi pi-tag mr-1"></i>
+                                                    <div v-if="file.template_name" class="flex items-center truncate">
+                                                        <i class="pi pi-tag text-sm mr-2"></i>
                                                         <span>{{ file.template_name }}</span>
                                                     </div>
                                                 </div>
                                                 
                                                 <!-- File actions -->
-                                                <div class="flex justify-between mt-2">
-                                                    <Button icon="pi pi-eye" text rounded @click="previewFile(file)" />
-                                                    <Button icon="pi pi-download" text rounded @click="downloadFile(file)" />
+                                                <div class="flex border-t border-surface-200 dark:border-surface-700">
+                                                    <Button icon="pi pi-eye" label="Preview" text class="flex-1 justify-center border-right" @click="previewFile(file)" />
+                                                    <div class="border-l border-surface-200 dark:border-surface-700"></div>
+                                                    <Button icon="pi pi-download" label="Download" text class="flex-1 justify-center" @click="downloadFile(file)" />
                                                 </div>
                                             </div>
-                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400">
+                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400 p-6">
                                                 <i class="pi pi-file-excel text-3xl mb-2"></i>
                                                 <span>Invalid file data</span>
                                             </div>
@@ -1429,43 +1495,46 @@ watch(selectedCustomer, (newCustomer) => {
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                                         <div v-for="(file, index) in customerDocuments" :key="file?.id || index" 
-                                             class="p-3 border border-surface-200 dark:border-surface-700 rounded shadow-sm transition-all duration-200 hover:shadow-md">
+                                             class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
                                             <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon -->
-                                                <div class="flex items-center mb-3">
-                                                    <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
-                                                    <span class="font-medium truncate flex-1">
-                                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                                    </span>
+                                                <!-- File header with icon and background -->
+                                                <div class="p-3 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+                                                    <div class="flex items-center">
+                                                        <i :class="[getFileIcon(file), 'text-2xl mr-2']"></i>
+                                                        <span class="font-medium truncate flex-1">
+                                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 
                                                 <!-- File metadata -->
-                                                <div class="text-sm text-surface-600 dark:text-surface-400 mb-2 flex-1">
-                                                    <div class="mb-1">
-                                                        <i class="pi pi-calendar mr-1"></i>
+                                                <div class="p-3 text-sm text-surface-600 dark:text-surface-400 flex-1">
+                                                    <div class="mb-2 flex items-center">
+                                                        <i class="pi pi-calendar text-sm mr-2"></i>
                                                         <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
                                                     </div>
-                                                    <div class="mb-1" v-if="file.invoice_number">
-                                                        <i class="pi pi-file-invoice mr-1"></i>
+                                                    <div class="mb-2 flex items-center" v-if="file.invoice_number">
+                                                        <i class="pi pi-file-invoice text-sm mr-2"></i>
                                                         <span>Invoice #{{ file.invoice_number }}</span>
                                                     </div>
-                                                    <div v-if="file.fileCategory" class="mb-1">
-                                                        <i class="pi pi-file mr-1"></i>
+                                                    <div v-if="file.fileCategory" class="mb-2 flex items-center">
+                                                        <i class="pi pi-file text-sm mr-2"></i>
                                                         <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
                                                     </div>
-                                                    <div v-if="file.template_name" class="truncate">
-                                                        <i class="pi pi-tag mr-1"></i>
+                                                    <div v-if="file.template_name" class="flex items-center truncate">
+                                                        <i class="pi pi-tag text-sm mr-2"></i>
                                                         <span>{{ file.template_name }}</span>
                                                     </div>
                                                 </div>
                                                 
                                                 <!-- File actions -->
-                                                <div class="flex justify-between mt-2">
-                                                    <Button icon="pi pi-eye" text rounded @click="previewFile(file)" />
-                                                    <Button icon="pi pi-download" text rounded @click="downloadFile(file)" />
+                                                <div class="flex border-t border-surface-200 dark:border-surface-700">
+                                                    <Button icon="pi pi-eye" label="Preview" text class="flex-1 justify-center border-right" @click="previewFile(file)" />
+                                                    <div class="border-l border-surface-200 dark:border-surface-700"></div>
+                                                    <Button icon="pi pi-download" label="Download" text class="flex-1 justify-center" @click="downloadFile(file)" />
                                                 </div>
                                             </div>
-                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400">
+                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400 p-6">
                                                 <i class="pi pi-file-excel text-3xl mb-2"></i>
                                                 <span>Invalid file data</span>
                                             </div>
@@ -1491,12 +1560,49 @@ watch(selectedCustomer, (newCustomer) => {
                 </div>
                 <Button icon="pi pi-download" text @click="downloadFile(selectedFile)" />
             </div>
+            
+            <!-- Error display if preview fails -->
+            <Message v-if="previewError" severity="error" :closable="false" class="mb-4 w-full">
+                <div class="flex flex-col">
+                    <span class="font-bold">Failed to load preview</span>
+                    <span>{{ previewErrorMessage }}</span>
+                    <div class="mt-2">
+                        <Button label="Try downloading instead" icon="pi pi-download" 
+                                @click="downloadFile(selectedFile)" class="p-button-sm" />
+                    </div>
+                </div>
+            </Message>
+            
             <div class="flex-1 overflow-hidden">
                 <!-- PDF Preview iframe - only for PDFs -->
-                <iframe v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
-                        :src="InvoiceService.getFilePreviewUrl(selectedFile.id, selectedFile.fileType || selectedFile.originalData?.type, selectedFile.fileCategory || selectedFile.originalData?.subtype)" 
-                        class="w-full h-full border-0"
-                        title="PDF Preview"></iframe>
+                <div v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
+                     class="w-full h-full relative">
+                    <div v-if="!previewError" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800 z-0">
+                        <ProgressSpinner class="w-12 h-12" />
+                        <span class="ml-2">Loading preview...</span>
+                    </div>
+                    
+                    <iframe 
+                        v-if="!previewError"
+                        :src="previewUrl" 
+                        class="w-full h-full border-0 relative z-10"
+                        title="PDF Preview"
+                        @load="onIframeLoad"
+                        @error="onIframeError"
+                        ref="previewIframe"
+                    ></iframe>
+                    
+                    <!-- Fallback if preview fails -->
+                    <div v-if="previewError" class="flex flex-col items-center justify-center h-full">
+                        <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
+                        <p class="text-xl mb-4">Preview failed to load</p>
+                        <p class="text-sm text-surface-600 dark:text-surface-400 mb-4 max-w-lg text-center">
+                            The server returned an error while trying to preview this file. 
+                            You can try downloading it instead.
+                        </p>
+                        <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
+                    </div>
+                </div>
                 
                 <!-- For other file types, show a download prompt -->
                 <div v-else class="flex flex-col items-center justify-center h-full">
