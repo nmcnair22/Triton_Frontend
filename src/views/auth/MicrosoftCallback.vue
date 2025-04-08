@@ -13,6 +13,32 @@ const debugInfo = ref({});
 onMounted(async () => {
   console.log('Microsoft callback page loaded');
   try {
+    // Check if we have JSON data directly in the page content
+    const pageContent = document.body.textContent || '';
+    if (pageContent.trim().startsWith('{') && pageContent.includes('"token"')) {
+      console.log('Found JSON data in page content');
+      try {
+        // Try to parse the JSON directly from the page
+        const jsonData = JSON.parse(pageContent);
+        debugInfo.value = { jsonData };
+        
+        // Store user and token from the JSON response
+        if (jsonData.token && jsonData.user) {
+          console.log('Found token and user in JSON data, setting credentials');
+          AuthService.setToken(jsonData.token);
+          AuthService.setUser(jsonData.user);
+          
+          // Wait a moment then redirect to dashboard
+          setTimeout(() => {
+            router.push({ name: 'dashboard-marketing' });
+          }, 1000);
+          return;
+        }
+      } catch (jsonError) {
+        console.error('Error parsing JSON from page:', jsonError);
+      }
+    }
+    
     // Log the full URL for debugging
     console.log('Current URL:', window.location.href);
     
@@ -22,6 +48,7 @@ onMounted(async () => {
     
     // Save all URL parameters for debugging
     debugInfo.value = {
+      pageContent: pageContent.substring(0, 200) + '...',
       urlParams: Object.fromEntries(urlParams.entries()),
       hashParams: Object.fromEntries(hashParams.entries()),
       pathname: window.location.pathname
