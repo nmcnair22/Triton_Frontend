@@ -441,6 +441,11 @@ const routes = [
                 component: () => import('@/views/auth/LoginView.vue')
             },
             {
+                path: 'microsoft-callback',
+                name: 'microsoft-callback',
+                component: () => import('@/views/auth/MicrosoftCallback.vue')
+            },
+            {
                 path: 'register',
                 name: 'register',
                 component: () => import('@/views/auth/RegisterView.vue')

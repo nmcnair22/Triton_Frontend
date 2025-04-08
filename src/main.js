@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import { createPinia } from 'pinia';
+import axios from 'axios';
 
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
@@ -15,7 +16,16 @@ import { AuthService } from './service/AuthService';
 
 import '@/assets/styles.scss';
 
-// Setup authentication interceptors
+// Setup axios for CSRF handling with Laravel
+axios.defaults.withCredentials = true;
+
+// Check for CSRF token meta tag and set it
+const csrfToken = document.head.querySelector('meta[name="csrf-token"]');
+if (csrfToken) {
+  axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.content;
+}
+
+// Get token from local storage on app start
 AuthService.setupInterceptors();
 
 const app = createApp(App);

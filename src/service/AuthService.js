@@ -1,6 +1,8 @@
+import { ref } from 'vue';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const BASE_URL = API_URL.replace('/api', ''); // Base URL without /api for web routes
 
 // Create axios instance for auth operations
 const authClient = axios.create({
@@ -8,11 +10,41 @@ const authClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
-  // Remove withCredentials since we're using token auth, not cookies
+  },
+  withCredentials: true // Enable credentials for CSRF/session cookies
 });
 
+const token = ref(localStorage.getItem('auth_token') || null);
+const user = ref(JSON.parse(localStorage.getItem('user') || 'null'));
+
 export const AuthService = {
+  // Get the current auth token
+  getToken() {
+    return token.value;
+  },
+  
+  // Set the auth token
+  setToken(newToken) {
+    token.value = newToken;
+    localStorage.setItem('auth_token', newToken);
+  },
+  
+  // Get the current user
+  getUser() {
+    return user.value;
+  },
+  
+  // Set the current user
+  setUser(newUser) {
+    user.value = newUser;
+    localStorage.setItem('user', JSON.stringify(newUser));
+  },
+  
+  // Check if the user is authenticated
+  isAuthenticated() {
+    return !!token.value;
+  },
+  
   // Login with email and password
   async login(email, password) {
     try {
@@ -23,8 +55,8 @@ export const AuthService = {
       });
       
       if (response.data.token) {
-        localStorage.setItem('user_token', response.data.token);
-        localStorage.setItem('user_data', JSON.stringify(response.data.user));
+        this.setToken(response.data.token);
+        this.setUser(response.data.user);
         
         // Set token for all future API calls
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
@@ -37,9 +69,10 @@ export const AuthService = {
     }
   },
   
-  // Microsoft OAuth login (if needed)
+  // Microsoft OAuth login - uses direct link to web route, not API
   redirectToMicrosoftLogin() {
-    window.location.href = `${API_URL}/auth/microsoft`;
+    // Use /auth/azure route instead of API route since it needs session
+    window.location.href = `${BASE_URL}/auth/azure`;
   },
   
   // Logout function
@@ -64,8 +97,8 @@ export const AuthService = {
   
   // Clear local session data
   clearSession() {
-    localStorage.removeItem('user_token');
-    localStorage.removeItem('user_data');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
   },
   
@@ -81,12 +114,12 @@ export const AuthService = {
   
   // Check if user is logged in
   isLoggedIn() {
-    return !!localStorage.getItem('user_token');
+    return !!localStorage.getItem('auth_token');
   },
   
   // Get current user data from localStorage
   getUserData() {
-    const userData = localStorage.getItem('user_data');
+    const userData = localStorage.getItem('user');
     if (userData) {
       try {
         return JSON.parse(userData);
@@ -97,9 +130,88 @@ export const AuthService = {
     return null;
   },
   
-  // Get auth token
-  getToken() {
-    return localStorage.getItem('user_token');
+  // Handle the Microsoft callback (called from the callback page)
+  async handleMicrosoftCallback(code) {
+    try {
+      // For direct web route authentication, the backend typically 
+      // returns the token directly in the response or in the URL hash
+      // We can adapt to either approach
+      
+      // If token is in URL hash or query params, extract it
+      if (code) {
+        const response = await fetch(`${API_URL}/auth/microsoft/callback`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include', // Include cookies for CSRF/session
+          body: JSON.stringify({ code })
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Microsoft login failed');
+        }
+        
+        const data = await response.json();
+        
+        // Store the token and user
+        if (data.token) {
+          this.setToken(data.token);
+          this.setUser(data.user);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+          return data;
+        } else {
+          throw new Error('No token received from server');
+        }
+      } else {
+        throw new Error('No authorization code received');
+      }
+    } catch (error) {
+      console.error('Error handling Microsoft callback:', error);
+      throw error;
+    }
+  },
+  
+  // Check if token is expired
+  isTokenExpired() {
+    if (!token.value) return true;
+    
+    try {
+      const tokenData = JSON.parse(atob(token.value.split('.')[1]));
+      return tokenData.exp < Date.now() / 1000;
+    } catch (e) {
+      return true;
+    }
+  },
+  
+  // Refresh the token
+  async refreshToken() {
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token.value}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include' // Include cookies for CSRF/session
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+      
+      const data = await response.json();
+      this.setToken(data.token);
+      
+      return data.token;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      this.clearSession();
+      throw error;
+    }
   },
   
   // Set up interceptors to handle authentication
