@@ -71,8 +71,11 @@ export const AuthService = {
   
   // Microsoft OAuth login - uses direct link to web route, not API
   redirectToMicrosoftLogin() {
-    // Use /auth/azure route instead of API route since it needs session
+    // Use the exact URL that works in your test page
     window.location.href = `${BASE_URL}/auth/azure`;
+    
+    // Log the URL being accessed to help with debugging
+    console.log(`Redirecting to Microsoft login at: ${BASE_URL}/auth/azure`);
   },
   
   // Logout function
@@ -139,7 +142,8 @@ export const AuthService = {
       
       // If token is in URL hash or query params, extract it
       if (code) {
-        const response = await fetch(`${API_URL}/auth/microsoft/callback`, {
+        // Use the correct callback endpoint
+        const response = await fetch(`${BASE_URL}/auth/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

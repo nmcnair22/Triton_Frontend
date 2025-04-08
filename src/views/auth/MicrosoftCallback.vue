@@ -2,21 +2,46 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { AuthService } from '@/service/AuthService';
+import Button from 'primevue/button';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const router = useRouter();
 const error = ref('');
 const loading = ref(true);
+const debugInfo = ref({});
 
 onMounted(async () => {
+  console.log('Microsoft callback page loaded');
   try {
+    // Log the full URL for debugging
+    console.log('Current URL:', window.location.href);
+    
     // Check if authentication data is directly in the URL or hash
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    // Save all URL parameters for debugging
+    debugInfo.value = {
+      urlParams: Object.fromEntries(urlParams.entries()),
+      hashParams: Object.fromEntries(hashParams.entries()),
+      pathname: window.location.pathname
+    };
+    
+    console.log('Debug info:', debugInfo.value);
     
     // Check for various ways the auth might be returned
     const code = urlParams.get('code');
     const token = urlParams.get('token') || hashParams.get('token') || hashParams.get('access_token');
     const userId = urlParams.get('user_id') || hashParams.get('user_id');
+    const errorParam = urlParams.get('error') || hashParams.get('error');
+    
+    // Check for error parameter
+    if (errorParam) {
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description') || 'Unknown error';
+      error.value = `Authentication error: ${errorParam} - ${errorDescription}`;
+      loading.value = false;
+      return;
+    }
     
     // Case 1: We have direct token access
     if (token) {
@@ -24,42 +49,54 @@ onMounted(async () => {
       
       // If user info is also provided, set it
       if (userId) {
-        // Try to get user info from URL or make API call to fetch it
-        const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/${userId}`, {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
+        try {
+          // Try to get user info from URL or make API call to fetch it
+          const userResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/user/${userId}`, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            AuthService.setUser(userData);
           }
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          AuthService.setUser(userData);
+        } catch (userError) {
+          console.error('Error fetching user data:', userError);
+          // Continue anyway with the token
         }
       }
       
       // Store token and redirect
       AuthService.setToken(token);
-      router.push({ name: 'dashboard-marketing' });
+      setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
       return;
     }
     
     // Case 2: We have a code that needs to be exchanged
     else if (code) {
       console.log('Authorization code found, exchanging for token');
-      // Exchange the code for a token
-      await AuthService.handleMicrosoftCallback(code);
-      
-      // Redirect to dashboard
-      router.push({ name: 'dashboard-marketing' });
-      return;
+      try {
+        // Exchange the code for a token
+        await AuthService.handleMicrosoftCallback(code);
+        
+        // Redirect to dashboard
+        setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
+        return;
+      } catch (codeError) {
+        console.error('Error exchanging code:', codeError);
+        error.value = codeError.message;
+        loading.value = false;
+        return;
+      }
     }
     
     // Case 3: Check if we might have been redirected with user data already set
     // This would happen if the backend set cookies/localstorage and redirected
     else if (AuthService.isLoggedIn()) {
       console.log('Already logged in, redirecting to dashboard');
-      router.push({ name: 'dashboard-marketing' });
+      setTimeout(() => router.push({ name: 'dashboard-marketing' }), 500);
       return;
     }
     
@@ -73,6 +110,11 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Function to go back to login page
+function goToLogin() {
+  router.push('/auth/login');
+}
 </script>
 
 <template>
@@ -87,7 +129,14 @@ onMounted(async () => {
       <i class="pi pi-exclamation-triangle text-5xl text-red-500 mb-4"></i>
       <h2 class="text-xl mb-2">Authentication Failed</h2>
       <p class="text-red-500 mb-4">{{ error }}</p>
-      <Button label="Back to Login" @click="router.push('/auth/login')" />
+      
+      <!-- Debug information section -->
+      <div v-if="Object.keys(debugInfo).length > 0" class="mb-4 p-4 bg-surface-100 dark:bg-surface-800 rounded text-left w-full max-w-lg">
+        <h3 class="text-lg font-medium mb-2">Debug Information</h3>
+        <pre class="text-xs overflow-auto">{{ JSON.stringify(debugInfo, null, 2) }}</pre>
+      </div>
+      
+      <Button label="Back to Login" @click="goToLogin" />
     </div>
   </div>
 </template> 
