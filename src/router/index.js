@@ -2,7 +2,7 @@ import AppLayout from '@/layout/AppLayout.vue';
 import AuthLayout from '@/layout/AuthLayout.vue';
 import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
-import { AuthService } from '@/service/AuthService';
+import { AuthService } from '@/auth/AuthService';
 
 const routes = [
     {
@@ -493,6 +493,93 @@ const routes = [
         path: '/:pathMatch(.*)*',
         name: 'notfound',
         component: () => import('@/views/pages/NotFound.vue')
+    },
+    {
+        path: '/user-management',
+        component: AppLayout,
+        meta: { 
+            requiresAuth: true,
+            permissions: ['users.view'],
+            breadcrumb: ['User Management']
+        },
+        children: [
+            {
+                path: '',
+                name: 'user-management',
+                component: () => import('@/views/user-management/UserList.vue'),
+                meta: {
+                    breadcrumb: ['User Management', 'Users']
+                }
+            },
+            {
+                path: 'create',
+                name: 'user-create',
+                component: () => import('@/views/user-management/UserCreate.vue'),
+                meta: {
+                    permissions: ['users.create'],
+                    breadcrumb: ['User Management', 'Create User']
+                }
+            },
+            {
+                path: 'edit/:id',
+                name: 'user-edit',
+                component: () => import('@/views/user-management/UserEdit.vue'),
+                meta: {
+                    permissions: ['users.edit'],
+                    breadcrumb: ['User Management', 'Edit User']
+                }
+            },
+            {
+                path: 'profile',
+                name: 'user-profile',
+                component: () => import('@/views/user-management/UserProfile.vue'),
+                meta: {
+                    breadcrumb: ['User Management', 'My Profile']
+                }
+            },
+            {
+                path: 'roles',
+                name: 'role-management',
+                component: () => import('@/views/user-management/RoleList.vue'),
+                meta: {
+                    permissions: ['roles.view'],
+                    breadcrumb: ['User Management', 'Roles']
+                }
+            },
+            {
+                path: 'roles/create',
+                name: 'role-create',
+                component: () => import('@/views/user-management/RoleCreate.vue'),
+                meta: {
+                    permissions: ['roles.create'],
+                    breadcrumb: ['User Management', 'Create Role']
+                }
+            },
+            {
+                path: 'roles/edit/:id',
+                name: 'role-edit',
+                component: () => import('@/views/user-management/RoleEdit.vue'),
+                meta: {
+                    permissions: ['roles.edit'],
+                    breadcrumb: ['User Management', 'Edit Role']
+                }
+            }
+        ]
+    },
+    {
+        path: '/profile',
+        component: AppLayout,
+        meta: { 
+            requiresAuth: true,
+            breadcrumb: ['My Profile']
+        },
+        children: [
+            {
+                path: '',
+                name: 'profile',
+                component: () => import('@/views/user-management/UserProfile.vue')
+            }
+        ]
     }
 ];
 
@@ -507,16 +594,54 @@ const router = createRouter({
 // Navigation guard for authentication
 router.beforeEach((to, from, next) => {
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+    const requiredPermissions = to.meta.permissions || [];
+    const requiredRoles = to.meta.roles || [];
     const isAuthenticated = AuthService.isAuthenticated();
     
+    // Not authenticated but route requires auth
     if (requiresAuth && !isAuthenticated) {
-        // Redirect to login page if not logged in and trying to access a protected route
-        next({ name: 'login' });
-    } else if (to.name === 'login' && isAuthenticated) {
-        // Redirect to dashboard if already logged in and trying to access login page
-        next({ name: 'dashboard-marketing' });
-    } else {
-        next();
+        // Store the intended destination for redirect after login
+        localStorage.setItem('auth_redirect', to.fullPath);
+        return next({ name: 'login' });
+    }
+    
+    // Already authenticated but trying to access login page
+    if (to.name === 'login' && isAuthenticated) {
+        return next({ name: 'dashboard-marketing' });
+    }
+    
+    // Authenticated and route has permission requirements
+    if (isAuthenticated && (requiredPermissions.length > 0 || requiredRoles.length > 0)) {
+        // Check required permissions
+        const hasRequiredPermissions = requiredPermissions.length === 0 || 
+            requiredPermissions.some(permission => AuthService.hasPermission(permission));
+            
+        // Check required roles
+        const hasRequiredRoles = requiredRoles.length === 0 || 
+            requiredRoles.some(role => AuthService.hasRole(role));
+            
+        // Redirect to access denied if missing permissions/roles
+        if (!hasRequiredPermissions || !hasRequiredRoles) {
+            console.warn('Access denied: Missing required permissions or roles');
+            return next({ name: 'access', query: { from: to.fullPath } });
+        }
+    }
+    
+    // Proceed to the route
+    next();
+});
+
+// Check for auth redirect after login
+router.afterEach((to) => {
+    // If we've just logged in, check for a stored redirect
+    if (to.name === 'dashboard-marketing' && AuthService.isAuthenticated()) {
+        const redirectPath = localStorage.getItem('auth_redirect');
+        if (redirectPath) {
+            localStorage.removeItem('auth_redirect');
+            
+            // Use router.replace to avoid adding to history stack
+            router.replace(redirectPath);
+        }
     }
 });
 

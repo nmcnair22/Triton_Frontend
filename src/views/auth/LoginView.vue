@@ -4,8 +4,9 @@ import GoogleWidget from '@/components/auth/GoogleWidget.vue';
 import Logo from '@/components/landing/LogoWidget.vue';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { AuthService } from '@/service/AuthService';
+import { AuthService } from '@/auth/AuthService';
 import { useUserStore } from '@/stores/userStore';
+import { z } from 'zod';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -14,44 +15,72 @@ const email = ref('');
 const password = ref('');
 const remember = ref(false);
 const errorMessage = ref('');
+const isSubmitting = ref(false);
+
+// Form validation schema
+const loginSchema = z.object({
+    email: z.string().email('Please enter a valid email address'),
+    password: z.string().min(1, 'Password is required')
+});
 
 // Get values from the store
 const loading = computed(() => userStore.loading);
 const error = computed(() => userStore.error);
 
+// Validate form
+function validateForm() {
+    try {
+        loginSchema.parse({ email: email.value, password: password.value });
+        return true;
+    } catch (error) {
+        errorMessage.value = error.errors[0].message || 'Please check your login details';
+        return false;
+    }
+}
+
 async function handleLogin(event) {
     event.preventDefault();
     
-    if (!email.value || !password.value) {
-        errorMessage.value = 'Please enter both email and password';
+    // Validate form before submission
+    if (!validateForm()) {
         return;
     }
     
     errorMessage.value = '';
+    isSubmitting.value = true;
     
     try {
-        await userStore.login(email.value, password.value);
-        // Login successful, redirect to dashboard
-        router.push({ name: 'dashboard-marketing' });
-    } catch (error) {
-        // Handle login errors
-        console.error('Login error:', error);
+        // Use our enhanced auth service for login
+        const result = await AuthService.loginWithCredentials(
+            email.value, 
+            password.value, 
+            remember.value
+        );
         
-        if (error.response) {
-            // The server responded with an error
-            errorMessage.value = error.response.data.message || `Error ${error.response.status}: ${error.response.statusText}`;
-        } else if (error.request) {
-            // The request was made but no response was received
-            errorMessage.value = 'No response from server. Please check your network connection.';
+        if (result.success) {
+            // Login successful, redirect to dashboard or stored redirect path
+            const redirectPath = localStorage.getItem('auth_redirect');
+            if (redirectPath) {
+                localStorage.removeItem('auth_redirect');
+                router.push(redirectPath);
+            } else {
+                router.push({ name: 'dashboard-marketing' });
+            }
         } else {
-            // Something else went wrong
-            errorMessage.value = error.message || 'Login failed. Please check your credentials.';
+            // Handle login error from the auth service
+            errorMessage.value = result.error || 'Login failed. Please try again.';
         }
+    } catch (error) {
+        console.error('Login error:', error);
+        errorMessage.value = error.message || 'Login failed. Please try again.';
+    } finally {
+        isSubmitting.value = false;
     }
 }
 
 function handleMicrosoftLogin() {
-    AuthService.redirectToMicrosoftLogin();
+    // Use our enhanced auth service for Microsoft login
+    AuthService.loginWithMicrosoft();
 }
 </script>
 
@@ -70,25 +99,56 @@ function handleMicrosoftLogin() {
                         <!-- Display error message if there is one -->
                         <Message v-if="errorMessage" severity="error" class="w-full mb-4">{{ errorMessage }}</Message>
                         
-                        <button class="button-button mt-8" @click="handleMicrosoftLogin"><GoogleWidget /> Sign in with Microsoft</button>
+                        <button class="button-button mt-8" @click="handleMicrosoftLogin">
+                            <GoogleWidget /> 
+                            <span class="ml-2">Sign in with Microsoft</span>
+                        </button>
                         <div class="flex items-center gap-3.5 my-7">
                             <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
                             <span class="body-small text-surface-400 dark:text-surface-600">or</span>
                             <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
                         </div>
                         <form @submit="handleLogin">
-                            <InputText type="text" v-model="email" class="w-full" placeholder="Email" />
-                            <InputText type="password" v-model="password" class="w-full mt-4" placeholder="Password" />
-                            <div class="my-8 flex items-center justify-between">
+                            <div class="mb-4">
+                                <label for="email" class="block text-sm font-medium mb-2">Email</label>
+                                <InputText 
+                                    id="email" 
+                                    type="text" 
+                                    v-model="email" 
+                                    :class="{'p-invalid': errorMessage && !email}" 
+                                    class="w-full"
+                                    placeholder="Enter your email"
+                                    autocomplete="email"
+                                />
+                            </div>
+                            <div class="mb-4">
+                                <label for="password" class="block text-sm font-medium mb-2">Password</label>
+                                <Password 
+                                    v-model="password" 
+                                    id="password" 
+                                    :feedback="false" 
+                                    :toggleMask="true"
+                                    :class="{'p-invalid': errorMessage && !password}"
+                                    class="w-full" 
+                                    inputClass="w-full"
+                                    placeholder="Enter your password"
+                                    autocomplete="current-password"
+                                />
+                            </div>
+                            <div class="my-4 flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <Checkbox inputId="remember" v-model="remember" :binary="true" />
                                     <label for="remember" class="body-small">Remember me</label>
                                 </div>
                                 <router-link to="/auth/forgot-password" class="body-small text-primary-500 hover:underline">Forgot password?</router-link>
                             </div>
-                            <button type="submit" class="body-button w-full" :disabled="loading">
-                                {{ loading ? 'Logging in...' : 'Login' }}
-                            </button>
+                            <Button 
+                                type="submit" 
+                                class="body-button w-full"
+                                :loading="isSubmitting || loading"
+                            >
+                                {{ isSubmitting || loading ? 'Logging in...' : 'Login' }}
+                            </Button>
                         </form>
                         <div class="mt-8 body-small text-center lg:text-left">Not registered? <router-link to="/auth/register" class="text-primary-500 hover:underline">Create an Account</router-link></div>
                     </div>
