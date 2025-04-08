@@ -164,81 +164,26 @@ export const InvoiceService = {
     
     console.log('Download URL:', url);
     
-    // Determine the proper MIME type based on fileType
-    const mimeTypes = {
-      'pdf': 'application/pdf',
-      'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'word': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    };
+    // Create a full URL with the base URL
+    const fullUrl = `${apiClient.defaults.baseURL}${url}`;
     
-    // Determine the proper file extension based on fileType
-    const fileExtensions = {
-      'pdf': 'pdf',
-      'excel': 'xlsx',
-      'word': 'docx'
-    };
+    // Create a simple anchor element and click it
+    // This is the most reliable way to trigger a browser download with the original filename
+    const a = document.createElement('a');
+    a.href = fullUrl;
+    a.target = '_blank'; // This helps with popup blockers
+    a.rel = 'noopener noreferrer';
     
-    // Set default extension based on fileType
-    const defaultExtension = fileExtensions[fileType] || fileType;
+    // Append to body and click
+    document.body.appendChild(a);
+    a.click();
     
-    return ApiService.get(url, { 
-      responseType: 'blob',
-      headers: {
-        'Accept': mimeTypes[fileType] || 'application/octet-stream'
-      }
-    })
-    .then(response => {
-      // Get the blob with the correct type
-      const contentType = response.headers['content-type'] || mimeTypes[fileType] || 'application/octet-stream';
-      const blob = new Blob([response.data], { type: contentType });
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a link and trigger the download
-      const a = document.createElement('a');
-      a.href = url;
-      
-      // Get filename from Content-Disposition header or use a default
-      let filename = `document.${defaultExtension}`;
-      
-      // Parse the Content-Disposition header to extract the filename
-      const contentDisposition = response.headers['content-disposition'];
-      if (contentDisposition) {
-        // More robust regex that handles different Content-Disposition formats
-        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-        const matches = filenameRegex.exec(contentDisposition);
-        
-        if (matches && matches[1]) {
-          // Clean up the filename by removing quotes if present
-          filename = matches[1].replace(/['"]/g, '').trim();
-          
-          // Ensure proper file extension
-          if (!filename.endsWith(`.${defaultExtension}`)) {
-            filename = `${filename}.${defaultExtension}`;
-          }
-        }
-      } else {
-        // Use job ID and type to create a reasonable filename
-        filename = `document_${jobId}_${fileType}.${defaultExtension}`;
-      }
-      
-      console.log('Download filename:', filename);
-      
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Cleanup
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 100);
-      
-      return true;
-    })
-    .catch(error => {
-      console.error('Download error:', error);
-      throw error;
-    });
+    // Remove after a short delay
+    setTimeout(() => {
+      document.body.removeChild(a);
+    }, 100);
+    
+    return Promise.resolve(true);
   },
   
   // Get file preview URL
