@@ -2,7 +2,7 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useUserStore } from '@/stores/userStore';
-import { UserService } from '@/service/UserService';
+import { UserService } from '@/service/UserService.js';
 import { z } from 'zod';
 import Select from 'primevue/select';
 
