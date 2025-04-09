@@ -1,5 +1,5 @@
 <script setup>
-import { FilterMatchMode } from 'primevue/api';
+import { FilterMatchMode } from '@primevue/core/api';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserManagementStore } from '@/stores/userManagementStore';
