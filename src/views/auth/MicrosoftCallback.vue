@@ -17,8 +17,33 @@ onMounted(async () => {
     // Handle authentication using the unified auth service
     const result = AuthService.handleMicrosoftCallback();
     
+    // Debug auth result
+    console.log('=== AUTH DEBUG INFO ===');
+    console.log('Auth Result:', result);
+    console.log('Token exists:', !!result.token);
+    console.log('User:', result.user);
+    console.log('Permissions:', result.permissions);
+    
     if (result.success) {
       console.log('Successfully authenticated via Microsoft');
+      
+      // Debug stored auth data
+      console.log('=== STORED AUTH DATA ===');
+      console.log('Stored Token:', AuthService.getToken());
+      console.log('Stored User:', AuthService.getUser());
+      console.log('Stored Permissions:', AuthService.getPermissions());
+      console.log('Has admin role:', AuthService.hasRole('admin'));
+      console.log('LocalStorage permissions:', JSON.parse(localStorage.getItem('user_permissions') || '[]'));
+      
+      // After successful auth, fetch the current user with fresh permissions
+      console.log('Fetching current user profile with up-to-date permissions...');
+      try {
+        const currentUser = await AuthService.getCurrentUser();
+        console.log('CurrentUser API response:', currentUser);
+        console.log('Updated permissions:', AuthService.getPermissions());
+      } catch (userErr) {
+        console.error('Error fetching current user:', userErr);
+      }
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
@@ -30,7 +55,7 @@ onMounted(async () => {
         } else {
           router.push({ name: 'dashboard-marketing' });
         }
-      }, 500);
+      }, 2000); // Increased delay to see logs
       return;
     }
     

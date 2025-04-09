@@ -17,6 +17,7 @@ const authClient = axios.create({
 
 const token = ref(localStorage.getItem('auth_token') || null);
 const user = ref(JSON.parse(localStorage.getItem('user') || 'null'));
+const permissions = ref(JSON.parse(localStorage.getItem('user_permissions') || '[]'));
 
 export const AuthService = {
   // Get the current auth token
@@ -44,6 +45,17 @@ export const AuthService = {
     localStorage.setItem('user', JSON.stringify(newUser));
   },
   
+  // Get the current user's permissions
+  getPermissions() {
+    return permissions.value;
+  },
+  
+  // Set the current user's permissions
+  setPermissions(newPermissions) {
+    permissions.value = newPermissions;
+    localStorage.setItem('user_permissions', JSON.stringify(newPermissions));
+  },
+  
   // Check if the user is authenticated
   isAuthenticated() {
     return !!token.value;
@@ -67,10 +79,35 @@ export const AuthService = {
     return null;
   },
   
+  // Check if user has a specific permission
+  hasPermission(permission) {
+    return this.getPermissions().includes(permission);
+  },
+  
+  // Check if user has a specific role
+  hasRole(role) {
+    const userData = this.getUserData();
+    if (!userData || !userData.roles) return false;
+    
+    return userData.roles.some(r => r === role || r.name === role);
+  },
+  
   // Get current user profile from API (for backward compatibility)
   async getCurrentUser() {
     try {
       const response = await authClient.get('/user');
+      
+      // If the response includes permissions, store them
+      if (response.data.permissions) {
+        this.setPermissions(response.data.permissions);
+      }
+      
+      // If the response has updated user data, store it
+      if (response.data.user) {
+        this.setUser(response.data.user);
+        return response.data.user;
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -91,6 +128,11 @@ export const AuthService = {
       if (response.data.token) {
         this.setToken(response.data.token);
         this.setUser(response.data.user);
+        
+        // Store permissions if they are included in the response
+        if (response.data.permissions) {
+          this.setPermissions(response.data.permissions);
+        }
       }
       
       return response.data;
@@ -144,10 +186,12 @@ export const AuthService = {
   clearSession() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('user_permissions');
     localStorage.removeItem('auth_state');
     delete axios.defaults.headers.common['Authorization'];
     token.value = null;
     user.value = null;
+    permissions.value = [];
   },
   
   // Handle the URL hash-based authentication response
@@ -175,6 +219,17 @@ export const AuthService = {
             // User data is base64 encoded JSON
             const userData = JSON.parse(atob(hashParams.get('user')));
             this.setUser(userData);
+            
+            // Check for permissions
+            if (hashParams.has('permissions')) {
+              try {
+                // Permissions are base64 encoded JSON array
+                const perms = JSON.parse(atob(hashParams.get('permissions')));
+                this.setPermissions(perms);
+              } catch (e) {
+                console.error('Error parsing permissions data:', e);
+              }
+            }
           } catch (e) {
             console.error('Error parsing user data:', e);
           }

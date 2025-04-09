@@ -130,6 +130,12 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
   }
 
+  // Add this method for testing
+  function setTestUserData(userData, userPermissions) {
+    user.value = userData;
+    permissions.value = userPermissions;
+  }
+
   return {
     // State
     user,
@@ -152,6 +158,7 @@ export const useUserStore = defineStore('user', () => {
     fetchCurrentUser,
     updateProfile,
     changePassword,
-    resetState
+    resetState,
+    setTestUserData
   };
 }); 

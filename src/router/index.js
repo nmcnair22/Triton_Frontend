@@ -4,6 +4,9 @@ import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
 
+// Explicitly set development mode variable
+const isDevelopmentMode = import.meta.env.DEV;
+
 const routes = [
     {
         path: '/',
@@ -400,6 +403,15 @@ const routes = [
                     breadcrumb: ['Todo List']
                 },
                 component: () => import('@/views/TodoPage.vue')
+            },
+            {
+                path: '/debug/permissions',
+                name: 'permission-debug',
+                component: () => import('@/components/auth/PermissionDebug.vue'),
+                meta: {
+                    requiresAuth: true,
+                    breadcrumb: ['Debug', 'Permissions']
+                }
             }
         ],
         meta: { requiresAuth: true }

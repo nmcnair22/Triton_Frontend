@@ -26,7 +26,7 @@ export const UserManagementService = {
       params.sortOrder = sortOrder || 1;
     }
     
-    const response = await apiClient.get('/admin/users', params);
+    const response = await apiClient.get('/users', params);
     return response.data;
   },
   
@@ -36,7 +36,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with user data
    */
   async getUser(id) {
-    const response = await apiClient.get(`/admin/users/${id}`);
+    const response = await apiClient.get(`/users/${id}`);
     return response.data;
   },
   
@@ -46,7 +46,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with created user
    */
   async createUser(userData) {
-    const response = await apiClient.post('/admin/users', userData);
+    const response = await apiClient.post('/users', userData);
     return response.data;
   },
   
@@ -57,7 +57,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with updated user
    */
   async updateUser(id, userData) {
-    const response = await apiClient.put(`/admin/users/${id}`, userData);
+    const response = await apiClient.put(`/users/${id}`, userData);
     return response.data;
   },
   
@@ -67,7 +67,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with deletion status
    */
   async deleteUser(id) {
-    const response = await apiClient.delete(`/admin/users/${id}`);
+    const response = await apiClient.delete(`/users/${id}`);
     return response.data;
   },
   
@@ -76,7 +76,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with roles list
    */
   async getRoles() {
-    const response = await apiClient.get('/admin/roles');
+    const response = await apiClient.get('/roles');
     return response.data;
   },
   
@@ -86,7 +86,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with role data
    */
   async getRole(id) {
-    const response = await apiClient.get(`/admin/roles/${id}`);
+    const response = await apiClient.get(`/roles/${id}`);
     return response.data;
   },
   
@@ -96,7 +96,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with created role
    */
   async createRole(roleData) {
-    const response = await apiClient.post('/admin/roles', roleData);
+    const response = await apiClient.post('/roles', roleData);
     return response.data;
   },
   
@@ -107,7 +107,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with updated role
    */
   async updateRole(id, roleData) {
-    const response = await apiClient.put(`/admin/roles/${id}`, roleData);
+    const response = await apiClient.put(`/roles/${id}`, roleData);
     return response.data;
   },
   
@@ -117,7 +117,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with deletion status
    */
   async deleteRole(id) {
-    const response = await apiClient.delete(`/admin/roles/${id}`);
+    const response = await apiClient.delete(`/roles/${id}`);
     return response.data;
   },
   
@@ -128,7 +128,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with assignment result
    */
   async assignRoles(userId, roles) {
-    const response = await apiClient.post(`/admin/users/${userId}/roles`, { roles });
+    const response = await apiClient.post(`/users/${userId}/roles`, { roles });
     return response.data;
   },
   
@@ -137,7 +137,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with permissions list
    */
   async getPermissions() {
-    const response = await apiClient.get('/admin/permissions');
+    const response = await apiClient.get('/permissions');
     return response.data;
   },
   
@@ -147,7 +147,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with user permissions
    */
   async getUserPermissions(userId) {
-    const response = await apiClient.get(`/admin/users/${userId}/permissions`);
+    const response = await apiClient.get(`/users/${userId}/permissions`);
     return response.data;
   },
   
@@ -157,7 +157,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with role permissions
    */
   async getRolePermissions(roleId) {
-    const response = await apiClient.get(`/admin/roles/${roleId}/permissions`);
+    const response = await apiClient.get(`/roles/${roleId}/permissions`);
     return response.data;
   },
   
@@ -168,7 +168,7 @@ export const UserManagementService = {
    * @returns {Promise} Promise with assignment result
    */
   async assignPermissionsToRole(roleId, permissions) {
-    const response = await apiClient.post(`/admin/roles/${roleId}/permissions`, { permissions });
+    const response = await apiClient.post(`/roles/${roleId}/permissions`, { permissions });
     return response.data;
   }
 }; 

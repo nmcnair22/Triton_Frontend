@@ -11,6 +11,9 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 
+// RBAC components
+import PermissionGuard from '@/components/auth/PermissionGuard.vue';
+
 // Import auth service
 import { AuthService } from './service/AuthService';
 
@@ -68,6 +71,8 @@ app.use(PrimeVue, {
 app.use(ToastService);
 app.use(ConfirmationService);
 
+// Register global components
 app.component('BlockViewer', BlockViewer);
+app.component('PermissionGuard', PermissionGuard);
 
 app.mount('#app');
