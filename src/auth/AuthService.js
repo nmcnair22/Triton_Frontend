@@ -157,22 +157,18 @@ export const AuthService = {
   async logout() {
     try {
       const currentToken = this.getToken();
+      // Call the LogoutService, it will handle the POST request with the token
       await this.logoutService.logout(currentToken);
       
-      // Clear the session regardless of API result
+      // Clear the session ONLY after successful API call
       this.clearSession();
       
       return { success: true };
     } catch (error) {
-      console.error('Logout error', error);
-      
-      // Still clear session even if API call fails
-      this.clearSession();
-      
-      return { 
-        success: true, 
-        warning: 'Server logout failed, but local session has been cleared'
-      };
+      console.error('Logout error:', error);
+      // Do NOT clear session here if API fails
+      // Rethrow the error so the caller (userStore) knows it failed
+      throw error; 
     }
   },
   

@@ -4,10 +4,14 @@ import { ref } from 'vue';
 import AppBreadcrumb from './AppBreadcrumb.vue';
 import { useUserStore } from '@/stores/userStore';
 import { useRouter } from 'vue-router';
+import { useConfirm } from 'primevue/useconfirm';
+import ConfirmDialog from 'primevue/confirmdialog';
+import Button from 'primevue/button';
 
 const { layoutState, isDarkTheme, toggleMenu, toggleConfigSidebar } = useLayout();
 const userStore = useUserStore();
 const router = useRouter();
+const confirm = useConfirm();
 
 const notificationsBars = [
     {
@@ -102,9 +106,39 @@ function showRightMenu() {
     layoutState.rightMenuVisible = !layoutState.rightMenuVisible;
 }
 
-function handleLogout() {
-    userStore.logout();
-    router.push({ name: 'login' });
+async function handleLogout() {
+    try {
+        await userStore.logout();
+        router.push({ name: 'login' });
+    } catch (error) {
+        console.error("Logout failed in handleLogout:", error);
+    }
+}
+
+function confirmLogout(event) {
+    confirm.require({
+        target: event.currentTarget,
+        group: 'headless',
+        message: 'Are you sure you want to log out?',
+        icon: 'pi pi-exclamation-triangle text-red-500',
+        header: 'Logout Confirmation',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Logout',
+            severity: 'danger'
+        },
+        accept: () => {
+            handleLogout();
+        },
+        reject: () => {
+            // Optional: Add logic if user cancels
+            // toast.add({ severity: 'error', summary: 'Rejected', detail: 'You have rejected', life: 3000 });
+        }
+    });
 }
 </script>
 
@@ -216,7 +250,7 @@ function handleLogout() {
                                 </a>
                             </li>
                             <li>
-                                <a @click="handleLogout" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                <a @click="confirmLogout($event)" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
                                     <i class="pi pi-power-off" />
                                     <span>Log out</span>
                                 </a>
@@ -232,5 +266,21 @@ function handleLogout() {
                 </li>
             </ul>
         </div>
+
+        <ConfirmDialog group="headless">
+            <template #container="{ message, acceptCallback, rejectCallback }">
+                <div class="flex flex-col items-center p-5 bg-surface-0 dark:bg-surface-900 rounded-md">
+                    <div class="rounded-full bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400 inline-flex justify-center items-center h-12 w-12 -mt-8">
+                        <i class="pi pi-exclamation-triangle text-2xl"></i>
+                    </div>
+                    <span class="font-bold text-xl block mb-2 mt-4 dark:text-surface-0">{{ message.header }}</span>
+                    <p class="mb-0 dark:text-surface-300">{{ message.message }}</p>
+                    <div class="flex items-center gap-2 mt-4">
+                        <Button label="Cancel" outlined severity="secondary" @click="rejectCallback"></Button>
+                        <Button label="Logout" severity="danger" @click="acceptCallback"></Button>
+                    </div>
+                </div>
+            </template>
+        </ConfirmDialog>
     </div>
 </template>
