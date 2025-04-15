@@ -5,6 +5,7 @@ import { useToast } from 'primevue/usetoast';
 import KeyMetricCard from './components/KeyMetricCard.vue';
 import DispatchVolumeChart from './components/charts/DispatchVolumeChart.vue';
 import StatusDistributionChart from './components/charts/StatusDistributionChart.vue';
+import FinancialCategoryChart from './components/charts/FinancialCategoryChart.vue';
 import ClientChart from './components/charts/ClientChart.vue';
 import ProjectChart from './components/charts/ProjectChart.vue';
 import RevenueChart from './components/charts/RevenueChart.vue';
@@ -219,6 +220,18 @@ function backToDispatchList() {
   selectedDispatchId.value = null;
 }
 
+// Add a new function to refresh key metrics
+function refreshKeyMetrics() {
+  dispatchStore.fetchKeyMetrics();
+  
+  toast.add({
+    severity: 'info',
+    summary: 'Refreshing Metrics',
+    detail: 'Dashboard metrics are being refreshed',
+    life: 3000
+  });
+}
+
 // Lifecycle hooks
 onMounted(() => {
   // Initialize with data
@@ -274,7 +287,10 @@ onMounted(() => {
           :change="dispatchStore.dispatchCountChange" 
           loading-key="keyMetrics"
           metric-type="numeric"
-          icon="pi pi-truck" />
+          icon="pi pi-truck"
+          :has-error="dispatchStore.metricErrors.totalDispatches"
+          :error-message="dispatchStore.metricErrorMessages.totalDispatches"
+          @retry="refreshKeyMetrics" />
       </div>
       
       <!-- Total Revenue -->
@@ -285,7 +301,10 @@ onMounted(() => {
           :change="dispatchStore.revenueChange" 
           loading-key="keyMetrics"
           metric-type="currency"
-          icon="pi pi-dollar" />
+          icon="pi pi-dollar"
+          :has-error="dispatchStore.metricErrors.totalRevenue"
+          :error-message="dispatchStore.metricErrorMessages.totalRevenue"
+          @retry="refreshKeyMetrics" />
       </div>
       
       <!-- Average Margin -->
@@ -296,7 +315,10 @@ onMounted(() => {
           :change="dispatchStore.marginChange" 
           loading-key="keyMetrics"
           metric-type="percentage"
-          icon="pi pi-chart-line" />
+          icon="pi pi-chart-line"
+          :has-error="dispatchStore.metricErrors.averageMargin"
+          :error-message="dispatchStore.metricErrorMessages.averageMargin"
+          @retry="refreshKeyMetrics" />
       </div>
       
       <!-- Completion Rate -->
@@ -307,7 +329,10 @@ onMounted(() => {
           :change="dispatchStore.completionRateChange" 
           loading-key="keyMetrics"
           metric-type="percentage"
-          icon="pi pi-check-circle" />
+          icon="pi pi-check-circle"
+          :has-error="dispatchStore.metricErrors.completionRate"
+          :error-message="dispatchStore.metricErrorMessages.completionRate"
+          @retry="refreshKeyMetrics" />
       </div>
     </div>
     
@@ -338,11 +363,11 @@ onMounted(() => {
         
         <!-- Status Charts Section -->
         <div class="grid grid-cols-12 gap-4 mb-4">
-          <!-- Status Distribution -->
+          <!-- Financial Categories -->
           <div class="col-span-12 md:col-span-6 lg:col-span-4">
             <div class="card h-full">
-              <h2 class="text-xl font-semibold mb-4">Status Distribution</h2>
-              <StatusDistributionChart loading-key="resultCodes" />
+              <h2 class="text-xl font-semibold mb-4">Financial Performance by Category</h2>
+              <FinancialCategoryChart loading-key="financialCategories" />
             </div>
           </div>
           

@@ -63,7 +63,22 @@ export const DispatchService = {
   
   // Get accounting margins data
   getMargins(params) {
-    return ApiService.get('/dispatch-reports/accounting/margins', params);
+    console.log('Calling getMargins with params:', params);
+    const response = ApiService.get('/dispatch-reports/accounting/margins', params);
+    response.then(res => {
+      console.log('Margins API response status:', res.status);
+      
+      if (res?.data?.data?.data?.totals) {
+        console.log('Found totals at data.data.data.totals:', res.data.data.data.totals);
+      }
+      
+      if (params.group_by === 'category' && res?.data?.data?.data?.categories) {
+        console.log('Found categories data, count:', res.data.data.data.categories.length);
+      }
+    }).catch(err => {
+      console.error('Error in getMargins:', err);
+    });
+    return response;
   },
   
   // Get dispatch-specific margin data
@@ -73,7 +88,20 @@ export const DispatchService = {
   
   // Get dispatch stats for result codes
   getDispatchStats(params) {
-    return ApiService.get('/dispatch-reports/stats/dispatches', params);
+    console.log('Calling getDispatchStats with params:', params);
+    const response = ApiService.get('/dispatch-reports/stats/dispatches', params);
+    response.then(res => {
+      console.log('getDispatchStats response:', res);
+      if (res.data?.total) {
+        console.log('Total dispatches:', res.data.total);
+      }
+      if (res.data?.data) {
+        console.log('Status breakdown:', res.data.data);
+      }
+    }).catch(err => {
+      console.error('Error in getDispatchStats:', err);
+    });
+    return response;
   },
   
   // Get customer data
@@ -83,7 +111,7 @@ export const DispatchService = {
   
   // Get project data
   getProjects(params) {
-    return ApiService.get('/dispatch-reports/stats/project', params);
+    return ApiService.get('/dispatch-reports/stats/projects', params);
   },
   
   // Get technician data

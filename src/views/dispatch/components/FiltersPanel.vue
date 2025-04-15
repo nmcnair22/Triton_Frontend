@@ -257,7 +257,7 @@ async function loadClients() {
   
   try {
     const response = await ApiService.get('/dispatch-reports/customers', {
-      limit: -1  // Get all customers
+      limit: 100  // Use maximum allowed limit instead of -1
     });
     
     if (response.data?.data && Array.isArray(response.data.data)) {
@@ -286,9 +286,9 @@ async function loadProjects() {
   loadingProjects.value = true;
   
   try {
-    // Fixed endpoint from "projects" to "project" (singular)
-    const response = await ApiService.get('/dispatch-reports/stats/project', {
-      limit: -1  // Get all projects
+    // Use correct endpoint with plural "projects" and valid limit
+    const response = await ApiService.get('/dispatch-reports/stats/projects', {
+      limit: 100  // Use maximum allowed limit instead of -1
     });
     
     if (response.data?.data && Array.isArray(response.data.data)) {

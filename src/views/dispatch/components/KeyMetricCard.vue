@@ -14,15 +14,26 @@
       <div class="skeleton-loader w-8 h-2rem mb-2"></div>
       <div class="skeleton-loader w-4 h-1rem"></div>
     </div>
+    <div v-else-if="hasError" class="flex flex-column">
+      <div class="text-sm text-red-500 mb-2">
+        <i class="pi pi-exclamation-triangle mr-1"></i>
+        <span>{{ errorMessage || 'Error loading data' }}</span>
+      </div>
+      <Button label="Retry" size="small" severity="secondary" icon="pi pi-refresh" 
+        @click="$emit('retry')" />
+    </div>
     <div v-else class="flex flex-column">
       <div class="text-3xl font-bold mb-2">
-        <span v-if="metricType === 'currency'">$</span>{{ formattedValue }}
-        <span v-if="metricType === 'percentage'">%</span>
+        <span v-if="metricType === 'currency' && value !== null">$</span>{{ formattedValue }}
+        <span v-if="metricType === 'percentage' && value !== null">%</span>
       </div>
-      <div class="flex align-items-center">
+      <div v-if="change !== undefined" class="flex align-items-center">
         <i :class="changeIconClass" class="mr-1"></i>
         <span :class="changeTextClass">{{ formattedChange }}</span>
         <span class="text-xs text-surface-500 dark:text-surface-400 ml-1">vs. previous period</span>
+      </div>
+      <div v-else class="text-xs text-surface-500 dark:text-surface-400">
+        No previous period data
       </div>
     </div>
   </div>
@@ -31,6 +42,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useDispatchStore } from '@/stores/dispatchStore';
+import Button from 'primevue/button';
 
 const props = defineProps({
   title: {
@@ -57,8 +69,18 @@ const props = defineProps({
   icon: {
     type: String,
     default: 'pi pi-chart-bar'
+  },
+  hasError: {
+    type: Boolean,
+    default: false
+  },
+  errorMessage: {
+    type: String,
+    default: ''
   }
 });
+
+const emit = defineEmits(['retry']);
 
 const dispatchStore = useDispatchStore();
 
@@ -68,6 +90,9 @@ const loading = computed(() => {
 });
 
 const formattedValue = computed(() => {
+  if (props.hasError) return 'Error';
+  if (props.value === undefined || props.value === null) return '--';
+  
   const val = Number(props.value);
   if (isNaN(val)) return props.value;
   
@@ -82,6 +107,8 @@ const formattedValue = computed(() => {
 });
 
 const formattedChange = computed(() => {
+  if (props.change === undefined) return '';
+  
   const change = Math.abs(props.change);
   const prefix = props.change >= 0 ? '+' : '-';
   
@@ -93,11 +120,15 @@ const formattedChange = computed(() => {
 });
 
 const changeIconClass = computed(() => {
+  if (props.change === undefined) return '';
+  
   const direction = props.change >= 0 ? 'up' : 'down';
   return `pi pi-arrow-${direction} ${direction === 'up' ? 'text-green-500' : 'text-red-500'}`;
 });
 
 const changeTextClass = computed(() => {
+  if (props.change === undefined) return '';
+  
   return props.change >= 0 ? 'text-green-500' : 'text-red-500';
 });
 </script>
