@@ -1,15 +1,39 @@
 <template>
-  <div class="h-full">
-    <div v-if="loading" class="chart-skeleton flex align-items-center justify-content-center">
-      <Skeleton height="20rem" class="w-full" />
+  <div class="status-chart-container h-full">
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center h-full">
+      <Skeleton height="16rem" width="100%" class="rounded-md" />
     </div>
     
-    <div v-else-if="!hasData" class="flex flex-column h-full justify-content-center align-items-center">
-      <i class="pi pi-chart-pie text-5xl text-surface-300 mb-3"></i>
-      <p class="m-0 text-surface-600 dark:text-surface-400">No status data available</p>
+    <!-- No Data State -->
+    <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-md">
+      <i class="pi pi-chart-pie text-3xl text-gray-400 mb-3"></i>
+      <p class="m-0 text-gray-500 dark:text-gray-400 text-sm">No status data available</p>
     </div>
     
-    <Chart v-else type="pie" :data="chartData" :options="chartOptions" class="h-full" />
+    <!-- Chart Content -->
+    <div v-else class="h-full flex flex-col">
+      <!-- Chart -->
+      <div class="chart-area flex-1">
+        <Chart type="doughnut" :data="chartData" :options="chartOptions" class="h-full" />
+      </div>
+      
+      <!-- Status Legend -->
+      <div class="status-legend grid grid-cols-2 gap-2 mt-3">
+        <div 
+          v-for="(item, index) in chartData.labels" 
+          :key="index"
+          class="status-item flex items-center"
+        >
+          <div class="status-color w-3 h-3 rounded-full mr-2" 
+              :style="{ backgroundColor: chartData.datasets[0].backgroundColor[index] }">
+          </div>
+          <div class="status-name text-xs text-gray-700 dark:text-gray-300">
+            {{ item }}: {{ chartData.datasets[0].data[index] }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -35,89 +59,40 @@ const props = defineProps({
 });
 
 const dispatchStore = useDispatchStore();
-const documentStyle = document.documentElement.style;
 
-// Function to adjust brightness of colors
-function adjustBrightness(hex, percent) {
-  // Validate hex input
-  if (!hex || typeof hex !== 'string') {
-    return hex;
-  }
-  
-  // Clean up hex value if needed
-  hex = hex.replace(/^\s*#|\s*$/g, '');
-  
-  // Convert 3-digit hex to 6-digit
-  if (hex.length === 3) {
-    hex = hex.replace(/(.)/g, '$1$1');
-  }
-  
-  // Ensure valid hex format
-  if (!/^[0-9A-F]{6}$/i.test(hex)) {
-    return hex;
-  }
-  
-  // Convert hex to RGB
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  
-  // Adjust brightness
-  const adjustedR = Math.max(0, Math.min(255, Math.round(r * (1 + percent / 100))));
-  const adjustedG = Math.max(0, Math.min(255, Math.round(g * (1 + percent / 100))));
-  const adjustedB = Math.max(0, Math.min(255, Math.round(b * (1 + percent / 100))));
-  
-  // Convert back to hex
-  return '#' + 
-    ((1 << 24) + (adjustedR << 16) + (adjustedG << 8) + adjustedB)
-    .toString(16).slice(1);
-}
-
-// Helper to safely get CSS color property with fallback
-function getColorProperty(varName, fallback) {
-  try {
-    const value = documentStyle.getPropertyValue(varName);
-    return value && value.trim() ? value.trim() : fallback;
-  } catch (error) {
-    console.warn(`Error getting color property ${varName}:`, error);
-    return fallback;
-  }
-}
-
-// Status colors mapping with comprehensive variants
+// Status colors mapping with modern colors from mockups
 const statusColors = {
-  // Standard statuses
-  'completed': getColorProperty('--green-500', '#22C55E'),
-  'pending': getColorProperty('--yellow-500', '#EAB308'),
-  'scheduled': getColorProperty('--blue-500', '#3B82F6'),
-  // Support both spelling variants
-  'cancelled': getColorProperty('--red-500', '#EF4444'),
-  'canceled': getColorProperty('--red-500', '#EF4444'),
-  // States with spaces and underscores
-  'in progress': getColorProperty('--indigo-500', '#6366F1'),
-  'in_progress': getColorProperty('--indigo-500', '#6366F1'),
-  'in transit': getColorProperty('--blue-400', '#60A5FA'),
-  'in_transit': getColorProperty('--blue-400', '#60A5FA'),
-  'on hold': getColorProperty('--orange-500', '#F97316'),
-  'on_hold': getColorProperty('--orange-500', '#F97316'),
-  // Additional statuses
-  'delayed': getColorProperty('--amber-500', '#F59E0B'),
-  'approved': getColorProperty('--emerald-500', '#10B981')
+  'completed': '#10B981', // Green
+  'pending': '#F59E0B', // Amber
+  'scheduled': '#3B82F6', // Blue
+  'cancelled': '#EF4444', // Red
+  'canceled': '#EF4444', // Red
+  'in progress': '#6366F1', // Indigo
+  'in_progress': '#6366F1', // Indigo
+  'in transit': '#60A5FA', // Blue-400
+  'in_transit': '#60A5FA', // Blue-400
+  'on hold': '#F97316', // Orange
+  'on_hold': '#F97316', // Orange
+  'delayed': '#F59E0B', // Amber
+  'approved': '#10B981'  // Green
 };
 
 const chartOptions = {
   plugins: {
     legend: {
-      position: 'bottom',
-      labels: {
-        color: getColorProperty('--text-color', '#495057'),
-        usePointStyle: true,
-        font: {
-          weight: 'normal'
-        }
-      }
+      display: false
     },
     tooltip: {
+      backgroundColor: 'rgba(30, 41, 59, 0.9)',
+      padding: 10,
+      cornerRadius: 4,
+      bodyFont: {
+        size: 12
+      },
+      titleFont: {
+        size: 12,
+        weight: 'bold'
+      },
       callbacks: {
         label: function(context) {
           const label = context.label || '';
@@ -130,7 +105,7 @@ const chartOptions = {
       }
     }
   },
-  cutout: '40%',
+  cutout: '70%',
   responsive: true,
   maintainAspectRatio: false
 };
@@ -168,7 +143,6 @@ const chartData = computed(() => {
       data.push(count);
       
       // Normalize the status key for matching
-      // Try multiple variants of the status for lookup
       const statusLower = status.toLowerCase();
       const statusUnderscored = statusLower.replace(/ /g, '_');
       const statusSpaced = statusUnderscored.replace(/_/g, ' ');
@@ -178,7 +152,7 @@ const chartData = computed(() => {
         statusColors[statusLower] || 
         statusColors[statusUnderscored] || 
         statusColors[statusSpaced] || 
-        getColorProperty('--primary-color', '#6366F1');
+        '#6366F1'; // Default indigo
       
       backgroundColors.push(baseColor);
       hoverBackgroundColors.push(adjustBrightness(baseColor, -10));
@@ -192,15 +166,61 @@ const chartData = computed(() => {
         data: data,
         backgroundColor: backgroundColors,
         hoverBackgroundColor: hoverBackgroundColors,
-        borderColor: getColorProperty('--surface-ground', '#f8f9fa')
+        borderWidth: 0
       }
     ]
   };
 });
+
+// Function to adjust brightness of colors
+function adjustBrightness(hex, percent) {
+  // Clean up hex value if needed
+  hex = hex.replace(/^\s*#|\s*$/g, '');
+  
+  // Convert 3-digit hex to 6-digit
+  if (hex.length === 3) {
+    hex = hex.replace(/(.)/g, '$1$1');
+  }
+  
+  // Convert hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Adjust brightness
+  const adjustedR = Math.max(0, Math.min(255, Math.round(r * (1 + percent / 100))));
+  const adjustedG = Math.max(0, Math.min(255, Math.round(g * (1 + percent / 100))));
+  const adjustedB = Math.max(0, Math.min(255, Math.round(b * (1 + percent / 100))));
+  
+  // Convert back to hex
+  return '#' + 
+    ((1 << 24) + (adjustedR << 16) + (adjustedG << 8) + adjustedB)
+    .toString(16).slice(1);
+}
 </script>
 
 <style scoped>
-.chart-skeleton {
-  min-height: 20rem;
+.status-chart-container {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.chart-area {
+  height: calc(100% - 60px);
+  min-height: 160px;
+}
+
+.status-legend {
+  background-color: rgb(249 250 251); /* bg-gray-50 */
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.5rem; /* p-2 */
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .status-legend {
+    background-color: rgb(31 41 55); /* dark:bg-gray-800 */
+  }
 }
 </style> 

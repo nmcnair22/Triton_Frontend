@@ -1,14 +1,17 @@
 <template>
-  <div class="h-full">
-    <div v-if="loading || !revenueChartData" class="chart-skeleton">
-      <Skeleton height="20rem" />
+  <div class="revenue-chart-container h-full">
+    <!-- Loading State -->
+    <div v-if="loading || !revenueChartData" class="flex items-center justify-center h-full">
+      <Skeleton height="20rem" width="100%" class="rounded-md" />
     </div>
     
-    <div v-else-if="!hasData" class="flex flex-column h-full justify-content-center align-items-center">
-      <i class="pi pi-chart-line text-5xl text-surface-300 mb-3"></i>
-      <p class="m-0 text-surface-600 dark:text-surface-400">No revenue data available</p>
+    <!-- No Data State -->
+    <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-md">
+      <i class="pi pi-chart-line text-3xl text-gray-400 mb-3"></i>
+      <p class="m-0 text-gray-500 dark:text-gray-400 text-sm">No revenue data available for the selected period</p>
     </div>
     
+    <!-- Chart -->
     <Chart v-else type="bar" :data="revenueChartData" :options="chartOptions" class="h-full" />
   </div>
 </template>
@@ -36,18 +39,56 @@ const props = defineProps({
 
 const dispatchStore = useDispatchStore();
 
+// Modern color palette from mockups
+const chartColors = {
+  revenue: '#10B981', // Emerald green
+  revenueHover: '#059669',
+  cost: '#6366F1', // Indigo
+  costHover: '#4F46E5',
+  margin: '#F59E0B', // Amber
+  marginHover: '#D97706',
+  gridLines: 'rgba(226, 232, 240, 0.6)'
+};
+
 const chartOptions = ref({
   maintainAspectRatio: false,
-  aspectRatio: 0.8,
+  responsive: true,
+  layout: {
+    padding: {
+      top: 10,
+      right: 20, 
+      bottom: 10,
+      left: 10
+    }
+  },
   plugins: {
     legend: {
       position: 'top',
+      align: 'end',
       labels: {
         usePointStyle: true,
-        color: 'var(--text-color)'
+        boxWidth: 8,
+        boxHeight: 8,
+        padding: 15,
+        color: '#64748B',
+        font: {
+          size: 11,
+          weight: '500'
+        }
       }
     },
     tooltip: {
+      backgroundColor: 'rgba(30, 41, 59, 0.9)',
+      padding: 10,
+      cornerRadius: 4,
+      boxPadding: 4,
+      bodyFont: {
+        size: 12
+      },
+      titleFont: {
+        size: 12,
+        weight: 'bold'
+      },
       callbacks: {
         label: function(context) {
           let label = context.dataset.label || '';
@@ -70,24 +111,36 @@ const chartOptions = ref({
     x: {
       stacked: false,
       grid: {
-        color: 'var(--surface-border)',
+        color: chartColors.gridLines,
+        display: false,
         drawBorder: false
       },
       ticks: {
-        color: 'var(--text-color-secondary)'
+        color: '#64748B',
+        font: {
+          size: 10
+        },
+        maxRotation: 45,
+        minRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 12
       }
     },
     y: {
       stacked: false,
       grid: {
-        color: 'var(--surface-border)',
+        color: chartColors.gridLines,
         drawBorder: false
       },
       ticks: {
-        color: 'var(--text-color-secondary)',
+        color: '#64748B',
+        font: {
+          size: 10
+        },
         callback: function(value) {
           return formatCurrency(value);
-        }
+        },
+        maxTicksLimit: 8
       }
     },
     margin: {
@@ -96,10 +149,14 @@ const chartOptions = ref({
         display: false
       },
       ticks: {
-        color: 'var(--text-color-secondary)',
+        color: '#64748B',
+        font: {
+          size: 10
+        },
         callback: function(value) {
           return value + '%';
-        }
+        },
+        maxTicksLimit: 6
       }
     }
   }
@@ -136,26 +193,37 @@ const revenueChartData = computed(() => {
       {
         type: 'bar',
         label: 'Revenue',
-        backgroundColor: 'var(--primary-color)',
+        backgroundColor: chartColors.revenue,
+        hoverBackgroundColor: chartColors.revenueHover,
+        borderRadius: 4,
+        maxBarThickness: 18,
         data: revenueData.value.revenue || [],
         order: 2
       },
       {
         type: 'bar',
         label: 'Cost',
-        backgroundColor: 'var(--surface-500)',
+        backgroundColor: chartColors.cost,
+        hoverBackgroundColor: chartColors.costHover,
+        borderRadius: 4,
+        maxBarThickness: 18,
         data: revenueData.value.cost || [],
         order: 3
       },
       {
         type: 'line',
-        label: 'Margin',
-        borderColor: 'var(--green-500)',
-        pointBackgroundColor: 'var(--green-500)',
-        pointBorderColor: 'var(--green-500)',
-        pointHoverBackgroundColor: 'var(--green-700)',
-        pointHoverBorderColor: 'var(--green-700)',
-        tension: 0.4,
+        label: 'Margin %',
+        borderColor: chartColors.margin,
+        borderWidth: 2,
+        pointBackgroundColor: chartColors.margin,
+        pointBorderColor: '#FFF',
+        pointBorderWidth: 1,
+        pointRadius: 3,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: chartColors.marginHover,
+        pointHoverBorderColor: '#FFF',
+        pointHoverBorderWidth: 1,
+        tension: 0.3,
         fill: false,
         data: revenueData.value.margin || [],
         yAxisID: 'margin',
@@ -177,10 +245,7 @@ function formatCurrency(value) {
 </script>
 
 <style scoped>
-.chart-skeleton {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 20rem;
+.revenue-chart-container {
+  @apply p-0 mx-0 my-0 w-full;
 }
 </style> 

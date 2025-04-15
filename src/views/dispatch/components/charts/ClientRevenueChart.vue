@@ -1,53 +1,81 @@
 <template>
   <div class="client-revenue-chart h-full">
     <!-- Loading State -->
-    <div v-if="loading" class="flex flex-column gap-2 h-full justify-content-center">
-      <Skeleton height="3rem" class="mb-2" />
-      <Skeleton height="20rem" />
+    <div v-if="loading" class="flex items-center justify-center h-full">
+      <Skeleton height="16rem" width="100%" class="rounded-md" />
     </div>
     
-    <!-- Empty State -->
-    <div v-else-if="!hasData" class="flex flex-column h-full justify-content-center align-items-center">
-      <i class="pi pi-chart-bar text-5xl text-surface-300 mb-3"></i>
-      <p class="m-0 text-surface-600 dark:text-surface-400">No client revenue data available</p>
+    <!-- No Data State -->
+    <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-md">
+      <i class="pi pi-chart-bar text-3xl text-gray-400 mb-3"></i>
+      <p class="m-0 text-gray-500 dark:text-gray-400 text-sm">No client revenue data available for this period</p>
     </div>
     
-    <!-- Data View -->
-    <div v-else class="h-full flex flex-column">
-      <!-- Controls -->
-      <div class="controls flex justify-content-between mb-3">
-        <!-- View Type Toggle -->
-        <Dropdown 
-          v-model="selectedView" 
-          :options="viewOptions" 
-          optionLabel="label" 
-          optionValue="value"
-          class="p-inputtext-sm" />
+    <!-- Data Display -->
+    <div v-else class="h-full flex flex-col">
+      <!-- Header with metrics summary -->
+      <div class="chart-header flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
+        <div class="metrics-summary flex gap-6">
+          <div class="metric">
+            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Total Revenue</div>
+            <div class="metric-value text-xl font-semibold text-gray-900 dark:text-white">{{ formatCurrency(totalClientRevenue) }}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Average Margin</div>
+            <div class="metric-value text-xl font-semibold" :class="getMarginTextColor(averageClientMargin)">
+              {{ formatPercentage(averageClientMargin) }}
+            </div>
+          </div>
+          <div class="metric">
+            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Total Clients</div>
+            <div class="metric-value text-xl font-semibold text-gray-900 dark:text-white">{{ clientRevenueData.length }}</div>
+          </div>
+        </div>
+        
+        <div class="view-controls flex gap-2">
+          <div class="tab-controls flex border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+            <button 
+              class="tab-button px-3 py-1 text-sm font-medium"
+              :class="{'active-tab': selectedView === 'chart'}"
+              @click="selectedView = 'chart'"
+            >
+              <i class="pi pi-chart-bar mr-1"></i>Chart
+            </button>
+            <button 
+              class="tab-button px-3 py-1 text-sm font-medium"
+              :class="{'active-tab': selectedView === 'table'}"
+              @click="selectedView = 'table'"
+            >
+              <i class="pi pi-list mr-1"></i>Table
+            </button>
+          </div>
           
-        <!-- Metric Toggle -->
-        <div class="metric-selector flex p-2 bg-surface-100 dark:bg-surface-800 border-round">
-          <button 
-            class="btn p-2 px-3 border-none text-sm" 
-            :class="{'active bg-primary text-white font-medium border-round': selectedMetric === 'revenue'}"
-            @click="selectMetric('revenue')">
-            Revenue
-          </button>
-          <button 
-            class="btn p-2 px-3 border-none text-sm" 
-            :class="{'active bg-primary text-white font-medium border-round': selectedMetric === 'margin'}"
-            @click="selectMetric('margin')">
-            Margin
-          </button>
+          <div class="metric-controls flex border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+            <button 
+              class="tab-button px-3 py-1 text-sm font-medium"
+              :class="{'active-tab': selectedMetric === 'revenue'}"
+              @click="selectMetric('revenue')"
+            >
+              Revenue
+            </button>
+            <button 
+              class="tab-button px-3 py-1 text-sm font-medium"
+              :class="{'active-tab': selectedMetric === 'margin'}"
+              @click="selectMetric('margin')"
+            >
+              Margin
+            </button>
+          </div>
         </div>
       </div>
       
       <!-- Chart View -->
-      <div v-if="selectedView === 'chart'" class="chart-container flex-grow-1">
+      <div v-if="selectedView === 'chart'" class="chart-container flex-1">
         <Chart :type="chartType" :data="chartData" :options="chartOptions" class="h-full" />
       </div>
       
       <!-- Table View -->
-      <div v-else class="table-container flex-grow-1">
+      <div v-else class="table-container flex-1 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
         <DataTable 
           :value="sortedClients" 
           stripedRows 
@@ -56,26 +84,29 @@
           :sortOrder="sortOrder"
           @sort="onSort"
           responsiveLayout="scroll"
-          class="p-datatable-sm">
+          class="w-full">
           
           <Column field="name" header="Client" :sortable="true">
             <template #body="slotProps">
-              <div class="flex align-items-center">
-                <span class="mr-2">{{ slotProps.data.name }}</span>
-                <Badge v-if="slotProps.data.dispatch_count" :value="slotProps.data.dispatch_count" size="small" />
+              <div class="flex items-center">
+                <span class="mr-2 text-gray-800 dark:text-gray-200">{{ slotProps.data.name }}</span>
+                <span v-if="slotProps.data.dispatch_count" 
+                  class="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                  {{ slotProps.data.dispatch_count }}
+                </span>
               </div>
             </template>
           </Column>
           
           <Column field="total_revenue" header="Revenue" :sortable="true">
             <template #body="slotProps">
-              {{ formatCurrency(slotProps.data.total_revenue) }}
+              <span class="text-gray-800 dark:text-gray-200">{{ formatCurrency(slotProps.data.total_revenue) }}</span>
             </template>
           </Column>
           
           <Column field="profit" header="Profit" :sortable="true">
             <template #body="slotProps">
-              <span :class="slotProps.data.profit < 0 ? 'text-red-500' : 'text-green-500'">
+              <span :class="slotProps.data.profit < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'">
                 {{ formatCurrency(slotProps.data.profit) }}
               </span>
             </template>
@@ -83,37 +114,12 @@
           
           <Column field="margin_percent" header="Margin" :sortable="true">
             <template #body="slotProps">
-              <Tag 
-                :value="formatPercentage(slotProps.data.margin_percent)" 
-                :severity="getMarginSeverity(slotProps.data.margin_percent)" />
+              <span class="px-2 py-1 text-xs rounded-md" :class="getMarginBadgeClass(slotProps.data.margin_percent)">
+                {{ formatPercentage(slotProps.data.margin_percent) }}
+              </span>
             </template>
           </Column>
         </DataTable>
-      </div>
-      
-      <!-- Summary -->
-      <div class="summary-stats mt-3 p-3 bg-surface-50 dark:bg-surface-800 border-round">
-        <div class="flex flex-wrap justify-content-between gap-3">
-          <div>
-            <div class="text-sm text-surface-600 dark:text-surface-400">Total Clients</div>
-            <div class="text-xl font-medium">{{ clientRevenueData.length }}</div>
-          </div>
-          
-          <div>
-            <div class="text-sm text-surface-600 dark:text-surface-400">Total Revenue</div>
-            <div class="text-xl font-medium">{{ formatCurrency(totalClientRevenue) }}</div>
-          </div>
-          
-          <div>
-            <div class="text-sm text-surface-600 dark:text-surface-400">Average Margin</div>
-            <div class="flex align-items-center">
-              <Tag 
-                :value="formatPercentage(averageClientMargin)" 
-                :severity="getMarginSeverity(averageClientMargin)"
-                class="text-lg" />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -124,11 +130,8 @@ import { ref, computed } from 'vue';
 import { useDispatchStore } from '@/stores/dispatchStore';
 import Chart from 'primevue/chart';
 import Skeleton from 'primevue/skeleton';
-import Dropdown from 'primevue/dropdown';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Tag from 'primevue/tag';
-import Badge from 'primevue/badge';
 
 const props = defineProps({
   data: {
@@ -153,12 +156,6 @@ const selectedMetric = ref('revenue'); // 'revenue' or 'margin'
 const chartType = ref('bar');
 const sortField = ref('total_revenue');
 const sortOrder = ref(-1); // Descending
-
-// Options
-const viewOptions = [
-  { label: 'Chart View', value: 'chart' },
-  { label: 'Table View', value: 'table' }
-];
 
 // Computed properties
 const loading = computed(() => {
@@ -216,25 +213,29 @@ const chartData = computed(() => {
   
   if (selectedMetric.value === 'revenue') {
     return {
-      labels: clients.map(client => client.name),
+      labels: clients.map(client => truncateLabel(client.name)),
       datasets: [
         {
           label: 'Revenue',
-          backgroundColor: '#3B82F6', // blue-500
+          backgroundColor: '#10B981', // Emerald green
           data: clients.map(client => client.total_revenue),
-          borderRadius: 4
+          borderRadius: 4,
+          barThickness: 16,
+          maxBarThickness: 20
         }
       ]
     };
   } else { // margin
     return {
-      labels: clients.map(client => client.name),
+      labels: clients.map(client => truncateLabel(client.name)),
       datasets: [
         {
           label: 'Margin %',
-          backgroundColor: clients.map(client => getMarginColor(client.margin_percent)),
+          backgroundColor: '#6366F1', // Indigo
           data: clients.map(client => client.margin_percent),
-          borderRadius: 4
+          borderRadius: 4,
+          barThickness: 16,
+          maxBarThickness: 20
         }
       ]
     };
@@ -242,14 +243,25 @@ const chartData = computed(() => {
 });
 
 const chartOptions = computed(() => {
-  const baseOptions = {
+  return {
     indexAxis: 'y',
     maintainAspectRatio: false,
+    responsive: true,
     plugins: {
       legend: {
         display: false
       },
       tooltip: {
+        backgroundColor: 'rgba(30, 41, 59, 0.9)',
+        padding: 10,
+        cornerRadius: 4,
+        bodyFont: {
+          size: 12
+        },
+        titleFont: {
+          size: 12,
+          weight: 'bold'
+        },
         callbacks: {
           label: function(context) {
             const value = context.raw || 0;
@@ -267,11 +279,14 @@ const chartOptions = computed(() => {
       x: {
         beginAtZero: true,
         grid: {
-          color: 'var(--surface-border)',
+          color: 'rgba(226, 232, 240, 0.6)',
           drawBorder: false
         },
         ticks: {
-          color: 'var(--text-color-secondary)',
+          color: '#64748B',
+          font: {
+            size: 10
+          },
           callback: function(value) {
             if (selectedMetric.value === 'margin') {
               return `${value}%`;
@@ -279,7 +294,7 @@ const chartOptions = computed(() => {
               if (value >= 1000000) {
                 return `$${(value / 1000000).toFixed(1)}M`;
               } else if (value >= 1000) {
-                return `$${(value / 1000).toFixed(1)}K`;
+                return `$${(value / 1000).toFixed(0)}K`;
               } else {
                 return `$${value}`;
               }
@@ -289,16 +304,18 @@ const chartOptions = computed(() => {
       },
       y: {
         grid: {
-          display: false
+          display: false,
+          drawBorder: false
         },
         ticks: {
-          color: 'var(--text-color-secondary)'
+          color: '#64748B',
+          font: {
+            size: 11
+          }
         }
       }
     }
   };
-  
-  return baseOptions;
 });
 
 // Helper functions
@@ -314,20 +331,28 @@ function formatPercentage(value) {
   return `${(value || 0).toFixed(1)}%`;
 }
 
-function getMarginColor(margin) {
-  if (!margin || margin < 0) return '#EF4444'; // red-500
-  if (margin < 20) return '#F97316'; // orange-500
-  if (margin < 40) return '#FBBF24'; // amber-400
-  if (margin < 60) return '#A3E635'; // lime-400
-  return '#22C55E'; // green-500
+function getMarginBadgeClass(margin) {
+  if (!margin || margin < 0) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+  if (margin < 20) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+  if (margin < 40) return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
+  if (margin < 60) return 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300';
+  return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
 }
 
-function getMarginSeverity(margin) {
-  if (!margin || margin < 0) return 'danger';
-  if (margin < 20) return 'warning';
-  if (margin < 40) return 'warning';
-  if (margin < 60) return 'success';
-  return 'success';
+function getMarginTextColor(margin) {
+  if (!margin || margin < 0) return 'text-red-500 dark:text-red-400';
+  if (margin < 20) return 'text-yellow-500 dark:text-yellow-400';
+  if (margin < 40) return 'text-amber-500 dark:text-amber-400';
+  if (margin < 60) return 'text-lime-500 dark:text-lime-400';
+  return 'text-green-500 dark:text-green-400';
+}
+
+function truncateLabel(label) {
+  if (!label) return '';
+  if (label.length > 18) {
+    return label.substring(0, 15) + '...';
+  }
+  return label;
 }
 
 function selectMetric(metric) {
@@ -347,28 +372,23 @@ function onSort(event) {
 </script>
 
 <style scoped>
+.client-revenue-chart {
+  @apply p-0 mx-0 my-0 w-full;
+}
+
 .chart-container, .table-container {
-  min-height: 300px;
-  height: 100%;
-  max-height: 400px;
-  overflow-y: auto;
+  min-height: 220px;
 }
 
-.btn {
-  cursor: pointer;
-  transition: all 0.2s;
+.tab-button {
+  @apply text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
 
-.btn:not(.active) {
-  background: transparent;
-  color: var(--text-color);
+.active-tab {
+  @apply bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-400;
 }
 
-.btn:not(.active):hover {
-  background: var(--surface-200);
-}
-
-.active {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.metric-value {
+  @apply leading-none;
 }
 </style> 

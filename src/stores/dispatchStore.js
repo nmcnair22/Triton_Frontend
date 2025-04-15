@@ -565,6 +565,15 @@ export const useDispatchStore = defineStore('dispatch', {
             cost: [totals.total_cost || 0], 
             margin: [totals.margin_percentage || 0] 
           };
+          
+          // Also store raw time series data if available
+          if (response.data?.data?.data?.margins && response.data.data.data.margins.length > 0) {
+            this.revenueOverTime = response.data.data.data.margins.map(item => ({
+              total_charged: item.total_charged || item.revenue || item.total_revenue || 0,
+              date: item.service_date || item.date
+            }));
+            console.log('Updated revenueOverTime with', this.revenueOverTime.length, 'records from totals response');
+          }
         } else if (response.data) {
           // Fallback to old processing method if the new format isn't found
           console.log('No totals found, falling back to old processing method');
@@ -586,14 +595,37 @@ export const useDispatchStore = defineStore('dispatch', {
               });
             }
           }
+          
+          // Extract the raw time series data for revenue stats computeds
+          let timeSeries = [];
+          
+          if (response.data?.data?.data?.margins) {
+            timeSeries = response.data.data.data.margins;
+          } else if (response.data?.data?.margins) {
+            timeSeries = response.data.data.margins;
+          } else if (Array.isArray(response.data?.data)) {
+            timeSeries = response.data.data;
+          } else if (Array.isArray(response.data)) {
+            timeSeries = response.data;
+          }
+          
+          // Map the time series data to revenueOverTime array
+          this.revenueOverTime = timeSeries.map(item => ({
+            total_charged: item.total_charged || item.revenue || item.total_revenue || 0,
+            date: item.service_date || item.date
+          }));
+          
+          console.log('Updated revenueOverTime with', this.revenueOverTime.length, 'records from processed data');
         } else {
           console.log('No revenue data received');
           this.revenueData = { labels: [], revenue: [], cost: [], margin: [] };
+          this.revenueOverTime = [];
         }
       } catch (error) {
         console.error('Error fetching revenue over time', error);
         this.errors.revenueData = 'Failed to load revenue data';
         this.revenueData = { labels: [], revenue: [], cost: [], margin: [] };
+        this.revenueOverTime = [];
       } finally {
         this.loading.revenueData = false;
       }
@@ -708,8 +740,8 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Top Clients by Revenue
     async fetchTopClientsByRevenue(params = {}) {
-      this.loading.clientRevenueData = true;
-      this.errors.clientRevenueData = null;
+      this.loading.clientRevenue = true;
+      this.errors.clientRevenue = null;
       
       const requestParams = {
         ...this.getFilterParams(),
@@ -719,71 +751,103 @@ export const useDispatchStore = defineStore('dispatch', {
       console.log('fetchTopClientsByRevenue - Request params:', requestParams);
       
       try {
-        // First try to use detailed dispatches if available
+        // Check if we already have detailed dispatches and can derive from there
         if (this.detailedData && this.detailedData.length > 0) {
-          console.log('Using detailed dispatches for client revenue data');
+          console.log('Using detailed dispatches for client revenue data, records:', this.detailedData.length);
           
-          // Group by client and sum up revenue
-          const clientRevenueMap = {};
+          // Process client data from detailed dispatches
+          const clientMap = new Map();
           
-          this.detailedData.forEach(item => {
-            const clientName = item.customer_name || 'Unknown';
-            if (!clientRevenueMap[clientName]) {
-              clientRevenueMap[clientName] = {
-                name: clientName,
-                total_revenue: 0,
-                profit: 0,
-                margin_percent: 0,
-                dispatch_count: 0
-              };
+          this.detailedData.forEach(dispatch => {
+            // Skip dispatch if it doesn't have a client
+            if (!dispatch.client_company) {
+              return;
             }
             
-            const revenue = parseFloat(item.total_charged || 0);
-            const cost = parseFloat(item.total_cost || 0);
-            const profit = revenue - cost;
+            const clientName = dispatch.client_company;
+            const revenue = parseFloat(dispatch.total_charged) || 0;
+            const cost = parseFloat(dispatch.total_cost) || 0;
             
-            clientRevenueMap[clientName].total_revenue += revenue;
-            clientRevenueMap[clientName].profit += profit;
-            clientRevenueMap[clientName].dispatch_count += 1;
+            if (!clientMap.has(clientName)) {
+              clientMap.set(clientName, {
+                client: clientName,
+                revenue: 0,
+                cost: 0,
+                profit: 0,
+                margin: 0,
+                count: 0
+              });
+            }
+            
+            const client = clientMap.get(clientName);
+            client.revenue += revenue;
+            client.cost += cost;
+            client.profit = client.revenue - client.cost;
+            client.count += 1;
+            
+            // Calculate margin percentage
+            if (client.revenue > 0) {
+              client.margin = (client.profit / client.revenue) * 100;
+            }
           });
           
-          // Calculate margin percentages and convert to array
-          const clientsArray = Object.values(clientRevenueMap).map(client => {
-            client.margin_percent = client.total_revenue > 0 
-              ? Math.round((client.profit / client.total_revenue) * 100) 
-              : 0;
-            return client;
-          });
+          // Convert Map to Array and sort by revenue
+          const clientData = Array.from(clientMap.values())
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10); // Get top 10 clients
           
-          // Sort by revenue (highest first)
-          this.clientRevenueData = clientsArray.sort((a, b) => b.total_revenue - a.total_revenue);
-          console.log('Client revenue data processed from detailed data:', this.clientRevenueData.length, 'clients');
-          
+          console.log('Processed client revenue data:', clientData);
+          this.clientRevenue = clientData;
         } else {
-          // Fallback to fetching specific data
-          console.log('Fetching specific client revenue data');
+          // If detailed data is not available, fetch directly from API
+          console.log('No detailed data available, fetching client revenue from API');
+          const response = await ApiService.get('/dispatch-reports/accounting/clients', requestParams);
+          console.log('Client revenue API response:', response.data);
           
-          // Try to fetch detailed dispatches to process client revenue
-          await this.fetchDetailedDispatches({
-            limit: 100, // Reasonable limit to get enough data
-            ...requestParams
-          });
+          let clientData = [];
           
-          if (this.detailedData && this.detailedData.length > 0) {
-            // Process again with the newly fetched data
-            await this.fetchTopClientsByRevenue(params);
-            return;
+          if (response.data?.data?.data?.clients) {
+            clientData = response.data.data.data.clients;
+          } else if (response.data?.data?.clients) {
+            clientData = response.data.data.clients;
+          } else if (Array.isArray(response.data?.data)) {
+            clientData = response.data.data;
+          } else if (Array.isArray(response.data)) {
+            clientData = response.data;
+          }
+          
+          if (clientData.length > 0) {
+            // Process and format the client data
+            const processedData = clientData.map(client => {
+              const revenue = parseFloat(client.total_charged || client.revenue || client.total_revenue || 0);
+              const cost = parseFloat(client.total_cost || client.cost || 0);
+              const profit = revenue - cost;
+              const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+              
+              return {
+                client: client.client_company || client.client_name || client.client || 'Unknown',
+                revenue: revenue,
+                cost: cost,
+                profit: profit,
+                margin: margin,
+                count: parseInt(client.dispatch_count || client.count || 1)
+              };
+            }).sort((a, b) => b.revenue - a.revenue)
+              .slice(0, 10); // Get top 10 clients
+            
+            console.log('Processed client revenue from API:', processedData);
+            this.clientRevenue = processedData;
           } else {
-            console.log('No client revenue data available');
-            this.clientRevenueData = [];
+            console.log('No client revenue data found in API response');
+            this.clientRevenue = [];
           }
         }
       } catch (error) {
         console.error('Error fetching top clients by revenue', error);
-        this.errors.clientRevenueData = 'Failed to load client revenue data';
-        this.clientRevenueData = [];
+        this.errors.clientRevenue = 'Failed to load client revenue data';
+        this.clientRevenue = [];
       } finally {
-        this.loading.clientRevenueData = false;
+        this.loading.clientRevenue = false;
       }
     },
     
