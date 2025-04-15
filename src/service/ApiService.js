@@ -32,277 +32,87 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const ApiService = {
-  // Generic API methods
-  get(resource, params) {
-    return apiClient.get(resource, { params });
+// ApiService provides generic HTTP methods only
+const ApiService = {
+  get(resource, params = {}) {
+    console.log(`API GET request to ${resource} with params:`, params);
+    return apiClient.get(resource, { params })
+      .then(response => {
+        console.log(`API GET response from ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data 
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`API GET error for ${resource}:`, {
+          message: error.message,
+          response: error.response?.data
+        });
+        throw error;
+      });
   },
   
   post(resource, data) {
-    return apiClient.post(resource, data);
+    console.log(`API POST request to ${resource} with data:`, data);
+    return apiClient.post(resource, data)
+      .then(response => {
+        console.log(`API POST response from ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`API POST error for ${resource}:`, {
+          message: error.message,
+          response: error.response?.data
+        });
+        throw error;
+      });
   },
   
   put(resource, data) {
-    return apiClient.put(resource, data);
+    console.log(`API PUT request to ${resource} with data:`, data);
+    return apiClient.put(resource, data)
+      .then(response => {
+        console.log(`API PUT response from ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`API PUT error for ${resource}:`, {
+          message: error.message,
+          response: error.response?.data
+        });
+        throw error;
+      });
   },
   
-  delete(resource) {
-    return apiClient.delete(resource);
-  },
-  
-  // Custom methods
-  // Add specific API methods related to your domain
-};
-
-// Dispatch-specific API services
-export const DispatchService = {
-  // Get dispatch metrics data
-  getKeyMetrics(params) {
-    return ApiService.get('/dispatch-reports/dispatches', params);
-  },
-  
-  // Get accounting margins data
-  getMargins(params) {
-    console.log('Calling getMargins with params:', params);
-    const response = ApiService.get('/dispatch-reports/accounting/margins', params);
-    response.then(res => {
-      console.log('Margins API response status:', res.status);
-      
-      if (res?.data?.data?.data?.totals) {
-        console.log('Found totals at data.data.data.totals:', res.data.data.data.totals);
-      }
-      
-      if (params.group_by === 'category' && res?.data?.data?.data?.categories) {
-        console.log('Found categories data, count:', res.data.data.data.categories.length);
-      }
-    }).catch(err => {
-      console.error('Error in getMargins:', err);
-    });
-    return response;
-  },
-  
-  // Get dispatch-specific margin data
-  getDispatchMargin(dispatchId) {
-    return ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/margin`);
-  },
-  
-  // Get dispatch stats for result codes
-  getDispatchStats(params) {
-    console.log('Calling getDispatchStats with params:', params);
-    const response = ApiService.get('/dispatch-reports/stats/dispatches', params);
-    response.then(res => {
-      console.log('getDispatchStats response:', res);
-      if (res.data?.total) {
-        console.log('Total dispatches:', res.data.total);
-      }
-      if (res.data?.data) {
-        console.log('Status breakdown:', res.data.data);
-      }
-    }).catch(err => {
-      console.error('Error in getDispatchStats:', err);
-    });
-    return response;
-  },
-  
-  // Get customer data
-  getCustomers(params) {
-    return ApiService.get('/dispatch-reports/customers', params);
-  },
-  
-  // Get project data
-  getProjects(params) {
-    return ApiService.get('/dispatch-reports/stats/projects', params);
-  },
-  
-  // Get technician data
-  getTechnicians(params) {
-    return ApiService.get('/dispatch-reports/stats/technicians', params);
-  },
-  
-  // Get detailed dispatch data with pagination
-  getDetailedDispatches(params) {
-    return ApiService.get('/dispatch-reports/dispatches', params);
-  },
-  
-  // Get dispatch documents
-  getDispatchDocuments(dispatchId) {
-    return ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/documents`);
-  },
-  
-  // Delete a document
-  deleteDocument(jobId) {
-    return ApiService.delete(`/dispatch-reports/documents/${jobId}`);
+  delete(resource, params = {}) {
+    console.log(`API DELETE request to ${resource} with params:`, params);
+    return apiClient.delete(resource, { params })
+      .then(response => {
+        console.log(`API DELETE response from ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`API DELETE error for ${resource}:`, {
+          message: error.message,
+          response: error.response?.data
+        });
+        throw error;
+      });
   }
 };
 
-// Invoice-specific API services
-export const InvoiceService = {
-  // Get all invoices with optional filtering
-  getInvoices(params) {
-    return ApiService.get('/invoices', params);
-  },
-  
-  // Get a specific invoice by ID
-  getInvoice(id) {
-    return ApiService.get(`/invoices/${id}`);
-  },
-  
-  // Get customer invoices with optional filtering
-  getCustomerInvoices(filterConditions, params = {}) {
-    // Use the provided filter conditions directly
-    return ApiService.get(`/accounting/sales-invoices`, { 
-      ...params,
-      filter: filterConditions
-    });
-  },
-  
-  // Get a specific sales invoice by ID
-  getSalesInvoice(id) {
-    return ApiService.get(`/accounting/sales-invoices/${id}`);
-  },
-  
-  // Get line items for a specific sales invoice
-  getSalesInvoiceLines(id) {
-    return ApiService.get(`/accounting/sales-invoices/${id}/lines`);
-  },
-  
-  // Get enriched line items for interactive invoice
-  getEnrichedSalesInvoiceLines(documentNumber) {
-    return ApiService.post('/accounting/sales-invoice-lines', {
-      document_number: documentNumber
-    });
-  },
-  
-  // Create a new invoice
-  createInvoice(invoice) {
-    return ApiService.post('/invoices', invoice);
-  },
-  
-  // Update an existing invoice
-  updateInvoice(invoice) {
-    return ApiService.put(`/invoices/${invoice.id}`, invoice);
-  },
-  
-  // Delete an invoice
-  deleteInvoice(id) {
-    return ApiService.delete(`/invoices/${id}`);
-  },
-  
-  // Get available templates for a client and optional invoice number
-  getAvailableTemplates(clientId, invoiceNumber = null) {
-    const params = { client_id: clientId };
-    if (invoiceNumber) {
-      params.invoice_number = invoiceNumber;
-    }
-    
-    return ApiService.get('/invoice-templates/available', params);
-  },
-  
-  // Generate a document from a template for an invoice
-  generateTemplate(invoiceNumber, templateId) {
-    return ApiService.post('/invoice-templates/generate', {
-      invoice_number: invoiceNumber,
-      template_id: templateId
-    });
-  },
-  
-  // Get generated files for an invoice
-  getGeneratedFiles(invoiceNumber) {
-    return ApiService.get(`/invoice-templates/files/${invoiceNumber}`);
-  },
-  
-  // Download a generated file
-  downloadGeneratedFile(jobId, fileType = 'pdf', subtype = null) {
-    // Get the current authentication token
-    const token = AuthService.getToken();
-    // Remove 'Bearer ' prefix if present
-    const tokenValue = token ? token.replace('Bearer ', '') : '';
-    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
-    
-    let url = `/invoice-templates/download/${jobId}/${fileType}`;
-    
-    // If subtype is provided (for PDF files like 'summary', 'consolidated', etc.), add it to the URL
-    if (subtype) {
-      url += `/${subtype}`;
-    }
-    
-    // Add token parameter
-    url += tokenParam;
-    
-    // Create a full URL with the base URL
-    const fullUrl = `${apiClient.defaults.baseURL}${url}`;
-    
-    // Create a simple anchor element and click it
-    // This is the most reliable way to trigger a browser download with the original filename
-    const a = document.createElement('a');
-    a.href = fullUrl;
-    a.target = '_blank'; // This helps with popup blockers
-    a.rel = 'noopener noreferrer';
-    
-    // Append to body and click
-    document.body.appendChild(a);
-    a.click();
-    
-    // Remove after a short delay
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 100);
-    
-    return Promise.resolve(true);
-  },
-  
-  // Get file preview URL
-  getFilePreviewUrl(fileId, fileType = 'pdf', subtype = null) {
-    // Get the current authentication token
-    const token = AuthService.getToken();
-    // Remove 'Bearer ' prefix if present
-    const tokenValue = token ? token.replace('Bearer ', '') : '';
-    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
-    
-    let url = '';
-    
-    // Check if fileId contains our composite format
-    if (typeof fileId === 'string' && fileId.includes('_')) {
-      const parts = fileId.split('_');
-      if (parts.length >= 2) {
-        // Extract jobId and file type from the composite ID
-        const jobId = parts[0];
-        const type = parts[1] || fileType;
-        
-        // For PDF files with subtypes
-        if (type === 'pdf' && parts.length > 2) {
-          const subtype = parts.slice(2).join('_');
-          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${subtype}${tokenParam}`;
-        }
-        // For Excel files with index
-        else if (type === 'excel' && parts.length > 2) {
-          const index = parts.slice(2).join('_');
-          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}/${index}${tokenParam}`;
-        }
-        else {
-          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${jobId}/${type}${tokenParam}`;
-        }
-      }
-      else {
-        // Fallback to original behavior for compatibility
-        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
-      }
-    }
-    else {
-      // Fallback to original behavior for compatibility
-      url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
-    }
-    
-    return url;
-  },
-  
-  // Get all documents for a specific customer
-  getCustomerDocuments(customerNumber, limit = 50, offset = 0) {
-    return ApiService.get(`/invoice-templates/customer-documents?customer_number=${customerNumber}&limit=${limit}&offset=${offset}`);
-  },
-  
-  // Get all documents for a specific invoice
-  getInvoiceDocuments(invoiceNumber) {
-    return ApiService.get(`/invoice-templates/invoice-documents?invoice_number=${invoiceNumber}`);
-  }
-}; 
+export default ApiService; 

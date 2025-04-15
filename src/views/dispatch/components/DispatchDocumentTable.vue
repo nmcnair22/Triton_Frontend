@@ -81,7 +81,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import { ApiService } from '@/service/ApiService';
+import { useDispatchStore } from '@/stores/dispatchStore';
 
 const props = defineProps({
   title: {
@@ -106,6 +106,7 @@ const props = defineProps({
   }
 });
 
+const dispatchStore = useDispatchStore();
 const emit = defineEmits(['upload', 'refresh', 'document-deleted']);
 
 // State
@@ -170,10 +171,10 @@ async function loadDocuments() {
   loading.value = true;
   
   try {
-    const response = await ApiService.get(`/dispatch-reports/dispatches/${props.dispatchId}/documents`);
+    const data = await dispatchStore.getDispatchDocuments(props.dispatchId);
     
-    if (response.data?.documents) {
-      documents.value = response.data.documents;
+    if (data?.documents) {
+      documents.value = data.documents;
     } else {
       documents.value = [];
     }
@@ -224,11 +225,7 @@ async function deleteDocument() {
   }
   
   try {
-    // Call API to delete the document
-    await ApiService.delete(`/dispatch-reports/documents/${documentToDelete.value.job_id}`);
-    
-    // Remove from local list
-    documents.value = documents.value.filter(doc => doc.job_id !== documentToDelete.value.job_id);
+    await dispatchStore.deleteDocument(documentToDelete.value.job_id);
     
     toast.add({
       severity: 'success',
@@ -237,6 +234,10 @@ async function deleteDocument() {
       life: 3000
     });
     
+    // Remove from local array
+    documents.value = documents.value.filter(d => d.job_id !== documentToDelete.value.job_id);
+    
+    // Notify parent
     emit('document-deleted', documentToDelete.value);
   } catch (error) {
     console.error('Error deleting document:', error);

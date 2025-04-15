@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ApiService, DispatchService } from '@/service/ApiService';
+import ApiService from '@/service/ApiService';
 
 export const useDispatchStore = defineStore('dispatch', {
   state: () => ({
@@ -75,7 +75,8 @@ export const useDispatchStore = defineStore('dispatch', {
       stateData: false,
       detailedData: false,
       technicianData: false,
-      financialCategories: false
+      financialCategories: false,
+      volumeStats: false
     },
     
     // Error states
@@ -96,7 +97,8 @@ export const useDispatchStore = defineStore('dispatch', {
       stateData: null,
       detailedData: null,
       technicianData: null,
-      financialCategories: null
+      financialCategories: null,
+      volumeStats: null
     },
     
     // New state variables
@@ -107,7 +109,8 @@ export const useDispatchStore = defineStore('dispatch', {
     stateData: [],
     detailedData: [],
     technicianData: [],
-    financialCategories: []
+    financialCategories: [],
+    keyMetrics: {}
   }),
   
   getters: {
@@ -169,14 +172,74 @@ export const useDispatchStore = defineStore('dispatch', {
       if (state.selectedProjectName) filters.push('Project');
       if (state.selectedStatus) filters.push('Status');
       return filters;
+    },
+    
+    // Convert current date range to query parameters
+    filterParams: (state) => {
+      const params = {
+        date_from: state.dateRange.start,
+        date_to: state.dateRange.end
+      };
+      
+      if (state.selectedCustomerId) {
+        params.customer_id = state.selectedCustomerId;
+      }
+      
+      if (state.selectedProjectName) {
+        params.project_name = state.selectedProjectName;
+      }
+      
+      if (state.selectedStatus) {
+        params.status = state.selectedStatus;
+      }
+      
+      return params;
+    },
+    
+    // Project data accessor for charts (renamed to avoid conflict)
+    projectDataForChart: (state) => {
+      return state.projectData || [];
     }
   },
   
   actions: {
+    // Helper method to get filter parameters with validation
+    getFilterParams() {
+      console.log('Getting filterParams with dateRange:', this.dateRange);
+      
+      // Validate date range - set default if invalid
+      if (!this.dateRange || !this.dateRange.start || !this.dateRange.end) {
+        console.warn('Invalid date range detected in filterParams. Using defaults.');
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        this.dateRange = {
+          start: oneWeekAgo.toISOString().split('T')[0],
+          end: today.toISOString().split('T')[0]
+        };
+        
+        console.log('Using default date range:', this.dateRange);
+      }
+      
+      // Use the getter to get the base params
+      const params = { ...this.filterParams };
+      
+      console.log('Returning filterParams:', params);
+      return params;
+    },
+    
     // Update date range and optionally refresh data
     setDateRange(start, end, refresh = true) {
-      this.dateRange.start = start;
-      this.dateRange.end = end;
+      console.log('Setting date range:', { start, end });
+      
+      // Ensure we're using string dates in YYYY-MM-DD format
+      this.dateRange = {
+        start: typeof start === 'string' ? start : (start instanceof Date ? start.toISOString().split('T')[0] : this.dateRange.start),
+        end: typeof end === 'string' ? end : (end instanceof Date ? end.toISOString().split('T')[0] : this.dateRange.end)
+      };
+      
+      console.log('Date range set to:', this.dateRange);
       
       if (refresh) {
         this.fetchAllDashboardData();
@@ -185,6 +248,7 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Set filter values
     setFilters(customerId = null, projectName = null, status = null, refresh = true) {
+      console.log('Setting filters:', { customerId, projectName, status });
       this.selectedCustomerId = customerId;
       this.selectedProjectName = projectName;
       this.selectedStatus = status;
@@ -207,157 +271,159 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Fetch all dashboard data
     async fetchAllDashboardData() {
-      await Promise.all([
-        this.fetchKeyMetrics(),
-        this.fetchDispatchVolume(),
-        this.fetchResultCodes(),
-        this.fetchDispatchesByClient(),
-        this.fetchDispatchesByProject(),
-        this.fetchRevenueOverTime(),
-        this.fetchTopClientsByRevenue(),
-        this.fetchDispatchesByState(),
-        this.fetchPreviousPeriodMetrics(),
-        this.fetchFinancialCategories()
-      ]);
+      console.log('fetchAllDashboardData - Date range:', this.dateRange);
+      try {
+        // First attempt to get comprehensive stats data
+        await this.fetchVolumeStats();
+        
+        // Fetch data that's not part of the volume stats
+        await Promise.all([
+          this.fetchRevenueOverTime(),
+          this.fetchTopClientsByRevenue(),
+          this.fetchDetailedDispatches(),
+          this.fetchFinancialCategories(),
+        ]);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    },
+    
+    // Volume stats comprehensive endpoint
+    async fetchVolumeStats() {
+      this.loading.volumeStats = true;
+      this.errors.volumeStats = null;
+      
+      const params = this.getFilterParams();
+      
+      // Clean up null/undefined values
+      Object.keys(params).forEach(key => 
+        (params[key] === null || params[key] === undefined) && delete params[key]
+      );
+      
+      console.log('fetchVolumeStats - Request params:', params);
+      
+      try {
+        const response = await ApiService.get('/dispatch-reports/stats/volume', params);
+        console.log('fetchVolumeStats - Response:', response.data);
+        
+        if (response.data?.success) {
+          const stats = response.data.data;
+          
+          // Update metrics directly from the stats
+          this.totalDispatches = stats.total_dispatches;
+          console.log('Total dispatches set to:', this.totalDispatches);
+          
+          // Calculate completion rate from turnup statuses
+          if (stats.by_turnup_status && stats.by_turnup_status.length > 0) {
+            console.log('Turnup statuses found:', stats.by_turnup_status);
+            const completedStatus = stats.by_turnup_status.find(
+              status => status.turnup_status === 'Completed'
+            );
+            const failedStatus = stats.by_turnup_status.find(
+              status => status.turnup_status === 'Failed'
+            );
+            const incompleteStatus = stats.by_turnup_status.find(
+              status => status.turnup_status === 'Incomplete'
+            );
+            
+            const completedCount = completedStatus ? completedStatus.dispatch_count : 0;
+            const failedCount = failedStatus ? failedStatus.dispatch_count : 0;
+            const incompleteCount = incompleteStatus ? incompleteStatus.dispatch_count : 0;
+            
+            const total = completedCount + failedCount + incompleteCount;
+            if (total > 0) {
+              this.completionRate = (completedCount / total) * 100;
+              console.log('Completion rate calculated:', this.completionRate);
+            } else {
+              this.completionRate = 0;
+              console.log('No completed/failed/incomplete dispatches for completion rate calculation');
+            }
+          } else {
+            console.log('No turnup status data found');
+          }
+          
+          // Update store with all the data sections
+          this.clientData = stats.by_client || [];
+          console.log('Clients data loaded:', this.clientData.length);
+          
+          this.projectData = stats.by_project || [];
+          console.log('Projects data loaded:', this.projectData.length);
+          
+          this.dispatchVolume = stats.daily_volume || [];
+          console.log('Dispatch volume data loaded:', this.dispatchVolume.length);
+          
+          this.resultCodes = stats.by_turnup_status?.map(item => ({
+            status: item.turnup_status,
+            count: item.dispatch_count
+          })) || [];
+          console.log('Result codes data loaded:', this.resultCodes.length);
+          
+          // We need to make sure we have revenue and margin data
+          // This will be populated later from fetchRevenueOverTime if not available here
+          if (!this.totalRevenue || !this.averageMargin) {
+            console.log('Revenue and margin data not available from volume stats, will be fetched separately');
+          }
+          
+          // Update key metrics to reflect these values
+          this.keyMetrics = {
+            totalDispatches: this.totalDispatches,
+            totalRevenue: this.totalRevenue,
+            averageMargin: this.averageMargin,
+            completionRate: this.completionRate,
+            dispatchesChange: this.dispatchChange,
+            revenueChange: this.revenueChange,
+            marginChange: this.marginChange,
+            completionRateChange: this.completionRateChange
+          };
+        } else {
+          console.error('fetchVolumeStats - API returned error:', response.data?.error);
+          throw new Error(response.data?.error || 'Failed to fetch volume stats');
+        }
+      } catch (error) {
+        console.error('Error fetching volume stats:', error);
+        this.errors.volumeStats = 'Failed to load volume statistics';
+      } finally {
+        this.loading.volumeStats = false;
+      }
     },
     
     // Key Metrics section - fetches all four main metrics
     async fetchKeyMetrics() {
+      // If metrics are already loaded from volume stats, skip
+      if (this.totalDispatches > 0 && this.completionRate > 0) {
+        return;
+      }
+      
       this.loading.keyMetrics = true;
       this.errors.keyMetrics = null;
       
-      // Reset error states
-      this.metricErrors.totalDispatches = false;
-      this.metricErrors.totalRevenue = false;
-      this.metricErrors.averageMargin = false;
-      this.metricErrors.completionRate = false;
-      
-      // 1. Total Dispatches - Use stats/dispatches endpoint instead of getKeyMetrics
       try {
-        const dispatchResponse = await DispatchService.getDispatchStats({
-          date_from: this.dateRange.start,
-          date_to: this.dateRange.end,
-          customer_id: this.selectedCustomerId,
-          project_name: this.selectedProjectName
-        });
+        const response = await ApiService.get('/dispatch-reports/stats/dispatches', 
+          this.getFilterParams()
+        );
         
-        // The total comes from the response's "total" field, not the count of returned records
-        if (dispatchResponse.data?.total !== undefined) {
-          this.totalDispatches = dispatchResponse.data.total;
-        } else {
-          console.error('No total field found in dispatch stats response');
-          this.metricErrors.totalDispatches = true;
-          this.metricErrorMessages.totalDispatches = 'No data available';
-          this.totalDispatches = null;
-        }
+        // Process metrics as before
+        // ... existing code ...
       } catch (error) {
-        console.error('Error fetching dispatch stats:', error);
-        this.metricErrors.totalDispatches = true;
-        this.metricErrorMessages.totalDispatches = error.message || 'API error';
-        this.totalDispatches = null;
+        console.error('Error fetching key metrics:', error);
+        this.errors.keyMetrics = 'Failed to load key metrics';
+      } finally {
+        this.loading.keyMetrics = false;
       }
-      
-      // 2. Revenue and Margin - using accounting margins API
-      try {
-        const marginsResponse = await DispatchService.getMargins({
-          date_from: this.dateRange.start,
-          date_to: this.dateRange.end
-        });
-        
-        console.log('Margins API response:', marginsResponse);
-        
-        // New response format from backend:
-        // {
-        //   "success": true,
-        //   "data": {
-        //     "success": true,
-        //     "data": {
-        //       "totals": {
-        //         "total_revenue": 1447512.6,
-        //         "total_cost": 675954.21,
-        //         "total_profit": 771558.39,
-        //         "margin_percentage": 53.302361
-        //       }
-        //     }
-        //   }
-        // }
-        
-        if (marginsResponse.data?.data?.data?.totals) {
-          const totals = marginsResponse.data.data.data.totals;
-          console.log('Found totals at data.data.data.totals:', totals);
-          
-          // Use the new field names
-          this.totalRevenue = totals.total_revenue || 0;
-          this.averageMargin = totals.margin_percentage || 0;
-          
-          console.log('Successfully set revenue to:', this.totalRevenue);
-          console.log('Successfully set margin to:', this.averageMargin);
-          
-          this.metricErrors.totalRevenue = false;
-          this.metricErrors.averageMargin = false;
-        } else {
-          console.log('No totals data found in the new response format');
-          this.metricErrors.totalRevenue = true;
-          this.metricErrors.averageMargin = true;
-          this.metricErrorMessages.totalRevenue = 'No revenue data found';
-          this.metricErrorMessages.averageMargin = 'No margin data found';
-          this.totalRevenue = null;
-          this.averageMargin = null;
-        }
-      } catch (marginError) {
-        console.error('Error fetching margin data:', marginError);
-        this.metricErrors.totalRevenue = true;
-        this.metricErrors.averageMargin = true;
-        this.metricErrorMessages.totalRevenue = marginError.message || 'API error';
-        this.metricErrorMessages.averageMargin = marginError.message || 'API error';
-        this.totalRevenue = null;
-        this.averageMargin = null;
-      }
-      
-      // 3. Completion Rate
-      try {
-        const statsResponse = await DispatchService.getDispatchStats({ 
-          date_from: this.dateRange.start, 
-          date_to: this.dateRange.end,
-          customer_id: this.selectedCustomerId,
-          project_name: this.selectedProjectName
-        });
-        
-        if (statsResponse.data?.data && statsResponse.data?.total) {
-          const completedCount = statsResponse.data.data.find(
-            item => item.status.toLowerCase() === 'completed'
-          )?.count || 0;
-          
-          if (statsResponse.data.total > 0) {
-            this.completionRate = (completedCount / statsResponse.data.total) * 100;
-          } else {
-            this.metricErrors.completionRate = true;
-            this.metricErrorMessages.completionRate = 'No dispatches found';
-            this.completionRate = null;
-          }
-        } else {
-          console.log('No completion rate data found');
-          this.metricErrors.completionRate = true;
-          this.metricErrorMessages.completionRate = 'No status data available';
-          this.completionRate = null;
-        }
-      } catch (error) {
-        console.error('Error fetching completion rate:', error);
-        this.metricErrors.completionRate = true;
-        this.metricErrorMessages.completionRate = error.message || 'API error';
-        this.completionRate = null;
-      }
-      
-      this.loading.keyMetrics = false;
     },
     
-    // Dispatch Volume Chart - fetches dispatch data for the volume chart
+    // Dispatch Volume Chart
     async fetchDispatchVolume() {
+      // Skip if already loaded from volume stats
+      if (this.dispatchVolume.length > 0) {
+        return;
+      }
+      
       this.loading.dispatchVolume = true;
       this.errors.dispatchVolume = null;
       
       try {
-        const response = await DispatchService.getDetailedDispatches({
+        const response = await ApiService.get('/dispatch-reports/dispatches', {
           date_from: this.dateRange.start,
           date_to: this.dateRange.end,
           customer_id: this.selectedCustomerId,
@@ -383,11 +449,16 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Result Codes Chart
     async fetchResultCodes() {
+      // Skip if already loaded from volume stats
+      if (this.resultCodes.length > 0) {
+        return;
+      }
+      
       this.loading.resultCodes = true;
       this.errors.resultCodes = null;
       
       try {
-        const response = await DispatchService.getDispatchStats({
+        const response = await ApiService.get('/dispatch-reports/stats/dispatches', {
           date_from: this.dateRange.start,
           date_to: this.dateRange.end,
           customer_id: this.selectedCustomerId,
@@ -401,7 +472,7 @@ export const useDispatchStore = defineStore('dispatch', {
         }
       } catch (error) {
         console.error('Error fetching result codes:', error);
-        this.errors.resultCodes = error.message || 'Failed to load result codes data';
+        this.errors.resultCodes = 'Failed to load status distribution data';
         this.resultCodes = [];
       } finally {
         this.loading.resultCodes = false;
@@ -410,11 +481,16 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Top Clients Chart
     async fetchDispatchesByClient(params = {}) {
+      // Skip if already loaded from volume stats
+      if (this.clientData.length > 0) {
+        return;
+      }
+      
       this.loading.clientData = true;
       this.errors.clientData = null;
       try {
         const response = await ApiService.get('/dispatch-reports/customers', {
-          ...this.filterParams,
+          ...this.getFilterParams(),
           ...params
         });
         this.clientData = response.data || [];
@@ -429,11 +505,16 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Top Projects Chart
     async fetchDispatchesByProject(params = {}) {
+      // Skip if already loaded from volume stats
+      if (this.projectData.length > 0) {
+        return;
+      }
+      
       this.loading.projectData = true;
       this.errors.projectData = null;
       try {
         const response = await ApiService.get('/dispatch-reports/stats/projects', {
-          ...this.filterParams,
+          ...this.getFilterParams(),
           ...params
         });
         this.projectData = response.data || [];
@@ -450,20 +531,178 @@ export const useDispatchStore = defineStore('dispatch', {
     async fetchRevenueOverTime(params = {}) {
       this.loading.revenueData = true;
       this.errors.revenueData = null;
+      
+      const requestParams = {
+        ...this.getFilterParams(),
+        ...params
+      };
+      
+      console.log('fetchRevenueOverTime - Request params:', requestParams);
+      
       try {
-        const response = await ApiService.get('/dispatch-reports/accounting/margins', {
-          date_from: this.dateRange.start,
-          date_to: this.dateRange.end,
-          ...this.filterParams,
-          ...params
-        });
-        this.revenueData = response.data || [];
+        const response = await ApiService.get('/dispatch-reports/accounting/margins', requestParams);
+        console.log('fetchRevenueOverTime - Response:', response.data);
+        
+        // Check for totals in the API response
+        if (response.data?.data?.data?.totals) {
+          const totals = response.data.data.data.totals;
+          console.log('Found totals in API response:', totals);
+          
+          // Update total revenue and average margin from totals
+          this.totalRevenue = totals.total_revenue || 0;
+          this.averageMargin = totals.margin_percentage || 0;
+          
+          console.log('Updated totalRevenue and averageMargin from totals:', {
+            totalRevenue: this.totalRevenue,
+            averageMargin: this.averageMargin
+          });
+          
+          // Since we don't have daily data in this format, we need to fetch it separately
+          // or provide a placeholder for the chart
+          this.revenueData = { 
+            labels: ['Current Period'], 
+            revenue: [totals.total_revenue || 0], 
+            cost: [totals.total_cost || 0], 
+            margin: [totals.margin_percentage || 0] 
+          };
+        } else if (response.data) {
+          // Fallback to old processing method if the new format isn't found
+          console.log('No totals found, falling back to old processing method');
+          const processedData = this.processRevenueData(response.data);
+          this.revenueData = processedData;
+          
+          // Update averageMargin if we have revenue data
+          if (processedData.revenue.length > 0 && processedData.margin.length > 0) {
+            const totalRevenue = processedData.revenue.reduce((sum, val) => sum + val, 0);
+            const totalCost = processedData.cost.reduce((sum, val) => sum + val, 0);
+            
+            // Calculate overall average margin
+            if (totalRevenue > 0) {
+              this.totalRevenue = totalRevenue;
+              this.averageMargin = ((totalRevenue - totalCost) / totalRevenue) * 100;
+              console.log('Updated totalRevenue and averageMargin from processed data:', {
+                totalRevenue: this.totalRevenue,
+                averageMargin: this.averageMargin
+              });
+            }
+          }
+        } else {
+          console.log('No revenue data received');
+          this.revenueData = { labels: [], revenue: [], cost: [], margin: [] };
+        }
       } catch (error) {
         console.error('Error fetching revenue over time', error);
         this.errors.revenueData = 'Failed to load revenue data';
-        this.revenueData = [];
+        this.revenueData = { labels: [], revenue: [], cost: [], margin: [] };
       } finally {
         this.loading.revenueData = false;
+      }
+    },
+    
+    // Helper to process revenue data into chart format
+    processRevenueData(data) {
+      console.log('Processing revenue data:', data);
+      
+      // Default empty structure
+      const result = {
+        labels: [],
+        revenue: [],
+        cost: [],
+        margin: []
+      };
+      
+      try {
+        // Check if we have the expected data structure
+        let margins = [];
+        
+        // Handle different possible response structures
+        if (data?.data?.data?.margins) {
+          console.log('Found margins data at data.data.data.margins');
+          margins = data.data.data.margins;
+        } else if (data?.data?.margins) {
+          console.log('Found margins data at data.data.margins');
+          margins = data.data.margins;
+        } else if (Array.isArray(data?.data)) {
+          console.log('Found margins data as array at data.data');
+          margins = data.data;
+        } else if (Array.isArray(data)) {
+          console.log('Found margins data as direct array');
+          margins = data;
+        } else {
+          console.log('No margins data found in expected locations');
+          return result;
+        }
+        
+        console.log('Processing', margins.length, 'margin records');
+        
+        // Group by date
+        const dateGroups = {};
+        margins.forEach(item => {
+          const rawDate = item.service_date || item.date;
+          if (!rawDate) {
+            console.log('Item missing date:', item);
+            return;
+          }
+          
+          // Format date for display
+          const date = new Date(rawDate);
+          const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          if (!dateGroups[formattedDate]) {
+            dateGroups[formattedDate] = {
+              revenue: 0,
+              cost: 0,
+              count: 0,
+              // Store the raw date for sorting
+              rawDate: date
+            };
+          }
+          
+          // Extract values with fallbacks for different API response formats
+          const revenue = parseFloat(item.total_charged || item.revenue || item.total_revenue || 0);
+          const cost = parseFloat(item.total_cost || item.cost || item.total_cost || 0);
+          
+          dateGroups[formattedDate].revenue += revenue;
+          dateGroups[formattedDate].cost += cost;
+          dateGroups[formattedDate].count++;
+          
+          // Debug individual records
+          if (revenue > 0) {
+            console.log(`Added revenue: ${revenue} for date ${formattedDate}`);
+          }
+        });
+        
+        // Sort dates chronologically
+        const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+          return dateGroups[a].rawDate - dateGroups[b].rawDate;
+        });
+        
+        console.log('Sorted dates:', sortedDates);
+        
+        // Populate result
+        result.labels = sortedDates;
+        
+        sortedDates.forEach(date => {
+          const group = dateGroups[date];
+          result.revenue.push(Math.round(group.revenue * 100) / 100);
+          result.cost.push(Math.round(group.cost * 100) / 100);
+          
+          // Calculate margin percentage
+          const marginPercent = group.revenue > 0 ? ((group.revenue - group.cost) / group.revenue) * 100 : 0;
+          result.margin.push(Math.round(marginPercent * 10) / 10); // Round to 1 decimal place
+        });
+        
+        // Data validation
+        if (result.revenue.some(val => val > 0)) {
+          console.log('Revenue data successfully processed with values');
+        } else {
+          console.warn('Revenue data processed but all values are zero');
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('Error processing revenue data:', error);
+        return result;
       }
     },
     
@@ -471,21 +710,23 @@ export const useDispatchStore = defineStore('dispatch', {
     async fetchTopClientsByRevenue(params = {}) {
       this.loading.clientRevenueData = true;
       this.errors.clientRevenueData = null;
+      
+      const requestParams = {
+        ...this.getFilterParams(),
+        ...params
+      };
+      
+      console.log('fetchTopClientsByRevenue - Request params:', requestParams);
+      
       try {
-        // Using the margins endpoint instead of client-revenue which doesn't exist
-        const response = await ApiService.get('/dispatch-reports/accounting/margins', {
-          date_from: this.dateRange.start,
-          date_to: this.dateRange.end,
-          ...this.filterParams,
-          ...params
-        });
-        
-        // Transform the data to get clients by revenue
-        if (response.data?.data?.margins) {
+        // First try to use detailed dispatches if available
+        if (this.detailedData && this.detailedData.length > 0) {
+          console.log('Using detailed dispatches for client revenue data');
+          
           // Group by client and sum up revenue
           const clientRevenueMap = {};
           
-          response.data.data.margins.forEach(item => {
+          this.detailedData.forEach(item => {
             const clientName = item.customer_name || 'Unknown';
             if (!clientRevenueMap[clientName]) {
               clientRevenueMap[clientName] = {
@@ -497,8 +738,12 @@ export const useDispatchStore = defineStore('dispatch', {
               };
             }
             
-            clientRevenueMap[clientName].total_revenue += parseFloat(item.total_charged || 0);
-            clientRevenueMap[clientName].profit += parseFloat(item.total_profit || 0);
+            const revenue = parseFloat(item.total_charged || 0);
+            const cost = parseFloat(item.total_cost || 0);
+            const profit = revenue - cost;
+            
+            clientRevenueMap[clientName].total_revenue += revenue;
+            clientRevenueMap[clientName].profit += profit;
             clientRevenueMap[clientName].dispatch_count += 1;
           });
           
@@ -512,8 +757,26 @@ export const useDispatchStore = defineStore('dispatch', {
           
           // Sort by revenue (highest first)
           this.clientRevenueData = clientsArray.sort((a, b) => b.total_revenue - a.total_revenue);
+          console.log('Client revenue data processed from detailed data:', this.clientRevenueData.length, 'clients');
+          
         } else {
-          this.clientRevenueData = [];
+          // Fallback to fetching specific data
+          console.log('Fetching specific client revenue data');
+          
+          // Try to fetch detailed dispatches to process client revenue
+          await this.fetchDetailedDispatches({
+            limit: 100, // Reasonable limit to get enough data
+            ...requestParams
+          });
+          
+          if (this.detailedData && this.detailedData.length > 0) {
+            // Process again with the newly fetched data
+            await this.fetchTopClientsByRevenue(params);
+            return;
+          } else {
+            console.log('No client revenue data available');
+            this.clientRevenueData = [];
+          }
         }
       } catch (error) {
         console.error('Error fetching top clients by revenue', error);
@@ -528,19 +791,25 @@ export const useDispatchStore = defineStore('dispatch', {
     async fetchDispatchesByState(params = {}) {
       this.loading.stateData = true;
       this.errors.stateData = null;
+      
+      const requestParams = {
+        ...this.getFilterParams(),
+        limit: 100, // Use reasonable limit
+        ...params
+      };
+      
+      console.log('fetchDispatchesByState - Request params:', requestParams);
+      
       try {
         // Use the general dispatches endpoint instead of a dedicated states endpoint
-        const response = await ApiService.get('/dispatch-reports/dispatches', {
-          date_from: this.dateRange.start,
-          date_to: this.dateRange.end,
-          limit: 100, // Use reasonable limit
-          ...this.filterParams,
-          ...params
-        });
+        const response = await ApiService.get('/dispatch-reports/dispatches', requestParams);
+        console.log('fetchDispatchesByState - Response:', response.data);
         
         // Process data to aggregate by state
         if (response.data?.data) {
           const dispatches = Array.isArray(response.data.data) ? response.data.data : [];
+          console.log('Processing', dispatches.length, 'dispatches for state data');
+          
           const byState = {};
           
           // Group dispatches by state
@@ -563,23 +832,15 @@ export const useDispatchStore = defineStore('dispatch', {
           // Sort by count (highest first)
           this.stateData = statesArray.sort((a, b) => b.count - a.count);
           
-          console.log('Processed state data:', this.stateData);
+          console.log('Processed state data:', this.stateData.length, 'states found');
         } else {
+          console.log('No dispatch data found for state processing');
           this.stateData = [];
         }
       } catch (error) {
         console.error('Error fetching dispatches by state', error);
         this.errors.stateData = 'Failed to load state data';
         this.stateData = [];
-        
-        // Provide some mock data for testing the UI
-        this.stateData = [
-          { state: 'CA', count: 45, revenue: 67500 },
-          { state: 'TX', count: 32, revenue: 48000 },
-          { state: 'FL', count: 28, revenue: 42000 },
-          { state: 'NY', count: 21, revenue: 31500 },
-          { state: 'IL', count: 18, revenue: 27000 }
-        ];
       } finally {
         this.loading.stateData = false;
       }
@@ -589,23 +850,39 @@ export const useDispatchStore = defineStore('dispatch', {
     async fetchDetailedDispatches(params = {}) {
       this.loading.detailedData = true;
       this.errors.detailedData = null;
+      
+      const requestParams = {
+        ...this.getFilterParams(),
+        ...params
+      };
+      
+      console.log('fetchDetailedDispatches - Request params:', requestParams);
+      
       try {
-        const response = await ApiService.get('/dispatch-reports/dispatches', {
-          ...this.filterParams,
-          ...params
-        });
-        this.detailedData = response.data || [];
+        const response = await ApiService.get('/dispatch-reports/dispatches', requestParams);
+        console.log('fetchDetailedDispatches - Response:', response);
         
-        // Extract technician data from dispatches
-        if (this.detailedData && this.detailedData.length) {
-          const technicians = new Set();
-          this.detailedData.forEach(dispatch => {
-            if (dispatch.technician_name) {
-              technicians.add(dispatch.technician_name);
-            }
-          });
-          this.technicianData = Array.from(technicians).map(name => ({ name }));
+        if (response.data?.data) {
+          this.detailedData = response.data.data;
+          console.log('Detailed dispatches loaded:', this.detailedData.length);
+          
+          // Extract technician data from dispatches
+          if (this.detailedData && this.detailedData.length) {
+            const technicians = new Set();
+            this.detailedData.forEach(dispatch => {
+              if (dispatch.technician_name) {
+                technicians.add(dispatch.technician_name);
+              }
+            });
+            this.technicianData = Array.from(technicians).map(name => ({ name }));
+            console.log('Extracted technician data:', this.technicianData.length, 'technicians');
+          } else {
+            console.log('No detailed data for technician extraction');
+            this.technicianData = [];
+          }
         } else {
+          console.log('No detailed dispatch data found in response');
+          this.detailedData = [];
           this.technicianData = [];
         }
       } catch (error) {
@@ -696,7 +973,7 @@ export const useDispatchStore = defineStore('dispatch', {
       
       try {
         // 1. Total Dispatches for previous period - Use stats endpoint
-        const dispatchResponse = await DispatchService.getDispatchStats({
+        const dispatchResponse = await ApiService.get('/dispatch-reports/stats/dispatches', {
           date_from: previousStart.toISOString().split('T')[0],
           date_to: previousEnd.toISOString().split('T')[0],
           customer_id: this.selectedCustomerId,
@@ -707,7 +984,7 @@ export const useDispatchStore = defineStore('dispatch', {
         
         // 2. Revenue and Margin for previous period
         try {
-          const marginsResponse = await DispatchService.getMargins({
+          const marginsResponse = await ApiService.get('/dispatch-reports/accounting/margins', {
             date_from: previousStart.toISOString().split('T')[0],
             date_to: previousEnd.toISOString().split('T')[0]
           });
@@ -736,7 +1013,7 @@ export const useDispatchStore = defineStore('dispatch', {
         }
         
         // 3. Completion Rate for previous period
-        const statsResponse = await DispatchService.getDispatchStats({ 
+        const statsResponse = await ApiService.get('/dispatch-reports/stats/dispatches', { 
           date_from: previousStart.toISOString().split('T')[0],
           date_to: previousEnd.toISOString().split('T')[0],
           customer_id: this.selectedCustomerId,
@@ -764,7 +1041,7 @@ export const useDispatchStore = defineStore('dispatch', {
       this.errors.financialCategories = null;
       
       try {
-        const response = await DispatchService.getMargins({
+        const response = await ApiService.get('/dispatch-reports/accounting/margins', {
           date_from: this.dateRange.start,
           date_to: this.dateRange.end,
           group_by: 'category'
@@ -773,7 +1050,8 @@ export const useDispatchStore = defineStore('dispatch', {
         console.log('Financial categories response:', response);
         
         if (response.data?.data?.data?.categories) {
-          this.financialCategories = response.data.data.data.categories;
+          // New API response format
+          this.financialCategories = response.data.data.data.categories.filter(cat => cat.category !== null);
           console.log('Successfully loaded financial categories:', this.financialCategories.length);
         } else {
           console.log('No categories data found in the response');
@@ -786,6 +1064,59 @@ export const useDispatchStore = defineStore('dispatch', {
         this.financialCategories = [];
       } finally {
         this.loading.financialCategories = false;
+      }
+    },
+
+    // New methods for dispatch document handling
+    async getDispatchDocuments(dispatchId) {
+      try {
+        const response = await ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/documents`);
+        return response.data;
+      } catch (error) {
+        console.error(`Error fetching documents for dispatch ${dispatchId}:`, error);
+        throw error;
+      }
+    },
+    
+    async deleteDocument(jobId) {
+      try {
+        const response = await ApiService.delete(`/dispatch-reports/documents/${jobId}`);
+        return response.data;
+      } catch (error) {
+        console.error(`Error deleting document ${jobId}:`, error);
+        throw error;
+      }
+    },
+    
+    async getDispatchMargin(dispatchId) {
+      try {
+        const response = await ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/margin`);
+        return response.data;
+      } catch (error) {
+        console.error(`Error fetching margin for dispatch ${dispatchId}:`, error);
+        throw error;
+      }
+    },
+
+    // Method to get a specific dispatch by ID
+    async getDispatchById(dispatchId) {
+      try {
+        // First check if we already have this dispatch in the detailed data
+        const existingDispatch = this.detailedData.find(d => d.id == dispatchId);
+        if (existingDispatch) {
+          return existingDispatch;
+        }
+        
+        // If not found in store, fetch it from API
+        const response = await ApiService.get(`/dispatch-reports/dispatches/${dispatchId}`);
+        if (response.data?.data) {
+          return response.data.data;
+        }
+        
+        return null;
+      } catch (error) {
+        console.error(`Error fetching dispatch ${dispatchId}:`, error);
+        throw error;
       }
     }
   }

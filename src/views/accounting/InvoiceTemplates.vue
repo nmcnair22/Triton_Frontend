@@ -5,7 +5,6 @@ import { useCustomerStore } from '@/stores/customerStore';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
 import { useToast } from 'primevue/usetoast';
-import { InvoiceService } from '@/service/ApiService';
 import ExcelPreview from '@/components/ExcelPreview.vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
@@ -1044,7 +1043,7 @@ function previewFile(file) {
   previewErrorMessage.value = '';
   
   // Generate the preview URL ahead of time
-  previewUrl.value = InvoiceService.getFilePreviewUrl(
+  previewUrl.value = invoiceStore.getFilePreviewUrl(
     file.id, 
     file.fileType || file.originalData?.type, 
     file.fileCategory || file.originalData?.subtype

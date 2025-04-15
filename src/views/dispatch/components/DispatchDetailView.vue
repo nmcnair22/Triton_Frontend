@@ -147,7 +147,7 @@ import Message from 'primevue/message';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import DispatchDocumentTable from './DispatchDocumentTable.vue';
-import { DispatchService } from '@/service/ApiService';
+import { useDispatchStore } from '@/stores/dispatchStore';
 
 const props = defineProps({
   dispatchId: {
@@ -156,6 +156,7 @@ const props = defineProps({
   }
 });
 
+const dispatchStore = useDispatchStore();
 const dispatchData = ref(null);
 const marginData = ref(null);
 const loading = ref(false);
@@ -179,17 +180,11 @@ const loadDispatchData = async () => {
   error.value = null;
   
   try {
-    // This would typically be a specific API call to get a dispatch by ID
-    // For now, we're simulating it with a filtered getDetailedDispatches call
-    // In a real implementation, you'd have a specific endpoint for this
-    const response = await DispatchService.getDetailedDispatches({
-      id: props.dispatchId,
-      limit: 1
-    });
+    // Use the dispatch store's new getDispatchById method
+    const fetchedDispatch = await dispatchStore.getDispatchById(props.dispatchId);
     
-    if (response.data?.data && response.data.data.length > 0) {
-      dispatchData.value = response.data.data[0];
-      
+    if (fetchedDispatch) {
+      dispatchData.value = fetchedDispatch;
       // Load margin data once we have the dispatch
       loadMarginData();
     } else {
@@ -211,10 +206,10 @@ const loadMarginData = async () => {
   marginError.value = null;
   
   try {
-    const response = await DispatchService.getDispatchMargin(props.dispatchId);
+    const response = await dispatchStore.getDispatchMargin(props.dispatchId);
     
-    if (response.data) {
-      marginData.value = response.data;
+    if (response) {
+      marginData.value = response;
     } else {
       marginData.value = null;
     }

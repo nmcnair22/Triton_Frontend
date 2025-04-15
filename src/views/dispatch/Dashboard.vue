@@ -12,6 +12,12 @@
           :manualInput="false"
           :showIcon="true"
           inputClass="w-56"
+          placeholder="Select date range"
+          :showOtherMonths="false"
+          :touchUI="false"
+          showButtonBar
+          :minDate="minDate"
+          :maxDate="maxDate"
           @date-select="handleDateRangeChange" 
         />
         <Button 
@@ -21,7 +27,14 @@
           outlined
         />
       </div>
-      <div>
+      <div class="flex gap-3">
+        <Button 
+          icon="pi pi-refresh" 
+          label="Refresh" 
+          @click="refreshData" 
+          :loading="isRefreshing"
+          severity="info"
+        />
         <Button 
           icon="pi pi-download" 
           label="Export" 
@@ -265,22 +278,27 @@ const filtersVisible = ref(false);
 
 // Date range setup
 const today = new Date();
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(today.getDate() - 30);
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(today.getDate() - 7);
 
-const dateRange = ref([thirtyDaysAgo, today]);
+const dateRange = ref([sevenDaysAgo, today]);
+
+// Calendar date constraints
+const minDate = ref(new Date(today.getFullYear() - 1, 0, 1)); // 1 year ago
+const maxDate = ref(today); // Today
 
 // Computed properties accessing store data
-const totalDispatches = computed(() => dispatchStore.keyMetrics.totalDispatches);
-const totalRevenue = computed(() => dispatchStore.keyMetrics.totalRevenue);
-const averageMargin = computed(() => dispatchStore.keyMetrics.averageMargin);
-const completionRate = computed(() => dispatchStore.keyMetrics.completionRate);
+const totalDispatches = computed(() => dispatchStore.totalDispatches);
+const totalRevenue = computed(() => dispatchStore.totalRevenue);
+const averageMargin = computed(() => dispatchStore.averageMargin);
+const completionRate = computed(() => dispatchStore.completionRate);
 
-const dispatchesChange = computed(() => dispatchStore.keyMetrics.dispatchesChange);
-const revenueChange = computed(() => dispatchStore.keyMetrics.revenueChange);
-const marginChange = computed(() => dispatchStore.keyMetrics.marginChange);
-const completionRateChange = computed(() => dispatchStore.keyMetrics.completionRateChange);
+const dispatchesChange = computed(() => dispatchStore.dispatchChange);
+const revenueChange = computed(() => dispatchStore.revenueChange);
+const marginChange = computed(() => dispatchStore.marginChange);
+const completionRateChange = computed(() => dispatchStore.completionRateChange);
 
+// Use computed properties directly from the store
 const dispatchVolume = computed(() => dispatchStore.dispatchVolume);
 const resultCodes = computed(() => dispatchStore.resultCodes);
 const clientData = computed(() => dispatchStore.clientData);
@@ -293,12 +311,43 @@ const detailedData = computed(() => dispatchStore.detailedData);
 // Loading states from store
 const loading = computed(() => dispatchStore.loading);
 
+// Loading state for refresh button
+const isRefreshing = ref(false);
+
 // Event handlers
 const handleDateRangeChange = () => {
-  dispatchStore.setDateRange({
-    start: dateRange.value[0],
-    end: dateRange.value[1]
-  });
+  console.log('Date range changed to:', dateRange.value);
+  
+  // Ensure we have both start and end dates
+  if (!dateRange.value || !Array.isArray(dateRange.value) || dateRange.value.length < 2) {
+    console.error('Invalid date range:', dateRange.value);
+    return;
+  }
+
+  // Format dates as YYYY-MM-DD strings
+  const formatDate = (date) => {
+    if (!date) return '';
+    
+    try {
+      // Extract year, month, and day
+      const year = date.getFullYear();
+      // getMonth() is 0-indexed, so add 1 and pad with leading zero if needed
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return '';
+    }
+  };
+
+  const start = formatDate(dateRange.value[0]);
+  const end = formatDate(dateRange.value[1]);
+  
+  console.log('Formatted dates for API:', { start, end });
+  
+  dispatchStore.setDateRange(start, end);
   dispatchStore.fetchAllDashboardData();
 };
 
@@ -319,12 +368,49 @@ const exportData = () => {
   alert('Export functionality to be implemented');
 };
 
+// Refresh data
+const refreshData = async () => {
+  console.log('Manually refreshing data');
+  isRefreshing.value = true;
+  
+  try {
+    await dispatchStore.fetchAllDashboardData();
+    console.log('Data refresh complete');
+  } catch (error) {
+    console.error('Error refreshing data:', error);
+  } finally {
+    isRefreshing.value = false;
+  }
+};
+
 onMounted(() => {
+  console.log('Dashboard mounted, initial date range:', dateRange.value);
+  
+  // Format dates as YYYY-MM-DD strings
+  const formatDate = (date) => {
+    if (!date) return '';
+    
+    try {
+      // Extract year, month, and day
+      const year = date.getFullYear();
+      // getMonth() is 0-indexed, so add 1 and pad with leading zero if needed
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return '';
+    }
+  };
+
   // Set initial date range in store
-  dispatchStore.setDateRange({
-    start: dateRange.value[0],
-    end: dateRange.value[1]
-  });
+  const start = formatDate(dateRange.value[0]);
+  const end = formatDate(dateRange.value[1]);
+  
+  console.log('Initial formatted dates for API:', { start, end });
+  
+  dispatchStore.setDateRange(start, end);
   
   // Fetch all dashboard data
   dispatchStore.fetchAllDashboardData();

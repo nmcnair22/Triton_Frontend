@@ -10,7 +10,6 @@ import ClientChart from './components/charts/ClientChart.vue';
 import ProjectChart from './components/charts/ProjectChart.vue';
 import RevenueChart from './components/charts/RevenueChart.vue';
 import ClientRevenueChart from './components/charts/ClientRevenueChart.vue';
-import StateDistributionChart from './components/charts/StateDistributionChart.vue';
 import FiltersPanel from './components/FiltersPanel.vue';
 import DispatchDetailView from './components/DispatchDetailView.vue';
 import DatePicker from 'primevue/datepicker';
@@ -81,22 +80,6 @@ const lowestDailyRevenue = computed(() => {
   const values = dispatchStore.revenueOverTime.map(item => item.total_charged || 0).filter(val => val > 0);
   const lowest = values.length ? Math.min(...values) : 0;
   return formatCurrency(lowest);
-});
-
-// Computed properties for geography stats
-const statesCovered = computed(() => {
-  return dispatchStore.dispatchesByState.length;
-});
-
-const topState = computed(() => {
-  if (!dispatchStore.dispatchesByState.length) return 'N/A';
-  return `${dispatchStore.dispatchesByState[0]?.state || 'N/A'} (${dispatchStore.dispatchesByState[0]?.count || 0} dispatches)`;
-});
-
-const coveragePercentage = computed(() => {
-  // 50 states in the US
-  const totalStates = 50;
-  return Math.round((dispatchStore.dispatchesByState.length / totalStates) * 100);
 });
 
 // Helper functions
@@ -356,7 +339,9 @@ onMounted(() => {
           <div class="col-span-12">
             <div class="card">
               <h2 class="text-xl font-semibold mb-4">Dispatch Volume</h2>
-              <DispatchVolumeChart loading-key="dispatchVolume" />
+              <div class="h-80">
+                <DispatchVolumeChart loading-key="dispatchVolume" />
+              </div>
             </div>
           </div>
         </div>
@@ -367,7 +352,9 @@ onMounted(() => {
           <div class="col-span-12 md:col-span-6 lg:col-span-4">
             <div class="card h-full">
               <h2 class="text-xl font-semibold mb-4">Financial Performance by Category</h2>
-              <FinancialCategoryChart loading-key="financialCategories" />
+              <div class="h-96">
+                <FinancialCategoryChart loading-key="financialCategories" />
+              </div>
             </div>
           </div>
           
@@ -375,7 +362,9 @@ onMounted(() => {
           <div class="col-span-12 md:col-span-6 lg:col-span-4">
             <div class="card h-full">
               <h2 class="text-xl font-semibold mb-4">Top Clients</h2>
-              <ClientChart loading-key="dispatchesByClient" />
+              <div class="h-96">
+                <ClientChart loading-key="dispatchesByClient" />
+              </div>
             </div>
           </div>
           
@@ -383,22 +372,10 @@ onMounted(() => {
           <div class="col-span-12 md:col-span-6 lg:col-span-4">
             <div class="card h-full">
               <h2 class="text-xl font-semibold mb-4">Top Projects</h2>
-              <ProjectChart loading-key="dispatchesByProject" />
+              <div class="h-96">
+                <ProjectChart loading-key="projectData" />
+              </div>
             </div>
-          </div>
-        </div>
-      </TabPanel>
-      
-      <!-- Performance Tab -->
-      <TabPanel header="Performance">
-        <div class="card">
-          <h2 class="text-xl font-semibold mb-4">Performance Trends</h2>
-          <div class="flex justify-content-end mb-4">
-            <Select placeholder="Select Metric" />
-          </div>
-          <div class="h-30rem flex align-items-center justify-content-center">
-            <i class="pi pi-chart-line text-4xl text-surface-300"></i>
-            <span class="ml-2 text-surface-400">Performance chart will be implemented soon</span>
           </div>
         </div>
       </TabPanel>
@@ -410,7 +387,9 @@ onMounted(() => {
           <div class="col-span-12">
             <div class="card">
               <h2 class="text-xl font-semibold mb-4">Revenue Over Time</h2>
-              <RevenueChart loading-key="revenueOverTime" />
+              <div class="h-80">
+                <RevenueChart loading-key="revenueOverTime" />
+              </div>
             </div>
           </div>
         </div>
@@ -420,7 +399,9 @@ onMounted(() => {
           <div class="col-span-12 md:col-span-6">
             <div class="card h-full">
               <h2 class="text-xl font-semibold mb-4">Top Clients by Revenue</h2>
-              <ClientRevenueChart loading-key="topClientsByRevenue" />
+              <div class="h-96">
+                <ClientRevenueChart loading-key="topClientsByRevenue" />
+              </div>
             </div>
           </div>
           
@@ -452,45 +433,17 @@ onMounted(() => {
           <div class="col-span-12 md:col-span-6">
             <div class="card h-full">
               <h2 class="text-xl font-semibold mb-4">Dispatches by Client</h2>
-              <ClientChart loading-key="dispatchesByClient" />
+              <div class="h-96">
+                <ClientChart loading-key="dispatchesByClient" />
+              </div>
             </div>
           </div>
           
           <div class="col-span-12 md:col-span-6">
             <div class="card h-full">
-              <h2 class="text-xl font-semibold mb-4">Top Clients by Revenue</h2>
-              <ClientRevenueChart loading-key="topClientsByRevenue" />
-            </div>
-          </div>
-        </div>
-      </TabPanel>
-      
-      <!-- Geography Tab -->
-      <TabPanel header="Geography">
-        <div class="grid grid-cols-12 gap-4">
-          <div class="col-span-12 md:col-span-6">
-            <div class="card h-full">
-              <h2 class="text-xl font-semibold mb-4">Dispatches by State</h2>
-              <StateDistributionChart loading-key="dispatchesByState" />
-            </div>
-          </div>
-          
-          <div class="col-span-12 md:col-span-6">
-            <div class="card h-full">
-              <h2 class="text-xl font-semibold mb-4">State Coverage</h2>
-              <div class="p-4 bg-surface-50 dark:bg-surface-800 rounded-lg">
-                <p class="mb-2">
-                  <span class="font-semibold">States Covered:</span> 
-                  <span class="ml-2">{{ statesCovered }}</span>
-                </p>
-                <p class="mb-2">
-                  <span class="font-semibold">Top State:</span> 
-                  <span class="ml-2">{{ topState }}</span>
-                </p>
-                <p>
-                  <span class="font-semibold">Coverage Percentage:</span> 
-                  <span class="ml-2">{{ coveragePercentage }}%</span>
-                </p>
+              <h2 class="text-xl font-semibold mb-4">Client Revenue Analysis</h2>
+              <div class="h-96">
+                <ClientRevenueChart loading-key="topClientsByRevenue" />
               </div>
             </div>
           </div>
@@ -577,5 +530,22 @@ onMounted(() => {
 <style lang="scss" scoped>
 .card {
   @apply p-4 rounded-lg bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-700;
+}
+
+/* Make chart containers responsive */
+.h-80 {
+  height: 20rem;
+  min-height: 300px;
+  max-height: 500px;
+}
+
+.h-96 {
+  height: 24rem;
+  min-height: 350px;
+  
+  @media (max-width: 768px) {
+    height: 20rem;
+    min-height: 300px;
+  }
 }
 </style> 

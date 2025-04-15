@@ -13,6 +13,10 @@ alwaysApply: false
 
 This project uses Vue 3 Composition API with `<script setup>` syntax, PrimeVue 4 component library, Tailwind CSS integration, and follows specific project patterns.
 
+Use Pinia stores for all logic for API calls
+We use axios for our calls
+HTTP serice info is in apiService.js
+
 ## Component Structure
 
 All Vue components should follow this structure:

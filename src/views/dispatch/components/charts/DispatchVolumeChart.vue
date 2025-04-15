@@ -20,6 +20,14 @@ import Chart from 'primevue/chart';
 import Skeleton from 'primevue/skeleton';
 
 const props = defineProps({
+  data: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
   loadingKey: {
     type: String,
     default: 'dispatchVolume'
@@ -35,11 +43,11 @@ const chartOptions = ref(null);
 
 // Computed properties
 const isLoading = computed(() => {
-  return dispatchStore.loading[props.loadingKey];
+  return props.loading || dispatchStore.loading[props.loadingKey];
 });
 
 const dispatches = computed(() => {
-  return dispatchStore.dispatchVolume || [];
+  return props.data?.length > 0 ? props.data : dispatchStore.dispatchVolume || [];
 });
 
 // Process the data when dispatches change
@@ -57,37 +65,49 @@ function setupChart() {
   const surfaceBorder = documentStyle.getPropertyValue('--surface-border') || '#dee2e6';
   const primaryColor = documentStyle.getPropertyValue('--primary-color') || '#3B82F6';
   
-  // Group dispatches by date
-  const dispatchesByDate = {};
-  dispatches.value.forEach(dispatch => {
-    const date = dispatch.service_date ? dispatch.service_date.split('T')[0] : 'Unknown';
-    if (!dispatchesByDate[date]) {
-      dispatchesByDate[date] = 0;
-    }
-    dispatchesByDate[date]++;
-  });
+  // Check if this is the new format (daily_volume)
+  const isNewFormat = dispatches.value[0] && 'dispatch_date' in dispatches.value[0];
   
-  // Sort dates
-  const sortedDates = Object.keys(dispatchesByDate).sort();
+  let dates = [];
+  let counts = [];
   
-  // Format dates for display (if needed)
-  const formattedDates = sortedDates.map(date => {
-    if (date === 'Unknown') return date;
-    return new Date(date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric'
+  if (isNewFormat) {
+    // New format from combined endpoint
+    dispatches.value.forEach(item => {
+      dates.push(formatDate(item.dispatch_date));
+      counts.push(item.daily_dispatch_count);
     });
-  });
+  } else {
+    // Original format
+    // Group dispatches by date
+    const dispatchesByDate = {};
+    dispatches.value.forEach(dispatch => {
+      const date = dispatch.service_date ? dispatch.service_date.split('T')[0] : 'Unknown';
+      if (!dispatchesByDate[date]) {
+        dispatchesByDate[date] = 0;
+      }
+      dispatchesByDate[date]++;
+    });
+    
+    // Sort dates
+    const sortedDates = Object.keys(dispatchesByDate).sort();
+    
+    // Format and prepare data for the chart
+    sortedDates.forEach(date => {
+      dates.push(formatDate(date));
+      counts.push(dispatchesByDate[date]);
+    });
+  }
   
   // Create chart data
   chartData.value = {
-    labels: formattedDates,
+    labels: dates,
     datasets: [
       {
         type: 'bar',
         label: 'Dispatch Count',
         backgroundColor: primaryColor,
-        data: sortedDates.map(date => dispatchesByDate[date]),
+        data: counts,
         borderRadius: 6,
         hoverBackgroundColor: adjustColorBrightness(primaryColor, -10)
       }
@@ -141,6 +161,15 @@ function setupChart() {
       }
     }
   };
+}
+
+// Format date for display
+function formatDate(dateString) {
+  if (dateString === 'Unknown') return dateString;
+  return new Date(dateString).toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric'
+  });
 }
 
 // Function to adjust color brightness (for hover effects)

@@ -1,34 +1,15 @@
 <template>
   <div class="h-full">
-    <div v-if="loading" class="flex flex-column gap-2 h-full justify-content-center">
-      <div v-for="i in 3" :key="i" class="w-full">
-        <Skeleton height="6rem" />
-      </div>
+    <div v-if="loading" class="chart-skeleton flex align-items-center justify-content-center">
+      <Skeleton height="20rem" class="w-full" />
     </div>
-    <div v-else-if="!statusData || statusData.length === 0" class="flex flex-column h-full justify-content-center align-items-center">
+    
+    <div v-else-if="!hasData" class="flex flex-column h-full justify-content-center align-items-center">
       <i class="pi pi-chart-pie text-5xl text-surface-300 mb-3"></i>
-      <p class="m-0 text-surface-600 dark:text-surface-400">No status data available for this time period</p>
+      <p class="m-0 text-surface-600 dark:text-surface-400">No status data available</p>
     </div>
-    <div v-else>
-      <div class="flex justify-content-center mb-4">
-        <div class="text-center">
-          <div class="text-4xl font-bold text-surface-900 dark:text-surface-0">{{ totalCount }}</div>
-          <div class="text-sm text-surface-500 dark:text-surface-400">Total Dispatches</div>
-        </div>
-      </div>
-      
-      <Chart id="status-distribution-chart" type="doughnut" :data="chartData" :options="chartOptions" class="max-h-18rem" />
-      
-      <div class="grid mt-4">
-        <div v-for="(status, index) in statusData" :key="status.status" class="col-6 p-2">
-          <div class="flex align-items-center">
-            <div class="w-1rem h-1rem mr-2 rounded" :style="{ backgroundColor: getStatusColor(status.status, index) }"></div>
-            <div class="flex-grow text-sm text-surface-700 dark:text-surface-300">{{ status.status }}</div>
-            <div class="text-sm font-semibold text-surface-900 dark:text-surface-0">{{ Math.round((status.count / totalCount) * 100) }}%</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    
+    <Chart v-else type="pie" :data="chartData" :options="chartOptions" class="h-full" />
   </div>
 </template>
 
@@ -39,119 +20,187 @@ import Chart from 'primevue/chart';
 import Skeleton from 'primevue/skeleton';
 
 const props = defineProps({
+  data: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
   loadingKey: {
     type: String,
     default: 'resultCodes'
   }
 });
 
-// Store
 const dispatchStore = useDispatchStore();
+const documentStyle = document.documentElement.style;
 
-// Function to adjust color brightness
-function adjustColorBrightness(hex, percent) {
-  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
+// Function to adjust brightness of colors
+function adjustBrightness(hex, percent) {
+  // Validate hex input
+  if (!hex || typeof hex !== 'string') {
+    return hex;
+  }
+  
+  // Clean up hex value if needed
+  hex = hex.replace(/^\s*#|\s*$/g, '');
+  
+  // Convert 3-digit hex to 6-digit
+  if (hex.length === 3) {
+    hex = hex.replace(/(.)/g, '$1$1');
+  }
+  
+  // Ensure valid hex format
+  if (!/^[0-9A-F]{6}$/i.test(hex)) {
     return hex;
   }
   
   // Convert hex to RGB
-  let r = parseInt(hex.slice(1, 3), 16);
-  let g = parseInt(hex.slice(3, 5), 16);
-  let b = parseInt(hex.slice(5, 7), 16);
-
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
   // Adjust brightness
-  r = Math.max(0, Math.min(255, r + Math.floor(r * percent / 100)));
-  g = Math.max(0, Math.min(255, g + Math.floor(g * percent / 100)));
-  b = Math.max(0, Math.min(255, b + Math.floor(b * percent / 100)));
-
+  const adjustedR = Math.max(0, Math.min(255, Math.round(r * (1 + percent / 100))));
+  const adjustedG = Math.max(0, Math.min(255, Math.round(g * (1 + percent / 100))));
+  const adjustedB = Math.max(0, Math.min(255, Math.round(b * (1 + percent / 100))));
+  
   // Convert back to hex
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  return '#' + 
+    ((1 << 24) + (adjustedR << 16) + (adjustedG << 8) + adjustedB)
+    .toString(16).slice(1);
 }
 
-// Chart colors
+// Helper to safely get CSS color property with fallback
+function getColorProperty(varName, fallback) {
+  try {
+    const value = documentStyle.getPropertyValue(varName);
+    return value && value.trim() ? value.trim() : fallback;
+  } catch (error) {
+    console.warn(`Error getting color property ${varName}:`, error);
+    return fallback;
+  }
+}
+
+// Status colors mapping with comprehensive variants
 const statusColors = {
-  'Completed': '#22C55E',  // green-500
-  'In Progress': '#3B82F6', // blue-500
-  'Scheduled': '#F59E0B',   // amber-500
-  'Cancelled': '#EF4444',   // red-500
-  'On Hold': '#8B5CF6',     // violet-500
-  'Pending': '#EC4899',     // pink-500
-  'Delayed': '#F97316',     // orange-500
-  'Rejected': '#9F1239',    // rose-800
-  'Other': '#6B7280'        // gray-500
+  // Standard statuses
+  'completed': getColorProperty('--green-500', '#22C55E'),
+  'pending': getColorProperty('--yellow-500', '#EAB308'),
+  'scheduled': getColorProperty('--blue-500', '#3B82F6'),
+  // Support both spelling variants
+  'cancelled': getColorProperty('--red-500', '#EF4444'),
+  'canceled': getColorProperty('--red-500', '#EF4444'),
+  // States with spaces and underscores
+  'in progress': getColorProperty('--indigo-500', '#6366F1'),
+  'in_progress': getColorProperty('--indigo-500', '#6366F1'),
+  'in transit': getColorProperty('--blue-400', '#60A5FA'),
+  'in_transit': getColorProperty('--blue-400', '#60A5FA'),
+  'on hold': getColorProperty('--orange-500', '#F97316'),
+  'on_hold': getColorProperty('--orange-500', '#F97316'),
+  // Additional statuses
+  'delayed': getColorProperty('--amber-500', '#F59E0B'),
+  'approved': getColorProperty('--emerald-500', '#10B981')
 };
 
-// Default color list for fallback
-const chartColors = Object.values(statusColors);
-
-// Helper function to get status color
-function getStatusColor(status, index) {
-  return statusColors[status] || statusColors['Other'] || chartColors[index % chartColors.length];
-}
-
-// Computed properties
-const loading = computed(() => {
-  return dispatchStore.loading[props.loadingKey];
-});
-
-const statusData = computed(() => {
-  return dispatchStore.resultCodes || [];
-});
-
-const totalCount = computed(() => {
-  return statusData.value.reduce((sum, item) => sum + item.count, 0);
-});
-
-// Chart data
-const chartData = computed(() => {
-  if (!statusData.value || statusData.value.length === 0) return null;
-  
-  const labels = statusData.value.map(item => item.status);
-  const data = statusData.value.map(item => item.count);
-  const backgroundColor = statusData.value.map((item, index) => 
-    getStatusColor(item.status, index)
-  );
-  
-  const hoverBackgroundColor = backgroundColor.map(color => 
-    adjustColorBrightness(color, -10)
-  );
-  
-  return {
-    labels,
-    datasets: [
-      {
-        data,
-        backgroundColor,
-        hoverBackgroundColor,
-        borderWidth: 0
-      }
-    ]
-  };
-});
-
-// Chart options
-const chartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
+const chartOptions = {
   plugins: {
     legend: {
-      display: false
+      position: 'bottom',
+      labels: {
+        color: getColorProperty('--text-color', '#495057'),
+        usePointStyle: true,
+        font: {
+          weight: 'normal'
+        }
+      }
     },
     tooltip: {
       callbacks: {
         label: function(context) {
           const label = context.label || '';
-          const value = context.raw || 0;
-          const percentage = Math.round((value / totalCount.value) * 100);
+          const value = context.parsed || 0;
+          const dataset = context.dataset;
+          const total = dataset.data.reduce((a, b) => a + b, 0);
+          const percentage = Math.round((value / total) * 100);
           return `${label}: ${value} (${percentage}%)`;
         }
       }
     }
   },
-  cutout: '60%'
+  cutout: '40%',
+  responsive: true,
+  maintainAspectRatio: false
+};
+
+// Computed properties
+const loading = computed(() => {
+  return props.loading || dispatchStore.loading[props.loadingKey];
+});
+
+const statusData = computed(() => {
+  return props.data && props.data.length > 0 
+    ? props.data 
+    : dispatchStore.resultCodes;
+});
+
+const hasData = computed(() => {
+  return statusData.value && statusData.value.length > 0;
+});
+
+const chartData = computed(() => {
+  if (!hasData.value) return null;
+  
+  const labels = [];
+  const data = [];
+  const backgroundColors = [];
+  const hoverBackgroundColors = [];
+  
+  statusData.value.forEach(item => {
+    // Extract the correct properties based on data format
+    const status = item.status || item.name || 'Unknown';
+    const count = item.count || 0;
+    
+    if (count > 0) {
+      labels.push(status);
+      data.push(count);
+      
+      // Normalize the status key for matching
+      // Try multiple variants of the status for lookup
+      const statusLower = status.toLowerCase();
+      const statusUnderscored = statusLower.replace(/ /g, '_');
+      const statusSpaced = statusUnderscored.replace(/_/g, ' ');
+      
+      // Try different variants to find a matching color
+      const baseColor = 
+        statusColors[statusLower] || 
+        statusColors[statusUnderscored] || 
+        statusColors[statusSpaced] || 
+        getColorProperty('--primary-color', '#6366F1');
+      
+      backgroundColors.push(baseColor);
+      hoverBackgroundColors.push(adjustBrightness(baseColor, -10));
+    }
+  });
+  
+  return {
+    labels: labels,
+    datasets: [
+      {
+        data: data,
+        backgroundColor: backgroundColors,
+        hoverBackgroundColor: hoverBackgroundColors,
+        borderColor: getColorProperty('--surface-ground', '#f8f9fa')
+      }
+    ]
+  };
 });
 </script>
 
 <style scoped>
-/* The skeleton loader styling is handled by PrimeVue and Tailwind classes */
+.chart-skeleton {
+  min-height: 20rem;
+}
 </style> 

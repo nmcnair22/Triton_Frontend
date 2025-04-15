@@ -138,7 +138,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { ApiService } from '@/service/ApiService';
+import ApiService from '@/service/ApiService';
 import { useDispatchStore } from '@/stores/dispatchStore';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
