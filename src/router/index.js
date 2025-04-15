@@ -14,6 +14,10 @@ const routes = [
         children: [
             {
                 path: '/',
+                redirect: '/dispatch/dashboard'
+            },
+            {
+                path: '/dashboard-marketing',
                 name: 'dashboard-marketing',
                 meta: {
                     breadcrumb: ['Marketing Dashboard']
@@ -27,6 +31,14 @@ const routes = [
                     breadcrumb: ['Streamline Dashboard']
                 },
                 component: () => import('@/views/dashboard/BankingView.vue')
+            },
+            {
+                path: '/dispatch/dashboard',
+                name: 'dispatch-dashboard',
+                meta: {
+                    breadcrumb: ['Dispatch Dashboard']
+                },
+                component: () => import('@/views/dispatch/DispatchDashboard.vue')
             },
             {
                 path: '/streamline/bill-import',

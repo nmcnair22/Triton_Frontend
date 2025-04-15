@@ -8,9 +8,9 @@ const model = ref([
         icon: 'pi pi-home',
         items: [
             {
-                label: 'Marketing',
-                icon: 'pi pi-fw pi-gauge',
-                to: '/dashboard-marketing'
+                label: 'Dispatch Dashboard',
+                icon: 'pi pi-fw pi-truck',
+                to: '/dispatch/dashboard'
             }
         ]
     },
