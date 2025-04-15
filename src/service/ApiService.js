@@ -54,6 +54,59 @@ export const ApiService = {
   // Add specific API methods related to your domain
 };
 
+// Dispatch-specific API services
+export const DispatchService = {
+  // Get dispatch metrics data
+  getKeyMetrics(params) {
+    return ApiService.get('/dispatch-reports/dispatches', params);
+  },
+  
+  // Get accounting margins data
+  getMargins(params) {
+    return ApiService.get('/dispatch-reports/accounting/margins', params);
+  },
+  
+  // Get dispatch-specific margin data
+  getDispatchMargin(dispatchId) {
+    return ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/margin`);
+  },
+  
+  // Get dispatch stats for result codes
+  getDispatchStats(params) {
+    return ApiService.get('/dispatch-reports/stats/dispatches', params);
+  },
+  
+  // Get customer data
+  getCustomers(params) {
+    return ApiService.get('/dispatch-reports/customers', params);
+  },
+  
+  // Get project data
+  getProjects(params) {
+    return ApiService.get('/dispatch-reports/stats/project', params);
+  },
+  
+  // Get technician data
+  getTechnicians(params) {
+    return ApiService.get('/dispatch-reports/stats/technicians', params);
+  },
+  
+  // Get detailed dispatch data with pagination
+  getDetailedDispatches(params) {
+    return ApiService.get('/dispatch-reports/dispatches', params);
+  },
+  
+  // Get dispatch documents
+  getDispatchDocuments(dispatchId) {
+    return ApiService.get(`/dispatch-reports/dispatches/${dispatchId}/documents`);
+  },
+  
+  // Delete a document
+  deleteDocument(jobId) {
+    return ApiService.delete(`/dispatch-reports/documents/${jobId}`);
+  }
+};
+
 // Invoice-specific API services
 export const InvoiceService = {
   // Get all invoices with optional filtering
@@ -113,22 +166,8 @@ export const InvoiceService = {
     if (invoiceNumber) {
       params.invoice_number = invoiceNumber;
     }
-    console.log('getAvailableTemplates API call with params:', params);
-    console.log('API URL:', `${apiClient.defaults.baseURL}/invoice-templates/available`);
     
-    return ApiService.get('/invoice-templates/available', params)
-      .then(response => {
-        console.log('getAvailableTemplates raw response:', response);
-        return response;
-      })
-      .catch(error => {
-        console.error('getAvailableTemplates API error:', error);
-        console.error('Error config:', error.config);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-        }
-        throw error;
-      });
+    return ApiService.get('/invoice-templates/available', params);
   },
   
   // Generate a document from a template for an invoice
@@ -162,8 +201,6 @@ export const InvoiceService = {
     // Add token parameter
     url += tokenParam;
     
-    console.log('Download URL:', url);
-    
     // Create a full URL with the base URL
     const fullUrl = `${apiClient.defaults.baseURL}${url}`;
     
@@ -193,13 +230,6 @@ export const InvoiceService = {
     // Remove 'Bearer ' prefix if present
     const tokenValue = token ? token.replace('Bearer ', '') : '';
     const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
-    
-    console.log('Creating preview URL with token param:', {
-      fileId,
-      fileType,
-      subtype,
-      hasToken: !!tokenValue
-    });
     
     let url = '';
     
@@ -235,7 +265,6 @@ export const InvoiceService = {
       url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
     }
     
-    console.log('Preview URL constructed:', url);
     return url;
   },
   

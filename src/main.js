@@ -57,10 +57,15 @@ const MyPreset = definePreset(Aura, {
         info: cisBluePalette,
         warning: cisYellowPalette,
         danger: cisRedPalette
-        }
+    }
 });
 
 app.use(PrimeVue, {
+    pt: {
+        chart: {
+            root: { class: 'w-full' }
+        }
+    },
     theme: {
         preset: MyPreset,
         options: {
