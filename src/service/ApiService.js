@@ -32,22 +32,81 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Debug log to see the base URL configuration
+console.log('API Service BaseURL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api');
+
 export const ApiService = {
   // Generic API methods
   get(resource, params) {
-    return apiClient.get(resource, { params });
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.get - Full URL:', fullUrl, { params });
+    
+    return apiClient.get(resource, { params })
+      .catch(error => {
+        console.error(`ApiService.get - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   post(resource, data) {
-    return apiClient.post(resource, data);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.post - Full URL:', fullUrl, { data });
+    
+    return apiClient.post(resource, data)
+      .catch(error => {
+        console.error(`ApiService.post - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   put(resource, data) {
-    return apiClient.put(resource, data);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.put - Full URL:', fullUrl, { data });
+    
+    return apiClient.put(resource, data)
+      .catch(error => {
+        console.error(`ApiService.put - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   delete(resource) {
-    return apiClient.delete(resource);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.delete - Full URL:', fullUrl);
+    
+    return apiClient.delete(resource)
+      .catch(error => {
+        console.error(`ApiService.delete - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   // Custom methods
