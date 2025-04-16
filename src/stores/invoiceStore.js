@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import ApiService from '@/service/ApiService';
-import { AuthService } from '@/service/AuthService';
+import { InvoiceService } from '@/service/ApiService';
 
 export const useInvoiceStore = defineStore('invoice', () => {
   // State
@@ -79,7 +78,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null;
     
     try {
-      const response = await ApiService.get('/invoices', params);
+      const response = await InvoiceService.getInvoices(params);
       if (response.data && response.data.data) {
         invoices.value = response.data.data;
       } else {
@@ -105,10 +104,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     customerInvoicesError.value = null;
     
     try {
-      const response = await ApiService.get('/accounting/sales-invoices', { 
-        ...params,
-        filter: filterConditions
-      });
+      const response = await InvoiceService.getCustomerInvoices(filterConditions, params);
       
       if (response.data && response.data.success && response.data.data && response.data.data.value) {
         // Process the invoice data to match the expected format for the frontend
@@ -143,13 +139,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
     
     try {
       // Try to fetch the detailed sales invoice first
-      const invoiceResponse = await ApiService.get(`/accounting/sales-invoices/${id}`);
+      const invoiceResponse = await InvoiceService.getSalesInvoice(id);
       
       if (invoiceResponse.data && invoiceResponse.data.success && invoiceResponse.data.data) {
         const invoiceData = invoiceResponse.data.data;
         
         // Fetch invoice lines
-        const linesResponse = await ApiService.get(`/accounting/sales-invoices/${id}/lines`);
+        const linesResponse = await InvoiceService.getSalesInvoiceLines(id);
         let invoiceLines = [];
         
         if (linesResponse.data && linesResponse.data.success && linesResponse.data.data.value) {
@@ -190,7 +186,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
         return formattedInvoice;
       } else {
         // Fall back to the original method if the sales invoice fetching fails
-        const response = await ApiService.get(`/invoices/${id}`);
+        const response = await InvoiceService.getInvoice(id);
         if (response.data && response.data.data) {
           currentInvoice.value = response.data.data;
         } else {
@@ -217,9 +213,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     enrichedInvoiceError.value = null;
     
     try {
-      const response = await ApiService.post('/accounting/sales-invoice-lines', {
-        document_number: documentNumber
-      });
+      const response = await InvoiceService.getEnrichedSalesInvoiceLines(documentNumber);
       
       if (response.data && response.data.success && response.data.data && response.data.data.value) {
         // Store both the raw and normalized data
@@ -265,7 +259,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null;
     
     try {
-      const response = await ApiService.post('/invoices', invoice);
+      const response = await InvoiceService.createInvoice(invoice);
       if (response.data && response.data.data) {
         invoices.value.push(response.data.data);
         return response.data.data;
@@ -284,7 +278,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null;
     
     try {
-      const response = await ApiService.put(`/invoices/${invoice.id}`, invoice);
+      const response = await InvoiceService.updateInvoice(invoice);
       if (response.data && response.data.data) {
         const index = invoices.value.findIndex(i => i.id === invoice.id);
         if (index !== -1) {
@@ -309,7 +303,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null;
     
     try {
-      await ApiService.delete(`/invoices/${id}`);
+      await InvoiceService.deleteInvoice(id);
       invoices.value = invoices.value.filter(invoice => invoice.id !== id);
       if (currentInvoice.value && currentInvoice.value.id === id) {
         currentInvoice.value = null;
@@ -348,10 +342,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     templatesError.value = null;
     
     try {
-      const response = await ApiService.get('/invoice-templates/available', {
-        client_id: clientId,
-        invoice_number: invoiceNumber
-      });
+      const response = await InvoiceService.getAvailableTemplates(clientId, invoiceNumber);
       
       if (response.data && response.data.success && response.data.data) {
         availableTemplates.value = response.data.data;
@@ -381,10 +372,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     generateTemplateError.value = null;
     
     try {
-      const response = await ApiService.post('/invoice-templates/generate', {
-        invoice_number: invoiceNumber,
-        template_id: templateId
-      });
+      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
       
       if (response.data && response.data.success && response.data.data) {
         // After successful generation, refresh the list of generated files
@@ -414,7 +402,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     generatedFilesError.value = null;
     
     try {
-      const response = await ApiService.get(`/invoice-templates/files/${invoiceNumber}`);
+      const response = await InvoiceService.getInvoiceDocuments(invoiceNumber);
       
       if (response.data && response.data.success) {
         let processedFiles = [];
@@ -527,7 +515,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     customerDocumentsError.value = null;
     
     try {
-      const response = await ApiService.get(`/invoice-templates/customer-documents?customer_number=${customerNumber}&limit=50&offset=0`);
+      const response = await InvoiceService.getCustomerDocuments(customerNumber);
       
       if (response.data && response.data.success) {
         let processedFiles = [];
@@ -588,7 +576,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
       
       console.log(`Processed download parameters: JobID=${jobId}, ActualType=${actualFileType}, ActualSubtype=${actualSubtype || 'none'}`);
       
-      const success = await ApiService.downloadGeneratedFile(jobId, actualFileType, actualSubtype);
+      const success = await InvoiceService.downloadGeneratedFile(jobId, actualFileType, actualSubtype);
       return success;
     } catch (err) {
       console.error('Error downloading file:', err);

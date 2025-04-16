@@ -80,4 +80,28 @@ app.use(ConfirmationService);
 app.component('BlockViewer', BlockViewer);
 app.component('PermissionGuard', PermissionGuard);
 
+/* Import Font Awesome */
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { 
+    faArrowTrendUp,
+    faArrowTrendDown,
+    faTruck,
+    faMoneyBill,
+    faChartLine,
+    faCheckCircle
+} from '@fortawesome/free-solid-svg-icons';
+
+// Add icons to the library
+library.add(
+    faArrowTrendUp,
+    faArrowTrendDown,
+    faTruck,
+    faMoneyBill,
+    faChartLine,
+    faCheckCircle
+);
+
+app.component('font-awesome-icon', FontAwesomeIcon);
+
 app.mount('#app');

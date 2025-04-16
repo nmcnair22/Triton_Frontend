@@ -1,53 +1,31 @@
 <template>
-  <div class="metric-card" :class="[`${colorScheme}-card`]">
-    <div class="card-content flex flex-col justify-between h-full">
-      <!-- Card Header with Title and Icon -->
-      <div class="card-header flex justify-between items-center mb-2">
-        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 m-0">{{ title }}</h3>
-        <div class="icon-container">
-          <i :class="icon" class="metric-icon"></i>
+  <div class="key-metric-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-sm">
+    <div class="flex flex-col h-full">
+      <div class="p-2 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex items-center mb-1">
+          <i :class="['mr-1 text-gray-400 dark:text-gray-500', icon]"></i>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ label }}</span>
+        </div>
+        <div class="flex items-baseline">
+          <span class="text-xl font-semibold text-gray-800 dark:text-gray-200">{{ formattedValue }}</span>
+          <ChangeIndicator v-if="change !== null && !isNaN(change)" :value="change" class="ml-2" :invert="invertChange" />
         </div>
       </div>
-
-      <!-- Card Body with Value and Change -->
-      <div class="card-body">
-        <!-- Loading State -->
-        <div v-if="loading" class="animate-pulse">
-          <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded-md w-24 mb-2"></div>
-          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-md w-16"></div>
+      
+      <div class="flex-grow p-2 pt-1">
+        <MiniChart 
+          v-if="data && data.length" 
+          :data="data" 
+          :is-loading="loading" 
+          :color="getChartColor" 
+          height="26px"
+          :stroke-width="1"
+        />
+        <div v-else-if="loading" class="h-[26px] w-full flex items-center justify-center">
+          <div class="w-full h-[1px] bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
         </div>
-        
-        <!-- Error State -->
-        <div v-else-if="hasError" class="error-state">
-          <div class="text-xs text-red-500 mb-1 flex items-center">
-            <i class="pi pi-exclamation-triangle mr-1"></i>
-            <span>{{ errorMessage || 'Error loading data' }}</span>
-          </div>
-          <button @click="$emit('retry')" 
-            class="retry-button text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center">
-            <i class="pi pi-refresh mr-1"></i>
-            <span>Retry</span>
-          </button>
-        </div>
-        
-        <!-- Value State -->
-        <div v-else>
-          <div class="metric-value-container">
-            <span class="metric-value">
-              <span v-if="metricType === 'currency' && value !== null">$</span>{{ formattedValue }}
-              <span v-if="metricType === 'percentage' && value !== null">%</span>
-            </span>
-          </div>
-          <div class="metric-change-container mt-1">
-            <div v-if="change !== undefined" class="flex items-center">
-              <i :class="changeIconClass" class="mr-1"></i>
-              <span :class="changeTextClass" class="change-value">{{ formattedChange }}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">vs. previous</span>
-            </div>
-            <div v-else class="text-xs text-gray-500 dark:text-gray-400">
-              No previous data
-            </div>
-          </div>
+        <div v-else class="h-[26px] flex items-center justify-center">
+          <span class="text-xs text-gray-400 dark:text-gray-500">No data</span>
         </div>
       </div>
     </div>
@@ -56,193 +34,164 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useDispatchStore } from '@/stores/dispatchStore';
+import MiniChart from './MiniChart.vue';
+import ChangeIndicator from './ChangeIndicator.vue';
 
 const props = defineProps({
-  title: {
+  label: {
     type: String,
-    required: true
+    default: 'Metric'
   },
   value: {
     type: [Number, String],
     default: 0
   },
-  change: {
-    type: Number,
-    default: 0
-  },
-  metricType: {
-    type: String,
-    default: 'numeric',
-    validator: value => ['numeric', 'currency', 'percentage'].includes(value)
-  },
-  loadingKey: {
-    type: String,
-    default: ''
-  },
-  icon: {
-    type: String,
-    default: 'pi pi-chart-bar'
-  },
-  hasError: {
+  loading: {
     type: Boolean,
     default: false
   },
-  errorMessage: {
+  format: {
     type: String,
-    default: ''
+    default: 'number' // 'number', 'currency', 'percent'
   },
-  colorScheme: {
+  icon: {
     type: String,
-    default: 'primary',
-    validator: value => ['primary', 'success', 'warning', 'danger', 'info', 'purple', 'teal', 'orange', 'indigo'].includes(value)
+    default: 'pi pi-chart-line'
+  },
+  data: {
+    type: Array,
+    default: () => []
+  },
+  change: {
+    type: Number,
+    default: null
+  },
+  invertChange: {
+    type: Boolean,
+    default: false
+  },
+  thresholds: {
+    type: Object,
+    default: () => ({
+      good: 0,
+      warning: -5,
+      bad: -10
+    })
+  },
+  chartColor: {
+    type: String,
+    default: null
   }
 });
 
-const emit = defineEmits(['retry']);
-
-const dispatchStore = useDispatchStore();
-
-// Computed properties
-const loading = computed(() => {
-  return dispatchStore.loading[props.loadingKey];
+const getChartColor = computed(() => {
+  if (props.chartColor) return props.chartColor;
+  
+  // Default colors based on value type
+  if (props.format === 'currency') return '#297FB7'; // blue for money
+  if (props.format === 'percent') return '#14B8A6'; // teal for percentages
+  
+  // Otherwise, determine color by change if available
+  if (props.change !== null && !isNaN(props.change)) {
+    const actualChange = props.invertChange ? -props.change : props.change;
+    if (actualChange >= props.thresholds.good) return '#10B981'; // green for good
+    if (actualChange >= props.thresholds.warning) return '#F59E0B'; // amber for warning
+    return '#EF4444'; // red for bad
+  }
+  
+  return '#64748B'; // default slate
 });
+
+const isNumber = (value) => {
+  return typeof value === 'number' && !isNaN(value);
+};
 
 const formattedValue = computed(() => {
-  if (props.hasError) return 'Error';
-  if (props.value === undefined || props.value === null) return '--';
+  if (props.loading) return '—';
   
-  const val = Number(props.value);
-  if (isNaN(val)) return props.value;
+  if (props.value === null || props.value === undefined) {
+    return 'N/A';
+  }
   
-  switch (props.metricType) {
+  switch (props.format) {
     case 'currency':
-      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    case 'percentage':
-      return val.toFixed(1);
+      return formatCurrency(props.value);
+    case 'percent':
+      return formatPercent(props.value);
     default:
-      return val.toLocaleString();
+      return formatNumber(props.value);
   }
 });
 
-const formattedChange = computed(() => {
-  if (props.change === undefined) return '';
-  
-  const change = Math.abs(props.change);
-  const prefix = props.change >= 0 ? '+' : '-';
-  
-  if (props.metricType === 'percentage') {
-    return `${prefix}${change.toFixed(1)}%`;
+function formatCurrency(value) {
+  try {
+    // Handle string values that might be already formatted
+    if (typeof value === 'string') {
+      if (value.startsWith('$')) return value;
+      const numeric = parseFloat(value.replace(/[^0-9.-]+/g, ''));
+      if (isNaN(numeric)) return '$0';
+      value = numeric;
+    }
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  } catch (error) {
+    console.error('Error formatting currency:', error);
+    return '$0';
   }
-  
-  return `${prefix}${change.toLocaleString()}${props.metricType === 'percentage' ? '%' : ''}`;
-});
+}
 
-const changeIconClass = computed(() => {
-  if (props.change === undefined) return '';
-  
-  const direction = props.change >= 0 ? 'up' : 'down';
-  return `pi pi-arrow-${direction}`;
-});
+function formatPercent(value) {
+  try {
+    // Handle string values
+    if (typeof value === 'string') {
+      if (value.endsWith('%')) return value;
+      const numeric = parseFloat(value.replace(/[^0-9.-]+/g, ''));
+      if (isNaN(numeric)) return '0.0%';
+      value = numeric;
+    }
+    
+    // Convert to decimal if needed (e.g., 42 -> 0.42)
+    const normalizedValue = value > 1 ? value / 100 : value;
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'percent',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(normalizedValue);
+  } catch (error) {
+    console.error('Error formatting percentage:', error);
+    return '0.0%';
+  }
+}
 
-const changeTextClass = computed(() => {
-  if (props.change === undefined) return '';
-  
-  return props.change >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
-});
+function formatNumber(value) {
+  try {
+    // Handle string values
+    if (typeof value === 'string') {
+      const numeric = parseFloat(value.replace(/[^0-9.-]+/g, ''));
+      if (isNaN(numeric)) return '0';
+      value = numeric;
+    }
+    
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  } catch (error) {
+    console.error('Error formatting number:', error);
+    return '0';
+  }
+}
 </script>
 
 <style scoped>
-.metric-card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 h-full transition-all relative overflow-hidden;
-}
-
-.icon-container {
-  @apply flex justify-center items-center rounded-full h-8 w-8 bg-opacity-10 transition-colors;
-}
-
-.metric-icon {
-  @apply text-base;
-}
-
-.metric-value {
-  @apply text-2xl font-bold text-gray-900 dark:text-white;
-}
-
-.change-value {
-  @apply text-xs font-medium;
-}
-
-/* Color schemes based on mockups */
-.primary-card .icon-container {
-  @apply bg-blue-100 dark:bg-blue-900;
-}
-
-.primary-card .metric-icon {
-  @apply text-blue-600 dark:text-blue-400;
-}
-
-.success-card .icon-container {
-  @apply bg-green-100 dark:bg-green-900;
-}
-
-.success-card .metric-icon {
-  @apply text-green-600 dark:text-green-400;
-}
-
-.warning-card .icon-container {
-  @apply bg-yellow-100 dark:bg-yellow-900;
-}
-
-.warning-card .metric-icon {
-  @apply text-yellow-600 dark:text-yellow-400;
-}
-
-.danger-card .icon-container {
-  @apply bg-red-100 dark:bg-red-900;
-}
-
-.danger-card .metric-icon {
-  @apply text-red-600 dark:text-red-400;
-}
-
-.info-card .icon-container {
-  @apply bg-blue-100 dark:bg-blue-900;
-}
-
-.info-card .metric-icon {
-  @apply text-blue-600 dark:text-blue-400;
-}
-
-.purple-card .icon-container {
-  @apply bg-purple-100 dark:bg-purple-900;
-}
-
-.purple-card .metric-icon {
-  @apply text-purple-600 dark:text-purple-400;
-}
-
-.teal-card .icon-container {
-  @apply bg-teal-100 dark:bg-teal-900;
-}
-
-.teal-card .metric-icon {
-  @apply text-teal-600 dark:text-teal-400;
-}
-
-.orange-card .icon-container {
-  @apply bg-orange-100 dark:bg-orange-900;
-}
-
-.orange-card .metric-icon {
-  @apply text-orange-600 dark:text-orange-400;
-}
-
-.indigo-card .icon-container {
-  @apply bg-indigo-100 dark:bg-indigo-900;
-}
-
-.indigo-card .metric-icon {
-  @apply text-indigo-600 dark:text-indigo-400;
+.key-metric-card {
+  height: 100%;
+  min-height: 90px;
 }
 </style> 

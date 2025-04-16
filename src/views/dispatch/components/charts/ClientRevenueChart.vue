@@ -1,125 +1,133 @@
 <template>
-  <div class="client-revenue-chart h-full">
-    <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center h-full">
-      <Skeleton height="16rem" width="100%" class="rounded-md" />
-    </div>
-    
-    <!-- No Data State -->
-    <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-md">
-      <i class="pi pi-chart-bar text-3xl text-gray-400 mb-3"></i>
-      <p class="m-0 text-gray-500 dark:text-gray-400 text-sm">No client revenue data available for this period</p>
-    </div>
-    
-    <!-- Data Display -->
-    <div v-else class="h-full flex flex-col">
-      <!-- Header with metrics summary -->
-      <div class="chart-header flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
-        <div class="metrics-summary flex gap-6">
-          <div class="metric">
-            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Total Revenue</div>
-            <div class="metric-value text-xl font-semibold text-gray-900 dark:text-white">{{ formatCurrency(totalClientRevenue) }}</div>
-          </div>
-          <div class="metric">
-            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Average Margin</div>
-            <div class="metric-value text-xl font-semibold" :class="getMarginTextColor(averageClientMargin)">
-              {{ formatPercentage(averageClientMargin) }}
-            </div>
-          </div>
-          <div class="metric">
-            <div class="metric-label text-sm text-gray-500 dark:text-gray-400">Total Clients</div>
-            <div class="metric-value text-xl font-semibold text-gray-900 dark:text-white">{{ clientRevenueData.length }}</div>
-          </div>
+  <div class="client-revenue-chart h-full shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+    <!-- Chart Header -->
+    <div class="chart-header flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700">
+      <div class="title">
+        <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">Top Clients</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Revenue and profitability by client</p>
+      </div>
+      
+      <div class="view-controls flex gap-2">
+        <div class="tab-controls flex rounded-md overflow-hidden shadow-sm">
+          <button 
+            class="tab-button px-3 py-1.5 text-xs font-medium flex items-center"
+            :class="{'active-tab': selectedView === 'chart'}"
+            @click="selectedView = 'chart'"
+          >
+            <i class="pi pi-chart-bar mr-1"></i>Chart
+          </button>
+          <button 
+            class="tab-button px-3 py-1.5 text-xs font-medium flex items-center"
+            :class="{'active-tab': selectedView === 'table'}"
+            @click="selectedView = 'table'"
+          >
+            <i class="pi pi-list mr-1"></i>Table
+          </button>
         </div>
         
-        <div class="view-controls flex gap-2">
-          <div class="tab-controls flex border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-            <button 
-              class="tab-button px-3 py-1 text-sm font-medium"
-              :class="{'active-tab': selectedView === 'chart'}"
-              @click="selectedView = 'chart'"
-            >
-              <i class="pi pi-chart-bar mr-1"></i>Chart
-            </button>
-            <button 
-              class="tab-button px-3 py-1 text-sm font-medium"
-              :class="{'active-tab': selectedView === 'table'}"
-              @click="selectedView = 'table'"
-            >
-              <i class="pi pi-list mr-1"></i>Table
-            </button>
-          </div>
-          
-          <div class="metric-controls flex border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-            <button 
-              class="tab-button px-3 py-1 text-sm font-medium"
-              :class="{'active-tab': selectedMetric === 'revenue'}"
-              @click="selectMetric('revenue')"
-            >
-              Revenue
-            </button>
-            <button 
-              class="tab-button px-3 py-1 text-sm font-medium"
-              :class="{'active-tab': selectedMetric === 'margin'}"
-              @click="selectMetric('margin')"
-            >
-              Margin
-            </button>
-          </div>
+        <div class="metric-controls flex rounded-md overflow-hidden shadow-sm">
+          <button 
+            class="tab-button px-3 py-1.5 text-xs font-medium"
+            :class="{'active-tab': selectedMetric === 'revenue'}"
+            @click="selectMetric('revenue')"
+          >
+            Revenue
+          </button>
+          <button 
+            class="tab-button px-3 py-1.5 text-xs font-medium"
+            :class="{'active-tab': selectedMetric === 'margin'}"
+            @click="selectMetric('margin')"
+          >
+            Margin
+          </button>
         </div>
       </div>
-      
-      <!-- Chart View -->
-      <div v-if="selectedView === 'chart'" class="chart-container flex-1">
-        <Chart :type="chartType" :data="chartData" :options="chartOptions" class="h-full" />
+    </div>
+
+    <div class="chart-body p-3 h-[calc(100%-60px)]">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center h-full">
+        <Skeleton height="16rem" width="100%" class="rounded-md" />
       </div>
       
-      <!-- Table View -->
-      <div v-else class="table-container flex-1 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-        <DataTable 
-          :value="sortedClients" 
-          stripedRows 
-          size="small"
-          :sortField="sortField"
-          :sortOrder="sortOrder"
-          @sort="onSort"
-          responsiveLayout="scroll"
-          class="w-full">
-          
-          <Column field="name" header="Client" :sortable="true">
-            <template #body="slotProps">
-              <div class="flex items-center">
-                <span class="mr-2 text-gray-800 dark:text-gray-200">{{ slotProps.data.name }}</span>
-                <span v-if="slotProps.data.dispatch_count" 
-                  class="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                  {{ slotProps.data.dispatch_count }}
+      <!-- No Data State -->
+      <div v-else-if="!hasData" class="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800 rounded-md p-6">
+        <i class="pi pi-chart-bar text-3xl text-gray-400 mb-3"></i>
+        <p class="m-0 text-gray-500 dark:text-gray-400 text-sm">No client revenue data available for this period</p>
+      </div>
+      
+      <!-- Data Display -->
+      <div v-else class="h-full flex flex-col">
+        <!-- Chart View -->
+        <div v-if="selectedView === 'chart'" class="chart-container flex-1">
+          <Chart :type="chartType" :data="chartData" :options="chartOptions" class="h-full" />
+        </div>
+        
+        <!-- Table View -->
+        <div v-else class="table-container flex-1 rounded-md overflow-hidden">
+          <DataTable 
+            :value="sortedClients" 
+            stripedRows 
+            size="small"
+            :sortField="sortField"
+            :sortOrder="sortOrder"
+            @sort="onSort"
+            responsiveLayout="scroll"
+            class="w-full">
+            
+            <Column field="name" header="Client" :sortable="true">
+              <template #body="slotProps">
+                <div class="flex items-center">
+                  <span class="mr-2 text-gray-800 dark:text-gray-200 text-sm">{{ slotProps.data.name }}</span>
+                  <span v-if="slotProps.data.dispatch_count" 
+                    class="px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                    {{ slotProps.data.dispatch_count }}
+                  </span>
+                </div>
+              </template>
+            </Column>
+            
+            <Column field="total_revenue" header="Revenue" :sortable="true">
+              <template #body="slotProps">
+                <span class="text-gray-800 dark:text-gray-200 text-sm">{{ formatCurrency(slotProps.data.total_revenue) }}</span>
+              </template>
+            </Column>
+            
+            <Column field="profit" header="Profit" :sortable="true">
+              <template #body="slotProps">
+                <span :class="[slotProps.data.profit < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400', 'text-sm']">
+                  {{ formatCurrency(slotProps.data.profit) }}
                 </span>
-              </div>
-            </template>
-          </Column>
-          
-          <Column field="total_revenue" header="Revenue" :sortable="true">
-            <template #body="slotProps">
-              <span class="text-gray-800 dark:text-gray-200">{{ formatCurrency(slotProps.data.total_revenue) }}</span>
-            </template>
-          </Column>
-          
-          <Column field="profit" header="Profit" :sortable="true">
-            <template #body="slotProps">
-              <span :class="slotProps.data.profit < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'">
-                {{ formatCurrency(slotProps.data.profit) }}
-              </span>
-            </template>
-          </Column>
-          
-          <Column field="margin_percent" header="Margin" :sortable="true">
-            <template #body="slotProps">
-              <span class="px-2 py-1 text-xs rounded-md" :class="getMarginBadgeClass(slotProps.data.margin_percent)">
-                {{ formatPercentage(slotProps.data.margin_percent) }}
-              </span>
-            </template>
-          </Column>
-        </DataTable>
+              </template>
+            </Column>
+            
+            <Column field="margin_percent" header="Margin" :sortable="true">
+              <template #body="slotProps">
+                <span class="px-2 py-0.5 text-xs rounded-md" :class="getMarginBadgeClass(slotProps.data.margin_percent)">
+                  {{ formatPercentage(slotProps.data.margin_percent) }}
+                </span>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary metrics footer -->
+    <div v-if="hasData" class="chart-footer grid grid-cols-3 gap-2 py-2 px-3 mt-auto border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <div class="metric">
+        <div class="metric-label text-xs text-gray-500 dark:text-gray-400">Total Revenue</div>
+        <div class="metric-value text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(totalClientRevenue) }}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label text-xs text-gray-500 dark:text-gray-400">Average Margin</div>
+        <div class="metric-value text-sm font-semibold" :class="getMarginTextColor(averageClientMargin)">
+          {{ formatPercentage(averageClientMargin) }}
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label text-xs text-gray-500 dark:text-gray-400">Total Clients</div>
+        <div class="metric-value text-sm font-semibold text-gray-900 dark:text-white">{{ clientRevenueData.length }}</div>
       </div>
     </div>
   </div>
@@ -208,8 +216,11 @@ const averageClientMargin = computed(() => {
 const chartData = computed(() => {
   if (!hasData.value) return null;
   
-  // Get top 10 clients by selected metric
+  // Get top clients by selected metric
   const clients = sortedClients.value;
+  
+  // Generate an array of gradient colors
+  const colorPalette = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#6366F1', '#EF4444'];
   
   if (selectedMetric.value === 'revenue') {
     return {
@@ -217,11 +228,11 @@ const chartData = computed(() => {
       datasets: [
         {
           label: 'Revenue',
-          backgroundColor: '#10B981', // Emerald green
+          backgroundColor: clients.map((_, index) => colorPalette[index % colorPalette.length]),
           data: clients.map(client => client.total_revenue),
           borderRadius: 4,
-          barThickness: 16,
-          maxBarThickness: 20
+          barThickness: 18,
+          maxBarThickness: 22
         }
       ]
     };
@@ -231,11 +242,18 @@ const chartData = computed(() => {
       datasets: [
         {
           label: 'Margin %',
-          backgroundColor: '#6366F1', // Indigo
+          backgroundColor: clients.map(client => {
+            const margin = client.margin_percent || 0;
+            // Color based on margin performance
+            if (margin < 0) return '#EF4444'; // red
+            if (margin < 20) return '#F59E0B'; // amber
+            if (margin < 40) return '#10B981'; // green
+            return '#047857'; // emerald
+          }),
           data: clients.map(client => client.margin_percent),
           borderRadius: 4,
-          barThickness: 16,
-          maxBarThickness: 20
+          barThickness: 18,
+          maxBarThickness: 22
         }
       ]
     };
@@ -373,7 +391,8 @@ function onSort(event) {
 
 <style scoped>
 .client-revenue-chart {
-  @apply p-0 mx-0 my-0 w-full;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-container, .table-container {
@@ -381,14 +400,14 @@ function onSort(event) {
 }
 
 .tab-button {
-  @apply text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
+  @apply text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
 }
 
 .active-tab {
-  @apply bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-400;
+  @apply bg-blue-50 text-blue-600 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-700;
 }
 
 .metric-value {
-  @apply leading-none;
+  @apply leading-none mt-1;
 }
 </style> 

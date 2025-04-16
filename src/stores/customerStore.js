@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import ApiService from '@/service/ApiService';
+import { ApiService } from '@/service/ApiService';
 
 export const useCustomerStore = defineStore('customer', () => {
   // State
