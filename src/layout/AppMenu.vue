@@ -22,7 +22,12 @@ const model = ref([
             {
                 label: 'Dashboard',
                 icon: 'pi pi-fw pi-building-columns',
-                to: '/dashboard-banking'
+                to: '/streamline/dashboard'
+            },
+            {
+                label: 'Bill Management',
+                icon: 'pi pi-fw pi-file-invoice',
+                to: '/streamline/bill-management'
             },
             {
                 label: 'Bill Import',

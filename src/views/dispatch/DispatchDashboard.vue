@@ -169,7 +169,7 @@ const getStatusClass = (status) => {
 function handleDateChange(newDateRange) {
   if (newDateRange.startDate && newDateRange.endDate) {
     dispatchStore.setDateRange(newDateRange.startDate, newDateRange.endDate);
-    refreshDashboard();
+  refreshDashboard();
     
     // If currently on details tab, reset pagination to page 1 and refresh
     if (activeTab.value === 'details') {
@@ -560,7 +560,7 @@ onMounted(async () => {
                     <div class="text-sm text-surface-500">Top projects by dispatch count</div>
                   </div>
                 </template>
-                <template #content>
+        <template #content>
                   <div class="px-4 pb-4 space-y-4">
                     <div v-for="item in projectData" :key="item.name" class="w-full">
                       <div class="flex justify-between items-center mb-1">
@@ -577,8 +577,8 @@ onMounted(async () => {
                   </div>
                 </template>
               </Card>
-            </div>
-          </TabPanel>
+                </div>
+              </TabPanel>
 
           <!-- Performance Tab Panel (Placeholder) -->
           <TabPanel :value="'performance'">
@@ -595,8 +595,8 @@ onMounted(async () => {
                   </div>
                 </template>
               </Card>
-            </div>
-          </TabPanel>
+                </div>
+              </TabPanel>
 
           <!-- Revenue Tab Panel -->
           <TabPanel :value="'revenue'">
@@ -892,9 +892,9 @@ onMounted(async () => {
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </template>
-                    </Card>
+          </div>
+        </template>
+      </Card>
                   </div>
                 </div>
                 <div v-else class="text-center p-6 bg-surface-50 rounded-lg">

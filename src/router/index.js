@@ -30,7 +30,7 @@ const routes = [
                 meta: {
                     breadcrumb: ['Streamline Dashboard']
                 },
-                component: () => import('@/views/dashboard/BankingView.vue')
+                component: () => import('@/views/apps/StreamlineDashboard.vue')
             },
             {
                 path: '/dispatch/dashboard',
@@ -39,6 +39,22 @@ const routes = [
                     breadcrumb: ['Dispatch Dashboard']
                 },
                 component: () => import('@/views/dispatch/DispatchDashboard.vue')
+            },
+            {
+                path: '/streamline/dashboard',
+                name: 'streamline-dashboard',
+                meta: {
+                    breadcrumb: ['Streamline', 'Dashboard']
+                },
+                component: () => import('@/views/apps/StreamlineDashboard.vue')
+            },
+            {
+                path: '/streamline/bill-management',
+                name: 'streamline-bill-management',
+                meta: {
+                    breadcrumb: ['Streamline', 'Bill Management']
+                },
+                component: () => import('@/views/apps/StreamlineBillManagement.vue')
             },
             {
                 path: '/streamline/bill-import',
