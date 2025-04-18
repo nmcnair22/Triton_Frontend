@@ -65,6 +65,22 @@ const routes = [
                 component: () => import('@/views/apps/BillImport.vue')
             },
             {
+                path: '/streamline/tem-accounts',
+                name: 'tem-accounts',
+                meta: {
+                    breadcrumb: ['Streamline', 'Tem Accounts']
+                },
+                component: () => import('@/views/apps/TemAccounts.vue')
+            },
+            {
+                path: '/streamline/vendors-contracts',
+                name: 'vendors-contracts',
+                meta: {
+                    breadcrumb: ['Streamline', 'Vendors & Contracts']
+                },
+                component: () => import('@/views/apps/VendorsContracts.vue')
+            },
+            {
                 path: '/apps/blog/list',
                 component: () => import('@/views/apps/blog/List.vue')
             },

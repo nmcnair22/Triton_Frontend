@@ -26,13 +26,23 @@ const model = ref([
             },
             {
                 label: 'Bill Management',
-                icon: 'pi pi-fw pi-file-invoice',
+                icon: 'pi pi-fw pi-money-bill',
                 to: '/streamline/bill-management'
             },
             {
                 label: 'Bill Import',
                 icon: 'pi pi-fw pi-file-import',
                 to: '/streamline/bill-import'
+            },
+            {
+                label: 'Tem Accounts',
+                icon: 'pi pi-fw pi-users',
+                to: '/streamline/tem-accounts'
+            },
+            {
+                label: 'Vendors & Contracts',
+                icon: 'pi pi-fw pi-building',
+                to: '/streamline/vendors-contracts'
             }
         ]
     },
