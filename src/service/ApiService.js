@@ -192,9 +192,47 @@ export const InvoiceService = {
   
   // Generate a document from a template for an invoice
   generateTemplate(invoiceNumber, templateId) {
+    console.log('ApiService: generateTemplate called with:', { invoiceNumber, templateId });
+    console.log('ApiService: POST URL:', `${apiClient.defaults.baseURL}/invoice-templates/generate`);
+    console.log('ApiService: POST data:', { invoice_number: invoiceNumber, template_id: templateId });
+    
     return ApiService.post('/invoice-templates/generate', {
       invoice_number: invoiceNumber,
       template_id: templateId
+    })
+    .then(response => {
+      console.log('ApiService: generateTemplate raw response:', response);
+      console.log('ApiService: Response structure:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        dataType: typeof response.data,
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+      
+      // If the response is a successful queue job instead of immediate results
+      if (response.data && response.status === 202) {
+        console.log('ApiService: Template generation queued successfully:', response.data);
+        // Modify the response to maintain compatibility with existing code
+        if (!response.data.success) {
+          response.data.success = true;
+        }
+        if (!response.data.data) {
+          response.data.data = { queued: true, job_id: response.data.job_id || 'unknown' };
+        }
+      }
+      
+      return response;
+    })
+    .catch(error => {
+      console.error('ApiService: Error in generateTemplate:', error);
+      console.error('ApiService: Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
     });
   },
   

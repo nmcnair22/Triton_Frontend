@@ -368,21 +368,44 @@ export const useInvoiceStore = defineStore('invoice', () => {
       return null;
     }
     
+    console.log('Store: generateTemplate called with:', { invoiceNumber, templateId });
     generatingTemplate.value = true;
     generateTemplateError.value = null;
     
     try {
+      console.log('Store: Calling InvoiceService.generateTemplate...');
       const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
       
+      console.log('Store: Raw response from generateTemplate:', response);
+      console.log('Store: Response structure:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        success: response.data?.success,
+        message: response.data?.message,
+        dataType: response.data?.data ? typeof response.data.data : 'null'
+      });
+      
       if (response.data && response.data.success && response.data.data) {
+        console.log('Store: Template generation success, data:', response.data.data);
         // After successful generation, refresh the list of generated files
         await fetchGeneratedFiles(invoiceNumber);
         return response.data.data;
       } else {
-        generateTemplateError.value = 'Failed to generate template';
+        console.warn('Store: Template generation failed or unexpected response format:', response.data);
+        generateTemplateError.value = response.data?.message || 'Failed to generate template';
         return null;
       }
     } catch (err) {
+      console.error('Store: Error in generateTemplate:', err);
+      console.log('Store: Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        response: err.response?.data
+      });
       generateTemplateError.value = err.message || 'Failed to generate template';
       return null;
     } finally {

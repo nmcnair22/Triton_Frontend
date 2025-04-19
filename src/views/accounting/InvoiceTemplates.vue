@@ -902,11 +902,26 @@ async function generateTemplateDocument() {
     return;
   }
   
+  console.log('Starting template generation for:', {
+    invoiceNumber: selectedCustomerInvoice.value.number,
+    templateId: selectedTemplate.value.id
+  });
+  
   try {
+    // Log the direct API call response
+    const directResponse = await InvoiceService.generateTemplate(
+      selectedCustomerInvoice.value.number, 
+      selectedTemplate.value.id
+    );
+    console.log('DIRECT API RESPONSE:', directResponse);
+    
+    // Continue with the store action that wraps the API call
     const result = await invoiceStore.generateTemplate(
       selectedCustomerInvoice.value.number, 
       selectedTemplate.value.id
     );
+    
+    console.log('STORE ACTION RESULT:', result);
     
     if (result) {
       toast.add({ 
@@ -922,6 +937,11 @@ async function generateTemplateDocument() {
       // Switch to the invoice documents tab
       activeDocumentTab.value = 'invoice';
     } else {
+      console.error('Template generation returned falsy result:', {
+        result,
+        error: generateTemplateError.value
+      });
+      
       toast.add({ 
         severity: 'error', 
         summary: 'Error', 
@@ -931,6 +951,13 @@ async function generateTemplateDocument() {
     }
   } catch (err) {
     console.error('Error generating template:', err);
+    console.log('Error details:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      response: err.response?.data
+    });
+    
     toast.add({ 
       severity: 'error', 
       summary: 'Error', 
