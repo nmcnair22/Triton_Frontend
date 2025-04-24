@@ -43,6 +43,11 @@ const model = ref([
                 label: 'Vendors & Contracts',
                 icon: 'pi pi-fw pi-building',
                 to: '/streamline/vendors-contracts'
+            },
+            {
+                label: 'Bill Transfer Tracker',
+                icon: 'pi pi-fw pi-sync',
+                to: '/streamline/bill-transfer-tracker'
             }
         ]
     },

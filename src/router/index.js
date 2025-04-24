@@ -81,6 +81,14 @@ const routes = [
                 component: () => import('@/views/apps/VendorsContracts.vue')
             },
             {
+                path: '/streamline/bill-transfer-tracker',
+                name: 'bill-transfer-tracker',
+                meta: {
+                    breadcrumb: ['Streamline', 'Bill Transfer Tracker']
+                },
+                component: () => import('@/views/apps/BillTransferTracker.vue')
+            },
+            {
                 path: '/apps/blog/list',
                 component: () => import('@/views/apps/blog/List.vue')
             },
