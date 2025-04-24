@@ -1,8 +1,12 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
+import { useCustomerStore } from '@/stores/customerStore'; // Import the store
+
+// Initialize the store
+const customerStore = useCustomerStore();
 
 // Active tab
 const activeTabIndex = ref(0);
@@ -16,8 +20,8 @@ const tabs = [
     'Other'
 ];
 
-// Dropdown options
-const customerOptions = ref([]);
+// Dropdown options - Customers will now come from the store
+// const customerOptions = ref([]); 
 const locationOptions = ref([]);
 const providerOptions = ref([]);
 const accountOptions = ref([]);
@@ -27,6 +31,15 @@ const selectedCustomer = ref(null);
 const selectedLocation = ref(null);
 const selectedProvider = ref(null);
 const selectedAccount = ref(null);
+
+// Computed properties for store state
+const customers = computed(() => customerStore.customers);
+const isLoadingCustomers = computed(() => customerStore.loading);
+
+// Fetch active customers on component mount
+onMounted(() => {
+    customerStore.fetchActiveCustomers();
+});
 </script>
 
 <template>
@@ -36,11 +49,21 @@ const selectedAccount = ref(null);
             <div class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Customer</label>
-                    <Dropdown placeholder="Select customer" class="w-full" />
+                    <Dropdown 
+                        v-model="selectedCustomer"
+                        :options="customers"
+                        optionLabel="name" 
+                        optionValue="id" 
+                        placeholder="Select customer" 
+                        class="w-full" 
+                        filter 
+                        :loading="isLoadingCustomers"
+                        :disabled="isLoadingCustomers"
+                    />
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Location</label>
-                    <Dropdown placeholder="Select customer first" class="w-full" />
+                    <Dropdown placeholder="Select customer first" class="w-full" :disabled="!selectedCustomer" />
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Provider</label>
