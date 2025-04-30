@@ -3,338 +3,130 @@ description:
 globs: 
 alwaysApply: true
 ---
----
-description: Vue 3 Composition API with PrimeVue 4 integration
-globs: ["src/**/*.vue"]
-alwaysApply: false
----
+# Frontend Guideline Document
 
-# Vue 3 with PrimeVue 4 Rules
+This document explains how the Triton-v3 frontend is built and organized. It covers the architecture, design principles, styling, component structure, state management, routing, performance tips, and testing guidelines. By following these guidelines, anyone can understand or contribute to the frontend, even without deep technical expertise.
 
-This project uses Vue 3 Composition API with `<script setup>` syntax, PrimeVue 4 component library, Tailwind CSS integration, and follows specific project patterns.
+## 1. Frontend Architecture
 
-Use Pinia stores for all logic for API calls
-We use axios for our calls
-HTTP serice info is in apiService.js
+### Overview
+- **Framework & Build Tool**: We use Vue.js 3 (Composition API) for building interactive pages, and Vite as our fast development server and bundler.
+- **Component Library**: PrimeVue provides ready-made UI components (buttons, tables, dialogs) so we don’t reinvent the wheel.
+- **State Management**: Pinia keeps shared data (like user info or cart contents) in one place, avoiding prop-drilling.
+- **HTTP Layer**: Axios handles calls to our backend API for logging in, fetching data, and saving changes.
+- **CSS & Theming**: Tailwind CSS (utility-first) plus Sass for custom styles, with support for light/dark themes.
+- **Charts & Rich Text**: Chart.js renders interactive graphs; Quill provides a rich-text editor in blog and document screens.
 
-## Component Structure
+### How It Supports Scalability, Maintainability, and Performance
+- **Scalability**: Modular folder structure and component-based design let you add new features or swap out pieces without touching unrelated code.
+- **Maintainability**: Using well-documented libraries (PrimeVue, Pinia) and clear naming conventions makes it easy for new developers to jump in.
+- **Performance**: Vite’s code-splitting and hot-reload, plus lazy loading of routes, ensure fast load times and snappy navigation.
 
-All Vue components should follow this structure:
-- `<script setup>` section first
-- `<template>` section second
-- Optional `<style>` section last
+## 2. Design Principles
 
-### ✅ Correct Example
+1. **Usability**: Clean layouts and intuitive controls—buttons look like buttons, forms guide you with labels and helper text.
+2. **Accessibility**: We follow WCAG AA guidelines: semantic HTML, meaningful alt text, keyboard navigation, sufficient color contrast.
+3. **Responsiveness**: Tailwind’s responsive utilities ensure the app works on phones, tablets, and desktops.
+4. **Consistency**: PrimeVue components plus a shared color palette and typography keep the look and feel uniform.
+5. **Clarity**: Error messages, loading indicators, and confirmation dialogs make sure users always know what’s happening.
 
-```vue
-<script setup>
-import { ref } from 'vue';
-const count = ref(0);
-</script>
+## 3. Styling and Theming
 
-<template>
-  <div>{{ count }}</div>
-</template>
+### Styling Approach
+- **Utility-First**: Tailwind CSS classes (e.g., `flex`, `p-4`, `text-gray-700`) handle most layouts and spacing.
+- **Scoped Sass**: For component-specific tweaks, we use Sass with variables and nesting to keep styles organized.
 
-<style>
-/* Optional styles */
-</style>
-```
+### Theming
+- **Light & Dark Modes**: Toggle via a global setting in Pinia; Tailwind’s `dark:` variants switch colors.
+- **PrimeVue Themes**: We import `@primeuix/themes` and use `tailwindcss-primeui` to align PrimeVue components with our design.
 
-## PrimeVue 4 Component Usage
+### Visual Style
+- **Overall Style**: Modern flat design with subtle shadows and smooth transitions. Occasional glassmorphism (frosted panels) in dashboards for visual depth.
+- **Typography**: “Inter”, a clean and readable sans-serif font across headings and body text.
 
-PrimeVue 4 uses updated component names and patterns:
+### Color Palette
+| Role       | Light Mode     | Dark Mode       |
+| ---------- | -------------- | --------------- |
+| Primary    | #007AD9        | #3399FF         |
+| Secondary  | #6C757D        | #A2A9B1         |
+| Accent     | #E91E63        | #FF6090         |
+| Success    | #28A745        | #39D353         |
+| Warning    | #FFC107        | #FFD454         |
+| Danger     | #DC3545        | #E66775         |
+| Info       | #17A2B8        | #3AB1C1         |
+| Background | #F8F9FA        | #1E1E2D         |
+| Surface    | #FFFFFF        | #2A2A3C         |
+| Text       | #212529        | #E0E0E0         |
 
-### Component Naming
-Use the new PrimeVue 4 component names:
-- Use `DatePicker` (not `Calendar`)
-- Use `Select` (not `Dropdown`)
-- Use `ToggleSwitch` (not `InputSwitch`)
-- Use `Popover` (not `OverlayPanel`)
-- Use `Drawer` (not `Sidebar`)
-- Use `Tabs` (not `TabView`)
+## 4. Component Structure
 
-### ✅ Correct Example
+- **Folder Layout**:
+  - `/src/components/` – reusable UI pieces (buttons, cards, modals)
+  - `/src/layouts/` – page wrappers (MainLayout, AuthLayout, LandingLayout)
+  - `/src/views/` – feature pages (DashboardView, BlogView, CartView)
+  - `/src/stores/` – Pinia stores (auth, user, products, invoices)
+  - `/src/router/` – route definitions and guards
+  - `/src/services/` – API calls and business logic
 
-```vue
-<script setup>
-import DatePicker from 'primevue/datepicker';
-import Select from 'primevue/select';
-</script>
+- **Reusability**: Each component does one thing well. Common UI elements (e.g., `BaseButton.vue`) live in `components/` and are imported wherever needed.
+- **Single-File Components**: `.vue` files bundle template, script, and style, making each piece self-contained.
 
-<template>
-  <DatePicker v-model="date" />
-  <Select v-model="selectedItem" :options="items" optionLabel="name" />
-</template>
-```
+**Why Component-Based?**
+- Easier to test, update, and replace.
+- Reduces duplication—write once, use everywhere.
+- Clear boundaries improve collaboration between designers and developers.
 
-## Variable Naming Conventions
+## 5. State Management
 
-Use descriptive variable names with appropriate prefixes for better readability:
-- Use `is` prefix for boolean states (e.g., `isLoading`, `isActive`)
-- Use `has` prefix for boolean properties (e.g., `hasError`, `hasItems`)
-- Use `should` prefix for conditional flags (e.g., `shouldRefresh`)
+- **Pinia Stores**:
+  - `useAuthStore` – user info, tokens, login/logout actions
+  - `usePermissionStore` – roles, permissions, guard checks
+  - `useCartStore` – shopping cart items and totals
+  - `useUiStore` – theme (light/dark), notifications queue
 
-### ✅ Correct Example
+- **Data Flow**: Components dispatch actions (`store.login()`), read state (`store.userName`), and react to changes automatically.
+- **Shared State**: No need to pass props deep or bubble events—Pinia makes state accessible anywhere.
 
-```vue
-<script setup>
-import { ref } from 'vue';
+## 6. Routing and Navigation
 
-const isLoading = ref(false);
-const hasItems = ref(false);
-const shouldRefresh = ref(true);
+- **Vue Router** handles page navigation without reloads.
+- **Route Definitions**:
+  - Nested under layouts: e.g., under `MainLayout`, we have routes for dashboards, apps, e-commerce.
+  - Public vs. Protected: Routes marked with `meta.requiresAuth` and `meta.permissions`.
+- **PermissionGuard**: A global `beforeEach` hook checks if a user is logged in and has the required permissions. If not, it redirects to login or shows a “Not Authorized” page.
+- **Dynamic Imports**: Each view is loaded with `() => import('...')`, enabling lazy loading.
 
-function fetchData() {
-  isLoading.value = true;
-  // API call
-  isLoading.value = false;
-  hasItems.value = true;
-}
-</script>
-```
+## 7. Performance Optimization
 
-## Code Organization
+1. **Code Splitting & Lazy Loading**: Vite automatically splits code by dynamic imports—only load what the user needs.
+2. **Tree-Shaking**: Unused code from libraries is dropped in the final bundle.
+3. **CSS Purge**: Tailwind removes unused styles in production builds, keeping CSS lean.
+4. **Image & Asset Optimization**: Serve optimized images (WebP), use a CDN for static files.
+5. **Caching**: HTTP caching headers and short-term Pinia cache for API responses reduce redundant network calls.
+6. **Minification & Compression**: JS and CSS are minified, and served over gzip or Brotli.
 
-- Group related functionality together
-- Extract complex logic into separate functions or composables
-- Keep components focused on a single responsibility
-- Use separate files for complex helpers or utilities
+## 8. Testing and Quality Assurance
 
-### ✅ Correct Example
+- **Unit Testing**:
+  - **Vitest** for testing components and stores in isolation.
+  - **Vue Testing Library** to render components and assert on DOM output.
+- **End-to-End Testing**:
+  - **Cypress** for full-flow tests (e.g., login → dashboard → logout).
+- **Linting & Formatting**:
+  - **ESLint** with Vue and TypeScript plugins enforces code style.
+  - **Prettier** auto-formats code on save.
+  - **Lint-Staged** runs linters on staged files before commits.
+- **Continuous Integration**:
+  - GitHub Actions runs lint, tests, and build on every pull request.
 
-```vue
-<script setup>
-// Imports grouped by source/type
-import { ref, computed, onMounted } from 'vue';
-import Select from 'primevue/select';
+## 9. Conclusion and Overall Frontend Summary
 
-// State declarations
-const selectedValue = ref(null);
-const options = ref([]);
-const isLoading = ref(false);
+Triton-v3’s frontend uses modern, widely supported tools—Vue 3, Vite, PrimeVue, Pinia, and Tailwind—to deliver a fast, accessible, and maintainable application. Key takeaways:
 
-// Computed properties
-const hasSelection = computed(() => selectedValue.value !== null);
-const filteredOptions = computed(() => options.value.filter(opt => opt.active));
+- **Modular Architecture**: Clear separation of components, views, stores, and services.
+- **Consistent Design**: A shared color palette, typography, and PrimeVue components ensure uniform UI.
+- **Scalable State & Routing**: Pinia and Vue Router with permission guards power complex flows without confusion.
+- **Performance-First**: Lazy loading, tree-shaking, and asset optimization keep load times low.
+- **Quality Assurance**: Automated tests, linting, and CI pipelines safeguard stability.
 
-// Methods
-function loadOptions() {
-  isLoading.value = true;
-  // Load data
-  isLoading.value = false;
-}
-
-// Lifecycle hooks
-onMounted(() => {
-  loadOptions();
-});
-</script>
-```
-
-## Pass-Through (PT) API
-
-PrimeVue 4 uses the Pass-Through (PT) API for customization:
-
-### ✅ Correct Example
-
-```vue
-<template>
-  <Select
-    v-model="selectedItem"
-    :options="items"
-    optionLabel="name"
-    placeholder="Select an item"
-    :pt="{
-      root: { class: 'custom-select' },
-      label: { class: 'custom-label' }
-    }"
-  />
-</template>
-```
-
-## Tailwind CSS Best Practices
-
-- Use utility classes directly in components
-- Follow a mobile-first approach with responsive classes
-- Extract common patterns to component classes when they repeat
-- Maintain consistency with the project's spacing and color system
-
-### ✅ Correct Example
-
-```vue
-<template>
-  <!-- Mobile-first approach -->
-  <div class="flex flex-col md:flex-row gap-4 md:gap-6">
-    <div class="w-full md:w-1/2 p-4 rounded-lg shadow-sm bg-white dark:bg-surface-900">
-      <!-- Component content -->
-    </div>
-  </div>
-</template>
-```
-
-## Performance Considerations
-
-- Avoid expensive computations in templates
-- Use computed properties for derived values
-- Implement lazy loading for heavy components
-- Debounce event handlers for frequently triggered events
-
-### ✅ Correct Example
-
-```vue
-<script setup>
-import { ref, computed } from 'vue';
-
-const searchTerm = ref('');
-const items = ref([/* many items */]);
-
-// Use computed for filtering instead of inline in template
-const filteredItems = computed(() => {
-  if (!searchTerm.value) return items.value;
-  return items.value.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.value.toLowerCase())
-  );
-});
-
-// Debounce search input
-function onSearch(event) {
-  // Implement debounce logic or use a utility
-  searchTerm.value = event.target.value;
-}
-</script>
-
-<template>
-  <input type="text" @input="onSearch" />
-  <!-- Use computed property instead of filtering in the template -->
-  <div v-for="item in filteredItems" :key="item.id">
-    {{ item.name }}
-  </div>
-</template>
-```
-
-## Theming with Aura Preset
-
-This project uses the Aura preset theme from PrimeVue 4:
-
-### ✅ Correct Example
-
-```js
-// In main.js
-import { definePreset } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
-
-const MyPreset = definePreset(Aura, {
-  semantic: {
-    primary: {
-      // Theme color customization
-    }
-  }
-});
-
-app.use(PrimeVue, {
-  theme: {
-    preset: MyPreset,
-    options: {
-      darkModeSelector: '.app-dark'
-    }
-  }
-});
-```
-
-## Model Value Pattern
-
-PrimeVue 4 uses Vue 3's `modelValue` pattern for two-way binding:
-
-### ✅ Correct Example
-
-```vue
-<template>
-  <!-- Shorthand (recommended) -->
-  <DatePicker v-model="date" />
-  
-  <!-- Expanded form -->
-  <DatePicker :modelValue="date" @update:modelValue="date = $event" />
-</template>
-```
-
-## Deprecated Components
-
-Avoid using these PrimeVue 3 components that are deprecated in PrimeVue 4:
-- Don't use `Chips` (use `AutoComplete` with multiple selection instead)
-- Don't use `TabMenu` (use `Tabs` without panels)
-- Don't use `Steps` (use `Stepper` without panels)
-- Don't use `InlineMessage` (use `Message` component)
-- Don't use `BadgeDirective` (use `OverlayBadge`)
-
-## Triton Frontend Project Structure
-
-Root Files
-├── README.md
-├── index.html
-├── jsconfig.json
-├── package-lock.json
-├── package.json
-├── postcss.config.js
-├── project-structure.txt
-├── tailwind.config.js
-├── vercel.json
-└── vite.config.mjs
-
-src/
-├── assets/
-│   ├── demo/
-│   │   └── flags/             # Demo flags and images
-│   ├── layout/
-│   │    ├── fonts/             # Custom fonts
-│   │    ├── sidebar/
-│   │    │   └── themes/        # Sidebar theme files
-│   │    └── variables/         # Styling variables and tokens
-│   └── styles.scss
-│   └── tailwind.css
-│
-├── components/                # Reusable UI components
-│   ├── auth/                 # Authentication components
-│   ├── dashboard/            # Dashboard components
-│   │   ├── banking/
-│   │   ├── charts/
-│   │   ├── ecommerce/
-│   │   └── marketing/
-│   └── landing/              # Landing page components
-│       ├── contact/
-│       ├── features/
-│       └── pricing/
-│
-├── layout/                    # Global layout containers
-│   └── composables/          # Layout composables (shared layout logic)
-│
-├── router/
-│   └── index.js              # Vue Router configuration and route definitions
-│
-├── service/                 # API service files for data fetching
-│   ├── CountryService.js
-│   ├── CustomerService.js
-│   ├── FileService.js
-│   ├── NodeService.js
-│   ├── PhotoService.js
-│   └── ProductService.js
-│
-├── lib/                     # Utility libraries and helper functions
-│   └── utils.js
-│
-├── views/                   # Page-level views (each typically used in a route)
-│   ├── apps/                # Application-specific pages
-│   │   ├── blog/
-│   │   ├── chat/
-│   │   ├── mail/
-│   │   └── tasklist/
-│   ├── auth/                # Authentication views (Login, Register, etc.)
-│   ├── dashboard/           # Dashboard views (BankingView, EcommerceView, MarketingView)
-│   ├── e-commerce/          # E-commerce pages (CheckoutForm, NewProduct, etc.)
-│   ├── landing/             # Landing pages (Home, Features, Pricing, Contact)
-│   ├── pages/               # Static/informational pages (AboutUs, FAQ, NotFound, etc.)
-│   ├── uikit/               # UI kit documentation pages (ButtonDoc, ChartDoc, etc.)
-│   ├── user-management/     # User administration views (UserList, UserCreate, etc.)
-│   └── utilities/           # Utility pages (Blocks, Documentation)
-│
-└── main.js                  # Application entry point (bootstraps Vue)
+By following these guidelines, teams can confidently extend Triton-v3—adding new features, tweaking styles, or integrating third-party tools—while keeping the codebase clean, performant, and user-friendly.

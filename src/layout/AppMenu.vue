@@ -70,12 +70,12 @@ const model = ref([
     },
     { separator: true },
     {
-        label: 'Reporting',
+        label: 'Financial',
         icon: 'pi pi-chart-bar',
         items: [
             {
-                label: 'Report Manager',
-                icon: 'pi pi-fw pi-table',
+                label: 'Financial Reports',
+                icon: 'pi pi-fw pi-money-bill',
                 to: '/reporting/report-manager'
             }
         ]

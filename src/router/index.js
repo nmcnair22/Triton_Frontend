@@ -442,11 +442,35 @@ const routes = [
             },
             {
                 path: '/reporting/report-manager',
-                name: 'reporting-report-manager',
+                name: 'financial-intelligence',
                 meta: {
-                    breadcrumb: ['Reporting', 'Report Manager']
+                    breadcrumb: ['Financial', 'Financial Reports']
                 },
-                component: () => import('@/views/reporting/ReportManager.vue')
+                component: () => import('@/views/financial/FinancialIntelligence.vue')
+            },
+            {
+                path: '/financial/balance-sheet',
+                name: 'balance-sheet',
+                meta: {
+                    breadcrumb: ['Financial', 'Balance Sheet']
+                },
+                component: () => import('@/views/financial/BalanceSheet.vue')
+            },
+            {
+                path: '/financial/income-statement',
+                name: 'income-statement',
+                meta: {
+                    breadcrumb: ['Financial', 'Income Statement']
+                },
+                component: () => import('@/views/financial/IncomeStatement.vue')
+            },
+            {
+                path: '/financial/cash-flow',
+                name: 'cash-flow',
+                meta: {
+                    breadcrumb: ['Financial', 'Cash Flow']
+                },
+                component: () => import('@/views/financial/CashFlowStatement.vue')
             },
             {
                 path: '/todo',

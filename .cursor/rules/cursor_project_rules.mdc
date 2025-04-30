@@ -1,0 +1,161 @@
+---
+description: Apply these rules when creating the project
+globs:
+alwaysApply: true
+---
+## Project Overview
+
+*   **Type:** cursor_project_rules
+*   **Description:** This is a Vite-based Vue.js project named "triton-v3" using PrimeVue components for the UI, Pinia for state management, and Axios for HTTP requests. It incorporates RBAC with a custom `PermissionGuard` component and an authentication service, organized into layouts for main, auth, and landing sections.
+*   **Primary Goal:** Accelerate development of SaaS admin panels and internal tools by providing a plug-and-play template that covers ~80% of common admin needs with clean module separation, sub-100ms page transitions, and a sub-200 KB initial payload.
+
+## Project Structure
+
+### Framework-Specific Routing
+
+*   **Directory Rules:**
+    *   Vue Router 4: Define routes in `src/router/index.ts` using `createRouter` + `createWebHistory`, mapping to `src/views/[RouteName].vue` (lazy-loaded via dynamic imports).
+*   Example 1: "Next.js 14 (App Router)" → `app/[route]/page.tsx` conventions
+*   Example 2: "Next.js (Pages Router)" → `pages/[route].tsx` pattern
+*   Example 3: "React Router 6" → `src/routes/` with `createBrowserRouter`
+
+### Core Directories
+
+*   **Versioned Structure:**
+    *   `src/main.ts`: Vite@4 entrypoint bootstrapping the Vue 3 app
+    *   `src/router`: Vue Router 4 configuration and route definitions
+    *   `src/store`: Pinia 2 store modules using `defineStore`
+    *   `src/components`: Vue 3 script-setup components with PrimeVue
+    *   `src/views`: Route view components loaded by router
+    *   `src/layouts`: Layouts (`MainLayout.vue`, `AuthLayout.vue`, `LandingLayout.vue`)
+    *   `src/services`: Axios HTTP clients and auth service
+    *   `src/assets`: Static assets, themes (Tailwind CSS + Sass)
+
+### Key Files
+
+*   **Stack-Versioned Patterns:**
+    *   `src/main.ts`: Bootstraps Vue 3 application (Vite@4)
+    *   `vite.config.ts`: Vite configuration with `@vitejs/plugin-vue` and alias `@` → `/src`
+    *   `src/router/index.ts`: Vue Router 4 setup with global guards (`PermissionGuard`)
+    *   `src/store/index.ts`: Pinia 2 plugin registration
+    *   `src/App.vue`: Root component defining layout wrapper and `<router-view>`
+
+## Tech Stack Rules
+
+*   **Version Enforcement:**
+    *   vue@3: Composition API required; disallow Options API
+    *   vite@4: Use native ESM imports; `@` alias for `/src`
+    *   pinia@2: Define stores via `defineStore`; no Vuex
+    *   primevue@3: Import only used components globally
+    *   vue-router@4: Use history mode; no hash routing
+    *   axios@1: Centralize HTTP client in `services/http.ts` with interceptors
+    *   tailwindcss@3 & sass@1: Utility classes for styling; SCSS variables for theme tokens
+    *   chart.js@3: Lazy-load chart modules via dynamic import
+    *   quill@2: Import core editor and toolbar modules only
+    *   xlsx@0.18: Use in `services/excel.ts` for import/export
+    *   zod@3: Validate all form inputs and API responses
+
+## PRD Compliance
+
+*   **Non-Negotiable:**
+    *   "A working template that covers 80% of common admin needs": Include dashboards, applications suite, e-commerce, user management, accounting & reporting modules.
+    *   "Sub-100ms page transitions and sub-200kb initial payload on modern browsers": Enforce code splitting, lazy loading, and bundle size auditing.
+
+## App Flow Integration
+
+*   **Stack-Aligned Flow:**
+    *   Vue Router Auth Flow → In `src/router/index.ts`, use `router.beforeEach` to check `meta.requiresAuth` and `PermissionGuard`, redirect to `/auth/login` if unauthenticated.
+    *   Layout Flow → Routes under `/auth` use `AuthLayout.vue`; `/landing` uses `LandingLayout.vue`; all others use `MainLayout.vue`.
+
+## Best Practices
+
+*   Vue.js 3.x
+    *   Favor Composition API (`<script setup>`) over Options API
+    *   Keep components small, reusable, and focused
+    *   Use `defineProps`/`defineEmits` for props and events
+
+*   Vite
+    *   Leverage HMR for rapid development
+    *   Use dynamic imports for route-level code splitting
+    *   Configure cache busting and alias resolution
+
+*   PrimeVue
+    *   Globally register only needed components
+    *   Use TailwindCSS-PrimeUI plugin for theme integration
+    *   Employ ToastService for all user notifications
+
+*   Pinia
+    *   Structure stores per feature in `src/store/<feature>.ts`
+    *   Persist critical state using pinia-plugin-persistedstate
+    *   Access stores via `useStore()` in setup functions
+
+*   Vue Router 4
+    *   Define `meta.roles` and `meta.requiresAuth` per route
+    *   Lazy-load route components via `() => import(...)`
+    *   Centralize guard logic in one `beforeEach`
+
+*   Axios
+    *   Use a single HTTP client instance (`services/http.ts`)
+    *   Implement request/response interceptors for auth tokens and error handling
+    *   Cancel in-flight requests in `onUnmounted` hooks when needed
+
+*   Tailwind CSS
+    *   Use utility classes exclusively; avoid custom CSS overrides
+    *   Purge unused styles in production builds
+    *   Define custom themes in `tailwind.config.js`
+
+*   Sass
+    *   Organize variables, mixins, and functions in `src/styles`
+    *   Scope component styles with `<style lang="scss" scoped>`
+    *   Leverage nesting sparingly to maintain readability
+
+*   Chart.js
+    *   Wrap charts in Vue components for reusability
+    *   Debounce data updates to minimize re-renders
+    *   Destroy chart instances in `onBeforeUnmount`
+
+*   Quill
+    *   Import only required modules (toolbar, clipboard)
+    *   Synchronize content via v-model with debounce
+    *   Customize toolbar icons using PrimeIcons
+
+*   xlsx
+    *   Encapsulate read/write logic in `services/excel.ts`
+    *   Validate parsed data with Zod schemas
+    *   Generate download links via Blob URLs
+
+*   zod
+    *   Define schemas per form/API in `src/schemas`
+    *   Parse data in service layer before state mutation
+    *   Derive TypeScript types from Zod definitions
+
+*   Cursor (AI-powered IDE)
+    *   Use real-time code suggestions for consistent patterns
+    *   Generate boilerplate via AI templates
+    *   Track rule usage metrics in commits
+
+## Rules
+
+*   Derive folder/file patterns directly from techStackDoc versions.
+*   If using Vue 3.x + Vue Router 4: enforce `src/router` + `src/views`; do not adopt file-based routing plugins.
+*   Never mix routing conventions from Next.js, SvelteKit, or React Router.
+*   Enforce Composition API; no Options API in components.
+
+## Rules Metrics
+
+Before starting the project development, create a metrics file in the root of the project called `cursor_metrics.md`.
+
+### Instructions:
+
+*   Each time a cursor rule is used as context, update `cursor_metrics.md`.
+*   Use the following format for `cursor_metrics.md`:
+
+# Rules Metrics
+
+## Usage
+
+The number of times rules is used as context
+
+*   rule-name.mdc: 5
+*   another-rule.mdc: 2
+*   ...other rules
