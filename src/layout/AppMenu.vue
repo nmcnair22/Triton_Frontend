@@ -4,13 +4,23 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
-        label: 'Dashboards',
+        label: 'Field Services',
         icon: 'pi pi-home',
         items: [
             {
                 label: 'Dispatch Dashboard',
                 icon: 'pi pi-fw pi-truck',
                 to: '/dispatch/dashboard'
+            },
+            {
+                label: 'Field Service Jobs',
+                icon: 'pi pi-fw pi-briefcase',
+                to: '/dispatch/jobs'
+            },
+            {
+                label: 'Job Scheduling',
+                icon: 'pi pi-fw pi-calendar',
+                to: '/dispatch/job-scheduling'
             }
         ]
     },

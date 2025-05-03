@@ -96,5 +96,12 @@ export const DispatchService = {
     
     return ApiService.get('dashboard/details', params)
       .catch(error => this.handleApiError(error, 'getDashboardDetails'));
+  },
+  
+  getDispatchData(filters = {}) {
+    // Directly pass the filters object as query params
+    console.log('DispatchService.getDispatchData - Filters:', filters);
+    return ApiService.get('dispatch-reports/dispatch-data', filters)
+      .catch(error => this.handleApiError(error, 'getDispatchData'));
   }
 }; 

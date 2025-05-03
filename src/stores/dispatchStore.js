@@ -43,6 +43,9 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Client metrics data
     clientMetrics: [],
+    
+    // Dispatch data rows for Jobs table
+    dispatchRows: []
   }),
   
   getters: {
@@ -379,6 +382,93 @@ export const useDispatchStore = defineStore('dispatch', {
       });
       
       return sorted;
+    },
+    
+    // Fetch dispatch data for Jobs table
+    async fetchDispatchData(filters) {
+      this.loading.details = true;
+      this.errors.details = null;
+
+      try {
+        const response = await DispatchService.getDispatchData(filters);
+        console.log('fetchDispatchData response:', response);
+        if (response.data && response.data.success && response.data.data) {
+          const rawRows = response.data.data.dispatches || [];
+          const mappedRows = rawRows.map(d => ({
+            id: d["Ticket ID"] ?? d.ticket_id,
+            customerName: d["Customer Name"] ?? d.customer_name,
+            subject: d.Subject ?? d.subject,
+            status: d.Status ?? d.status,
+            cityState: d["City/State"] ?? d.city_state,
+            serviceDate: d["Service Date"] ?? d.service_date,
+            jobDetails: {
+              projectId: d.project_id,
+              projectName: d.project_name,
+              scopeOfWork: d["Detailed Scope of Work"] ?? d.detailed_scope_of_work,
+              dispatchNotes: d["Dispatch Notes"] ?? d.dispatch_notes
+            },
+            schedule: {
+              visitRecordId: d["Visit Record ID"] ?? d.visit_record_id,
+              queue: d.Queue ?? d.queue,
+              checkInTime: d["Check-in Time"] ?? d.check_in_time,
+              checkOutTime: d["Check-out Time"] ?? d.check_out_time,
+              duration: d.Duration ?? d.duration,
+              expectedServiceDate: d["Service Date"] ?? d.service_date,
+              actualServiceDate: d["Service Date"] ?? d.service_date,
+              flexTimeStart: 'N/A',
+              flexTimeEnd: 'N/A'
+            },
+            technicianInfo: {
+              name: d["Technician Name"] ?? d.technician_name,
+              grade: d["Technician Grade/Review"] ?? d.technician_grade,
+              comments: d["Technician Comments"] ?? d.technician_comments,
+              vendor: d["Vendor Information"] ?? d.vendor_information,
+              contactInfo: d["Contact Information"] ?? d.contact_information
+            },
+            billing: {
+              invoiceNumber: d["Invoice Number"] ?? d.invoice_number,
+              quotedCost: `$${parseFloat((d["Quoted Costs"] ?? d.quoted_costs) || 0).toFixed(2)}`,
+              finalBilledAmount: `$${parseFloat((d["Final Billed Amount"] ?? d.final_billed_amount) || 0).toFixed(2)}`,
+              billingStatus: d["Billing Status"] ?? d.billing_status
+            },
+            daysToInvoice: d["Days to Invoice"] ?? d.days_to_invoice ?? null,
+            completion: {
+              closeOutNotes: d["Close-out Notes"] ?? d.close_out_notes
+            },
+            pmReview: d["PM Review"] ?? d.pm_review ?? 0,
+            siteNumber: d["Site Number"] ?? d.site_number,
+            address: d["Address"] ?? d.address,
+            zipCode: d["Zip Code"] ?? d.zip_code,
+            timeZone: d["Time Zone"] ?? d.time_zone,
+            priority: d.Priority ?? d.priority,
+            failureCode: d["Failure Code"] ?? d.failure_code,
+            otherFailureCode: d["Other Failure Code"] ?? d.other_failure_code,
+            itemId: d["Item ID"] ?? d.item_id,
+            quantity: d.Quantity ?? d.quantity,
+            jobLineType: d["Job Line Type"] ?? d.job_line_type,
+            unitPrice: d["Unit Price"] ?? d.unit_price,
+            lineAmount: d["Line Amount"] ?? d.line_amount
+          }));
+
+          // Deduplicate by id to avoid duplicate keys in DataTable
+          const uniqueMap = new Map();
+          mappedRows.forEach(row => {
+            if (!uniqueMap.has(row.id)) {
+              uniqueMap.set(row.id, row);
+            }
+          });
+
+          this.dispatchRows = Array.from(uniqueMap.values());
+        } else {
+          console.error('Unexpected API response:', response.data);
+          this.errors.details = 'Invalid response format';
+        }
+      } catch (error) {
+        console.error('Error fetching dispatch data:', error);
+        this.errors.details = error.message || 'Failed to load dispatch data';
+      } finally {
+        this.loading.details = false;
+      }
     }
   }
 }); 

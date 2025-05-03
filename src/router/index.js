@@ -41,6 +41,22 @@ const routes = [
                 component: () => import('@/views/dispatch/DispatchDashboard.vue')
             },
             {
+                path: '/dispatch/jobs',
+                name: 'dispatch-jobs',
+                meta: {
+                    breadcrumb: ['Dispatch', 'Field Service Jobs']
+                },
+                component: () => import('@/views/dispatch/JobsView.vue')
+            },
+            {
+                path: '/dispatch/jobs/:id',
+                name: 'dispatch-job-details',
+                meta: {
+                    breadcrumb: ['Dispatch', 'Job Details']
+                },
+                component: () => import('@/views/dispatch/JobDetailsView.vue')
+            },
+            {
                 path: '/streamline/dashboard',
                 name: 'streamline-dashboard',
                 meta: {
