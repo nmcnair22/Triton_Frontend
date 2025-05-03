@@ -71,6 +71,81 @@ function goBack() {
 function toggleNotesDrawer() {
   displayNotesDrawer.value = !displayNotesDrawer.value;
 }
+
+// Passthrough (pt) options for the PrimeVue components
+const tabsPtOptions = {
+  root: { class: 'mb-6' },
+  navContainer: { class: 'border-b border-surface-200 dark:border-surface-700 mb-1' },
+  nav: { class: 'flex' }
+};
+
+const tabListPtOptions = {
+  root: { class: 'flex flex-nowrap overflow-x-auto' }
+};
+
+const tabPtOptions = ({ context }) => ({
+  root: { 
+    class: [
+      'px-4 py-2 font-medium text-sm rounded-t-lg transition-colors duration-200',
+      'focus:outline-none focus:ring-0',
+      'border-b-2',
+      context.selected 
+        ? 'text-primary-600 dark:text-primary-400 border-primary-500 dark:border-primary-400' 
+        : 'text-surface-700 dark:text-surface-300 border-transparent hover:text-surface-900 dark:hover:text-surface-100 hover:border-surface-300 dark:hover:border-surface-600'
+    ]
+  }
+});
+
+const tabPanelsPtOptions = {
+  root: { class: 'mt-3' }
+};
+
+const tabPanelPtOptions = {
+  root: { class: 'p-0' }
+};
+
+const panelPtOptions = {
+  root: { class: 'mb-4 border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden shadow-sm' },
+  header: { class: 'bg-surface-50 dark:bg-surface-800 px-4 py-3 border-b border-surface-200 dark:border-surface-700' },
+  title: { class: 'text-base font-semibold text-surface-800 dark:text-surface-100' },
+  content: { class: 'p-4 bg-white dark:bg-surface-900' },
+  icons: { class: 'ml-auto' }
+};
+
+const drawerPtOptions = {
+  root: { class: 'bg-white dark:bg-surface-900 shadow-lg' },
+  header: { class: 'px-6 py-4 border-b border-surface-200 dark:border-surface-700' },
+  content: { class: 'p-4' },
+  footer: { class: 'p-4 border-t border-surface-200 dark:border-surface-700' }
+};
+
+const buttonPtOptions = ({ context }) => ({
+  root: { 
+    class: [
+      'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
+      context.outlined && !context.text
+        ? 'border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800'
+        : context.text
+          ? 'hover:bg-surface-100 dark:hover:bg-surface-800'
+          : 'bg-primary-500 hover:bg-primary-600 text-white'
+    ]
+  }
+});
+
+const tagPtOptions = ({ props }) => ({
+  root: {
+    class: [
+      'inline-flex items-center px-2 py-1 text-xs font-medium rounded-md',
+      {
+        'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300': props.severity === 'success',
+        'bg-info-100 text-info-800 dark:bg-info-900 dark:text-info-300': props.severity === 'info',
+        'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-300': props.severity === 'warning',
+        'bg-danger-100 text-danger-800 dark:bg-danger-900 dark:text-danger-300': props.severity === 'danger'
+      }
+    ]
+  }
+});
 </script>
 
 <template>
@@ -83,7 +158,7 @@ function toggleNotesDrawer() {
     <div v-else class="dispatch-details">
       <!-- Header with navigation and ticket number -->
       <div class="flex align-items-center mb-2">
-        <Button icon="pi pi-arrow-left" @click="goBack" text class="mr-2" />
+        <Button icon="pi pi-arrow-left" @click="goBack" text class="mr-2" :pt="buttonPtOptions" />
         <h1 class="text-xl font-medium m-0">Dispatch Ticket #{{ ticketId }}</h1>
       </div>
 
@@ -105,23 +180,24 @@ function toggleNotesDrawer() {
           <div class="flex-auto">
             <span class="text-sm text-500 mr-2">Billing Status:</span>
             <Tag :value="dispatchData.billing?.billingStatus || 'Not Billed'" 
-                 :severity="billingSeverity" />
+                 :severity="billingSeverity" 
+                 :pt="tagPtOptions" />
           </div>
         </div>
       </div>
 
       <!-- Tabbed interface -->
-      <Tabs v-model:active-index="activeTabIndex">
-        <TabList>
-          <Tab value="job-details">Job Details</Tab>
-          <Tab value="billing">Billing</Tab>
-          <Tab value="notes">Notes, Scope & Technician</Tab>
+      <Tabs v-model:active-index="activeTabIndex" :pt="tabsPtOptions">
+        <TabList :pt="tabListPtOptions">
+          <Tab value="job-details" :pt="tabPtOptions">Job Details</Tab>
+          <Tab value="billing" :pt="tabPtOptions">Billing</Tab>
+          <Tab value="notes" :pt="tabPtOptions">Notes, Scope & Technician</Tab>
         </TabList>
-        <TabPanels>
+        <TabPanels :pt="tabPanelsPtOptions">
           <!-- Job Details Tab -->
-          <TabPanel value="job-details">
+          <TabPanel value="job-details" :pt="tabPanelPtOptions">
             <!-- Job Information -->
-            <Panel header="Job Information" class="mb-3 shadow-1">
+            <Panel header="Job Information" class="mb-3" :pt="panelPtOptions">
               <template #icons>
                 <Button 
                   label="Close-out Notes" 
@@ -129,6 +205,7 @@ function toggleNotesDrawer() {
                   outlined
                   @click="toggleNotesDrawer" 
                   size="small"
+                  :pt="buttonPtOptions"
                 />
               </template>
               <div class="flex flex-column md:flex-row gap-2 mb-3">
@@ -164,7 +241,7 @@ function toggleNotesDrawer() {
 
             <div class="flex flex-column xl:flex-row gap-3 mb-3">
               <!-- Location -->
-              <Panel header="Location" class="flex-1 shadow-1">
+              <Panel header="Location" class="flex-1" :pt="panelPtOptions">
                 <div class="flex flex-column md:flex-row gap-2 mb-2">
                   <div class="flex-1">
                     <label for="siteno" class="block text-sm font-medium mb-1">Site #</label>
@@ -188,7 +265,7 @@ function toggleNotesDrawer() {
               </Panel>
               
               <!-- Visit Record -->
-              <Panel header="Visit Record" class="flex-1 shadow-1">
+              <Panel header="Visit Record" class="flex-1" :pt="panelPtOptions">
                 <div class="flex flex-column md:flex-row gap-2 mb-2">
                   <div class="flex-1">
                     <label for="visitid" class="block text-sm font-medium mb-1">Visit ID</label>
@@ -226,8 +303,8 @@ function toggleNotesDrawer() {
           </TabPanel>
 
           <!-- Billing Tab -->
-          <TabPanel value="billing">
-            <Panel header="Billing Details" class="shadow-1">
+          <TabPanel value="billing" :pt="tabPanelPtOptions">
+            <Panel header="Billing Details" :pt="panelPtOptions">
               <div class="flex flex-column md:flex-row gap-2 mb-2">
                 <div class="flex-1">
                   <label for="invoice" class="block text-sm font-medium mb-1">Invoice #</label>
@@ -266,16 +343,16 @@ function toggleNotesDrawer() {
           </TabPanel>
 
           <!-- Notes & Scope Tab -->
-          <TabPanel value="notes">
+          <TabPanel value="notes" :pt="tabPanelPtOptions">
             <!-- Scope of Work -->
-            <Panel header="Scope of Work" class="mb-3 shadow-1">
+            <Panel header="Scope of Work" class="mb-3" :pt="panelPtOptions">
               <div class="field">
                 <div id="scope" class="p-inputtext w-full min-h-4rem whitespace-pre-line">{{ dispatchData.jobDetails?.scopeOfWork || 'No scope of work provided.' }}</div>
               </div>
             </Panel>
 
             <!-- Technician -->
-            <Panel header="Technician" class="mb-3 shadow-1">
+            <Panel header="Technician" class="mb-3" :pt="panelPtOptions">
               <div class="flex flex-column md:flex-row gap-2 mb-2">
                 <div class="flex-1">
                   <label for="techname" class="block text-sm font-medium mb-1">Name</label>
@@ -300,7 +377,7 @@ function toggleNotesDrawer() {
             </Panel>
 
             <!-- Notes -->
-            <Panel header="Technician Comments" class="shadow-1">
+            <Panel header="Technician Comments" :pt="panelPtOptions">
               <div class="field">
                 <div id="techcomments" class="p-inputtext w-full min-h-4rem whitespace-pre-line">{{ dispatchData.technicianInfo?.comments || 'No comments provided.' }}</div>
               </div>
@@ -311,12 +388,12 @@ function toggleNotesDrawer() {
       
       <!-- Back button -->
       <div class="flex justify-content-end mt-3">
-        <Button label="Back to Jobs" icon="pi pi-arrow-left" @click="goBack" />
+        <Button label="Back to Jobs" icon="pi pi-arrow-left" @click="goBack" :pt="buttonPtOptions" />
       </div>
     </div>
 
     <!-- Close-out Notes Drawer -->
-    <Drawer v-model:visible="displayNotesDrawer" position="right" style="width: 40rem">
+    <Drawer v-model:visible="displayNotesDrawer" position="right" style="width: 40rem" :pt="drawerPtOptions">
       <template #header>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-file-edit text-xl"></i>
@@ -328,6 +405,9 @@ function toggleNotesDrawer() {
           {{ dispatchData.completion?.closeOutNotes || 'No close-out notes provided.' }}
         </div>
       </div>
+      <template #footer>
+        <Button label="Close" icon="pi pi-times" @click="toggleNotesDrawer" class="w-full" :pt="buttonPtOptions" />
+      </template>
     </Drawer>
   </div>
 </template>
@@ -356,10 +436,7 @@ function toggleNotesDrawer() {
   min-height: 20rem;
 }
 
-.shadow-1 {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
+/* Remove shadow styles since they're now in pt options */
 :deep(.p-tabview-nav-container) {
   position: relative;
 }
@@ -372,22 +449,5 @@ function toggleNotesDrawer() {
   height: 2px;
   background-color: var(--primary-color);
   transition: 0.3s cubic-bezier(0.35, 0, 0.25, 1);
-}
-
-:deep(.p-panel-header) {
-  background-color: var(--surface-50);
-  border-bottom: 1px solid var(--surface-border);
-  padding: 0.5rem 0.75rem;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-:deep(.p-panel-content) {
-  padding: 0.75rem;
-}
-
-:deep(.p-badge) {
-  font-size: 0.65rem;
-  font-weight: 700;
 }
 </style> 
