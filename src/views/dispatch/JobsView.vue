@@ -93,7 +93,7 @@ function initFilters() {
       operator: FilterOperator.OR,
       constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
     },
-    billingStatus: {
+    'billing.billingStatus': {
       operator: FilterOperator.OR,
       constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
     },
@@ -356,9 +356,20 @@ const dtPtOptions = {
   // Ensure consistent padding using 'p-3', adjust text size/weight
   th: { root: { class: 'text-sm font-semibold text-surface-700 dark:text-white/80 p-3 text-left' } },
   tbody: { class: 'divide-y divide-surface-200 dark:divide-surface-700' },
-  tr: { class: 'hover:bg-surface-50 dark:hover:bg-surface-700/50' }, // Adjusted hover for better contrast
+  // 1. Context-aware bodyrow styling based on job status
+  bodyrow: ({ context }) => ({
+    class: [
+      'hover:bg-surface-50 dark:hover:bg-surface-700/50',
+      // Add conditional classes based on job status
+      { 'bg-yellow-50 dark:bg-yellow-900/20': context.data?.status === 'On Hold' },
+      { 'bg-green-50 dark:bg-green-900/20': context.data?.status === 'Completed' },
+      { 'bg-blue-50 dark:bg-blue-900/20': context.data?.status === 'In Progress' },
+      { 'bg-orange-50 dark:bg-orange-900/20': context.data?.status === 'Scheduled' }
+    ]
+  }),
   // Ensure consistent padding using 'p-3', adjust text size
   td: { root: { class: 'text-sm text-surface-700 dark:text-white/80 p-3' } },
+  // 2. Improved paginator styling with more comprehensive controls
   paginator: {
     template: {
       layout: 'RowsPerPageDropdown FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport',
@@ -383,9 +394,29 @@ const dtPtOptions = {
     }),
     currentPageReport: { class: 'text-sm text-surface-600 dark:text-surface-300 mx-3' },
     rowsPerPageDropdown: {
-      root: { class: 'mx-1' } // Add spacing
+      root: { class: 'mx-1' }, // Add spacing
+      panel: { class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-md rounded' }
     }
   },
+  // 3. Enhanced filter elements styling
+  filterinput: { class: 'p-2 text-sm w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 rounded-md' },
+  filteroverlay: { class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-lg rounded-md p-2' },
+  filteroperator: { class: 'mb-2' },
+  filterclearbutton: { class: 'px-3 py-1 text-sm border border-surface-200 dark:border-surface-700 rounded-md mr-2 hover:bg-surface-100 dark:hover:bg-surface-700' },
+  filterapplybutton: { class: 'px-3 py-1 text-sm bg-primary-500 text-white border border-primary-600 rounded-md hover:bg-primary-600' },
+  // 4. Sort icons customization
+  sorticon: ({ context }) => ({
+    class: [
+      'ml-2 text-xs',
+      context.sorted && context.sortOrder === 1 ? 'text-primary-500' : '',
+      context.sorted && context.sortOrder === -1 ? 'text-primary-500' : '',
+      !context.sorted ? 'text-surface-400' : ''
+    ]
+  }),
+  // 5. Empty and loading states
+  loadingoverlay: { class: 'bg-white/70 dark:bg-surface-900/70 absolute inset-0 flex items-center justify-center z-10' },
+  loadingicon: { class: 'text-primary-500 text-2xl animate-spin' },
+  emptymessage: { class: 'p-6 text-center text-surface-500 dark:text-surface-400' },
   // Global filter styling
   globalFilter: {
     root: { class: 'relative' }, // Let InputGroup handle styling
@@ -402,6 +433,43 @@ const toggleFocusFilter = (key) => {
 const clearFocusAndCloseDrawer = () => {
   clearFocus();
   visibleFocus.value = false;
+};
+
+// Add a drawerPtOptions object with similar styling to JobDetailsView.vue
+const drawerPtOptions = {
+  root: { 
+    class: 'bg-white dark:bg-surface-900 shadow-lg',
+    style: 'max-width: 32rem; width: 100%' // Using style instead of class for width
+  },
+  header: { 
+    class: 'px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800'
+  },
+  title: {
+    class: 'text-xl font-bold text-surface-800 dark:text-white'
+  },
+  content: { 
+    class: 'p-4 overflow-y-auto'
+  },
+  footer: { 
+    class: 'p-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800'
+  },
+  closeButton: {
+    class: 'p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors'
+  },
+  closeButtonIcon: {
+    class: 'text-surface-600 dark:text-surface-400'
+  },
+  mask: {
+    class: 'bg-black/40'
+  },
+  transition: {
+    enterFromClass: 'translate-x-full',
+    enterActiveClass: 'transition-transform duration-300 ease-out',
+    enterToClass: 'translate-x-0',
+    leaveFromClass: 'translate-x-0',
+    leaveActiveClass: 'transition-transform duration-300 ease-in',
+    leaveToClass: 'translate-x-full'
+  }
 };
 </script>
 
@@ -505,7 +573,7 @@ const clearFocusAndCloseDrawer = () => {
         :filters="filters"
         filterDisplay="menu"
         :loading="loading"
-        :globalFilterFields="['id', 'customerName', 'subject', 'status', 'billingStatus', 'cityState', 'serviceDate']"
+        :globalFilterFields="['id', 'customerName', 'subject', 'status', 'billing.billingStatus', 'cityState', 'serviceDate']"
         showGridlines
         stripedRows
         resizableColumns
@@ -563,7 +631,7 @@ const clearFocusAndCloseDrawer = () => {
           </template>
         </Column>
         
-        <Column field="billingStatus" header="Billing" sortable style="min-width: 8rem">
+        <Column field="billing.billingStatus" header="Billing" sortable style="min-width: 8rem">
           <template #filter="{ filterModel }">
             <Select v-model="filterModel.value" :options="billingStatusOptions" placeholder="Billing status" class="w-full" showClear v-if="!filterModel.constraints" />
             <Select :options="billingStatusOptions" placeholder="Billing status" class="w-full" showClear
@@ -734,11 +802,14 @@ const clearFocusAndCloseDrawer = () => {
     </div>
 
     <!-- Focus Areas Drawer -->
-    <Drawer v-model:visible="visibleFocus" position="right" class="max-w-md !w-full">
+    <Drawer v-model:visible="visibleFocus" position="right" :pt="drawerPtOptions">
       <template #header>
-        <span class="text-xl font-semibold">Focus Areas</span>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-filter text-primary-500 text-xl"></i>
+          <span class="text-xl font-semibold">Focus Areas</span>
+        </div>
       </template>
-      <div class="grid grid-cols-1 gap-3 mt-4">
+      <div class="grid grid-cols-1 gap-3">
         <KpiCard v-for="fa in focusAreas" :key="fa.key"
                  :title="fa.label"
                  :value="focusCounts[fa.key]"

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { useDispatchStore } from '@/stores/dispatchStore';
@@ -26,12 +26,15 @@ const ticketId = route.params.id;
 const activeTabIndex = ref(0);
 const displayNotesDrawer = ref(false);
 
-// Ensure default tab selection on load
+// Ensure default tab selection on load with multiple strategies
 onMounted(() => {
   // Force the active tab to be job-details (index 0)
-  setTimeout(() => {
-    activeTabIndex.value = 0;
-  }, 0);
+  activeTabIndex.value = 0;
+});
+
+// Also watch for tab index changes for debugging
+watch(activeTabIndex, (newValue) => {
+  console.log('Tab index changed to:', newValue);
 });
 
 // Fallback: try to locate the record in already-loaded dispatchRows
@@ -75,7 +78,16 @@ function toggleNotesDrawer() {
 // Passthrough (pt) options for the PrimeVue components
 const tabsPtOptions = {
   root: { class: 'mb-6' },
-  navContainer: { class: 'border-b border-surface-200 dark:border-surface-700 mb-1' },
+  navContainer: { 
+    class: 'border-b border-surface-200 dark:border-surface-700 mb-1',
+    // Add lifecycle hooks to handle initial tab activation
+    hooks: {
+      onMounted: (el) => {
+        // Force active tab selection after mount
+        activeTabIndex.value = 0;
+      }
+    }
+  },
   nav: { class: 'flex' }
 };
 
@@ -113,10 +125,40 @@ const panelPtOptions = {
 };
 
 const drawerPtOptions = {
-  root: { class: 'bg-white dark:bg-surface-900 shadow-lg' },
-  header: { class: 'px-6 py-4 border-b border-surface-200 dark:border-surface-700' },
-  content: { class: 'p-4' },
-  footer: { class: 'p-4 border-t border-surface-200 dark:border-surface-700' }
+  root: { 
+    class: 'bg-white dark:bg-surface-900 shadow-lg',
+    style: 'max-width: 40rem; width: 100%'
+  },
+  header: { 
+    class: 'px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800' 
+  },
+  title: {
+    class: 'text-xl font-bold text-surface-800 dark:text-white'
+  },
+  content: { class: 'p-4 overflow-y-auto' },
+  footer: { class: 'p-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800' },
+  closeButton: {
+    class: 'p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors'
+  },
+  closeButtonIcon: {
+    class: 'text-surface-600 dark:text-surface-400'
+  },
+  mask: {
+    class: 'bg-black/40'
+  },
+  transition: {
+    enterFromClass: 'translate-x-full',
+    enterActiveClass: 'transition-transform duration-300 ease-out',
+    enterToClass: 'translate-x-0',
+    leaveFromClass: 'translate-x-0',
+    leaveActiveClass: 'transition-transform duration-300 ease-in',
+    leaveToClass: 'translate-x-full'
+  },
+  hooks: {
+    onMounted: (el) => {
+      console.log('Drawer mounted');
+    }
+  }
 };
 
 const buttonPtOptions = ({ context }) => ({
@@ -187,15 +229,15 @@ const tagPtOptions = ({ props }) => ({
       </div>
 
       <!-- Tabbed interface -->
-      <Tabs v-model:active-index="activeTabIndex" :pt="tabsPtOptions">
+      <Tabs v-model:active-index="activeTabIndex" :pt="tabsPtOptions" :default-index="0">
         <TabList :pt="tabListPtOptions">
-          <Tab value="job-details" :pt="tabPtOptions">Job Details</Tab>
-          <Tab value="billing" :pt="tabPtOptions">Billing</Tab>
-          <Tab value="notes" :pt="tabPtOptions">Notes, Scope & Technician</Tab>
+          <Tab value="0" :pt="tabPtOptions">Job Details</Tab>
+          <Tab value="1" :pt="tabPtOptions">Billing</Tab>
+          <Tab value="2" :pt="tabPtOptions">Notes, Scope & Technician</Tab>
         </TabList>
         <TabPanels :pt="tabPanelsPtOptions">
           <!-- Job Details Tab -->
-          <TabPanel value="job-details" :pt="tabPanelPtOptions">
+          <TabPanel value="0" :pt="tabPanelPtOptions">
             <!-- Job Information -->
             <Panel header="Job Information" class="mb-3" :pt="panelPtOptions">
               <template #icons>
@@ -303,7 +345,7 @@ const tagPtOptions = ({ props }) => ({
           </TabPanel>
 
           <!-- Billing Tab -->
-          <TabPanel value="billing" :pt="tabPanelPtOptions">
+          <TabPanel value="1" :pt="tabPanelPtOptions">
             <Panel header="Billing Details" :pt="panelPtOptions">
               <div class="flex flex-column md:flex-row gap-2 mb-2">
                 <div class="flex-1">
@@ -343,7 +385,7 @@ const tagPtOptions = ({ props }) => ({
           </TabPanel>
 
           <!-- Notes & Scope Tab -->
-          <TabPanel value="notes" :pt="tabPanelPtOptions">
+          <TabPanel value="2" :pt="tabPanelPtOptions">
             <!-- Scope of Work -->
             <Panel header="Scope of Work" class="mb-3" :pt="panelPtOptions">
               <div class="field">
@@ -393,7 +435,7 @@ const tagPtOptions = ({ props }) => ({
     </div>
 
     <!-- Close-out Notes Drawer -->
-    <Drawer v-model:visible="displayNotesDrawer" position="right" style="width: 40rem" :pt="drawerPtOptions">
+    <Drawer v-model:visible="displayNotesDrawer" position="right" :pt="drawerPtOptions">
       <template #header>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-file-edit text-xl"></i>
