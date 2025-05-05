@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { DispatchService } from '@/service/DispatchService';
 import { formatISO } from 'date-fns';
+import { format } from 'date-fns';
+import { ApiService } from '@/service/ApiService';
 
 export const useDispatchStore = defineStore('dispatch', {
   state: () => ({
@@ -384,6 +386,11 @@ export const useDispatchStore = defineStore('dispatch', {
       return sorted;
     },
     
+    // Format dates for API calls
+    formatDateParam(date) {
+      return format(date, 'yyyy-MM-dd');
+    },
+    
     // Fetch dispatch data for Jobs table
     async fetchDispatchData(filters) {
       this.loading.details = true;
@@ -468,6 +475,66 @@ export const useDispatchStore = defineStore('dispatch', {
         this.errors.details = error.message || 'Failed to load dispatch data';
       } finally {
         this.loading.details = false;
+      }
+    },
+
+    // Check if a ticket has been analyzed
+    async checkTicketAnalysis(ticketId) {
+      try {
+        console.log('Checking ticket analysis status for ticket ID:', ticketId);
+        const response = await ApiService.post('chain-analysis/check-ticket', { ticket_id: ticketId });
+        console.log('Ticket analysis check response:', response);
+        
+        return response.data;
+      } catch (error) {
+        console.error('Error checking ticket analysis:', error);
+        return { success: false, message: error.message || 'Failed to check analysis status' };
+      }
+    },
+    
+    // Get visit details by ticket ID
+    async getVisitByTicket(ticketId) {
+      try {
+        console.log('Fetching visit details for ticket ID:', ticketId);
+        const response = await ApiService.post('chain-analysis/get-visit-by-ticket', { ticket_id: ticketId });
+        console.log('Visit details response:', response);
+        
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching visit details:', error);
+        return { success: false, message: error.message || 'Failed to fetch visit details' };
+      }
+    },
+    
+    // Get full job report
+    async getJobReport(ticketId) {
+      try {
+        console.log('Fetching job report for ticket ID:', ticketId);
+        const response = await ApiService.post('chain-analysis/get-job-report', { ticket_id: ticketId });
+        console.log('Job report response:', response);
+        
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching job report:', error);
+        return { success: false, message: error.message || 'Failed to fetch job report' };
+      }
+    },
+    
+    // Analyze ticket - begins or re-runs AI analysis
+    async analyzeTicket(ticketId, forceRefresh = false, model = 'gpt-4.1-mini') {
+      try {
+        console.log('Triggering analysis for ticket ID:', ticketId, { forceRefresh, model });
+        const response = await ApiService.post('chain-analysis/analyze-ticket', { 
+          ticket_id: ticketId,
+          force_refresh: forceRefresh,
+          model: model
+        });
+        console.log('Analysis response:', response);
+        
+        return response.data;
+      } catch (error) {
+        console.error('Error analyzing ticket:', error);
+        return { success: false, message: error.message || 'Failed to analyze ticket' };
       }
     }
   }

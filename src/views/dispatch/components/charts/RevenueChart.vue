@@ -11,7 +11,7 @@
         
         <Button v-if="!loading" icon="pi pi-refresh" text severity="secondary" @click="refreshData" />
         
-        <Dropdown
+        <Select
           v-model="selectedChartType"
           :options="chartTypes"
           optionLabel="label"
@@ -86,7 +86,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useDispatchStore } from '@/stores/dispatchStore'
 import Chart from 'primevue/chart'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import ProgressSpinner from 'primevue/progressspinner'
 import Button from 'primevue/button'
 

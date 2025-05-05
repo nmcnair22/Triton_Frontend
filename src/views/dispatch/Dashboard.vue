@@ -5,7 +5,7 @@
     <!-- Date Range and Filters -->
     <div class="mb-6 flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <Calendar 
+        <DatePicker 
           v-model="dateRange" 
           selectionMode="range" 
           dateFormat="M d, yy"
@@ -253,7 +253,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useDispatchStore } from '@/stores/dispatchStore';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import TabView from 'primevue/tabview';

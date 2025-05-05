@@ -103,5 +103,12 @@ export const DispatchService = {
     console.log('DispatchService.getDispatchData - Filters:', filters);
     return ApiService.get('dispatch-reports/dispatch-data', filters)
       .catch(error => this.handleApiError(error, 'getDispatchData'));
+  },
+  
+  // Get linked tickets for a specific dispatch
+  getLinkedTickets(dispatchId) {
+    console.log('DispatchService.getLinkedTickets - ID:', dispatchId);
+    return ApiService.get(`dispatch-reports/chains/${dispatchId}`, { record_type: 'dispatch' })
+      .catch(error => this.handleApiError(error, 'getLinkedTickets'));
   }
 }; 

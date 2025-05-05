@@ -457,36 +457,68 @@ const routes = [
                 component: () => import('@/views/accounting/InvoiceTemplates.vue')
             },
             {
-                path: '/reporting/report-manager',
-                name: 'financial-intelligence',
+                path: '/finance/dashboard',
+                name: 'finance-dashboard',
                 meta: {
-                    breadcrumb: ['Financial', 'Financial Reports']
+                    breadcrumb: ['Financial', 'Finance Dashboard']
                 },
-                component: () => import('@/views/financial/FinancialIntelligence.vue')
+                component: () => import('@/views/finance/FinanceDashboard.vue')
             },
             {
-                path: '/financial/balance-sheet',
-                name: 'balance-sheet',
+                path: '/finance/accounts-receivable',
+                name: 'accounts-receivable',
                 meta: {
-                    breadcrumb: ['Financial', 'Balance Sheet']
+                    breadcrumb: ['Financial', 'Accounts Receivable']
                 },
-                component: () => import('@/views/financial/BalanceSheet.vue')
+                component: () => import('@/views/finance/AccountsReceivable.vue')
             },
             {
-                path: '/financial/income-statement',
-                name: 'income-statement',
+                path: '/finance/accounts-payable',
+                name: 'accounts-payable',
                 meta: {
-                    breadcrumb: ['Financial', 'Income Statement']
+                    breadcrumb: ['Financial', 'Accounts Payable']
                 },
-                component: () => import('@/views/financial/IncomeStatement.vue')
+                component: () => import('@/views/finance/AccountsPayable.vue')
             },
             {
-                path: '/financial/cash-flow',
-                name: 'cash-flow',
+                path: '/finance/customer/:id',
+                name: 'customer-profile',
                 meta: {
-                    breadcrumb: ['Financial', 'Cash Flow']
+                    breadcrumb: ['Financial', 'Customer Profile']
                 },
-                component: () => import('@/views/financial/CashFlowStatement.vue')
+                component: () => import('@/views/finance/CustomerProfile.vue')
+            },
+            {
+                path: '/finance/vendor/:id',
+                name: 'vendor-profile',
+                meta: {
+                    breadcrumb: ['Financial', 'Vendor Profile']
+                },
+                component: () => import('@/views/finance/VendorProfile.vue')
+            },
+            {
+                path: '/finance/analysis',
+                name: 'financial-analysis',
+                meta: {
+                    breadcrumb: ['Financial', 'Financial Analysis']
+                },
+                component: () => import('@/views/finance/FinancialAnalysis.vue')
+            },
+            {
+                path: '/finance/product-performance',
+                name: 'product-performance',
+                meta: {
+                    breadcrumb: ['Financial', 'Product Performance']
+                },
+                component: () => import('@/views/finance/ProductPerformance.vue')
+            },
+            {
+                path: '/finance/alerts',
+                name: 'alerts-management',
+                meta: {
+                    breadcrumb: ['Financial', 'Alerts Management']
+                },
+                component: () => import('@/views/finance/AlertsManagement.vue')
             },
             {
                 path: '/todo',

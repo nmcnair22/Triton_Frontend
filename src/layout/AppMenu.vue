@@ -84,9 +84,34 @@ const model = ref([
         icon: 'pi pi-chart-bar',
         items: [
             {
-                label: 'Financial Reports',
+                label: 'Finance Dashboard',
                 icon: 'pi pi-fw pi-money-bill',
-                to: '/reporting/report-manager'
+                to: '/finance/dashboard'
+            },
+            {
+                label: 'Accounts Receivable',
+                icon: 'pi pi-fw pi-dollar',
+                to: '/finance/accounts-receivable'
+            },
+            {
+                label: 'Accounts Payable',
+                icon: 'pi pi-fw pi-credit-card',
+                to: '/finance/accounts-payable'
+            },
+            {
+                label: 'Financial Analysis',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/finance/analysis'
+            },
+            {
+                label: 'Product Performance',
+                icon: 'pi pi-fw pi-box',
+                to: '/finance/product-performance'
+            },
+            {
+                label: 'Alerts Management',
+                icon: 'pi pi-fw pi-bell',
+                to: '/finance/alerts'
             }
         ]
     },

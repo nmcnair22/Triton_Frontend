@@ -55,9 +55,25 @@ const isLoadingCustomers = computed(() => customerStore.loading);
 
 // DataTable state
 const expandedRows = ref({});
-const filters = ref({});
+const filters = ref({
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+  customerName: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+  subject: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+  status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+  'billing.billingStatus': { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+  cityState: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+  serviceDate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: 'dateRange' }] }
+});
+
+// Safe global filter access with computed property
+const globalFilterValue = computed({
+  get: () => filters.value.global?.value || '',
+  set: (val) => {
+    filters.value.global.value = val;
+  }
+});
 const loading = computed(() => dispatchStore.loading.details);
-const globalFilterValue = ref('');
 const rowsPerPage = ref(10);
 
 // Filter options
@@ -77,42 +93,19 @@ const billingStatusOptions = ref(['Billed', 'Not Billed', 'Invoiced', 'Paid']);
 function initFilters() {
   filters.value = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    id: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
-    },
-    customerName: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]
-    },
-    subject: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]
-    },
-    status: {
-      operator: FilterOperator.OR,
-      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
-    },
-    'billing.billingStatus': {
-      operator: FilterOperator.OR,
-      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }]
-    },
-    cityState: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]
-    },
-    serviceDate: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: 'dateRange' }]
-    }
+    id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+    customerName: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    subject: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    'billing.billingStatus': { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    cityState: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    serviceDate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: 'dateRange' }] }
   };
-  globalFilterValue.value = '';
 }
 
 // Methods
 const clearFilter = () => {
   initFilters();
-  globalFilterValue.value = '';
 };
 
 const computePredefinedRange = (range) => {
@@ -236,10 +229,12 @@ const exportCSV = (ref) => {
 
 const dtRef = ref(null);
 
+// Initialize filters immediately
+initFilters();
+
 // Fetch active customers on component mount
 onMounted(() => {
   customerStore.fetchActiveCustomers();
-  initFilters();
   // auto initial load this week all customers
   applyFilters();
 });
@@ -350,26 +345,48 @@ const viewDetails = (row) => {
 
 // Enhance the dtPtOptions with more comprehensive styling
 const dtPtOptions = {
-  // Allow horizontal scroll within the root if needed
-  root: { class: 'border border-surface-200 dark:border-surface-700 rounded-lg overflow-x-auto' },
-  thead: { class: 'bg-surface-50 dark:bg-surface-800' },
-  // Ensure consistent padding using 'p-3', adjust text size/weight
-  th: { root: { class: 'text-sm font-semibold text-surface-700 dark:text-white/80 p-3 text-left' } },
+  // Container styling
+  root: { class: 'border-0 shadow-sm' },
+  wrapper: { class: 'overflow-x-auto overflow-y-auto' },
+  table: { class: 'w-full border-collapse' },
+  
+  // Header styling with sticky positioning
+  thead: { class: 'bg-surface-50 dark:bg-surface-800 sticky top-0 z-10' },
+  th: { 
+    root: { 
+      class: 'text-sm font-semibold text-surface-700 dark:text-white/80 p-3 text-left border-b border-surface-200 dark:border-surface-700' 
+    }
+  },
+  
+  // Body styling
   tbody: { class: 'divide-y divide-surface-200 dark:divide-surface-700' },
-  // 1. Context-aware bodyrow styling based on job status
   bodyrow: ({ context }) => ({
     class: [
-      'hover:bg-surface-50 dark:hover:bg-surface-700/50',
-      // Add conditional classes based on job status
+      'transition-colors duration-150 hover:bg-surface-50 dark:hover:bg-surface-700/50',
       { 'bg-yellow-50 dark:bg-yellow-900/20': context.data?.status === 'On Hold' },
       { 'bg-green-50 dark:bg-green-900/20': context.data?.status === 'Completed' },
       { 'bg-blue-50 dark:bg-blue-900/20': context.data?.status === 'In Progress' },
       { 'bg-orange-50 dark:bg-orange-900/20': context.data?.status === 'Scheduled' }
     ]
   }),
-  // Ensure consistent padding using 'p-3', adjust text size
-  td: { root: { class: 'text-sm text-surface-700 dark:text-white/80 p-3' } },
-  // 2. Improved paginator styling with more comprehensive controls
+  td: { 
+    root: { 
+      class: 'text-sm text-surface-700 dark:text-white/80 p-3 align-middle border-b border-surface-200 dark:border-surface-700' 
+    } 
+  },
+  
+  // Expansion row styling
+  rowexpansion: {
+    class: 'bg-surface-50 dark:bg-surface-800 border-0'
+  },
+  rowexpander: {
+    class: 'p-2 text-surface-500 dark:text-surface-400 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700'
+  },
+  rowtogglericon: {
+    class: 'text-surface-600 dark:text-surface-400'
+  },
+  
+  // Paginator styling
   paginator: {
     template: {
       layout: 'RowsPerPageDropdown FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport',
@@ -377,50 +394,61 @@ const dtPtOptions = {
         `Page ${currentPage} of ${totalPages} (${first + 1} - ${last} of ${totalRecords})`
       )
     },
-    // Add some padding around the paginator itself
-    root: { class: 'border-t border-surface-200 dark:border-surface-700 bg-transparent px-3 py-2' },
-    // Style tweaks for paginator buttons for consistency
-    firstPageButton: { class: 'relative inline-flex items-center justify-center p-2 m-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700' },
-    prevPageButton: { class: 'relative inline-flex items-center justify-center p-2 m-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700' },
-    nextPageButton: { class: 'relative inline-flex items-center justify-center p-2 m-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700' },
-    lastPageButton: { class: 'relative inline-flex items-center justify-center p-2 m-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-700' },
-    // Ensure page buttons have consistent size/spacing
+    root: { class: 'border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-2 flex items-center justify-between flex-wrap gap-2' },
+    firstPageButton: { class: 'p-1.5 min-w-8 h-8 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700' },
+    prevPageButton: { class: 'p-1.5 min-w-8 h-8 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700' },
+    nextPageButton: { class: 'p-1.5 min-w-8 h-8 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700' },
+    lastPageButton: { class: 'p-1.5 min-w-8 h-8 rounded-md hover:bg-surface-200 dark:hover:bg-surface-700' },
     pageButton: ({ context }) => ({
         class: [
-          'relative inline-flex items-center justify-center leading-none rounded-full min-w-[2.5rem] h-10 m-1',
-          'border',
-          context.active ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-surface-700 dark:border-surface-600 dark:text-white' : 'border-surface-200 bg-white text-surface-700 hover:bg-surface-50 dark:border-surface-700 dark:bg-surface-800 dark:text-white/80 dark:hover:bg-surface-700'
+        'p-1.5 min-w-8 h-8 rounded-md',
+        context.active 
+          ? 'bg-primary-500 text-white hover:bg-primary-600' 
+          : 'hover:bg-surface-200 dark:hover:bg-surface-700'
         ]
     }),
-    currentPageReport: { class: 'text-sm text-surface-600 dark:text-surface-300 mx-3' },
+    currentPageReport: { class: 'text-sm text-surface-600 dark:text-surface-400 mx-2' },
     rowsPerPageDropdown: {
-      root: { class: 'mx-1' }, // Add spacing
-      panel: { class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-md rounded' }
+      root: { class: 'mx-2' },
+      panel: { class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-md rounded-md' }
     }
   },
-  // 3. Enhanced filter elements styling
-  filterinput: { class: 'p-2 text-sm w-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 rounded-md' },
-  filteroverlay: { class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-lg rounded-md p-2' },
-  filteroperator: { class: 'mb-2' },
-  filterclearbutton: { class: 'px-3 py-1 text-sm border border-surface-200 dark:border-surface-700 rounded-md mr-2 hover:bg-surface-100 dark:hover:bg-surface-700' },
-  filterapplybutton: { class: 'px-3 py-1 text-sm bg-primary-500 text-white border border-primary-600 rounded-md hover:bg-primary-600' },
-  // 4. Sort icons customization
-  sorticon: ({ context }) => ({
-    class: [
-      'ml-2 text-xs',
-      context.sorted && context.sortOrder === 1 ? 'text-primary-500' : '',
-      context.sorted && context.sortOrder === -1 ? 'text-primary-500' : '',
-      !context.sorted ? 'text-surface-400' : ''
-    ]
-  }),
-  // 5. Empty and loading states
-  loadingoverlay: { class: 'bg-white/70 dark:bg-surface-900/70 absolute inset-0 flex items-center justify-center z-10' },
-  loadingicon: { class: 'text-primary-500 text-2xl animate-spin' },
-  emptymessage: { class: 'p-6 text-center text-surface-500 dark:text-surface-400' },
+  
+  // Filter styling
+  filteroverlay: { 
+    class: 'bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 shadow-lg rounded-md min-w-[250px] z-20' 
+  },
+  filterheader: { 
+    class: 'p-3 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 flex items-center justify-between' 
+  },
+  filterfooter: { 
+    class: 'p-3 flex gap-2 justify-end border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800' 
+  },
+  filterclearbutton: { 
+    class: 'px-3 py-1.5 rounded-md hover:bg-surface-100 dark:hover:bg-surface-700' 
+  },
+  filterapplybutton: { 
+    class: 'px-3 py-1.5 rounded-md bg-primary-500 text-white hover:bg-primary-600' 
+  },
+  filtermenubutton: { 
+    class: 'p-1.5 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700' 
+  },
+  filtermatchmodeoperator: {
+    class: 'mb-2'
+  },
+  
+  // Loading and empty states
+  loadingoverlay: { 
+    class: 'bg-white/70 dark:bg-surface-900/70 absolute inset-0 flex items-center justify-center z-10' 
+  },
+  loadingicon: { 
+    class: 'text-primary-500 text-4xl animate-spin' 
+  },
+  
   // Global filter styling
   globalFilter: {
-    root: { class: 'relative' }, // Let InputGroup handle styling
-    input: { class: 'p-inputtext-sm' } // Keep input small
+    root: { class: 'flex items-center' },
+    input: { class: 'p-2 min-w-[200px]' }
   }
 };
 
@@ -541,7 +569,7 @@ const drawerPtOptions = {
     </div>
 
     <!-- Jobs Table with Filtering and Row Expansion -->
-    <div class="bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700">
+    <div class="bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
       <div class="flex justify-between items-center flex-wrap gap-4 p-4 border-b border-surface-200 dark:border-surface-700">
         <div class="flex items-center gap-2">
           <Button type="button" icon="pi pi-filter-slash" label="Clear Filters" outlined @click="clearFilter" size="small" />
@@ -553,7 +581,7 @@ const drawerPtOptions = {
             <InputGroupAddon>
               <i class="pi pi-search" />
             </InputGroupAddon>
-            <InputText v-model="globalFilterValue" placeholder="Search jobs..." @input="filters.global.value = globalFilterValue" />
+            <InputText v-model="globalFilterValue" placeholder="Search jobs..." />
           </InputGroup>
           <Button label="Focus Areas" icon="pi pi-filter" outlined @click="visibleFocus=true" size="small" />
           <Button label="Remove Focus" icon="pi pi-times" outlined severity="secondary" @click="clearFocus" size="small" />
@@ -564,230 +592,264 @@ const drawerPtOptions = {
       <DataTable 
         ref="dtRef"
         v-model:expandedRows="expandedRows"
+        v-model:filters="filters"
         :value="jobsFiltered" 
         paginator 
         :rows="rowsPerPage"
         :rowsPerPageOptions="[10, 25, 50, 100]"
         dataKey="id" 
         :rowHover="true"
-        :filters="filters"
         filterDisplay="menu"
         :loading="loading"
         :globalFilterFields="['id', 'customerName', 'subject', 'status', 'billing.billingStatus', 'cityState', 'serviceDate']"
         showGridlines
         stripedRows
         resizableColumns
-        columnResizeMode="expand"
-        reorderableColumns
-        stateStorage="local"
-        stateKey="dispatch-jobs-table-state"
+        columnResizeMode="fit"
+        scrollable
+        scrollHeight="calc(100vh - 420px)"
+        removableSort
+        tableStyle="min-width: 100%"
+        class="p-datatable-sm"
         :pt="dtPtOptions"
       >
-        <template #empty>No jobs found matching your criteria.</template>
-        <template #loading>Loading job data. Please wait...</template>
+        <template #empty>
+          <div class="flex flex-col items-center justify-center p-6">
+            <i class="pi pi-search text-4xl text-surface-400 mb-4"></i>
+            <span class="text-surface-700 dark:text-surface-300">No jobs found matching your criteria.</span>
+          </div>
+        </template>
+        <template #loading>
+          <div class="flex flex-col items-center justify-center p-6">
+            <i class="pi pi-spin pi-spinner text-4xl text-primary mb-4"></i>
+            <span>Loading job data. Please wait...</span>
+          </div>
+        </template>
 
-        <Column expander style="width: 3rem" />
+        <Column expander :exportable="false" style="width: 3rem; flex: 0 0 3rem;" />
         
-        <Column field="id" header="Ticket ID" sortable style="min-width: 8rem">
-          <template #filter="{ filterModel }">
-            <InputText v-model="filterModel.value" type="text" placeholder="Search by ID" class="w-full" v-if="!filterModel.constraints" />
-            <InputText type="text" placeholder="Search by ID" class="w-full" 
-                     :value="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : ''"
-                     @input="e => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = e.target.value : null"
-                     v-else />
+        <Column field="id" header="Ticket ID" sortable style="width: 8rem; min-width: 8rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <InputText v-model="filterModel.value" type="text" placeholder="Search by ID" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
         </Column>
         
-        <Column field="customerName" header="Customer Name" sortable style="min-width: 12rem">
-          <template #filter="{ filterModel }">
-            <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="w-full" v-if="!filterModel.constraints" />
-            <InputText type="text" placeholder="Search by customer" class="w-full" 
-                     :value="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : ''"
-                     @input="e => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = e.target.value : null"
-                     v-else />
+        <Column field="customerName" header="Customer Name" sortable style="width: 12rem; min-width: 12rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
         </Column>
         
-        <Column field="subject" header="Subject" sortable style="min-width: 15rem">
-          <template #filter="{ filterModel }">
-            <InputText v-model="filterModel.value" type="text" placeholder="Search by subject" class="w-full" v-if="!filterModel.constraints" />
-            <InputText type="text" placeholder="Search by subject" class="w-full" 
-                     :value="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : ''"
-                     @input="e => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = e.target.value : null"
-                     v-else />
+        <Column field="subject" header="Subject" sortable style="width: 15rem; min-width: 15rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <InputText v-model="filterModel.value" type="text" placeholder="Search by subject" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
         </Column>
         
-        <Column field="status" header="Status" sortable style="min-width: 8rem">
-          <template #filter="{ filterModel }">
-            <Select v-model="filterModel.value" :options="statusOptions" placeholder="Select status" class="w-full" showClear v-if="!filterModel.constraints" />
-            <Select :options="statusOptions" placeholder="Select status" class="w-full" showClear
-                  :modelValue="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : null"
-                  @update:modelValue="val => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = val : null"
-                  v-else />
+        <Column field="status" header="Status" sortable style="width: 8rem; min-width: 8rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <Select v-model="filterModel.value" :options="statusOptions" placeholder="Select status" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
           <template #body="{ data }">
             <Tag :value="data.status" :severity="getSeverity(data.status)" />
           </template>
         </Column>
         
-        <Column field="billing.billingStatus" header="Billing" sortable style="min-width: 8rem">
-          <template #filter="{ filterModel }">
-            <Select v-model="filterModel.value" :options="billingStatusOptions" placeholder="Billing status" class="w-full" showClear v-if="!filterModel.constraints" />
-            <Select :options="billingStatusOptions" placeholder="Billing status" class="w-full" showClear
-                  :modelValue="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : null"
-                  @update:modelValue="val => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = val : null"
-                  v-else />
+        <Column field="billing.billingStatus" header="Billing" sortable style="width: 8rem; min-width: 8rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <Select v-model="filterModel.value" :options="billingStatusOptions" placeholder="Billing status" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
           <template #body="{ data }">
             <Tag :value="data.billing?.billingStatus" :severity="getBillingSeverity(data.billing?.billingStatus)" />
           </template>
         </Column>
         
-        <Column field="cityState" header="City / State" sortable style="min-width: 10rem">
-          <template #filter="{ filterModel }">
-            <InputText v-model="filterModel.value" type="text" placeholder="Search by location" class="w-full" v-if="!filterModel.constraints" />
-            <InputText type="text" placeholder="Search by location" class="w-full" 
-                     :value="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : ''"
-                     @input="e => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = e.target.value : null"
-                     v-else />
+        <Column field="cityState" header="City / State" sortable style="width: 10rem; min-width: 10rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <InputText v-model="filterModel.value" type="text" placeholder="Search by location" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
         </Column>
         
-        <Column field="serviceDate" header="Service Date" sortable style="min-width: 8rem">
-          <template #filter="{ filterModel }">
-            <DatePicker v-model="filterModel.value" selectionMode="range" dateFormat="mm/dd/yy" placeholder="Select date range" class="w-full" v-if="!filterModel.constraints" />
-            <DatePicker selectionMode="range" dateFormat="mm/dd/yy" placeholder="Select date range" class="w-full"
-                      :modelValue="filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value : null"
-                      @update:modelValue="val => filterModel.constraints && filterModel.constraints[0] ? filterModel.constraints[0].value = val : null"
-                      v-else />
+        <Column field="serviceDate" header="Service Date" sortable style="width: 10rem; min-width: 8rem;">
+          <template #filter="{ filterModel, filterCallback }">
+            <div class="flex flex-col gap-2">
+              <DatePicker v-model="filterModel.value" selectionMode="range" dateFormat="mm/dd/yy" placeholder="Select date range" class="w-full" />
+              <div class="flex justify-between">
+                <Button type="button" icon="pi pi-times" label="Clear" size="small" text @click="() => { filterModel.value = null; filterCallback(); }" />
+                <Button type="button" icon="pi pi-check" label="Apply" size="small" @click="filterCallback()" severity="primary" text />
+              </div>
+            </div>
           </template>
           <template #body="{ data }">
             {{ formatDate(data.serviceDate) }}
           </template>
         </Column>
         
-        <Column header="Actions" style="min-width: 8rem">
+        <Column header="Actions" :exportable="false" style="width: 8rem; min-width: 8rem;">
           <template #body="{ data }">
-            <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm mr-2" tooltip="View Details" @click="viewDetails(data)" />
-            <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm mr-2" tooltip="Edit" />
+            <div class="flex justify-center">
+              <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm mr-1" tooltip="View Details" @click="viewDetails(data)" />
+              <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm mr-1" tooltip="Edit" />
             <Button icon="pi pi-calendar" class="p-button-rounded p-button-text p-button-sm" tooltip="Schedule" />
+            </div>
           </template>
         </Column>
 
         <template #expansion="slotProps">
-          <div class="bg-surface-50 dark:bg-surface-800 p-4 border-round mx-1">
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="bg-surface-50 dark:bg-surface-800 p-3 border-b border-surface-200 dark:border-surface-700">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Job Details Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-info-circle mr-2 text-primary"></i>Job Details
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-info-circle text-primary-500"></i>Job Details
                   </h5>
-                  <div class="flex flex-column gap-2">
+                  <div class="space-y-2">
                     <div>
-                      <span class="text-xs text-color-secondary">Job ID:</span>
-                      <p class="m-0 font-semibold">{{slotProps.data.id}}</p>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Job ID:</span>
+                      <p class="m-0 font-medium">{{slotProps.data.id}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Customer:</span>
-                      <p class="m-0 font-semibold">{{slotProps.data.customerName}}</p>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Customer:</span>
+                      <p class="m-0 font-medium">{{slotProps.data.customerName}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Subject:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Subject:</span>
                       <p class="m-0 line-clamp-2 hover:line-clamp-none">{{slotProps.data.subject}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Status:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Status:</span>
                       <Tag :value="slotProps.data.status" :severity="getSeverity(slotProps.data.status)" />
                     </div>
                   </div>
-                  <div class="flex justify-content-end mt-3">
+                  <div class="mt-3 flex justify-end">
                     <Button icon="pi pi-arrow-right" label="View Details" size="small" @click="viewDetails(slotProps.data)" />
                   </div>
                 </div>
               </div>
 
+              <!-- Schedule Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-calendar mr-2 text-primary"></i>Schedule
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-calendar text-primary-500"></i>Schedule
                   </h5>
-                  <div class="flex flex-column gap-2">
+                  <div class="space-y-2">
                     <div>
-                      <span class="text-xs text-color-secondary">Service Date:</span>
-                      <p class="m-0 font-semibold">{{formatDate(slotProps.data.serviceDate)}}</p>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Service Date:</span>
+                      <p class="m-0 font-medium">{{formatDate(slotProps.data.serviceDate)}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Arrival Window:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Arrival Window:</span>
                       <p class="m-0">{{slotProps.data.arrivalWindow || 'Not specified'}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Location:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Location:</span>
                       <p class="m-0">{{slotProps.data.cityState || 'Unknown'}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Time on Site:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Time on Site:</span>
                       <p class="m-0">{{slotProps.data.timeOnSite || 'N/A'}}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Technician Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-user mr-2 text-primary"></i>Technician
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-user text-primary-500"></i>Technician
                   </h5>
-                  <div class="flex flex-column gap-2">
+                  <div class="space-y-2">
                     <div>
-                      <span class="text-xs text-color-secondary">Assigned To:</span>
-                      <p class="m-0 font-semibold">{{slotProps.data.technicianInfo?.name || 'Unassigned'}}</p>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Assigned To:</span>
+                      <p class="m-0 font-medium">{{slotProps.data.technicianInfo?.name || 'Unassigned'}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Technician Notes:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Technician Notes:</span>
                       <p class="m-0 line-clamp-3 hover:line-clamp-none">{{slotProps.data.technicianInfo?.comments || 'No notes provided'}}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Billing Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-wallet mr-2 text-primary"></i>Billing
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-wallet text-primary-500"></i>Billing
                   </h5>
-                  <div class="flex flex-column gap-2">
+                  <div class="space-y-2">
                     <div>
-                      <span class="text-xs text-color-secondary">Billing Status:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Billing Status:</span>
                       <Tag :value="slotProps.data.billing?.billingStatus || 'Not Billed'" :severity="getBillingSeverity(slotProps.data.billing?.billingStatus)" />
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Amount:</span>
-                      <p class="m-0 font-semibold">{{slotProps.data.billing?.finalBilledAmount || '$0.00'}}</p>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Amount:</span>
+                      <p class="m-0 font-medium">{{slotProps.data.billing?.finalBilledAmount || '$0.00'}}</p>
                     </div>
                     <div>
-                      <span class="text-xs text-color-secondary">Invoice #:</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400 block">Invoice #:</span>
                       <p class="m-0">{{slotProps.data.billing?.invoiceNumber || 'Not invoiced'}}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Notes Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-file-edit mr-2 text-primary"></i>Notes
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-file-edit text-primary-500"></i>Notes
                   </h5>
-                  <p class="m-0 line-clamp-3 hover:line-clamp-none">{{slotProps.data.jobDetails?.dispatchNotes || 'No notes available'}}</p>
+                  <p class="m-0 line-clamp-4 hover:line-clamp-none">{{slotProps.data.jobDetails?.dispatchNotes || 'No notes available'}}</p>
                 </div>
               </div>
 
+              <!-- Scope of Work Card -->
               <div class="col-span-1">
-                <div class="bg-white dark:bg-surface-900 p-3 border rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 h-full">
-                  <h5 class="text-base font-semibold m-0 mb-2 flex items-center">
-                    <i class="pi pi-wrench mr-2 text-primary"></i>Scope of Work
+                <div class="bg-white dark:bg-surface-900 p-3 rounded-lg shadow-sm h-full border border-surface-200 dark:border-surface-700">
+                  <h5 class="text-base font-medium m-0 mb-3 flex items-center gap-2">
+                    <i class="pi pi-wrench text-primary-500"></i>Scope of Work
                   </h5>
-                  <p class="m-0 line-clamp-3 hover:line-clamp-none">
+                  <p class="m-0 line-clamp-4 hover:line-clamp-none">
                     {{slotProps.data.jobDetails?.scopeOfWork || 'No scope of work provided'}}
                   </p>
                 </div>
@@ -796,7 +858,7 @@ const drawerPtOptions = {
           </div>
         </template>
       </DataTable>
-      <div class="px-3 py-2 text-sm text-right text-surface-500 dark:text-surface-400 border-t border-surface-200 dark:border-surface-700">
+      <div class="px-4 py-3 text-sm text-right text-surface-500 dark:text-surface-400 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
         Showing {{ jobsFiltered.length }} records
       </div>
     </div>
@@ -806,7 +868,7 @@ const drawerPtOptions = {
       <template #header>
         <div class="flex items-center gap-2">
           <i class="pi pi-filter text-primary-500 text-xl"></i>
-          <span class="text-xl font-semibold">Focus Areas</span>
+        <span class="text-xl font-semibold">Focus Areas</span>
         </div>
       </template>
       <div class="grid grid-cols-1 gap-3">
@@ -845,9 +907,39 @@ const drawerPtOptions = {
   overflow: hidden;
 }
 
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .hover\:line-clamp-none:hover {
   -webkit-line-clamp: unset;
   line-clamp: unset;
   overflow: visible;
+}
+
+/* DataTable Responsiveness */
+:deep(.p-datatable-wrapper) {
+  overflow-x: auto;
+}
+
+:deep(.p-datatable-table) {
+  min-width: 100%;
+  table-layout: auto;
+}
+
+@media screen and (max-width: 768px) {
+  :deep(.p-datatable .p-datatable-thead > tr > th),
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    padding: 0.5rem;
+  }
+  
+  :deep(.p-datatable .p-column-header-content),
+  :deep(.p-datatable .p-column-title) {
+    font-size: 0.875rem;
+  }
 }
 </style> 

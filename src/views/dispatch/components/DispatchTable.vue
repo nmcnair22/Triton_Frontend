@@ -68,7 +68,7 @@
           />
         </template>
         <template #filter="{ filterModel, filterCallback }">
-          <Dropdown 
+          <Select 
             v-model="filterModel.value" 
             @change="filterCallback()"
             :options="statusOptions"
@@ -131,7 +131,7 @@
           {{ formatDate(data.date) }}
         </template>
         <template #filter="{ filterModel, filterCallback }">
-          <Calendar 
+          <DatePicker 
             v-model="filterModel.value" 
             @date-select="filterCallback()" 
             dateFormat="mm/dd/yy" 
@@ -268,8 +268,8 @@ import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
-import Calendar from 'primevue/calendar';
+import Select from 'primevue/select';
+import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import { FilterMatchMode } from 'primevue/api';
 
