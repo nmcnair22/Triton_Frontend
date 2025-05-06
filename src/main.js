@@ -6,7 +6,7 @@ import axios from 'axios';
 
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
+import Material from '@primeuix/themes/material';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
@@ -44,7 +44,7 @@ const cisYellowPalette = palette('#FFB400');
 const cisGrayPalette = palette('#595959');
 const cisRedPalette = palette('#F60D03');
 
-const MyPreset = definePreset(Aura, {
+const MyPreset = definePreset(Material, {
     colors: {
         'cis-navy': cisNavyPalette,
         'cis-blue': cisBluePalette,
