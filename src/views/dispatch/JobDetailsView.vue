@@ -3,20 +3,12 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { useDispatchStore } from '@/stores/dispatchStore';
-import Tabs from 'primevue/tabs';
-import TabList from 'primevue/tablist';
-import Tab from 'primevue/tab';
-import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
-import Panel from 'primevue/panel';
 import Tag from 'primevue/tag';
 import Drawer from 'primevue/drawer';
-import Card from 'primevue/card';
 import { DispatchService } from '@/service/DispatchService';
-import Fieldset from 'primevue/fieldset';
 import Timeline from 'primevue/timeline';
 import Dialog from 'primevue/dialog';
-import ScrollPanel from 'primevue/scrollpanel';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
 import Toast from 'primevue/toast';
@@ -25,6 +17,10 @@ import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import Select from 'primevue/select';
 import TabView from 'primevue/tabview';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import ColumnGroup from 'primevue/columngroup';
+import Row from 'primevue/row';
 
 // Router
 const route = useRoute();
@@ -90,6 +86,220 @@ const availableModels = [
   { label: 'O1-pro', value: 'o1-pro' }
 ];
 
+// Sample financial records data
+const financialRecords = ref([
+  {
+    header: {
+      id: "94948",
+      visit_id: "2402007",
+      created_at: "2025-05-01 16:03:15",
+      updated_at: "2025-05-01 16:03:17"
+    },
+    financials: {
+      Total_Payable: 0,
+      jobUnitPrice: 2808,
+      Total_Receivable: 2808
+    },
+    details: {
+      id_purchase: "",
+      id_item: "FST LABOR QUOTED",
+      billing_desc: "Flat Rate Labor",
+      jobLineType: "BILLABLE",
+      vendorNumber: "",
+      invoiceNumber: "",
+      invoice_only: false,
+      dispatch_billing_type_id: 2,
+      processed: true,
+      billableRate: 0,
+      submitted_to_fst: false
+    },
+    notes: {
+      postFirst: "Please invoice customer via Coupa for the amount listed in the edit tab using the PO listed. Thanks\r\rPO: 232498\rType of billing: 50 PERCENT BILLING\rAmount: 2808",
+      postLast: "A bill was created under this ticket: 2402007<br/>Total Bill to Customer : $2,808.00<br/>Total Bill to CISSDM  : $0.00\n\n",
+      postFirstDetails: "David Fisher - 03/13/2025 03:58 PM",
+      postLastDetails: "Kayla Gonzalez - 05/01/2025 04:03 PM"
+    }
+  },
+  {
+    header: {
+      id: "94427",
+      visit_id: "2425532",
+      created_at: "",
+      updated_at: "2025-04-28 14:31:42"
+    },
+    financials: {
+      Total_Payable: 85,
+      jobUnitPrice: 0,
+      Total_Receivable: 0
+    },
+    details: {
+      id_purchase: "5b177b2c-7824-f011-9346-7c1e52eba347",
+      id_item: "FST LABOR QUOTED",
+      billing_desc: "Flat Rate Labor",
+      jobLineType: "",
+      vendorNumber: "V0078",
+      invoiceNumber: "16991432",
+      invoice_only: false,
+      dispatch_billing_type_id: 0,
+      processed: true,
+      billableRate: 0,
+      submitted_to_fst: false
+    },
+    notes: {
+      postFirst: "Site Survey\nFW009270_Waldorf_MD\n",
+      postLast: "A bill was created under this ticket: 2425532<br/>Total Bill to Customer : $0.00<br/>Total Bill to CISSDM  : $85.00\n\n",
+      postFirstDetails: "lillian.johnston - 04/21/2025 05:06 AM",
+      postLastDetails: "Kayla Gonzalez - 04/28/2025 02:31 PM"
+    }
+  },
+  {
+    header: {
+      id: "95002",
+      visit_id: "2431848",
+      created_at: "2025-05-02 08:38:16",
+      updated_at: "2025-05-02 08:38:19"
+    },
+    financials: {
+      Total_Payable: 144,
+      jobUnitPrice: 0,
+      Total_Receivable: 0
+    },
+    details: {
+      id_purchase: "70cdef74-6b27-f011-9af4-6045bd79dd9c",
+      id_item: "FST TURNUP",
+      billing_desc: "Turnup 2431848",
+      jobLineType: "",
+      vendorNumber: "V0129",
+      invoiceNumber: "2431848",
+      invoice_only: false,
+      dispatch_billing_type_id: 2,
+      processed: true,
+      billableRate: 0,
+      submitted_to_fst: false
+    },
+    notes: {
+      postFirst: "\rTurn Up #: 2426897\rTime In: 6:30 PM\rTime Out: 11:00 PM\rRTE Hours: 4.50\rRTE Pay: $144.00\r\r",
+      postLast: "A bill was created under this ticket: 2431848<br/>Total Bill to Customer : $0.00<br/>Total Bill to CISSDM  : $144.00\n\n",
+      postFirstDetails: "Rachelle Williams - 05/01/2025 10:45 AM",
+      postLastDetails: "Megan Richardson - 05/02/2025 08:38 AM"
+    }
+  },
+  {
+    header: {
+      id: "95623",
+      visit_id: "2432083",
+      created_at: "",
+      updated_at: "2025-05-06 15:22:04"
+    },
+    financials: {
+      Total_Payable: 150,
+      jobUnitPrice: 160,
+      Total_Receivable: 320
+    },
+    details: {
+      id_purchase: "25e1fe88-c82a-f011-9af4-6045bd79dd9c",
+      id_item: "FST MINIMUM LABOR",
+      billing_desc: "Flat Rate Labor",
+      jobLineType: "BILLABLE",
+      vendorNumber: "V0078",
+      invoiceNumber: "17052464",
+      invoice_only: false,
+      dispatch_billing_type_id: 0,
+      processed: true,
+      billableRate: 0,
+      submitted_to_fst: false
+    },
+    notes: {
+      postFirst: "Client: Flynn\nLocation:\u0000FLN_Wendys FW009270_Waldorf_MD\nTime/Date: 5/2/25 10am local (7am pst)\u0000\n\u0000\nIssue:\u0000KDS PUW, .82 is not working (it's a networked display monitor in the kitchen that shows the orders to the food prep team).\u0000 It stopped working after CIS dispatch for night one migration dispatch. It is not showing connected.\u0000\nNeeded: A tech that can perform basic network tasks. We just need a cable traced and reset. It likely just needs to be properly plugged in. If there is a bigger issue (cable needs to be run for instance) it just needs to be scoped to be addressed at a later time.\u0000\n\u0000\nNOTES: This is to go to the FSPM team for check in out.\u0000\nI've included the client email below for reference.\u0000\u0000\n",
+      postLast: "A bill was created under this ticket: 2432083<br/>Total Bill to Customer : $800.00<br/>Total Bill to CISSDM  : $368.25\n\n",
+      postFirstDetails: "Josh Bosen via Triton - 05/01/2025 02:36 PM",
+      postLastDetails: "Dana Tompkins - 05/06/2025 03:22 PM"
+    }
+  },
+  {
+    header: {
+      id: "95624",
+      visit_id: "2432083",
+      created_at: "",
+      updated_at: "2025-05-06 15:22:04"
+    },
+    financials: {
+      Total_Payable: 218.25,
+      jobUnitPrice: 160,
+      Total_Receivable: 480
+    },
+    details: {
+      id_purchase: "27e1fe88-c82a-f011-9af4-6045bd79dd9c",
+      id_item: "FST LABOR PREMIUM",
+      billing_desc: "Hourly Labor",
+      jobLineType: "BILLABLE",
+      vendorNumber: "V0078",
+      invoiceNumber: "17052464",
+      invoice_only: false,
+      dispatch_billing_type_id: 0,
+      processed: true,
+      billableRate: 0,
+      submitted_to_fst: false
+    },
+    notes: {
+      postFirst: "Client: Flynn\nLocation:\u0000FLN_Wendys FW009270_Waldorf_MD\nTime/Date: 5/2/25 10am local (7am pst)\u0000\n\u0000\nIssue:\u0000KDS PUW, .82 is not working (it's a networked display monitor in the kitchen that shows the orders to the food prep team).\u0000 It stopped working after CIS dispatch for night one migration dispatch. It is not showing connected.\u0000\nNeeded: A tech that can perform basic network tasks. We just need a cable traced and reset. It likely just needs to be properly plugged in. If there is a bigger issue (cable needs to be run for instance) it just needs to be scoped to be addressed at a later time.\u0000\n\u0000\nNOTES: This is to go to the FSPM team for check in out.\u0000\nI've included the client email below for reference.\u0000\u0000\n",
+      postLast: "A bill was created under this ticket: 2432083<br/>Total Bill to Customer : $800.00<br/>Total Bill to CISSDM  : $368.25\n\n",
+      postFirstDetails: "Josh Bosen via Triton - 05/01/2025 02:36 PM",
+      postLastDetails: "Dana Tompkins - 05/06/2025 03:22 PM"
+    }
+  }
+]);
+
+// Selected financial record for displaying notes
+const selectedFinancialRecord = ref(financialRecords.value[0]);
+
+// Calculate total receivable amount
+function calculateTotalReceivable() {
+  return financialRecords.value.reduce((sum, item) => sum + Number(item.financials.Total_Receivable), 0);
+}
+
+// Calculate total payable amount
+function calculateTotalPayable() {
+  return financialRecords.value.reduce((sum, item) => sum + Number(item.financials.Total_Payable), 0);
+}
+
+// Calculate profit (receivable - payable)
+function calculateProfit() {
+  return calculateTotalReceivable() - calculateTotalPayable();
+}
+
+// Calculate margin percentage
+function calculateMargin() {
+  const totalReceivable = calculateTotalReceivable();
+  if (totalReceivable === 0) return 0;
+  return Math.round((calculateProfit() / totalReceivable) * 100);
+}
+
+// Get severity for job line type
+function getLineTypeSeverity(type) {
+  const typeLower = (type || '').toLowerCase();
+  if (typeLower.includes('billable')) return 'success';
+  if (typeLower.includes('non-billable')) return 'warning';
+  return 'info';
+}
+
+// Get CSS class for profit column based on value
+function getItemProfitClass(item) {
+  const profit = item.financials.Total_Receivable - item.financials.Total_Payable;
+  if (profit > 0) return 'text-green-600';
+  if (profit < 0) return 'text-red-600';
+  return 'text-gray-600';
+}
+
+// Format currency values
+function formatCurrency(value) {
+  return value > 0 
+    ? '$' + value.toFixed(2)
+    : value < 0 
+      ? '-$' + Math.abs(value).toFixed(2)
+      : '$0.00';
+}
+
 // Also watch for tab index changes for debugging
 watch(activeTabIndex, (newValue) => {
   console.log('Tab index changed to:', newValue);
@@ -109,6 +319,54 @@ tryLoadFromStore();
 watch(() => dispatchStore.dispatchRows.length, () => {
   tryLoadFromStore();
 });
+
+// Timeline events for job report view
+const timelineEvents = computed(() => {
+  if (!jobReport.value || !jobReport.value.success) {
+    return [];
+  }
+  
+  // Try to extract visits from job report using the correct path
+  // The visits are in jobReport.value.visits or jobReport.value.analysis_data.job.visits
+  const visits = jobReport.value.visits || 
+                (jobReport.value.analysis_data?.job?.visits || []);
+  
+  if (!visits || visits.length === 0) {
+    console.warn('No timeline visit data available in job report');
+    return [];
+  }
+  
+  // Sort visits by date
+  const sortedVisits = [...visits].sort((a, b) => {
+    if (!a.visit_date || !b.visit_date) return 0;
+    
+    // Handle different date formats (some have T, some don't)
+    const dateA = new Date(a.visit_date.replace(' ', 'T'));
+    const dateB = new Date(b.visit_date.replace(' ', 'T'));
+    
+    return dateA - dateB;
+  });
+  
+  console.log('Sorted timeline visits:', sortedVisits);
+  
+  return sortedVisits.map(visit => ({
+    ...visit,
+    phase_name: visit.phase_name || 'Unknown Phase',
+    status: visit.status || 'unknown',
+    color: getStatusColor(visit.status),
+    icon: getStatusIcon(visit.status),
+    work_summary: visit.work_summary || visit.work_performed?.summary || 'No work summary available',
+  }));
+});
+
+// Navigation and UI functions
+function goBack() {
+  router.back();
+}
+
+function toggleNotesDrawer() {
+  displayNotesDrawer.value = !displayNotesDrawer.value;
+}
 
 // Run initial checks on component mount
 onMounted(() => {
@@ -444,20 +702,6 @@ const billingSeverity = computed(() => {
   return 'danger';
 });
 
-// Simple back navigation
-function goBack() {
-  if (router.options.history.state.back) {
-    router.back();
-  } else {
-    router.push({ name: 'dispatch-jobs' });
-  }
-}
-
-// Toggle notes drawer
-function toggleNotesDrawer() {
-  displayNotesDrawer.value = !displayNotesDrawer.value;
-}
-
 // Fetch linked tickets
 async function fetchLinkedTickets() {
   if (!ticketId) return;
@@ -740,776 +984,654 @@ function navigateToTicket(ticket) {
     alert(`Viewing ${recordType} tickets is not yet supported. ID: ${ticket.record_id}`);
   }
 }
-
-// Passthrough (pt) options for the PrimeVue components
-const tabsPtOptions = {
-  root: { class: 'mb-6' },
-  navContainer: { 
-    class: 'border-b border-surface-200 dark:border-surface-700 mb-1'
-  },
-  nav: { class: 'flex' }
-};
-
-const tabListPtOptions = {
-  root: { class: 'flex flex-nowrap overflow-x-auto' }
-};
-
-const tabPtOptions = {
-  root: { 
-    class: 'px-4 py-2 font-medium text-sm rounded-t-lg transition-colors duration-200 focus:outline-none focus:ring-0 border-b-2'
-  },
-  selected: {
-    class: 'text-primary-600 dark:text-primary-400 border-primary-500 dark:border-primary-400'
-  },
-  notSelected: {
-    class: 'text-surface-700 dark:text-surface-300 border-transparent hover:text-surface-900 dark:hover:text-surface-100 hover:border-surface-300 dark:hover:border-surface-600'
-  }
-};
-
-const tabPanelsPtOptions = {
-  root: { class: 'mt-3' }
-};
-
-const tabPanelPtOptions = {
-  root: { class: 'p-0' }
-};
-
-const panelPtOptions = {
-  root: { 
-    class: 'mb-4 border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden shadow-sm' 
-  },
-  header: { 
-    class: 'bg-surface-50 dark:bg-surface-800 px-4 py-3 border-b border-surface-200 dark:border-surface-700 flex items-center' 
-  },
-  title: { 
-    class: 'text-base font-medium text-surface-800 dark:text-surface-100' 
-  },
-  content: { 
-    class: 'p-4 bg-white dark:bg-surface-900' 
-  },
-  icons: { 
-    class: 'ml-auto' 
-  },
-  togglericon: {
-    class: 'text-surface-600 dark:text-surface-400'
-  }
-};
-
-const drawerPtOptions = {
-  root: { 
-    class: 'bg-white dark:bg-surface-900 shadow-lg',
-    style: 'max-width: 40rem; width: 100%'
-  },
-  header: { 
-    class: 'px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800' 
-  },
-  title: {
-    class: 'text-xl font-bold text-surface-800 dark:text-white'
-  },
-  content: { class: 'p-4 overflow-y-auto' },
-  footer: { class: 'p-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800' },
-  closeButton: {
-    class: 'p-2 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors'
-  },
-  closeButtonIcon: {
-    class: 'text-surface-600 dark:text-surface-400'
-  },
-  mask: {
-    class: 'bg-black/40'
-  },
-  transition: {
-    enterFromClass: 'translate-x-full',
-    enterActiveClass: 'transition-transform duration-300 ease-out',
-    enterToClass: 'translate-x-0',
-    leaveFromClass: 'translate-x-0',
-    leaveActiveClass: 'transition-transform duration-300 ease-in',
-    leaveToClass: 'translate-x-full'
-  }
-};
-
-const buttonPtOptions = {
-  root: { 
-    class: 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400'
-  },
-  outlined: {
-    class: 'border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800'
-  },
-  text: {
-    class: 'hover:bg-surface-100 dark:hover:bg-surface-800'
-  },
-  primary: {
-    class: 'bg-primary-500 hover:bg-primary-600 text-white'
-  }
-};
-
-const tagPtOptions = {
-  root: {
-    class: 'inline-flex items-center px-2 py-1 text-xs font-medium rounded-md'
-  },
-  success: {
-    class: 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300'
-  },
-  info: {
-    class: 'bg-info-100 text-info-800 dark:bg-info-900 dark:text-info-300'
-  },
-  warning: {
-    class: 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-300'
-  },
-  danger: {
-    class: 'bg-danger-100 text-danger-800 dark:bg-danger-900 dark:text-danger-300'
-  }
-};
-
-const fieldsetPtOptions = {
-  root: {
-    class: 'border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden shadow-sm'
-  },
-  legend: {
-    class: 'px-4 py-2 bg-surface-50 dark:bg-surface-800 text-base font-medium text-surface-800 dark:text-surface-100'
-  },
-  toggleable: {
-    class: 'border-b border-surface-200 dark:border-surface-700'
-  }
-};
-
-// Timeline events for job report view
-const timelineEvents = computed(() => {
-  if (!jobReport.value || !jobReport.value.success) {
-    return [];
-  }
-  
-  // Try to extract visits from job report using the correct path
-  // The visits are in jobReport.value.visits or jobReport.value.analysis_data.job.visits
-  const visits = jobReport.value.visits || 
-                (jobReport.value.analysis_data?.job?.visits || []);
-  
-  if (!visits || visits.length === 0) {
-    console.warn('No timeline visit data available in job report');
-    return [];
-  }
-  
-  // Sort visits by date
-  const sortedVisits = [...visits].sort((a, b) => {
-    if (!a.visit_date || !b.visit_date) return 0;
-    
-    // Handle different date formats (some have T, some don't)
-    const dateA = new Date(a.visit_date.replace(' ', 'T'));
-    const dateB = new Date(b.visit_date.replace(' ', 'T'));
-    
-    return dateA - dateB;
-  });
-  
-  console.log('Sorted timeline visits:', sortedVisits);
-  
-  return sortedVisits.map(visit => ({
-    ...visit,
-    phase_name: visit.phase_name || 'Unknown Phase',
-    status: visit.status || 'unknown',
-    color: getStatusColor(visit.status),
-    icon: getStatusIcon(visit.status),
-    work_summary: visit.work_summary || visit.work_performed?.summary || 'No work summary available',
-  }));
-});
 </script>
 
 <template>
-  <div class="p-2">
+  <div class="p-4">
     <!-- Loading state -->
-    <div v-if="!dispatchData" class="flex align-items-center justify-content-center h-64">
-      <span class="pi pi-spin pi-spinner text-4xl text-primary" />
+    <div v-if="!dispatchData" class="flex items-center justify-center h-64">
+      <span class="pi pi-spin pi-spinner text-4xl text-primary"></span>
     </div>
     
     <div v-else class="dispatch-details">
-      <!-- Header with navigation and ticket number -->
-      <div class="mb-4">
+      <!-- Header with ticket information and status -->
+      <div class="flex flex-col gap-2 mb-6">
         <div class="flex items-center justify-between">
-          <div class="flex items-center">
+          <div class="flex items-center gap-3">
             <Button 
               icon="pi pi-arrow-left" 
               @click="goBack" 
               text 
-              :pt="{
-                root: { class: 'hover:bg-gray-100 mr-2 p-2 rounded-full' }
-              }" 
+              class="hover:bg-gray-100 mr-2 p-2 rounded-full"
             />
-            <h1 class="text-xl font-semibold m-0">Dispatch Ticket #{{ ticketId }}</h1>
+            <h1 class="text-2xl font-bold m-0">{{ dispatchData.customerName }}_{{ dispatchData.siteNumber }}_{{ dispatchData.cityState }}_P{{ dispatchData.schedule?.visitNumber || '1' }}</h1>
           </div>
           
-          <!-- Action Buttons -->
           <div class="flex items-center gap-2">
-            <Button 
-              v-if="!hasBeenAnalyzed" 
-              icon="pi pi-brain" 
-              label="Run AI Analysis" 
-              severity="info"
-              :loading="isRunningAnalysis"
-              :disabled="isRunningAnalysis" 
-              @click="runAnalysis(false)"
-              size="small"
-            />
-            <Button 
-              v-else 
-              icon="pi pi-file-pdf" 
-              label="Show Report" 
-              @click="toggleJobReportDialog" 
-              :loading="isLoadingJobReport"
-              :disabled="isLoadingJobReport"
-              severity="info"
-              size="small"
-            />
-            <Button 
-              v-if="hasBeenAnalyzed" 
-              icon="pi pi-refresh" 
-              @click="runAnalysis(true)"
-              :loading="isRunningAnalysis"
-              :disabled="isRunningAnalysis" 
-              severity="secondary"
-              text
-              size="small"
-            />
+            <Tag value="Confirmed" severity="success" class="px-3 py-1" />
+            <Tag v-if="dispatchData.jobLineType" :value="dispatchData.jobLineType" severity="info" class="px-3 py-1" />
           </div>
         </div>
-
-        <!-- Status indicators -->
-        <div class="flex flex-wrap py-2 gap-3 mt-2">
-          <div class="flex items-center">
-            <span class="bg-surface-200 text-surface-700 text-xs font-semibold px-2 py-1 rounded-l">Status</span>
-            <Tag 
-              :value="dispatchData.status || 'N/A'" 
-              severity="info"
-              :pt="{
-                root: { class: 'text-xs px-2 py-1 rounded-l-none' }
-              }"
-            />
-          </div>
-          
-          <div class="flex items-center">
-            <span class="bg-surface-200 text-surface-700 text-xs font-semibold px-2 py-1 rounded-l">Created</span>
-            <span class="bg-surface-100 text-surface-800 text-xs px-2 py-1 rounded-r">{{ formatShortDate(dispatchData.createdTimestamp) || dispatchData.createdDate || 'N/A' }}</span>
-          </div>
-          
-          <div class="flex items-center">
-            <span class="bg-surface-200 text-surface-700 text-xs font-semibold px-2 py-1 rounded-l">Service Date</span>
-            <span class="bg-surface-100 text-surface-800 text-xs px-2 py-1 rounded-r">{{ dispatchData.serviceDate || 'N/A' }}</span>
-          </div>
-          
-          <div class="flex items-center">
-            <span class="bg-surface-200 text-surface-700 text-xs font-semibold px-2 py-1 rounded-l">Billing</span>
-            <Tag 
-              :value="dispatchData.billing?.billingStatus || 'Not Billed'" 
-              :severity="billingSeverity"
-              :pt="{
-                root: { class: 'text-xs px-2 py-1 rounded-l-none' }
-              }"
-            />
-          </div>
-          
-          <div v-if="hasBeenAnalyzed" class="flex items-center ml-auto">
-            <Tag 
-              severity="success" 
-              icon="pi pi-check-circle"
-              :pt="{
-                root: { class: 'text-xs px-2 py-1' }
-              }"
-            >
-              Job Analyzed
-            </Tag>
-          </div>
+        
+        <div class="text-gray-600">
+          Ticket ID: {{ ticketId }} | Visit ID: {{ dispatchData.schedule?.visitRecordId || 'N/A' }}
         </div>
       </div>
 
-      <!-- Tabbed interface -->
-      <Tabs 
-        :defaultIndex="0" 
-        :pt="{
-          root: { class: 'mb-4' },
-          navContainer: { class: 'border-b border-surface-200 dark:border-surface-700 bg-surface-50' },
-          nav: { class: 'flex px-2' }
-        }"
-      >
-        <TabList 
-          :pt="{
-            root: { class: 'flex flex-nowrap overflow-x-auto' }
-          }"
-        >
-          <Tab 
-            value="0" 
-            :pt="{
-              root: { class: 'px-3 py-2 font-medium text-sm transition-colors duration-200 border-b-2 focus:outline-none' },
-              selected: { class: 'text-primary-600 border-primary-500' },
-              notSelected: { class: 'text-surface-600 border-transparent hover:text-surface-900 hover:border-surface-300' }
-            }"
-          >
-            <i class="pi pi-info-circle mr-2"></i>
-            Job Details
-          </Tab>
-          <Tab 
-            value="1" 
-            :pt="{
-              root: { class: 'px-3 py-2 font-medium text-sm transition-colors duration-200 border-b-2 focus:outline-none' },
-              selected: { class: 'text-primary-600 border-primary-500' },
-              notSelected: { class: 'text-surface-600 border-transparent hover:text-surface-900 hover:border-surface-300' }
-            }"
-          >
-            <i class="pi pi-dollar mr-2"></i>
-            Billing
-          </Tab>
-          <Tab 
-            value="2" 
-            :pt="{
-              root: { class: 'px-3 py-2 font-medium text-sm transition-colors duration-200 border-b-2 focus:outline-none' },
-              selected: { class: 'text-primary-600 border-primary-500' },
-              notSelected: { class: 'text-surface-600 border-transparent hover:text-surface-900 hover:border-surface-300' }
-            }"
-          >
-            <i class="pi pi-file-edit mr-2"></i>
-            Notes & Scope
-          </Tab>
-          <Tab 
-            v-if="hasBeenAnalyzed" 
-            value="3" 
-            :pt="{
-              root: { class: 'px-3 py-2 font-medium text-sm transition-colors duration-200 border-b-2 focus:outline-none' },
-              selected: { class: 'text-primary-600 border-primary-500' },
-              notSelected: { class: 'text-surface-600 border-transparent hover:text-surface-900 hover:border-surface-300' }
-            }"
-          >
-            <i class="pi pi-chart-line mr-2"></i>
-            Visit Summary
-          </Tab>
-        </TabList>
-        <TabPanels 
-          :pt="{
-            root: { class: 'mt-4' }
-          }"
-        >
-          <!-- Job Details Tab -->
-          <TabPanel value="0" :pt="{ root: { class: 'p-0' } }">
-            <!-- Job Information Section -->
-            <div class="mb-4">
-              <!-- Job Information Panel -->
-              <Panel 
-                header="Job Information" 
-                class="card"
-                :pt="{
-                  root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden mb-4' },
-                  header: { class: 'bg-surface-50 p-3 border-b border-surface-200 flex items-center' },
-                  title: { class: 'font-medium text-lg text-surface-800' },
-                  content: { class: 'p-4 bg-white' },
-                  icons: { class: 'ml-auto' }
-                }"
-              >
-                <template #icons>
-                  <Button 
-                    label="Close-out Notes" 
-                    icon="pi pi-file-edit" 
-                    outlined
-                    @click="toggleNotesDrawer" 
-                    size="small"
-                    class="py-1 px-2"
-                  />
-                </template>
-                
-                <!-- First row: Customer, Project -->
-                <div class="flex flex-col md:flex-row gap-4">
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="customer">Customer</label>
-                    <div id="customer" class="p-inputtext w-full">{{ dispatchData.customerName || 'N/A' }}</div>
+      <!-- Tab navigation -->
+      <TabView>
+        <!-- Overview Tab -->
+        <TabPanel header="Overview">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Job Information Panel -->
+            <div class="bg-white rounded-lg shadow border border-gray-200">
+              <div class="p-4 border-b border-gray-200 flex items-center">
+                <i class="pi pi-briefcase mr-2 text-blue-600"></i>
+                <h2 class="text-xl font-semibold">Job Information</h2>
+              </div>
+              
+              <div class="p-4">
+                <div class="grid grid-cols-2 gap-6">
+                  <div>
+                    <div class="text-gray-500 mb-1">Customer</div>
+                    <div class="font-medium">{{ dispatchData.customerName || 'N/A' }}</div>
                   </div>
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="project">Project</label>
-                    <div id="project" class="p-inputtext w-full">{{ dispatchData.jobDetails?.projectName || 'N/A' }}</div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Site Number</div>
+                    <div class="font-medium">{{ dispatchData.siteNumber || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Service Date</div>
+                    <div class="font-medium">{{ dispatchData.serviceDate || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Time Zone</div>
+                    <div class="font-medium">{{ dispatchData.timeZone || 'America/New_York' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Scope of Work</div>
+                    <div class="font-medium">{{ dispatchData.scope || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Project</div>
+                    <div class="font-medium">{{ dispatchData.jobDetails?.projectName || dispatchData.project || 'N/A' }}</div>
                   </div>
                 </div>
-                
-                <!-- Second row: Subject, Item ID -->
-                <div class="flex flex-col md:flex-row gap-4 mt-4">
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="subject">Subject</label>
-                    <div id="subject" class="p-inputtext w-full">{{ dispatchData.subject || 'N/A' }}</div>
-                  </div>
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="itemId">Item ID</label>
-                    <div id="itemId" class="p-inputtext w-full">{{ dispatchData.itemId || 'N/A' }}</div>
-                  </div>
-                </div>
-                
-                <!-- Third row: Service Date, Job Line Type -->
-                <div class="flex flex-col md:flex-row gap-4 mt-4">
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="serviceDate">Service Date</label>
-                    <div id="serviceDate" class="p-inputtext w-full">{{ dispatchData.serviceDate || 'N/A' }}</div>
-                  </div>
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="jobLineType">Job Line Type</label>
-                    <div id="jobLineType" class="p-inputtext w-full">{{ dispatchData.jobLineType || 'N/A' }}</div>
-                  </div>
-                </div>
-                
-                <!-- Fourth row: Failure Code, Status -->
-                <div class="flex flex-col md:flex-row gap-4 mt-4">
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="failureCode">Failure Code</label>
-                    <div id="failureCode" class="p-inputtext w-full">{{ dispatchData.failureCode || 'N/A' }}</div>
-                  </div>
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="status">Status</label>
-                    <div id="status" class="w-full">
-                      <Tag 
-                        :value="dispatchData.status || 'N/A'" 
-                        severity="info"
-                        :pt="{
-                          root: { class: 'text-xs px-2 py-1' }
-                        }"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Fifth row: Billing Status (optional) -->
-                <div class="flex flex-col gap-4 mt-4">
-                  <div class="flex flex-wrap gap-2 w-full">
-                    <label class="text-xs font-semibold text-surface-600" for="billingStatus">Billing Status</label>
-                    <div id="billingStatus" class="w-full">
-                      <Tag 
-                        :value="dispatchData.billing?.billingStatus || 'Not Billed'" 
-                        :severity="billingSeverity"
-                        :pt="{
-                          root: { class: 'text-xs px-2 py-1' }
-                        }"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </Panel>
+              </div>
             </div>
             
-            <!-- Location Section -->
-            <Panel 
-              header="Location" 
-              class="card mb-4"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-4 bg-white' }
-              }"
-            >
-              <!-- First row: Site #, Address -->
-              <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="siteNumber">Site #</label>
-                  <div id="siteNumber" class="p-inputtext w-full">{{ dispatchData.siteNumber || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="address">Address</label>
-                  <div id="address" class="p-inputtext w-full">{{ dispatchData.address || 'N/A' }}</div>
-                </div>
+            <!-- Location Information Panel -->
+            <div class="bg-white rounded-lg shadow border border-gray-200">
+              <div class="p-4 border-b border-gray-200 flex items-center">
+                <i class="pi pi-map-marker mr-2 text-red-600"></i>
+                <h2 class="text-xl font-semibold">Location Information</h2>
               </div>
               
-              <!-- Second row: Zip Code, City/State -->
-              <div class="flex flex-col md:flex-row gap-4 mt-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="zipCode">Zip Code</label>
-                  <div id="zipCode" class="p-inputtext w-full">{{ dispatchData.zipCode || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="cityState">City/State</label>
-                  <div id="cityState" class="p-inputtext w-full">{{ dispatchData.cityState || 'N/A' }}</div>
+              <div class="p-4">
+                <div class="grid grid-cols-2 gap-6">
+                  <div class="col-span-2">
+                    <div class="text-gray-500 mb-1">Address</div>
+                    <div class="font-medium">{{ dispatchData.address || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">City/State</div>
+                    <div class="font-medium">{{ dispatchData.cityState || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Zip Code</div>
+                    <div class="font-medium">{{ dispatchData.zipCode || 'N/A' }}</div>
+                  </div>
+                  
+                  <div class="col-span-2">
+                    <div class="text-gray-500 mb-1">Contact</div>
+                    <div class="font-medium">{{ dispatchData.contactName || dispatchData.contactPhone || 'N/A' }}</div>
+                  </div>
                 </div>
               </div>
-            </Panel>
+            </div>
             
-            <!-- Visit Record Section -->
-            <Panel 
-              header="Visit Record" 
-              class="card mb-4"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-4 bg-white' }
-              }"
-            >
-              <!-- First row: Visit ID, Check-out Time -->
-              <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="visitId">Visit ID</label>
-                  <div id="visitId" class="p-inputtext w-full">{{ dispatchData.schedule?.visitRecordId || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="checkoutTime">Check-out Time</label>
-                  <div id="checkoutTime" class="p-inputtext w-full">{{ dispatchData.schedule?.checkOutTime || 'N/A' }}</div>
-                </div>
+            <!-- Timing Information Panel -->
+            <div class="bg-white rounded-lg shadow border border-gray-200">
+              <div class="p-4 border-b border-gray-200 flex items-center">
+                <i class="pi pi-clock mr-2 text-purple-600"></i>
+                <h2 class="text-xl font-semibold">Timing Information</h2>
               </div>
               
-              <!-- Second row: Check-in Time, Status -->
-              <div class="flex flex-col md:flex-row gap-4 mt-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="checkinTime">Check-in Time</label>
-                  <div id="checkinTime" class="p-inputtext w-full">{{ dispatchData.schedule?.checkInTime || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="visitStatus">Status</label>
-                  <div id="visitStatus" class="w-full">
-                    <Tag 
-                      :value="dispatchData.schedule?.status || 'N/A'" 
-                      severity="info"
-                      :pt="{
-                        root: { class: 'text-xs px-2 py-1' }
-                      }"
-                    />
+              <div class="p-4">
+                <div class="grid grid-cols-2 gap-6">
+                  <div>
+                    <div class="text-gray-500 mb-1">Check-in Time</div>
+                    <div class="font-medium">{{ dispatchData.schedule?.checkInTime || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Check-out Time</div>
+                    <div class="font-medium">{{ dispatchData.schedule?.checkOutTime || 'N/A' }}</div>
+                  </div>
+                  
+                  <div class="col-span-2">
+                    <div class="text-gray-500 mb-1">Duration</div>
+                    <div class="font-medium">{{ dispatchData.schedule?.duration || 'N/A' }}</div>
                   </div>
                 </div>
               </div>
-              
-              <!-- Third row: Duration, Visit Number -->
-              <div class="flex flex-col md:flex-row gap-4 mt-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="duration">Duration</label>
-                  <div id="duration" class="p-inputtext w-full">{{ dispatchData.schedule?.duration || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="visitNumber">Visit Number</label>
-                  <div id="visitNumber" class="p-inputtext w-full">{{ dispatchData.schedule?.visitNumber || 'N/A' }}</div>
-                </div>
-              </div>
-            </Panel>
+            </div>
             
-            <!-- Technician Section -->
-            <Panel 
-              header="Technician Information" 
-              class="card mb-4"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-4 bg-white' }
-              }"
+            <!-- Technician Information Panel -->
+            <div class="bg-white rounded-lg shadow border border-gray-200">
+              <div class="p-4 border-b border-gray-200 flex items-center">
+                <i class="pi pi-user mr-2 text-green-600"></i>
+                <h2 class="text-xl font-semibold">Technician Information</h2>
+              </div>
+              
+              <div class="p-4">
+                <div class="grid grid-cols-2 gap-6">
+                  <div class="col-span-2">
+                    <div class="text-gray-500 mb-1">Technician Name</div>
+                    <div class="font-medium">{{ dispatchData.technicianName || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Grade/Review</div>
+                    <div class="font-medium flex items-center">
+                      <span class="text-blue-600 mr-1">10</span>
+                      <span class="text-yellow-500">/10</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Vendor</div>
+                    <div class="font-medium">{{ dispatchData.vendor || 'N/A' }}</div>
+                  </div>
+                  
+                  <div class="col-span-2">
+                    <div class="text-gray-500 mb-1">Comments</div>
+                    <div class="font-medium">{{ dispatchData.technicianComments || 'N/A' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabPanel>
+        
+        <!-- Details Tab -->
+        <TabPanel header="Details">
+          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <h2 class="text-xl font-semibold mb-4">Detailed Information</h2>
+            
+            <div v-if="hasBeenAnalyzed" class="mb-6">
+              <Button 
+                icon="pi pi-file-pdf" 
+                label="Show Report" 
+                @click="toggleJobReportDialog" 
+                :loading="isLoadingJobReport"
+                severity="info"
+                class="mr-2"
+              />
+              <Button 
+                icon="pi pi-refresh" 
+                @click="runAnalysis(true)"
+                :loading="isRunningAnalysis"
+                severity="secondary"
+                text
+              />
+            </div>
+            
+            <div v-else class="mb-6">
+              <Button 
+                icon="pi pi-brain" 
+                label="Run AI Analysis" 
+                severity="info"
+                :loading="isRunningAnalysis"
+                @click="runAnalysis(false)"
+              />
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Additional details sections can be added here -->
+              <div>
+                <div class="text-gray-500 mb-1">Subject</div>
+                <div class="font-medium">{{ dispatchData.subject || 'N/A' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Item ID</div>
+                <div class="font-medium">{{ dispatchData.itemId || 'N/A' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Failure Code</div>
+                <div class="font-medium">{{ dispatchData.failureCode || 'N/A' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Status</div>
+                <div class="font-medium">
+                  <Tag 
+                    :value="dispatchData.status || 'N/A'" 
+                    severity="info"
+                    class="text-xs px-2 py-1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabPanel>
+        
+        <!-- Notes Tab -->
+        <TabPanel header="Notes">
+          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold">Notes & Scope</h2>
+              <Button 
+                label="Edit Notes" 
+                icon="pi pi-pencil" 
+                outlined
+                @click="toggleNotesDrawer" 
+                size="small"
+                class="py-1 px-2"
+              />
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div>
+                <div class="text-gray-500 mb-1">Notes</div>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.notes || 'No notes available' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Scope</div>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.scope || 'No scope information available' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Additional Notes</div>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.additionalNotes || 'No additional notes available' }}</div>
+              </div>
+              
+              <div>
+                <div class="text-gray-500 mb-1">Service Details</div>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.serviceDetails || 'No service details available' }}</div>
+              </div>
+            </div>
+          </div>
+        </TabPanel>
+        
+        <!-- Financial Tab -->
+        <TabPanel header="Financial">
+          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <i class="pi pi-dollar-sign mr-2 text-green-600"></i>
+                <h2 class="text-xl font-semibold">Financial Information</h2>
+              </div>
+            </div>
+
+            <!-- Financial Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <div class="text-sm text-blue-700 mb-1">Total Receivable</div>
+                <div class="text-2xl font-bold text-blue-800">${{ calculateTotalReceivable().toFixed(2) }}</div>
+              </div>
+              
+              <div class="bg-red-50 rounded-lg p-4 border border-red-100">
+                <div class="text-sm text-red-700 mb-1">Total Payable</div>
+                <div class="text-2xl font-bold text-red-800">${{ calculateTotalPayable().toFixed(2) }}</div>
+              </div>
+              
+              <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                <div class="text-sm text-green-700 mb-1">Profit</div>
+                <div class="text-2xl font-bold text-green-800">${{ calculateProfit().toFixed(2) }}</div>
+              </div>
+              
+              <div class="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                <div class="text-sm text-purple-700 mb-1">Margin</div>
+                <div class="text-2xl font-bold text-purple-800">{{ calculateMargin() }}%</div>
+              </div>
+            </div>
+
+            <!-- Line Items DataTable -->
+            <DataTable 
+              :value="financialRecords" 
+              stripedRows 
+              class="p-datatable-sm"
+              showGridlines
+              responsiveLayout="scroll"
             >
-              <!-- First row: Name, Department -->
-              <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="techName">Name</label>
-                  <div id="techName" class="p-inputtext w-full">{{ dispatchData.technicianName || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="department">Department</label>
-                  <div id="department" class="p-inputtext w-full">{{ dispatchData.department || 'N/A' }}</div>
-                </div>
+              <Column field="details.id_item" header="Item"></Column>
+              <Column field="details.billing_desc" header="Description"></Column>
+              
+              <Column field="details.jobLineType" header="Type">
+                <template #body="slotProps">
+                  <Tag 
+                    v-if="slotProps.data.details.jobLineType" 
+                    :value="slotProps.data.details.jobLineType" 
+                    :severity="getLineTypeSeverity(slotProps.data.details.jobLineType)" 
+                  />
+                  <span v-else class="text-gray-500">-</span>
+                </template>
+              </Column>
+              
+              <Column field="details.invoiceNumber" header="Invoice">
+                <template #body="slotProps">
+                  {{ slotProps.data.details.invoiceNumber || '-' }}
+                </template>
+              </Column>
+              
+              <Column field="details.vendorNumber" header="Vendor">
+                <template #body="slotProps">
+                  {{ slotProps.data.details.vendorNumber || '-' }}
+                </template>
+              </Column>
+              
+              <Column field="financials.Total_Receivable" header="Receivable" style="min-width: 120px">
+                <template #body="slotProps">
+                  <div class="text-right">
+                    ${{ slotProps.data.financials.Total_Receivable.toFixed(2) }}
+                  </div>
+                </template>
+              </Column>
+              
+              <Column field="financials.Total_Payable" header="Payable" style="min-width: 120px">
+                <template #body="slotProps">
+                  <div class="text-right">
+                    ${{ slotProps.data.financials.Total_Payable.toFixed(2) }}
+                  </div>
+                </template>
+              </Column>
+              
+              <Column header="Profit" style="min-width: 120px">
+                <template #body="slotProps">
+                  <div class="text-right">
+                    <span :class="getItemProfitClass(slotProps.data)">
+                      ${{ (slotProps.data.financials.Total_Receivable - slotProps.data.financials.Total_Payable).toFixed(2) }}
+                    </span>
+                  </div>
+                </template>
+              </Column>
+
+              <ColumnGroup type="footer">
+                <Row>
+                  <Column footer="Totals:" :colspan="5" footerStyle="text-align:right" />
+                  <Column :footer="formatCurrency(calculateTotalReceivable())" footerStyle="text-align:right; font-weight: 600;" />
+                  <Column :footer="formatCurrency(calculateTotalPayable())" footerStyle="text-align:right; font-weight: 600;" />
+                  <Column :footer="formatCurrency(calculateProfit())" :footerStyle="'text-align:right; font-weight: 600; color: ' + (calculateProfit() >= 0 ? 'var(--green-600)' : 'var(--red-600)')"/>
+                </Row>
+              </ColumnGroup>
+            </DataTable>
+            
+            <!-- Notes Section -->
+            <div v-if="selectedFinancialRecord" class="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h3 class="text-lg font-semibold mb-2">Notes</h3>
+              <div class="mb-4">
+                <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postFirstDetails }}</div>
+                <div class="text-sm mt-1">{{ selectedFinancialRecord.notes.postFirst }}</div>
               </div>
               
-              <!-- Second row: Employee ID, Certification -->
-              <div class="flex flex-col md:flex-row gap-4 mt-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="employeeId">Employee ID</label>
-                  <div id="employeeId" class="p-inputtext w-full">{{ dispatchData.technicianId || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="certification">Certification</label>
-                  <div id="certification" class="p-inputtext w-full">{{ dispatchData.certification || 'N/A' }}</div>
-                </div>
+              <div v-if="selectedFinancialRecord.notes.postLast">
+                <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postLastDetails }}</div>
+                <div class="text-sm mt-1" v-html="selectedFinancialRecord.notes.postLast"></div>
+              </div>
+            </div>
+          </div>
+        </TabPanel>
+        
+        <!-- Visit Summary Tab (if analyzed) -->
+        <TabPanel v-if="hasBeenAnalyzed" header="Visit Summary">
+          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+            <h2 class="text-xl font-semibold mb-4">Visit Analysis</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div>
+                <div class="text-gray-500 mb-1">Total Visits</div>
+                <div class="font-medium">{{ dispatchData.totalVisits || 'N/A' }}</div>
               </div>
               
-              <!-- Third row: Phone, Specialization -->
-              <div class="flex flex-col md:flex-row gap-4 mt-4">
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="phone">Phone</label>
-                  <div id="phone" class="p-inputtext w-full">{{ dispatchData.technicianPhone || 'N/A' }}</div>
-                </div>
-                <div class="flex flex-wrap gap-2 w-full">
-                  <label class="text-xs font-semibold text-surface-600" for="specialization">Specialization</label>
-                  <div id="specialization" class="p-inputtext w-full">{{ dispatchData.specialization || 'N/A' }}</div>
-                </div>
+              <div>
+                <div class="text-gray-500 mb-1">Total Tickets</div>
+                <div class="font-medium">{{ dispatchData.totalTickets || 'N/A' }}</div>
               </div>
-            </Panel>
-          </TabPanel>
-          <!-- Billing Tab -->
-          <TabPanel value="1" :pt="{ root: { class: 'p-0' } }">
-            <!-- Billing Information Panel -->
-            <Panel 
-              header="Billing Information" 
-              class="card"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden mb-4' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200 flex items-center' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-0 bg-white' },
-                icons: { class: 'ml-auto' }
-              }"
-            >
-              <template #icons>
-                <Button 
-                  label="Edit Billing" 
-                  icon="pi pi-pencil" 
-                  outlined
-                  @click="toggleNotesDrawer" 
-                  size="small"
-                  class="py-1 px-2"
-                />
-              </template>
               
-              <div class="grid">
-                <!-- Column 1 - Left side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Billing Status</label>
-                      <Tag 
-                        :value="dispatchData.billing?.billingStatus || 'Not Billed'" 
-                        :severity="billingSeverity"
-                        :pt="{
-                          root: { class: 'text-xs px-2 py-1' }
-                        }"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Billing Amount</label>
-                      <div class="text-sm">{{ dispatchData.billing?.billingAmount || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Column 2 - Right side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3 h-full border-left-1 surface-border">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Payment Due Date</label>
-                      <div class="text-sm">{{ dispatchData.billing?.paymentDueDate || 'N/A' }}</div>
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Payment Method</label>
-                      <div class="text-sm">{{ dispatchData.billing?.paymentMethod || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <div class="text-gray-500 mb-1">Key Issues</div>
+                <div class="font-medium">{{ dispatchData.keyIssues || 'N/A' }}</div>
               </div>
-            </Panel>
-          </TabPanel>
-          <!-- Notes & Scope Tab -->
-          <TabPanel value="2" :pt="{ root: { class: 'p-0' } }">
-            <!-- Notes & Scope Panel -->
-            <Panel 
-              header="Notes & Scope" 
-              class="card"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden mb-4' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200 flex items-center' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-0 bg-white' },
-                icons: { class: 'ml-auto' }
-              }"
-            >
-              <template #icons>
-                <Button 
-                  label="Edit Notes" 
-                  icon="pi pi-pencil" 
-                  outlined
-                  @click="toggleNotesDrawer" 
-                  size="small"
-                  class="py-1 px-2"
-                />
-              </template>
               
-              <div class="grid">
-                <!-- Column 1 - Left side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Notes</label>
-                      <div class="text-sm">{{ dispatchData.notes || 'N/A' }}</div>
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Scope</label>
-                      <div class="text-sm">{{ dispatchData.scope || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Column 2 - Right side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3 h-full border-left-1 surface-border">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Additional Notes</label>
-                      <div class="text-sm">{{ dispatchData.additionalNotes || 'N/A' }}</div>
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Service Details</label>
-                      <div class="text-sm">{{ dispatchData.serviceDetails || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <div class="text-gray-500 mb-1">Summary</div>
+                <div class="font-medium">{{ dispatchData.summary || 'N/A' }}</div>
               </div>
-            </Panel>
-          </TabPanel>
-          <!-- Visit Summary Tab -->
-          <TabPanel value="3" :pt="{ root: { class: 'p-0' } }">
-            <!-- Visit Summary Panel -->
-            <Panel 
-              header="Visit Summary" 
-              class="card"
-              :pt="{
-                root: { class: 'border border-surface-200 rounded-lg shadow-sm overflow-hidden mb-4' },
-                header: { class: 'bg-surface-50 p-3 border-b border-surface-200 flex items-center' },
-                title: { class: 'font-medium text-lg text-surface-800' },
-                content: { class: 'p-0 bg-white' },
-                icons: { class: 'ml-auto' }
-              }"
-            >
-              <template #icons>
-                <Button 
-                  label="View All Visits" 
-                  icon="pi pi-eye" 
-                  outlined
-                  @click="fetchLinkedTickets" 
-                  size="small"
-                  class="py-1 px-2"
-                />
-              </template>
-              
-              <div class="grid">
-                <!-- Column 1 - Left side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Total Visits</label>
-                      <div class="text-sm">{{ dispatchData.totalVisits || 'N/A' }}</div>
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Total Tickets</label>
-                      <div class="text-sm">{{ dispatchData.totalTickets || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Column 2 - Right side -->
-                <div class="col-12 md:col-6 p-0">
-                  <div class="p-3 h-full border-left-1 surface-border">
-                    <div class="mb-3">
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Key Issues</label>
-                      <div class="text-sm">{{ dispatchData.keyIssues || 'N/A' }}</div>
-                    </div>
-                    
-                    <div>
-                      <label class="text-xs font-semibold text-surface-600 block mb-1">Summary</label>
-                      <div class="text-sm">{{ dispatchData.summary || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Panel>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+            </div>
+            
+            <Button 
+              label="View All Visits" 
+              icon="pi pi-eye" 
+              outlined
+              @click="fetchLinkedTickets" 
+              class="w-full"
+            />
+          </div>
+        </TabPanel>
+      </TabView>
     </div>
+    
+    <!-- Notes Drawer -->
+    <Drawer 
+      v-model:visible="displayNotesDrawer" 
+      position="right"
+      class="bg-white dark:bg-surface-900 shadow-lg"
+      style="max-width: 40rem; width: 100%"
+    >
+      <template #header>
+        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
+          <h2 class="text-xl font-bold text-surface-800 dark:text-white">Job Notes</h2>
+        </div>
+      </template>
+      
+      <div class="p-4 overflow-y-auto">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-surface-600">Notes</label>
+            <textarea 
+              class="p-inputtext w-full" 
+              rows="4" 
+              :value="dispatchData.notes"
+              readonly
+            ></textarea>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-surface-600">Scope</label>
+            <textarea 
+              class="p-inputtext w-full" 
+              rows="4" 
+              :value="dispatchData.scope"
+              readonly
+            ></textarea>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-surface-600">Service Details</label>
+            <textarea 
+              class="p-inputtext w-full" 
+              rows="4" 
+              :value="dispatchData.serviceDetails"
+              readonly
+            ></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="p-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 flex justify-end">
+          <Button 
+            label="Close" 
+            icon="pi pi-times" 
+            @click="displayNotesDrawer = false"
+            class="w-auto"
+            outlined
+          />
+        </div>
+      </template>
+    </Drawer>
+    
+    <!-- Job Report Dialog -->
+    <Dialog 
+      v-model:visible="jobReportDialog" 
+      header="Job Report" 
+      modal 
+      class="w-full max-w-4xl"
+      :draggable="false"
+    >
+      <div class="flex flex-col gap-4 p-2">
+        <div v-if="isLoadingJobReport" class="flex items-center justify-center py-8">
+          <span class="pi pi-spin pi-spinner text-3xl text-primary"></span>
+        </div>
+        
+        <div v-else-if="jobReport && !jobReport.success" class="bg-red-50 border border-red-200 rounded p-4 text-red-700">
+          <h3 class="text-lg font-semibold mb-2">Error Loading Report</h3>
+          <p>{{ jobReport.message }}</p>
+        </div>
+        
+        <div v-else-if="jobReport && jobReport.success" class="flex flex-col gap-6">
+          <!-- Report content here -->
+          <Accordion :activeIndex="0" class="w-full">
+            <AccordionTab header="Job Summary">
+              <div class="grid">
+                <div class="col-12 md:col-6 p-2">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-surface-600">Customer</label>
+                    <div class="p-inputtext w-full">{{ jobReport.customer_name || 'N/A' }}</div>
+                  </div>
+                </div>
+                <div class="col-12 md:col-6 p-2">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-surface-600">Total Visits</label>
+                    <div class="p-inputtext w-full">{{ (jobReport.visits || []).length || 'N/A' }}</div>
+                  </div>
+                </div>
+                <div class="col-12 p-2">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-surface-600">Overall Job Summary</label>
+                    <div class="p-inputtext w-full">{{ jobReport.job_summary || 'No summary available' }}</div>
+                  </div>
+                </div>
+              </div>
+            </AccordionTab>
+            
+            <AccordionTab header="Timeline">
+              <Timeline :value="timelineEvents" layout="horizontal" class="w-full">
+                <template #content="slotProps">
+                  <div class="flex flex-col gap-1">
+                    <div class="font-bold">{{ slotProps.item.phase_name }}</div>
+                    <div class="text-xs">{{ formatTimelineDate(slotProps.item.visit_date) }}</div>
+                    <Tag :value="slotProps.item.status" :severity="getTimelineEventSeverity(slotProps.item)" />
+                    <div class="mt-2 text-sm">{{ slotProps.item.work_summary }}</div>
+                  </div>
+                </template>
+                <template #opposite="slotProps">
+                  <div class="flex flex-col items-center">
+                    <span class="text-xs">{{ slotProps.item.visit_number || 'Visit' }}</span>
+                  </div>
+                </template>
+                <template #marker="slotProps">
+                  <span :class="slotProps.item.icon" :style="{ color: slotProps.item.color }"></span>
+                </template>
+              </Timeline>
+            </AccordionTab>
+            
+            <AccordionTab header="Key Issues">
+              <div class="flex flex-col gap-4">
+                <div v-for="(issue, i) in jobReport.key_issues || []" :key="i" class="border-b border-surface-200 pb-2">
+                  <div class="flex items-center gap-2 mb-1">
+                    <Tag :value="issue.status || 'Open'" :severity="getIssueSeverity(issue)" />
+                    <span class="font-semibold">{{ issue.title }}</span>
+                  </div>
+                  <p class="text-sm">{{ issue.description }}</p>
+                </div>
+                
+                <div v-if="!(jobReport.key_issues || []).length" class="text-surface-600 italic">
+                  No key issues identified
+                </div>
+              </div>
+            </AccordionTab>
+          </Accordion>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="flex justify-end">
+          <Button label="Close" icon="pi pi-times" @click="jobReportDialog = false" outlined />
+        </div>
+      </template>
+    </Dialog>
+    
+    <!-- Analysis Dialog -->
+    <Dialog 
+      v-model:visible="showAnalysisDialog" 
+      header="Analyze Ticket Chain" 
+      modal 
+      :closable="!isRunningAnalysis"
+      class="w-full max-w-lg"
+    >
+      <div class="flex flex-col gap-4 p-3">
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium">AI Model Selection</label>
+          <Select 
+            v-model="selectedAiModel" 
+            :options="availableModels" 
+            optionLabel="label" 
+            optionValue="value"
+            class="w-full"
+          />
+          <small class="text-surface-600">Select the AI model to use for chain analysis.</small>
+        </div>
+        
+        <div class="bg-yellow-50 border border-yellow-200 rounded p-3 text-yellow-700 text-sm">
+          <span class="pi pi-info-circle mr-2"></span>
+          <span v-if="forceRefreshAnalysis">This will re-analyze the ticket chain from scratch, which may take several minutes.</span>
+          <span v-else>This process will analyze the complete ticket chain to provide insights. This may take several minutes.</span>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            @click="showAnalysisDialog = false"
+            :disabled="isRunningAnalysis"
+            text
+          />
+          <Button 
+            label="Start Analysis" 
+            icon="pi pi-play" 
+            @click="startAnalysis"
+            :loading="isRunningAnalysis"
+            severity="info"
+          />
+        </div>
+      </template>
+    </Dialog>
+    
+    <!-- Toast for notifications -->
+    <Toast />
+    
+    <!-- Confirm Dialog for actions -->
+    <ConfirmDialog />
   </div>
 </template>
 
 <style scoped>
-/* Add your styles here */
+/* Add your custom styles if needed */
+.border-left-1 {
+  border-left-width: 1px;
+}
 </style>
