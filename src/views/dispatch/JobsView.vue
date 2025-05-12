@@ -508,56 +508,90 @@ const drawerPtOptions = {
       <p class="text-color-secondary">Track and manage field service jobs with multiple visits</p>
     </div>
 
-    <!-- Filter section -->
+    <!-- Filter section - Updated with improved form layout patterns -->
     <div class="bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700 mb-4 p-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
-        <div>
-          <label for="customerSelect" class="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Customer</label>
-          <Select 
-            id="customerSelect"
-            v-model="selectedCustomer"
-            :options="customerOptions"
-            optionLabel="name" 
-            optionValue="number" 
-            placeholder="Select customer" 
-            class="w-full" 
-            filter
-            :loading="isLoadingCustomers"
-            :disabled="isLoadingCustomers"
-          />
-        </div>
-        <div>
-          <label for="dateRangeSelect" class="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Date Range</label>
-          <Select 
-            id="dateRangeSelect"
-            v-model="selectedDateRange"
-            :options="dateRangeOptions"
-            optionLabel="label" 
-            optionValue="value" 
-            placeholder="Select date range" 
-            class="w-full"
-          />
-        </div>
-        <div>
-          <label for="customRangePicker" class="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Custom Range</label>
-          <DatePicker 
-            id="customRangePicker"
-            v-model="customDateRange" 
-            selectionMode="range"
-            :disabled="!isCustomDateRange" 
-            placeholder="Select date range" 
-            class="w-full"
-            dateFormat="mm/dd/yy"
-          />
+      <!-- Using flex flex-col gap-4 for the main form container -->
+      <form class="flex flex-col gap-4" @submit.prevent="applyFilters">
+        <!-- First row with customer and date range - using flex flex-col md:flex-row gap-4 for responsive behavior -->
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Each field group uses flex flex-col gap-2 for label and input -->
+          <div class="flex flex-col gap-2 w-full">
+            <label for="customerSelect" class="text-xs font-semibold text-surface-600 dark:text-surface-300">Customer</label>
+            <Select 
+              id="customerSelect"
+              v-model="selectedCustomer"
+              :options="customerOptions"
+              optionLabel="name" 
+              optionValue="number" 
+              placeholder="Select customer" 
+              class="w-full" 
+              filter
+              :loading="isLoadingCustomers"
+              :disabled="isLoadingCustomers"
+              aria-label="Select customer"
+            />
+          </div>
+          
+          <div class="flex flex-col gap-2 w-full">
+            <label for="dateRangeSelect" class="text-xs font-semibold text-surface-600 dark:text-surface-300">Date Range</label>
+            <Select 
+              id="dateRangeSelect"
+              v-model="selectedDateRange"
+              :options="dateRangeOptions"
+              optionLabel="label" 
+              optionValue="value" 
+              placeholder="Select date range" 
+              class="w-full"
+              aria-label="Select date range"
+            />
+          </div>
         </div>
         
-        <div class="lg:col-span-1 xl:col-span-2 hidden lg:block"></div>
-
-        <div class="flex items-center gap-2 justify-self-end">
-          <Button label="Load Data" icon="pi pi-download" @click="applyFilters" :disabled="!selectedCustomer" size="small" />
-          <Button label="Reset" icon="pi pi-undo" severity="secondary" outlined @click="resetFilters" size="small" />
+        <!-- Second row with custom date range and actions -->
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Custom date range picker -->
+          <div class="flex flex-col gap-2 w-full">
+            <label for="customRangePicker" class="text-xs font-semibold text-surface-600 dark:text-surface-300">Custom Range</label>
+            <DatePicker 
+              id="customRangePicker"
+              v-model="customDateRange" 
+              selectionMode="range"
+              :disabled="!isCustomDateRange" 
+              placeholder="Select date range" 
+              class="w-full"
+              dateFormat="mm/dd/yy"
+              aria-label="Custom date range"
+              aria-describedby="dateRangeHint"
+            />
+            <small id="dateRangeHint" class="text-sm text-surface-500 dark:text-surface-400">
+              Select "Custom Range" above to enable this picker
+            </small>
+          </div>
+          
+          <!-- Action buttons with flex-end to align to the right -->
+          <div class="flex flex-col gap-2 w-full justify-end">
+            <div class="text-xs font-semibold text-surface-600 dark:text-surface-300 invisible">Actions</div>
+            <div class="flex gap-2 items-center">
+              <Button 
+                type="submit" 
+                label="Load Data" 
+                icon="pi pi-download" 
+                :disabled="!selectedCustomer" 
+                size="small" 
+              />
+              <Button 
+                type="button"
+                label="Reset" 
+                icon="pi pi-undo" 
+                severity="secondary" 
+                outlined 
+                @click="resetFilters" 
+                size="small" 
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
 
     <!-- KPI Metrics -->
@@ -568,20 +602,28 @@ const drawerPtOptions = {
       <KpiCard title="Avg Days to Invoice" :value="daysToInvoiceStats.avg.toFixed(1)" :subtitle="`Min ${daysToInvoiceStats.min} / Max ${daysToInvoiceStats.max}`" icon="pi-clock" accentColor="#a855f7" />
     </div>
 
-    <!-- Jobs Table with Filtering and Row Expansion -->
+    <!-- Table controls section with improved layout -->
     <div class="bg-white dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
-      <div class="flex justify-between items-center flex-wrap gap-4 p-4 border-b border-surface-200 dark:border-surface-700">
-        <div class="flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 border-b border-surface-200 dark:border-surface-700">
+        <!-- Left side buttons -->
+        <div class="flex items-center gap-2 flex-wrap">
           <Button type="button" icon="pi pi-filter-slash" label="Clear Filters" outlined @click="clearFilter" size="small" />
           <Button type="button" icon="pi pi-plus" label="Expand All" outlined @click="expandAll" size="small" />
           <Button type="button" icon="pi pi-minus" label="Collapse All" outlined @click="collapseAll" size="small" />
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <InputGroup size="small">
+        
+        <!-- Right side search and actions -->
+        <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <InputGroup size="small" class="w-full sm:w-auto">
             <InputGroupAddon>
               <i class="pi pi-search" />
             </InputGroupAddon>
-            <InputText v-model="globalFilterValue" placeholder="Search jobs..." />
+            <InputText 
+              v-model="globalFilterValue" 
+              placeholder="Search jobs..." 
+              aria-label="Search jobs"
+              class="w-full"
+            />
           </InputGroup>
           <Button label="Focus Areas" icon="pi pi-filter" outlined @click="visibleFocus=true" size="small" />
           <Button label="Remove Focus" icon="pi pi-times" outlined severity="secondary" @click="clearFocus" size="small" />
@@ -868,10 +910,10 @@ const drawerPtOptions = {
       <template #header>
         <div class="flex items-center gap-2">
           <i class="pi pi-filter text-primary-500 text-xl"></i>
-        <span class="text-xl font-semibold">Focus Areas</span>
+          <span class="text-xl font-semibold">Focus Areas</span>
         </div>
       </template>
-      <div class="grid grid-cols-1 gap-3">
+      <div class="flex flex-col gap-3">
         <KpiCard v-for="fa in focusAreas" :key="fa.key"
                  :title="fa.label"
                  :value="focusCounts[fa.key]"
