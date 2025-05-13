@@ -41,6 +41,38 @@ const routes = [
                 component: () => import('@/views/dispatch/DispatchDashboard.vue')
             },
             {
+                path: '/dashboard',
+                name: 'dashboard',
+                meta: {
+                    breadcrumb: ['Dashboard']
+                },
+                component: () => import('@/views/dispatch/DashboardView.vue')
+            },
+            {
+                path: '/dashboard/projects/:projectId',
+                name: 'project-details',
+                meta: {
+                    breadcrumb: ['Dashboard', 'Project Details']
+                },
+                component: () => import('@/views/dispatch/ProjectView.vue')
+            },
+            {
+                path: '/dashboard/projects/:projectId/jobs/:jobId',
+                name: 'job-details',
+                meta: {
+                    breadcrumb: ['Dashboard', 'Project Details', 'Job Details']
+                },
+                component: () => import('@/views/dispatch/JobView.vue')
+            },
+            {
+                path: '/dashboard/projects/:projectId/jobs/:jobId/visits/:visitId',
+                name: 'visit-details',
+                meta: {
+                    breadcrumb: ['Dashboard', 'Project Details', 'Job Details', 'Visit Details']
+                },
+                component: () => import('@/views/dispatch/VisitView.vue')
+            },
+            {
                 path: '/dispatch/jobs',
                 name: 'dispatch-jobs',
                 meta: {

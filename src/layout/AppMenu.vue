@@ -8,17 +8,28 @@ const model = ref([
         icon: 'pi pi-home',
         items: [
             {
-                label: 'Dispatch Dashboard',
-                icon: 'pi pi-fw pi-truck',
+                label: 'Operational Dashboard',
+                icon: 'pi pi-fw pi-th-large',
                 to: '/dispatch/dashboard'
             },
             {
-                label: 'Field Service Jobs',
-                icon: 'pi pi-fw pi-briefcase',
-                to: '/dispatch/jobs'
+                label: 'Project Hierarchy',
+                icon: 'pi pi-fw pi-sitemap',
+                items: [
+                    {
+                        label: 'Projects Dashboard',
+                        icon: 'pi pi-fw pi-folder',
+                        to: '/dashboard'
+                    },
+                    {
+                        label: 'All Jobs',
+                        icon: 'pi pi-fw pi-briefcase',
+                        to: '/dispatch/jobs'
+                    }
+                ]
             },
             {
-                label: 'Job Scheduling',
+                label: 'Scheduling',
                 icon: 'pi pi-fw pi-calendar',
                 to: '/dispatch/job-scheduling'
             }

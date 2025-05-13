@@ -80,148 +80,153 @@
     </div>
     
     <!-- Tabs for different views -->
-    <TabView class="mb-6">
-      <!-- Overview Tab -->
-      <TabPanel header="Overview">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <!-- Volume Chart -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Dispatch Volume</span>
-              </div>
-            </template>
-            <template #content>
-              <DispatchVolumeChart 
-                :data="dispatchVolume" 
-                :loading="loading.dispatchVolume"
-              />
-            </template>
-          </Card>
+    <Tabs v-model:value="activeTab" class="mb-6">
+      <TabList>
+        <Tab value="overview">Overview</Tab>
+        <Tab value="revenue">Revenue</Tab>
+        <Tab value="geography">Geography</Tab>
+        <Tab value="details">Detailed View</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="overview">
+          <!-- Overview Tab Content -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Volume Chart -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Dispatch Volume</span>
+                </div>
+              </template>
+              <template #content>
+                <DispatchVolumeChart 
+                  :data="dispatchVolume" 
+                  :loading="loading.dispatchVolume"
+                />
+              </template>
+            </Card>
+            
+            <!-- Status Distribution -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Status Distribution</span>
+                </div>
+              </template>
+              <template #content>
+                <StatusDistributionChart 
+                  :data="resultCodes" 
+                  :loading="loading.resultCodes"
+                />
+              </template>
+            </Card>
+          </div>
           
-          <!-- Status Distribution -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Status Distribution</span>
-              </div>
-            </template>
-            <template #content>
-              <StatusDistributionChart 
-                :data="resultCodes" 
-                :loading="loading.resultCodes"
-              />
-            </template>
-          </Card>
-        </div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Top Clients -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Top Clients</span>
-              </div>
-            </template>
-            <template #content>
-              <ClientChart 
-                :data="clientData" 
-                :loading="loading.clientData"
-              />
-            </template>
-          </Card>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top Clients -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Top Clients</span>
+                </div>
+              </template>
+              <template #content>
+                <ClientChart 
+                  :data="clientData" 
+                  :loading="loading.clientData"
+                />
+              </template>
+            </Card>
+            
+            <!-- Top Projects -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Top Projects</span>
+                </div>
+              </template>
+              <template #content>
+                <ProjectChart 
+                  :data="projectData" 
+                  :loading="loading.projectData"
+                />
+              </template>
+            </Card>
+          </div>
+        </TabPanel>
+        <TabPanel value="revenue">
+          <!-- Revenue Tab Content -->
+          <div class="grid grid-cols-1 gap-6 mb-6">
+            <!-- Revenue Over Time -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Revenue & Margin Over Time</span>
+                </div>
+              </template>
+              <template #content>
+                <RevenueChart 
+                  :data="revenueData" 
+                  :loading="loading.revenueData"
+                />
+              </template>
+            </Card>
+          </div>
           
-          <!-- Top Projects -->
+          <div class="grid grid-cols-1 gap-6">
+            <!-- Top Clients by Revenue -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Top Clients by Revenue</span>
+                </div>
+              </template>
+              <template #content>
+                <ClientRevenueChart 
+                  :data="clientRevenueData" 
+                  :loading="loading.clientRevenueData"
+                />
+              </template>
+            </Card>
+          </div>
+        </TabPanel>
+        <TabPanel value="geography">
+          <!-- Geography Tab Content -->
+          <div class="grid grid-cols-1 gap-6">
+            <!-- State Distribution -->
+            <Card>
+              <template #title>
+                <div class="flex justify-between items-center">
+                  <span>Dispatch Distribution by State</span>
+                </div>
+              </template>
+              <template #content>
+                <StateDistributionChart 
+                  :data="stateData" 
+                  :loading="loading.stateData"
+                />
+              </template>
+            </Card>
+          </div>
+        </TabPanel>
+        <TabPanel value="details">
+          <!-- Detailed View Tab Content -->
           <Card>
             <template #title>
               <div class="flex justify-between items-center">
-                <span>Top Projects</span>
+                <span>Dispatch Details</span>
               </div>
             </template>
             <template #content>
-              <ProjectChart 
-                :data="projectData" 
-                :loading="loading.projectData"
+              <DispatchTable 
+                :dispatches="detailedData" 
+                :loading="loading.detailedData"
               />
             </template>
           </Card>
-        </div>
-      </TabPanel>
-      
-      <!-- Revenue Tab -->
-      <TabPanel header="Revenue">
-        <div class="grid grid-cols-1 gap-6 mb-6">
-          <!-- Revenue Over Time -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Revenue & Margin Over Time</span>
-              </div>
-            </template>
-            <template #content>
-              <RevenueChart 
-                :data="revenueData" 
-                :loading="loading.revenueData"
-              />
-            </template>
-          </Card>
-        </div>
-        
-        <div class="grid grid-cols-1 gap-6">
-          <!-- Top Clients by Revenue -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Top Clients by Revenue</span>
-              </div>
-            </template>
-            <template #content>
-              <ClientRevenueChart 
-                :data="clientRevenueData" 
-                :loading="loading.clientRevenueData"
-              />
-            </template>
-          </Card>
-        </div>
-      </TabPanel>
-      
-      <!-- Geography Tab -->
-      <TabPanel header="Geography">
-        <div class="grid grid-cols-1 gap-6">
-          <!-- State Distribution -->
-          <Card>
-            <template #title>
-              <div class="flex justify-between items-center">
-                <span>Dispatch Distribution by State</span>
-              </div>
-            </template>
-            <template #content>
-              <StateDistributionChart 
-                :data="stateData" 
-                :loading="loading.stateData"
-              />
-            </template>
-          </Card>
-        </div>
-      </TabPanel>
-      
-      <!-- Detailed View Tab -->
-      <TabPanel header="Detailed View">
-        <Card>
-          <template #title>
-            <div class="flex justify-between items-center">
-              <span>Dispatch Details</span>
-            </div>
-          </template>
-          <template #content>
-            <DispatchTable 
-              :dispatches="detailedData" 
-              :loading="loading.detailedData"
-            />
-          </template>
-        </Card>
-      </TabPanel>
-    </TabView>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
     
     <!-- Documents Section -->
     <Card class="mb-6">
@@ -256,7 +261,10 @@ import { useDispatchStore } from '@/stores/dispatchStore';
 import DatePicker from 'primevue/datepicker';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import TabView from 'primevue/tabview';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import Dialog from 'primevue/dialog';
 
@@ -313,6 +321,9 @@ const loading = computed(() => dispatchStore.loading);
 
 // Loading state for refresh button
 const isRefreshing = ref(false);
+
+// Active tab state
+const activeTab = ref('overview');
 
 // Event handlers
 const handleDateRangeChange = () => {

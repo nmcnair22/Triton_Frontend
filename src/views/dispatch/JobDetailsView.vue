@@ -4,6 +4,10 @@ import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { useDispatchStore } from '@/stores/dispatchStore';
 import TabPanel from 'primevue/tabpanel';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
 import Tag from 'primevue/tag';
 import Drawer from 'primevue/drawer';
 import { DispatchService } from '@/service/DispatchService';
@@ -1019,407 +1023,414 @@ function navigateToTicket(ticket) {
       </div>
 
       <!-- Tab navigation -->
-      <TabView>
-        <!-- Overview Tab -->
-        <TabPanel header="Overview">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Job Information Panel -->
-            <div class="bg-white rounded-lg shadow border border-gray-200">
-              <div class="p-4 border-b border-gray-200 flex items-center">
-                <i class="pi pi-briefcase mr-2 text-blue-600"></i>
-                <h2 class="text-xl font-semibold">Job Information</h2>
-              </div>
-              
-              <div class="p-4">
-                <div class="grid grid-cols-2 gap-6">
-                  <div>
-                    <div class="text-gray-500 mb-1">Customer</div>
-                    <div class="font-medium">{{ dispatchData.customerName || 'N/A' }}</div>
+      <Tabs>
+        <TabList>
+          <Tab header="Overview">
+            <template #content>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Job Information Panel -->
+                <div class="bg-white rounded-lg shadow border border-gray-200">
+                  <div class="p-4 border-b border-gray-200 flex items-center">
+                    <i class="pi pi-briefcase mr-2 text-blue-600"></i>
+                    <h2 class="text-xl font-semibold">Job Information</h2>
                   </div>
                   
-                  <div>
-                    <div class="text-gray-500 mb-1">Site Number</div>
-                    <div class="font-medium">{{ dispatchData.siteNumber || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Service Date</div>
-                    <div class="font-medium">{{ dispatchData.serviceDate || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Time Zone</div>
-                    <div class="font-medium">{{ dispatchData.timeZone || 'America/New_York' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Scope of Work</div>
-                    <div class="font-medium">{{ dispatchData.scope || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Project</div>
-                    <div class="font-medium">{{ dispatchData.jobDetails?.projectName || dispatchData.project || 'N/A' }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Location Information Panel -->
-            <div class="bg-white rounded-lg shadow border border-gray-200">
-              <div class="p-4 border-b border-gray-200 flex items-center">
-                <i class="pi pi-map-marker mr-2 text-red-600"></i>
-                <h2 class="text-xl font-semibold">Location Information</h2>
-              </div>
-              
-              <div class="p-4">
-                <div class="grid grid-cols-2 gap-6">
-                  <div class="col-span-2">
-                    <div class="text-gray-500 mb-1">Address</div>
-                    <div class="font-medium">{{ dispatchData.address || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">City/State</div>
-                    <div class="font-medium">{{ dispatchData.cityState || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Zip Code</div>
-                    <div class="font-medium">{{ dispatchData.zipCode || 'N/A' }}</div>
-                  </div>
-                  
-                  <div class="col-span-2">
-                    <div class="text-gray-500 mb-1">Contact</div>
-                    <div class="font-medium">{{ dispatchData.contactName || dispatchData.contactPhone || 'N/A' }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Timing Information Panel -->
-            <div class="bg-white rounded-lg shadow border border-gray-200">
-              <div class="p-4 border-b border-gray-200 flex items-center">
-                <i class="pi pi-clock mr-2 text-purple-600"></i>
-                <h2 class="text-xl font-semibold">Timing Information</h2>
-              </div>
-              
-              <div class="p-4">
-                <div class="grid grid-cols-2 gap-6">
-                  <div>
-                    <div class="text-gray-500 mb-1">Check-in Time</div>
-                    <div class="font-medium">{{ dispatchData.schedule?.checkInTime || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Check-out Time</div>
-                    <div class="font-medium">{{ dispatchData.schedule?.checkOutTime || 'N/A' }}</div>
-                  </div>
-                  
-                  <div class="col-span-2">
-                    <div class="text-gray-500 mb-1">Duration</div>
-                    <div class="font-medium">{{ dispatchData.schedule?.duration || 'N/A' }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Technician Information Panel -->
-            <div class="bg-white rounded-lg shadow border border-gray-200">
-              <div class="p-4 border-b border-gray-200 flex items-center">
-                <i class="pi pi-user mr-2 text-green-600"></i>
-                <h2 class="text-xl font-semibold">Technician Information</h2>
-              </div>
-              
-              <div class="p-4">
-                <div class="grid grid-cols-2 gap-6">
-                  <div class="col-span-2">
-                    <div class="text-gray-500 mb-1">Technician Name</div>
-                    <div class="font-medium">{{ dispatchData.technicianName || 'N/A' }}</div>
-                  </div>
-                  
-                  <div>
-                    <div class="text-gray-500 mb-1">Grade/Review</div>
-                    <div class="font-medium flex items-center">
-                      <span class="text-blue-600 mr-1">10</span>
-                      <span class="text-yellow-500">/10</span>
+                  <div class="p-4">
+                    <div class="grid grid-cols-2 gap-6">
+                      <div>
+                        <div class="text-gray-500 mb-1">Customer</div>
+                        <div class="font-medium">{{ dispatchData.customerName || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Site Number</div>
+                        <div class="font-medium">{{ dispatchData.siteNumber || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Service Date</div>
+                        <div class="font-medium">{{ dispatchData.serviceDate || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Time Zone</div>
+                        <div class="font-medium">{{ dispatchData.timeZone || 'America/New_York' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Scope of Work</div>
+                        <div class="font-medium">{{ dispatchData.scope || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Project</div>
+                        <div class="font-medium">{{ dispatchData.jobDetails?.projectName || dispatchData.project || 'N/A' }}</div>
+                      </div>
                     </div>
                   </div>
+                </div>
+                
+                <!-- Location Information Panel -->
+                <div class="bg-white rounded-lg shadow border border-gray-200">
+                  <div class="p-4 border-b border-gray-200 flex items-center">
+                    <i class="pi pi-map-marker mr-2 text-red-600"></i>
+                    <h2 class="text-xl font-semibold">Location Information</h2>
+                  </div>
+                  
+                  <div class="p-4">
+                    <div class="grid grid-cols-2 gap-6">
+                      <div class="col-span-2">
+                        <div class="text-gray-500 mb-1">Address</div>
+                        <div class="font-medium">{{ dispatchData.address || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">City/State</div>
+                        <div class="font-medium">{{ dispatchData.cityState || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Zip Code</div>
+                        <div class="font-medium">{{ dispatchData.zipCode || 'N/A' }}</div>
+                      </div>
+                      
+                      <div class="col-span-2">
+                        <div class="text-gray-500 mb-1">Contact</div>
+                        <div class="font-medium">{{ dispatchData.contactName || dispatchData.contactPhone || 'N/A' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Timing Information Panel -->
+                <div class="bg-white rounded-lg shadow border border-gray-200">
+                  <div class="p-4 border-b border-gray-200 flex items-center">
+                    <i class="pi pi-clock mr-2 text-purple-600"></i>
+                    <h2 class="text-xl font-semibold">Timing Information</h2>
+                  </div>
+                  
+                  <div class="p-4">
+                    <div class="grid grid-cols-2 gap-6">
+                      <div>
+                        <div class="text-gray-500 mb-1">Check-in Time</div>
+                        <div class="font-medium">{{ dispatchData.schedule?.checkInTime || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Check-out Time</div>
+                        <div class="font-medium">{{ dispatchData.schedule?.checkOutTime || 'N/A' }}</div>
+                      </div>
+                      
+                      <div class="col-span-2">
+                        <div class="text-gray-500 mb-1">Duration</div>
+                        <div class="font-medium">{{ dispatchData.schedule?.duration || 'N/A' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Technician Information Panel -->
+                <div class="bg-white rounded-lg shadow border border-gray-200">
+                  <div class="p-4 border-b border-gray-200 flex items-center">
+                    <i class="pi pi-user mr-2 text-green-600"></i>
+                    <h2 class="text-xl font-semibold">Technician Information</h2>
+                  </div>
+                  
+                  <div class="p-4">
+                    <div class="grid grid-cols-2 gap-6">
+                      <div class="col-span-2">
+                        <div class="text-gray-500 mb-1">Technician Name</div>
+                        <div class="font-medium">{{ dispatchData.technicianName || 'N/A' }}</div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Grade/Review</div>
+                        <div class="font-medium flex items-center">
+                          <span class="text-blue-600 mr-1">10</span>
+                          <span class="text-yellow-500">/10</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div class="text-gray-500 mb-1">Vendor</div>
+                        <div class="font-medium">{{ dispatchData.vendor || 'N/A' }}</div>
+                      </div>
+                      
+                      <div class="col-span-2">
+                        <div class="text-gray-500 mb-1">Comments</div>
+                        <div class="font-medium">{{ dispatchData.technicianComments || 'N/A' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Tab>
+          
+          <Tab header="Details">
+            <template #content>
+              <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+                <h2 class="text-xl font-semibold mb-4">Detailed Information</h2>
+                
+                <div v-if="hasBeenAnalyzed" class="mb-6">
+                  <Button 
+                    icon="pi pi-file-pdf" 
+                    label="Show Report" 
+                    @click="toggleJobReportDialog" 
+                    :loading="isLoadingJobReport"
+                    severity="info"
+                    class="mr-2"
+                  />
+                  <Button 
+                    icon="pi pi-refresh" 
+                    @click="runAnalysis(true)"
+                    :loading="isRunningAnalysis"
+                    severity="secondary"
+                    text
+                  />
+                </div>
+                
+                <div v-else class="mb-6">
+                  <Button 
+                    icon="pi pi-brain" 
+                    label="Run AI Analysis" 
+                    severity="info"
+                    :loading="isRunningAnalysis"
+                    @click="runAnalysis(false)"
+                  />
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <!-- Additional details sections can be added here -->
+                  <div>
+                    <div class="text-gray-500 mb-1">Subject</div>
+                    <div class="font-medium">{{ dispatchData.subject || 'N/A' }}</div>
+                  </div>
                   
                   <div>
-                    <div class="text-gray-500 mb-1">Vendor</div>
-                    <div class="font-medium">{{ dispatchData.vendor || 'N/A' }}</div>
+                    <div class="text-gray-500 mb-1">Item ID</div>
+                    <div class="font-medium">{{ dispatchData.itemId || 'N/A' }}</div>
                   </div>
                   
-                  <div class="col-span-2">
-                    <div class="text-gray-500 mb-1">Comments</div>
-                    <div class="font-medium">{{ dispatchData.technicianComments || 'N/A' }}</div>
+                  <div>
+                    <div class="text-gray-500 mb-1">Failure Code</div>
+                    <div class="font-medium">{{ dispatchData.failureCode || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Status</div>
+                    <div class="font-medium">
+                      <Tag 
+                        :value="dispatchData.status || 'N/A'" 
+                        severity="info"
+                        class="text-xs px-2 py-1"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </TabPanel>
-        
-        <!-- Details Tab -->
-        <TabPanel header="Details">
-          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
-            <h2 class="text-xl font-semibold mb-4">Detailed Information</h2>
-            
-            <div v-if="hasBeenAnalyzed" class="mb-6">
-              <Button 
-                icon="pi pi-file-pdf" 
-                label="Show Report" 
-                @click="toggleJobReportDialog" 
-                :loading="isLoadingJobReport"
-                severity="info"
-                class="mr-2"
-              />
-              <Button 
-                icon="pi pi-refresh" 
-                @click="runAnalysis(true)"
-                :loading="isRunningAnalysis"
-                severity="secondary"
-                text
-              />
-            </div>
-            
-            <div v-else class="mb-6">
-              <Button 
-                icon="pi pi-brain" 
-                label="Run AI Analysis" 
-                severity="info"
-                :loading="isRunningAnalysis"
-                @click="runAnalysis(false)"
-              />
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <!-- Additional details sections can be added here -->
-              <div>
-                <div class="text-gray-500 mb-1">Subject</div>
-                <div class="font-medium">{{ dispatchData.subject || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Item ID</div>
-                <div class="font-medium">{{ dispatchData.itemId || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Failure Code</div>
-                <div class="font-medium">{{ dispatchData.failureCode || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Status</div>
-                <div class="font-medium">
-                  <Tag 
-                    :value="dispatchData.status || 'N/A'" 
-                    severity="info"
-                    class="text-xs px-2 py-1"
+            </template>
+          </Tab>
+          
+          <Tab header="Notes">
+            <template #content>
+              <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-xl font-semibold">Notes & Scope</h2>
+                  <Button 
+                    label="Edit Notes" 
+                    icon="pi pi-pencil" 
+                    outlined
+                    @click="toggleNotesDrawer" 
+                    size="small"
+                    class="py-1 px-2"
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-        </TabPanel>
-        
-        <!-- Notes Tab -->
-        <TabPanel header="Notes">
-          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold">Notes & Scope</h2>
-              <Button 
-                label="Edit Notes" 
-                icon="pi pi-pencil" 
-                outlined
-                @click="toggleNotesDrawer" 
-                size="small"
-                class="py-1 px-2"
-              />
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div>
-                <div class="text-gray-500 mb-1">Notes</div>
-                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.notes || 'No notes available' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Scope</div>
-                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.scope || 'No scope information available' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Additional Notes</div>
-                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.additionalNotes || 'No additional notes available' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Service Details</div>
-                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.serviceDetails || 'No service details available' }}</div>
-              </div>
-            </div>
-          </div>
-        </TabPanel>
-        
-        <!-- Financial Tab -->
-        <TabPanel header="Financial">
-          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center">
-                <i class="pi pi-dollar-sign mr-2 text-green-600"></i>
-                <h2 class="text-xl font-semibold">Financial Information</h2>
-              </div>
-            </div>
-
-            <!-- Financial Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                <div class="text-sm text-blue-700 mb-1">Total Receivable</div>
-                <div class="text-2xl font-bold text-blue-800">${{ calculateTotalReceivable().toFixed(2) }}</div>
-              </div>
-              
-              <div class="bg-red-50 rounded-lg p-4 border border-red-100">
-                <div class="text-sm text-red-700 mb-1">Total Payable</div>
-                <div class="text-2xl font-bold text-red-800">${{ calculateTotalPayable().toFixed(2) }}</div>
-              </div>
-              
-              <div class="bg-green-50 rounded-lg p-4 border border-green-100">
-                <div class="text-sm text-green-700 mb-1">Profit</div>
-                <div class="text-2xl font-bold text-green-800">${{ calculateProfit().toFixed(2) }}</div>
-              </div>
-              
-              <div class="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                <div class="text-sm text-purple-700 mb-1">Margin</div>
-                <div class="text-2xl font-bold text-purple-800">{{ calculateMargin() }}%</div>
-              </div>
-            </div>
-
-            <!-- Line Items DataTable -->
-            <DataTable 
-              :value="financialRecords" 
-              stripedRows 
-              class="p-datatable-sm"
-              showGridlines
-              responsiveLayout="scroll"
-            >
-              <Column field="details.id_item" header="Item"></Column>
-              <Column field="details.billing_desc" header="Description"></Column>
-              
-              <Column field="details.jobLineType" header="Type">
-                <template #body="slotProps">
-                  <Tag 
-                    v-if="slotProps.data.details.jobLineType" 
-                    :value="slotProps.data.details.jobLineType" 
-                    :severity="getLineTypeSeverity(slotProps.data.details.jobLineType)" 
-                  />
-                  <span v-else class="text-gray-500">-</span>
-                </template>
-              </Column>
-              
-              <Column field="details.invoiceNumber" header="Invoice">
-                <template #body="slotProps">
-                  {{ slotProps.data.details.invoiceNumber || '-' }}
-                </template>
-              </Column>
-              
-              <Column field="details.vendorNumber" header="Vendor">
-                <template #body="slotProps">
-                  {{ slotProps.data.details.vendorNumber || '-' }}
-                </template>
-              </Column>
-              
-              <Column field="financials.Total_Receivable" header="Receivable" style="min-width: 120px">
-                <template #body="slotProps">
-                  <div class="text-right">
-                    ${{ slotProps.data.financials.Total_Receivable.toFixed(2) }}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <div class="text-gray-500 mb-1">Notes</div>
+                    <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.notes || 'No notes available' }}</div>
                   </div>
-                </template>
-              </Column>
-              
-              <Column field="financials.Total_Payable" header="Payable" style="min-width: 120px">
-                <template #body="slotProps">
-                  <div class="text-right">
-                    ${{ slotProps.data.financials.Total_Payable.toFixed(2) }}
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Scope</div>
+                    <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.scope || 'No scope information available' }}</div>
                   </div>
-                </template>
-              </Column>
-              
-              <Column header="Profit" style="min-width: 120px">
-                <template #body="slotProps">
-                  <div class="text-right">
-                    <span :class="getItemProfitClass(slotProps.data)">
-                      ${{ (slotProps.data.financials.Total_Receivable - slotProps.data.financials.Total_Payable).toFixed(2) }}
-                    </span>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Additional Notes</div>
+                    <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.additionalNotes || 'No additional notes available' }}</div>
                   </div>
-                </template>
-              </Column>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Service Details</div>
+                    <div class="bg-gray-50 p-3 rounded-md min-h-[100px]">{{ dispatchData.serviceDetails || 'No service details available' }}</div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Tab>
+          
+          <Tab header="Financial">
+            <template #content>
+              <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center">
+                    <i class="pi pi-dollar-sign mr-2 text-green-600"></i>
+                    <h2 class="text-xl font-semibold">Financial Information</h2>
+                  </div>
+                </div>
 
-              <ColumnGroup type="footer">
-                <Row>
-                  <Column footer="Totals:" :colspan="5" footerStyle="text-align:right" />
-                  <Column :footer="formatCurrency(calculateTotalReceivable())" footerStyle="text-align:right; font-weight: 600;" />
-                  <Column :footer="formatCurrency(calculateTotalPayable())" footerStyle="text-align:right; font-weight: 600;" />
-                  <Column :footer="formatCurrency(calculateProfit())" :footerStyle="'text-align:right; font-weight: 600; color: ' + (calculateProfit() >= 0 ? 'var(--green-600)' : 'var(--red-600)')"/>
-                </Row>
-              </ColumnGroup>
-            </DataTable>
-            
-            <!-- Notes Section -->
-            <div v-if="selectedFinancialRecord" class="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h3 class="text-lg font-semibold mb-2">Notes</h3>
-              <div class="mb-4">
-                <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postFirstDetails }}</div>
-                <div class="text-sm mt-1">{{ selectedFinancialRecord.notes.postFirst }}</div>
+                <!-- Financial Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <div class="text-sm text-blue-700 mb-1">Total Receivable</div>
+                    <div class="text-2xl font-bold text-blue-800">${{ calculateTotalReceivable().toFixed(2) }}</div>
+                  </div>
+                  
+                  <div class="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div class="text-sm text-red-700 mb-1">Total Payable</div>
+                    <div class="text-2xl font-bold text-red-800">${{ calculateTotalPayable().toFixed(2) }}</div>
+                  </div>
+                  
+                  <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                    <div class="text-sm text-green-700 mb-1">Profit</div>
+                    <div class="text-2xl font-bold text-green-800">${{ calculateProfit().toFixed(2) }}</div>
+                  </div>
+                  
+                  <div class="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                    <div class="text-sm text-purple-700 mb-1">Margin</div>
+                    <div class="text-2xl font-bold text-purple-800">{{ calculateMargin() }}%</div>
+                  </div>
+                </div>
+
+                <!-- Line Items DataTable -->
+                <DataTable 
+                  :value="financialRecords" 
+                  stripedRows 
+                  class="p-datatable-sm"
+                  showGridlines
+                  responsiveLayout="scroll"
+                >
+                  <Column field="details.id_item" header="Item"></Column>
+                  <Column field="details.billing_desc" header="Description"></Column>
+                  
+                  <Column field="details.jobLineType" header="Type">
+                    <template #body="slotProps">
+                      <Tag 
+                        v-if="slotProps.data.details.jobLineType" 
+                        :value="slotProps.data.details.jobLineType" 
+                        :severity="getLineTypeSeverity(slotProps.data.details.jobLineType)" 
+                      />
+                      <span v-else class="text-gray-500">-</span>
+                    </template>
+                  </Column>
+                  
+                  <Column field="details.invoiceNumber" header="Invoice">
+                    <template #body="slotProps">
+                      {{ slotProps.data.details.invoiceNumber || '-' }}
+                    </template>
+                  </Column>
+                  
+                  <Column field="details.vendorNumber" header="Vendor">
+                    <template #body="slotProps">
+                      {{ slotProps.data.details.vendorNumber || '-' }}
+                    </template>
+                  </Column>
+                  
+                  <Column field="financials.Total_Receivable" header="Receivable" style="min-width: 120px">
+                    <template #body="slotProps">
+                      <div class="text-right">
+                        ${{ slotProps.data.financials.Total_Receivable.toFixed(2) }}
+                      </div>
+                    </template>
+                  </Column>
+                  
+                  <Column field="financials.Total_Payable" header="Payable" style="min-width: 120px">
+                    <template #body="slotProps">
+                      <div class="text-right">
+                        ${{ slotProps.data.financials.Total_Payable.toFixed(2) }}
+                      </div>
+                    </template>
+                  </Column>
+                  
+                  <Column header="Profit" style="min-width: 120px">
+                    <template #body="slotProps">
+                      <div class="text-right">
+                        <span :class="getItemProfitClass(slotProps.data)">
+                          ${{ (slotProps.data.financials.Total_Receivable - slotProps.data.financials.Total_Payable).toFixed(2) }}
+                        </span>
+                      </div>
+                    </template>
+                  </Column>
+
+                  <ColumnGroup type="footer">
+                    <Row>
+                      <Column footer="Totals:" :colspan="5" footerStyle="text-align:right" />
+                      <Column :footer="formatCurrency(calculateTotalReceivable())" footerStyle="text-align:right; font-weight: 600;" />
+                      <Column :footer="formatCurrency(calculateTotalPayable())" footerStyle="text-align:right; font-weight: 600;" />
+                      <Column :footer="formatCurrency(calculateProfit())" :footerStyle="'text-align:right; font-weight: 600; color: ' + (calculateProfit() >= 0 ? 'var(--green-600)' : 'var(--red-600)')"/>
+                    </Row>
+                  </ColumnGroup>
+                </DataTable>
+                
+                <!-- Notes Section -->
+                <div v-if="selectedFinancialRecord" class="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 class="text-lg font-semibold mb-2">Notes</h3>
+                  <div class="mb-4">
+                    <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postFirstDetails }}</div>
+                    <div class="text-sm mt-1">{{ selectedFinancialRecord.notes.postFirst }}</div>
+                  </div>
+                  
+                  <div v-if="selectedFinancialRecord.notes.postLast">
+                    <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postLastDetails }}</div>
+                    <div class="text-sm mt-1" v-html="selectedFinancialRecord.notes.postLast"></div>
+                  </div>
+                </div>
               </div>
-              
-              <div v-if="selectedFinancialRecord.notes.postLast">
-                <div class="text-xs text-gray-500">{{ selectedFinancialRecord.notes.postLastDetails }}</div>
-                <div class="text-sm mt-1" v-html="selectedFinancialRecord.notes.postLast"></div>
+            </template>
+          </Tab>
+          
+          <Tab header="Visit Summary">
+            <template #content>
+              <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+                <h2 class="text-xl font-semibold mb-4">Visit Analysis</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <div class="text-gray-500 mb-1">Total Visits</div>
+                    <div class="font-medium">{{ dispatchData.totalVisits || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Total Tickets</div>
+                    <div class="font-medium">{{ dispatchData.totalTickets || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Key Issues</div>
+                    <div class="font-medium">{{ dispatchData.keyIssues || 'N/A' }}</div>
+                  </div>
+                  
+                  <div>
+                    <div class="text-gray-500 mb-1">Summary</div>
+                    <div class="font-medium">{{ dispatchData.summary || 'N/A' }}</div>
+                  </div>
+                </div>
+                
+                <Button 
+                  label="View All Visits" 
+                  icon="pi pi-eye" 
+                  outlined
+                  @click="fetchLinkedTickets" 
+                  class="w-full"
+                />
               </div>
-            </div>
-          </div>
-        </TabPanel>
-        
-        <!-- Visit Summary Tab (if analyzed) -->
-        <TabPanel v-if="hasBeenAnalyzed" header="Visit Summary">
-          <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
-            <h2 class="text-xl font-semibold mb-4">Visit Analysis</h2>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div>
-                <div class="text-gray-500 mb-1">Total Visits</div>
-                <div class="font-medium">{{ dispatchData.totalVisits || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Total Tickets</div>
-                <div class="font-medium">{{ dispatchData.totalTickets || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Key Issues</div>
-                <div class="font-medium">{{ dispatchData.keyIssues || 'N/A' }}</div>
-              </div>
-              
-              <div>
-                <div class="text-gray-500 mb-1">Summary</div>
-                <div class="font-medium">{{ dispatchData.summary || 'N/A' }}</div>
-              </div>
-            </div>
-            
-            <Button 
-              label="View All Visits" 
-              icon="pi pi-eye" 
-              outlined
-              @click="fetchLinkedTickets" 
-              class="w-full"
-            />
-          </div>
-        </TabPanel>
-      </TabView>
+            </template>
+          </Tab>
+        </TabList>
+      </Tabs>
     </div>
     
     <!-- Notes Drawer -->
