@@ -301,7 +301,15 @@ onMounted(() => {
       <!-- Left Column -->
       <div class="flex flex-col gap-6">
         <!-- Technicians Panel -->
-        <Panel header="Technicians" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Technicians</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <DataTable 
               :value="visitData.technicians" 
@@ -330,7 +338,15 @@ onMounted(() => {
         </Panel>
         
         <!-- Tasks Panel -->
-        <Panel header="Tasks Performed" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Tasks Performed</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <ul class="list-disc pl-5 space-y-2">
               <li v-for="(task, index) in visitData.tasks" :key="index" class="text-gray-700 dark:text-gray-300">
@@ -345,7 +361,15 @@ onMounted(() => {
         </Panel>
         
         <!-- Materials Panel -->
-        <Panel header="Materials Used" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Materials Used</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <DataTable 
               :value="materials" 
@@ -367,7 +391,15 @@ onMounted(() => {
       <!-- Right Column -->
       <div class="flex flex-col gap-6">
         <!-- Issues Panel -->
-        <Panel header="Visit Issues" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Visit Issues</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <div v-for="issue in visitData.issues" :key="issue.visitIssueId" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3">
               <div class="flex justify-between items-start">
@@ -412,7 +444,15 @@ onMounted(() => {
         </Panel>
         
         <!-- Timeline Panel -->
-        <Panel header="Timeline Events" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Timeline Events</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <Timeline :value="timelineData" layout="vertical" class="w-full">
               <template #content="slotProps">
@@ -435,7 +475,15 @@ onMounted(() => {
         </Panel>
         
         <!-- Key Interactions Panel -->
-        <Panel header="Key Interactions" toggleable class="shadow-sm">
+        <Panel class="shadow-sm">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span>Key Interactions</span>
+            </div>
+          </template>
+          <template #togglericon="{ collapsed }">
+            <i :class="[collapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up']"></i>
+          </template>
           <template #default>
             <div v-for="(interaction, index) in visitData.keyInteractions" :key="index" class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0 last:mb-0">
               <div class="font-semibold mb-1">{{ interaction.interactionType }}</div>

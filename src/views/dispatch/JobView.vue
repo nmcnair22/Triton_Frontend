@@ -45,241 +45,234 @@ const breadcrumbHome = { icon: 'pi pi-home', route: '/' };
 const jobData = ref({
   job: {
     jobId: "6d815ec56dfb85e2182e01471c31e486",
-    customer: "Flynn",
+    projectId: "3912",
     location: "Hagerstown, MD",
     status: "In Progress",
-    completionPct: 27,
+    completionPct: 27.0,
+    startDate: "2025-02-04",
+    estimatedEndDate: "2025-06-15",
+    assignedManager: "Joel Smith",
+    notes: "Client requested expedited installation for main system",
+    siteName: "Flynn Store #1242"
+  },
+  kpis: {
+    visitsCompleted: 3,
+    visitsScheduled: 1,
     totalVisits: 11,
-    revisitCount: 7,
-    firstDate: "2025-02-04",
-    lastDate: "2025-05-12",
-    workSummary: "Network service with 3 completed visits and 5 attempted visits"
+    issuesOpen: 11,
+    issuesHighImpact: 2,
+    issuesResolved: 1,
+    materialsUsed: 27,
+    materialsOrdered: 42
   },
   visits: [
     {
       visitId: "VG1",
-      phaseName: "Site Survey",
-      visitDate: "2025-02-04",
+      date: "2025-02-04",
       status: "Completed",
-      timeOnSiteMin: 27,
-      revisitNeeded: false
+      technicianName: "Mike Johnson",
+      duration: 4.5,
+      tasksCompleted: 3,
+      tasksTotal: 3,
+      hasIssues: true
     },
     {
       visitId: "VG2",
-      phaseName: "Phase 1",
-      visitDate: "2025-02-11",
-      status: "Failed - Snow Storm",
-      timeOnSiteMin: 0,
-      revisitNeeded: true
+      date: "2025-02-18",
+      status: "Completed",
+      technicianName: "Sarah Williams",
+      duration: 6.0,
+      tasksCompleted: 4,
+      tasksTotal: 4,
+      hasIssues: true
     },
     {
       visitId: "VG3",
-      phaseName: "P2",
-      visitDate: "2025-02-12",
-      status: "Cancelled - CIS",
-      timeOnSiteMin: 0,
-      revisitNeeded: true
+      date: "2025-03-01",
+      status: "Completed",
+      technicianName: "Mike Johnson",
+      duration: 3.0,
+      tasksCompleted: 2,
+      tasksTotal: 2,
+      hasIssues: true
     },
     {
       visitId: "VG4",
-      phaseName: "Phase 1",
-      visitDate: "2025-03-01",
-      status: "Completed",
-      timeOnSiteMin: 120,
-      revisitNeeded: false
+      date: "2025-03-15",
+      status: "Scheduled",
+      technicianName: "David Chen",
+      duration: null,
+      tasksCompleted: 0,
+      tasksTotal: 5,
+      hasIssues: false
     },
     {
       visitId: "VG5",
-      phaseName: "Phase 2",
-      visitDate: "2025-03-15",
-      status: "Completed",
-      timeOnSiteMin: 180,
-      revisitNeeded: false
+      date: "2025-04-01",
+      status: "Not Started",
+      technicianName: null,
+      duration: null,
+      tasksCompleted: 0,
+      tasksTotal: 4,
+      hasIssues: false
     },
     {
       visitId: "VG6",
-      phaseName: "Phase 3",
-      visitDate: "2025-04-01",
-      status: "Failed - Equipment",
-      timeOnSiteMin: 45,
-      revisitNeeded: true
+      date: "2025-04-15",
+      status: "Not Started",
+      technicianName: null,
+      duration: null,
+      tasksCompleted: 0,
+      tasksTotal: 3,
+      hasIssues: false
     },
     {
       visitId: "VG7",
-      phaseName: "Phase 3",
-      visitDate: "2025-04-15",
-      status: "Scheduled",
-      timeOnSiteMin: null,
-      revisitNeeded: false
+      date: "2025-05-01",
+      status: "Not Started",
+      technicianName: null,
+      duration: null,
+      tasksCompleted: 0,
+      tasksTotal: 6,
+      hasIssues: false
+    }
+  ],
+  timeline: [
+    {
+      date: "2025-02-04",
+      status: "Visit Completed",
+      details: "Initial site assessment completed by Mike Johnson",
+      icon: "pi pi-check-circle",
+      color: "#4caf50"
+    },
+    {
+      date: "2025-02-04",
+      status: "Issue Reported",
+      details: "Site not ready for equipment installation",
+      icon: "pi pi-exclamation-triangle",
+      color: "#ff9800"
+    },
+    {
+      date: "2025-02-18",
+      status: "Visit Completed",
+      details: "Network cabling installation by Sarah Williams",
+      icon: "pi pi-check-circle",
+      color: "#4caf50"
+    },
+    {
+      date: "2025-03-01",
+      status: "Visit Completed",
+      details: "Equipment delivery and initial setup by Mike Johnson",
+      icon: "pi pi-check-circle",
+      color: "#4caf50"
+    },
+    {
+      date: "2025-03-15",
+      status: "Visit Scheduled",
+      details: "System configuration and testing by David Chen",
+      icon: "pi pi-calendar",
+      color: "#2196f3"
+    }
+  ],
+  issues: [
+    {
+      issueId: "ISS-1001",
+      title: "Site Not Ready",
+      description: "The site was not prepared according to pre-installation requirements. Missing power outlets and network drops.",
+      status: "Open",
+      impact: "High",
+      reportedDate: "2025-02-04",
+      assignedTo: "Joel Smith"
+    },
+    {
+      issueId: "ISS-1002",
+      title: "Missing Equipment",
+      description: "Network switch model CX-4500 was not delivered with the main equipment shipment.",
+      status: "Open",
+      impact: "Medium",
+      reportedDate: "2025-03-01",
+      assignedTo: "Procurement Team"
+    },
+    {
+      issueId: "ISS-1003",
+      title: "Incorrect Specifications",
+      description: "The provided specifications for the server rack are incorrect. Need updated measurements.",
+      status: "Resolved",
+      impact: "Low",
+      reportedDate: "2025-02-18",
+      resolvedDate: "2025-02-25",
+      resolvedBy: "Sarah Williams"
+    }
+  ],
+  materials: [
+    {
+      materialId: "MAT-2001",
+      name: "Network Cable Cat6",
+      quantity: 500,
+      unit: "feet",
+      status: "Used",
+      dateUsed: "2025-02-18"
+    },
+    {
+      materialId: "MAT-2002",
+      name: "Server Rack 42U",
+      quantity: 1,
+      unit: "piece",
+      status: "Delivered",
+      dateDelivered: "2025-03-01"
+    },
+    {
+      materialId: "MAT-2003",
+      name: "Network Switch CX-4500",
+      quantity: 1,
+      unit: "piece",
+      status: "Ordered",
+      dateOrdered: "2025-02-10"
+    },
+    {
+      materialId: "MAT-2004",
+      name: "Fiber Optic Cable",
+      quantity: 100,
+      unit: "feet",
+      status: "Ordered",
+      dateOrdered: "2025-02-10"
     }
   ]
 });
 
-// Add additional mock data for other tabs
-const jobIssues = ref([
-  {
-    issueId: "ISS-1001",
-    title: "Site Not Ready",
-    description: "Multiple visits impacted by site readiness issues",
-    status: "Open",
-    impact: "High",
-    assignedTo: "Joel",
-    createdAt: "2025-02-04T09:30:00Z",
-    affectedVisits: ["VG1", "VG2", "VG3"]
-  },
-  {
-    issueId: "ISS-1002",
-    title: "Equipment Missing",
-    description: "Required network equipment not available on site",
-    status: "Open",
-    impact: "Medium",
-    assignedTo: "Sarah",
-    createdAt: "2025-03-01T14:20:00Z",
-    affectedVisits: ["VG6"]
-  },
-  {
-    issueId: "ISS-1003",
-    title: "Access Issues",
-    description: "Technician couldn't access server room",
-    status: "Resolved",
-    impact: "Low",
-    assignedTo: "Mike",
-    createdAt: "2025-02-12T11:15:00Z",
-    resolvedAt: "2025-02-13T09:45:00Z",
-    affectedVisits: ["VG3"]
+// Chart Data
+const progressChartData = computed(() => {
+  return {
+    labels: ['Completed', 'Remaining'],
+    datasets: [
+      {
+        data: [jobData.value.job.completionPct, 100 - jobData.value.job.completionPct],
+        backgroundColor: ['#4caf50', '#eceff1'],
+        hoverBackgroundColor: ['#66bb6a', '#cfd8dc']
+      }
+    ]
+  };
+});
+
+const progressChartOptions = {
+  cutout: '70%',
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          return context.label + ': ' + context.raw + '%';
+        }
+      }
+    }
   }
-]);
-
-const timelineEvents = ref([
-  {
-    date: "2025-02-04",
-    event: "Initial site survey completed",
-    icon: "pi pi-check",
-    color: "#4CAF50",
-    details: "Technician Joel performed initial site survey"
-  },
-  {
-    date: "2025-02-11",
-    event: "Visit failed due to snow storm",
-    icon: "pi pi-times",
-    color: "#F44336",
-    details: "Weather conditions prevented site access"
-  },
-  {
-    date: "2025-02-12",
-    event: "Visit cancelled by customer",
-    icon: "pi pi-ban",
-    color: "#FF9800",
-    details: "Customer requested cancellation"
-  },
-  {
-    date: "2025-03-01",
-    event: "Phase 1 implementation completed",
-    icon: "pi pi-check",
-    color: "#4CAF50",
-    details: "Network equipment installed"
-  },
-  {
-    date: "2025-03-15",
-    event: "Phase 2 implementation completed",
-    icon: "pi pi-check",
-    color: "#4CAF50",
-    details: "Configuration and testing completed"
-  },
-  {
-    date: "2025-04-01",
-    event: "Phase 3 implementation failed",
-    icon: "pi pi-times",
-    color: "#F44336",
-    details: "Missing equipment prevented completion"
-  },
-  {
-    date: "2025-04-15",
-    event: "Phase 3 implementation scheduled",
-    icon: "pi pi-calendar",
-    color: "#2196F3",
-    details: "Final installation scheduled"
-  }
-]);
-
-const materials = ref([
-  {
-    id: "MAT-001",
-    name: "Cat6 Cable (1000ft)",
-    quantity: 2,
-    visitId: "VG4"
-  },
-  {
-    id: "MAT-002",
-    name: "Network Switch (48-port)",
-    quantity: 1,
-    visitId: "VG4"
-  },
-  {
-    id: "MAT-003",
-    name: "Patch Panel",
-    quantity: 2,
-    visitId: "VG5"
-  },
-  {
-    id: "MAT-004",
-    name: "Fiber Optic Cable (500ft)",
-    quantity: 1,
-    visitId: "VG5"
-  }
-]);
-
-// Computed properties
-const completedVisitsCount = computed(() => {
-  return jobData.value.visits.filter(visit => visit.status === 'Completed').length;
-});
-
-const scheduledVisitsCount = computed(() => {
-  return jobData.value.visits.filter(visit => visit.status === 'Scheduled').length;
-});
-
-const failedVisitsCount = computed(() => {
-  return jobData.value.visits.filter(visit => visit.status.startsWith('Failed') || visit.status.startsWith('Cancelled')).length;
-});
-
-const openIssuesCount = computed(() => {
-  return jobIssues.value.filter(issue => issue.status === 'Open').length;
-});
-
-const highImpactIssuesCount = computed(() => {
-  return jobIssues.value.filter(issue => issue.impact === 'High' && issue.status === 'Open').length;
-});
-
-const averageTimeOnSite = computed(() => {
-  const completedVisits = jobData.value.visits.filter(visit => visit.status === 'Completed' && visit.timeOnSiteMin > 0);
-  if (completedVisits.length === 0) return 0;
-  
-  const totalTime = completedVisits.reduce((sum, visit) => sum + visit.timeOnSiteMin, 0);
-  return Math.round(totalTime / completedVisits.length);
-});
+};
 
 // Methods
-const navigateToVisit = (visitId) => {
-  router.push(`/dashboard/projects/${projectId}/jobs/${jobId}/visits/${visitId}`);
-};
-
-const getSeverity = (status) => {
-  if (status.startsWith('Completed')) return 'success';
-  if (status.startsWith('Failed') || status.startsWith('Cancelled')) return 'danger';
-  if (status.startsWith('Scheduled')) return 'info';
-  return 'warning';
-};
-
-const getImpactSeverity = (impact) => {
-  switch (impact) {
-    case 'High': return 'danger';
-    case 'Medium': return 'warning';
-    case 'Low': return 'info';
-    default: return 'info';
-  }
-};
-
 const formatDate = (dateString) => {
+  if (!dateString) return 'Not set';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -288,20 +281,57 @@ const formatDate = (dateString) => {
   });
 };
 
-const formatMinutes = (minutes) => {
-  if (!minutes) return 'N/A';
-  
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  
-  if (hours === 0) return `${mins} min`;
-  return `${hours}h ${mins}m`;
+const formatHours = (hours) => {
+  if (hours === null || hours === undefined) return '-';
+  return hours + (hours === 1 ? ' hour' : ' hours');
+};
+
+const getSeverity = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'completed': return 'success';
+    case 'in progress': return 'info';
+    case 'scheduled': return 'info';
+    case 'not started': return 'warning';
+    case 'cancelled': return 'danger';
+    default: return 'info';
+  }
+};
+
+const getImpactSeverity = (impact) => {
+  switch (impact?.toLowerCase()) {
+    case 'high': return 'danger';
+    case 'medium': return 'warning';
+    case 'low': return 'info';
+    default: return 'info';
+  }
+};
+
+const getIssueSeverity = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'resolved': return 'success';
+    case 'in progress': return 'info';
+    case 'open': return 'danger';
+    default: return 'info';
+  }
+};
+
+const getMaterialStatusSeverity = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'used': return 'success';
+    case 'delivered': return 'info';
+    case 'ordered': return 'warning';
+    default: return 'info';
+  }
+};
+
+const navigateToVisit = (visitId) => {
+  router.push(`/dashboard/projects/${projectId}/jobs/${jobId}/visits/${visitId}`);
 };
 
 // Initialize data
 onMounted(() => {
   console.log('Job view mounted for job ID:', jobId);
-  // In a real implementation, this would fetch job data from the API
+  // In a real implementation, this would fetch job data from the API using the jobId
 });
 </script>
 
@@ -326,16 +356,16 @@ onMounted(() => {
     <div class="bg-white dark:bg-surface-900 p-4 rounded-lg shadow mb-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-3xl font-bold">Job #{{ jobData.job.jobId.substring(0, 8) }}</h1>
-          <div class="flex items-center gap-2 mt-2">
-            <span class="text-lg text-gray-700 dark:text-gray-300">{{ jobData.job.customer }}</span>
-            <span class="text-gray-500">•</span>
+          <h1 class="text-3xl font-bold mb-1">{{ jobData.job.siteName }}</h1>
+          <div class="flex items-center gap-2">
             <span class="text-lg text-gray-700 dark:text-gray-300">{{ jobData.job.location }}</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-lg text-gray-700 dark:text-gray-300">Job #{{ jobData.job.jobId.substring(0, 8) }}</span>
           </div>
         </div>
         
         <div class="flex items-center gap-2">
-          <Tag :value="jobData.job.status" :severity="getSeverity(jobData.job.status)" class="text-sm" />
+          <Tag :value="jobData.job.status" :severity="getSeverity(jobData.job.status)" />
           <Button icon="pi pi-file-pdf" label="Export Report" outlined size="small" />
         </div>
       </div>
@@ -347,116 +377,169 @@ onMounted(() => {
         </div>
         <ProgressBar :value="jobData.job.completionPct" class="h-2" />
       </div>
-      
-      <p class="mt-4 text-gray-700 dark:text-gray-300">{{ jobData.job.workSummary }}</p>
-      
-      <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-        <div>
-          <span class="font-medium">First Visit:</span> {{ formatDate(jobData.job.firstDate) }}
-        </div>
-        <div>
-          <span class="font-medium">Last Visit:</span> {{ formatDate(jobData.job.lastDate) }}
-        </div>
-        <div>
-          <span class="font-medium">Total Visits:</span> {{ jobData.job.totalVisits }}
-        </div>
-        <div>
-          <span class="font-medium">Revisit Count:</span> {{ jobData.job.revisitCount }}
-        </div>
-      </div>
     </div>
     
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-      <!-- Completed Visits -->
-      <Card class="shadow-sm">
-        <template #title>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-check-circle text-green-500"></i>
-            <span>Completed Visits</span>
-          </div>
-        </template>
-        <template #content>
-          <div class="text-3xl font-bold">{{ completedVisitsCount }}</div>
-          <div class="text-sm text-gray-600 mt-1">
-            of {{ jobData.job.totalVisits }} total visits
-          </div>
-        </template>
-      </Card>
-      
-      <!-- Scheduled Visits -->
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- Visits Card -->
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center gap-2">
             <i class="pi pi-calendar text-blue-500"></i>
-            <span>Scheduled Visits</span>
+            <span>Visits</span>
           </div>
         </template>
         <template #content>
-          <div class="text-3xl font-bold">{{ scheduledVisitsCount }}</div>
-        </template>
-      </Card>
-      
-      <!-- Failed/Cancelled Visits -->
-      <Card class="shadow-sm">
-        <template #title>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-times-circle text-red-500"></i>
-            <span>Failed Visits</span>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="text-center">
+              <div class="text-xl font-bold text-green-600">{{ jobData.kpis.visitsCompleted }}</div>
+              <div class="text-xs text-gray-600">Completed</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-blue-600">{{ jobData.kpis.visitsScheduled }}</div>
+              <div class="text-xs text-gray-600">Scheduled</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-gray-600">{{ jobData.kpis.totalVisits }}</div>
+              <div class="text-xs text-gray-600">Total</div>
+            </div>
           </div>
         </template>
-        <template #content>
-          <div class="text-3xl font-bold">{{ failedVisitsCount }}</div>
-        </template>
       </Card>
       
-      <!-- Open Issues -->
+      <!-- Issues Card -->
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center gap-2">
             <i class="pi pi-exclamation-circle text-yellow-500"></i>
-            <span>Open Issues</span>
+            <span>Issues</span>
           </div>
         </template>
         <template #content>
-          <div class="text-3xl font-bold">{{ openIssuesCount }}</div>
-          <div class="text-sm text-red-600 mt-1" v-if="highImpactIssuesCount > 0">
-            {{ highImpactIssuesCount }} high-impact
+          <div class="grid grid-cols-3 gap-2">
+            <div class="text-center">
+              <div class="text-xl font-bold text-red-600">{{ jobData.kpis.issuesOpen }}</div>
+              <div class="text-xs text-gray-600">Open</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-red-600">{{ jobData.kpis.issuesHighImpact }}</div>
+              <div class="text-xs text-gray-600">High Impact</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-green-600">{{ jobData.kpis.issuesResolved }}</div>
+              <div class="text-xs text-gray-600">Resolved</div>
+            </div>
           </div>
         </template>
       </Card>
       
-      <!-- Average Time on Site -->
+      <!-- Materials Card -->
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center gap-2">
-            <i class="pi pi-clock text-purple-500"></i>
-            <span>Avg Time on Site</span>
+            <i class="pi pi-box text-purple-500"></i>
+            <span>Materials</span>
           </div>
         </template>
         <template #content>
-          <div class="text-3xl font-bold">{{ formatMinutes(averageTimeOnSite) }}</div>
-          <div class="text-sm text-gray-600 mt-1">
-            per completed visit
+          <div class="grid grid-cols-2 gap-2">
+            <div class="text-center">
+              <div class="text-xl font-bold text-green-600">{{ jobData.kpis.materialsUsed }}</div>
+              <div class="text-xs text-gray-600">Used</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-blue-600">{{ jobData.kpis.materialsOrdered }}</div>
+              <div class="text-xs text-gray-600">Ordered</div>
+            </div>
           </div>
         </template>
       </Card>
       
-      <!-- Completion % -->
+      <!-- Progress Card -->
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center gap-2">
-            <i class="pi pi-chart-line text-cyan-500"></i>
-            <span>Completion</span>
+            <i class="pi pi-chart-pie text-cyan-500"></i>
+            <span>Progress</span>
           </div>
         </template>
         <template #content>
-          <div class="text-3xl font-bold">{{ jobData.job.completionPct }}%</div>
-          <div class="flex mt-1">
-            <ProgressBar :value="jobData.job.completionPct" class="h-2 w-full" />
+          <div class="flex justify-center">
+            <div style="width: 100px; height: 100px">
+              <Chart type="doughnut" :data="progressChartData" :options="progressChartOptions" />
+            </div>
           </div>
         </template>
       </Card>
+    </div>
+    
+    <!-- Job Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Left Column -->
+      <div class="lg:col-span-2 bg-white dark:bg-surface-900 p-4 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Job Details</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Project ID</span>
+              <span class="font-medium">{{ jobData.job.projectId }}</span>
+            </div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Start Date</span>
+              <span class="font-medium">{{ formatDate(jobData.job.startDate) }}</span>
+            </div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Estimated End Date</span>
+              <span class="font-medium">{{ formatDate(jobData.job.estimatedEndDate) }}</span>
+            </div>
+          </div>
+          <div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Status</span>
+              <Tag :value="jobData.job.status" :severity="getSeverity(jobData.job.status)" />
+            </div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Assigned Manager</span>
+              <span class="font-medium">{{ jobData.job.assignedManager }}</span>
+            </div>
+            <div class="mb-3">
+              <span class="block text-sm text-gray-500">Completion</span>
+              <span class="font-medium">{{ jobData.job.completionPct }}%</span>
+            </div>
+          </div>
+        </div>
+        
+        <Divider />
+        
+        <div class="mb-3">
+          <span class="block text-sm text-gray-500 mb-1">Notes</span>
+          <p>{{ jobData.job.notes }}</p>
+        </div>
+      </div>
+      
+      <!-- Right Column - Timeline Preview -->
+      <div class="bg-white dark:bg-surface-900 p-4 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
+        
+        <Timeline :value="jobData.timeline.slice(0, 3)" class="customized-timeline">
+          <template #content="slotProps">
+            <div class="flex flex-col">
+              <small class="text-gray-500">{{ formatDate(slotProps.item.date) }}</small>
+              <span class="font-medium">{{ slotProps.item.status }}</span>
+              <p class="text-sm text-gray-600">{{ slotProps.item.details }}</p>
+            </div>
+          </template>
+          <template #opposite>
+            <span></span>
+          </template>
+          <template #marker="slotProps">
+            <span class="flex w-8 h-8 items-center justify-center rounded-full" :style="{ backgroundColor: slotProps.item.color }">
+              <i :class="slotProps.item.icon" class="text-white text-sm"></i>
+            </span>
+          </template>
+        </Timeline>
+      </div>
     </div>
     
     <!-- Tabbed Content -->
@@ -474,41 +557,42 @@ onMounted(() => {
             <DataTable 
               :value="jobData.visits" 
               :paginator="true" 
-              :rows="10"
-              sortField="visitDate"
-              :sortOrder="-1"
+              :rows="5"
               stripedRows 
               responsiveLayout="scroll"
               class="p-datatable-sm"
-              dataKey="visitId"
               @row-click="event => navigateToVisit(event.data.visitId)"
             >
-              <Column field="visitId" header="Visit ID" sortable style="width: 10%"></Column>
-              <Column field="phaseName" header="Phase" sortable style="width: 15%"></Column>
-              <Column field="visitDate" header="Date" sortable style="width: 15%">
+              <Column field="visitId" header="Visit ID" style="width: 10%"></Column>
+              <Column field="date" header="Date" style="width: 15%">
                 <template #body="slotProps">
-                  {{ formatDate(slotProps.data.visitDate) }}
+                  {{ formatDate(slotProps.data.date) }}
                 </template>
               </Column>
-              <Column field="status" header="Status" sortable style="width: 20%">
+              <Column field="status" header="Status" style="width: 15%">
                 <template #body="slotProps">
                   <Tag :value="slotProps.data.status" :severity="getSeverity(slotProps.data.status)" />
                 </template>
               </Column>
-              <Column field="timeOnSiteMin" header="Time on Site" sortable style="width: 15%">
+              <Column field="technicianName" header="Technician" style="width: 20%">
                 <template #body="slotProps">
-                  {{ formatMinutes(slotProps.data.timeOnSiteMin) }}
+                  {{ slotProps.data.technicianName || 'Not assigned' }}
                 </template>
               </Column>
-              <Column field="revisitNeeded" header="Revisit Needed" sortable style="width: 15%">
+              <Column field="duration" header="Duration" style="width: 15%">
                 <template #body="slotProps">
-                  <Tag v-if="slotProps.data.revisitNeeded" severity="warning" value="Yes" />
-                  <Tag v-else severity="success" value="No" />
+                  {{ formatHours(slotProps.data.duration) }}
                 </template>
               </Column>
-              <Column style="width: 10%">
+              <Column field="tasksCompleted" header="Tasks" style="width: 15%">
                 <template #body="slotProps">
-                  <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm" @click.stop="navigateToVisit(slotProps.data.visitId)" />
+                  {{ slotProps.data.tasksCompleted }}/{{ slotProps.data.tasksTotal }}
+                </template>
+              </Column>
+              <Column field="hasIssues" header="Issues" style="width: 10%">
+                <template #body="slotProps">
+                  <i v-if="slotProps.data.hasIssues" class="pi pi-exclamation-triangle text-yellow-500"></i>
+                  <i v-else class="pi pi-check-circle text-green-500"></i>
                 </template>
               </Column>
             </DataTable>
@@ -516,91 +600,90 @@ onMounted(() => {
           
           <!-- Timeline Tab -->
           <TabPanel value="timeline">
-            <div class="p-4">
-              <Timeline :value="timelineEvents" layout="vertical" class="w-full">
-                <template #content="slotProps">
-                  <div class="flex flex-col">
-                    <span class="font-bold mb-1">{{ slotProps.item.event }}</span>
-                    <span class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ formatDate(slotProps.item.date) }}</span>
-                    <p class="text-sm m-0">{{ slotProps.item.details }}</p>
-                  </div>
-                </template>
-                <template #opposite="slotProps">
-                  <div class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ formatDate(slotProps.item.date) }}
-                  </div>
-                </template>
-                <template #marker="slotProps">
-                  <div class="flex items-center justify-center w-8 h-8 border-2 border-white dark:border-surface-900 rounded-full" :style="{ backgroundColor: slotProps.item.color }">
-                    <i :class="[slotProps.item.icon, 'text-white text-lg']"></i>
-                  </div>
-                </template>
-              </Timeline>
-            </div>
+            <Timeline :value="jobData.timeline" class="customized-timeline">
+              <template #content="slotProps">
+                <div class="flex flex-col">
+                  <small class="text-gray-500">{{ formatDate(slotProps.item.date) }}</small>
+                  <span class="font-medium">{{ slotProps.item.status }}</span>
+                  <p class="text-sm text-gray-600">{{ slotProps.item.details }}</p>
+                </div>
+              </template>
+              <template #opposite>
+                <span></span>
+              </template>
+              <template #marker="slotProps">
+                <span class="flex w-8 h-8 items-center justify-center rounded-full" :style="{ backgroundColor: slotProps.item.color }">
+                  <i :class="slotProps.item.icon" class="text-white text-sm"></i>
+                </span>
+              </template>
+            </Timeline>
           </TabPanel>
           
           <!-- Issues Tab -->
           <TabPanel value="issues">
-            <DataTable 
-              :value="jobIssues" 
-              :paginator="true" 
-              :rows="10"
-              stripedRows 
-              responsiveLayout="scroll"
-              class="p-datatable-sm"
-              dataKey="issueId"
-            >
-              <Column field="issueId" header="ID" sortable style="width: 10%"></Column>
-              <Column field="title" header="Title" sortable style="width: 20%"></Column>
-              <Column field="description" header="Description" style="width: 25%"></Column>
-              <Column field="status" header="Status" sortable style="width: 10%">
-                <template #body="slotProps">
-                  <Tag 
-                    :value="slotProps.data.status" 
-                    :severity="slotProps.data.status === 'Open' ? 'danger' : 'success'" 
-                  />
-                </template>
-              </Column>
-              <Column field="impact" header="Impact" sortable style="width: 10%">
-                <template #body="slotProps">
-                  <Tag 
-                    :value="slotProps.data.impact" 
-                    :severity="getImpactSeverity(slotProps.data.impact)" 
-                  />
-                </template>
-              </Column>
-              <Column field="assignedTo" header="Assigned To" sortable style="width: 15%"></Column>
-              <Column field="affectedVisits" header="Affected Visits" style="width: 10%">
-                <template #body="slotProps">
-                  <div class="flex flex-wrap gap-1">
-                    <Tag 
-                      v-for="visitId in slotProps.data.affectedVisits" 
-                      :key="visitId" 
-                      :value="visitId" 
-                      severity="info"
-                      class="text-xs"
-                    />
-                  </div>
-                </template>
-              </Column>
-            </DataTable>
+            <div v-for="issue in jobData.issues" :key="issue.issueId" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <Tag :value="issue.impact" :severity="getImpactSeverity(issue.impact)" />
+                  <h3 class="font-bold text-lg">{{ issue.title }}</h3>
+                </div>
+                <Tag :value="issue.status" :severity="getIssueSeverity(issue.status)" />
+              </div>
+              
+              <p class="text-gray-700 dark:text-gray-300 mb-3">{{ issue.description }}</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="block text-gray-500">Issue ID</span>
+                  <span>{{ issue.issueId }}</span>
+                </div>
+                <div>
+                  <span class="block text-gray-500">Reported Date</span>
+                  <span>{{ formatDate(issue.reportedDate) }}</span>
+                </div>
+                <div>
+                  <span class="block text-gray-500">Assigned To</span>
+                  <span>{{ issue.assignedTo }}</span>
+                </div>
+                <div v-if="issue.status === 'Resolved'">
+                  <span class="block text-gray-500">Resolved Date</span>
+                  <span>{{ formatDate(issue.resolvedDate) }}</span>
+                </div>
+                <div v-if="issue.status === 'Resolved'">
+                  <span class="block text-gray-500">Resolved By</span>
+                  <span>{{ issue.resolvedBy }}</span>
+                </div>
+              </div>
+            </div>
           </TabPanel>
           
           <!-- Materials Tab -->
           <TabPanel value="materials">
             <DataTable 
-              :value="materials" 
+              :value="jobData.materials" 
               :paginator="true" 
-              :rows="10"
+              :rows="5"
               stripedRows 
               responsiveLayout="scroll"
               class="p-datatable-sm"
-              dataKey="id"
             >
-              <Column field="id" header="ID" sortable style="width: 15%"></Column>
-              <Column field="name" header="Material" sortable style="width: 45%"></Column>
-              <Column field="quantity" header="Qty" sortable style="width: 15%"></Column>
-              <Column field="visitId" header="Used On Visit" sortable style="width: 25%"></Column>
+              <Column field="materialId" header="Material ID" style="width: 15%"></Column>
+              <Column field="name" header="Name" style="width: 25%"></Column>
+              <Column field="quantity" header="Quantity" style="width: 15%">
+                <template #body="slotProps">
+                  {{ slotProps.data.quantity }} {{ slotProps.data.unit }}
+                </template>
+              </Column>
+              <Column field="status" header="Status" style="width: 15%">
+                <template #body="slotProps">
+                  <Tag :value="slotProps.data.status" :severity="getMaterialStatusSeverity(slotProps.data.status)" />
+                </template>
+              </Column>
+              <Column field="dateUsed" header="Date" style="width: 20%">
+                <template #body="slotProps">
+                  {{ formatDate(slotProps.data.dateUsed || slotProps.data.dateDelivered || slotProps.data.dateOrdered) }}
+                </template>
+              </Column>
             </DataTable>
           </TabPanel>
         </TabPanels>
@@ -623,10 +706,6 @@ onMounted(() => {
 
 :deep(.p-progress-bar) {
   height: 0.5rem;
-}
-
-:deep(.p-tabs-nav) {
-  border-bottom: 1px solid var(--surface-200);
 }
 
 :deep(.p-tabs-header-action) {

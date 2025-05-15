@@ -22,8 +22,23 @@ const model = ref([
                         to: '/dashboard'
                     },
                     {
-                        label: 'All Jobs',
+                        label: 'Project Details',
+                        icon: 'pi pi-fw pi-folder-open',
+                        to: '/dashboard/projects/3912'
+                    },
+                    {
+                        label: 'Job Details',
                         icon: 'pi pi-fw pi-briefcase',
+                        to: '/dashboard/projects/3912/jobs/6d815ec56dfb85e2182e01471c31e486'
+                    },
+                    {
+                        label: 'Visit Details',
+                        icon: 'pi pi-fw pi-calendar-plus',
+                        to: '/dashboard/projects/3912/jobs/6d815ec56dfb85e2182e01471c31e486/visits/VG1'
+                    },
+                    {
+                        label: 'All Jobs',
+                        icon: 'pi pi-fw pi-list',
                         to: '/dispatch/jobs'
                     }
                 ]
