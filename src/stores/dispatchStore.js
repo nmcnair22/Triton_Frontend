@@ -7,18 +7,8 @@ import { ApiService } from '@/service/ApiService';
 export const useDispatchStore = defineStore('dispatch', {
   state: () => ({
     // Loading states
-    loading: {
-      dashboardData: false,
-      details: false,
-      clientMetrics: false
-    },
-    
-    // Error states
-    errors: {
-      dashboardData: null,
-      details: null,
-      clientMetrics: null
-    },
+    loading: false,
+    error: null,
     
     // Date range filter
     dateRange: {
@@ -47,15 +37,38 @@ export const useDispatchStore = defineStore('dispatch', {
     clientMetrics: [],
     
     // Dispatch data rows for Jobs table
-    dispatchRows: []
+    dispatchRows: [],
+    
+    // Dashboard data
+    dashboardSummary: null,
+    dashboardTrends: null,
+    
+    // Projects data
+    projects: [],
+    currentProject: null,
+    
+    // Jobs data
+    jobs: [],
+    currentJob: null,
+    
+    // Visits data
+    currentVisit: null,
+    
+    // Alerts
+    alerts: [],
+    
+    // Pagination
+    pagination: {
+      page: 1,
+      limit: 10,
+      total: 0
+    }
   }),
   
   getters: {
     // KPI metrics and their changes
     totalDispatches: state => {
-      const value = state.header?.total_dispatches?.current || 0;
-      console.log('Getter totalDispatches:', { header: state.header, value });
-      return value;
+      return state.header?.total_dispatches?.current || 0;
     },
     previousPeriodDispatches: state => state.header?.total_dispatches?.previous || 0,
     
@@ -76,60 +89,53 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Overview metrics
     volumeOverTime: state => {
-      const data = state.overview?.daily_volume || [];
-      console.log('Getter volumeOverTime:', { overview: state.overview, dataLength: data.length });
-      return data;
+      return state.overview?.daily_volume || [];
     },
-    statusDistribution: state => state.overview?.status_breakdown || [],
-    clientDispatches: state => state.overview?.top_clients || [],
-    projectDispatches: state => state.overview?.top_projects || [],
+    statusDistribution: state => {
+      return state.overview?.status_breakdown || [];
+    },
+    clientDispatches: state => {
+      return state.overview?.top_clients || [];
+    },
+    projectDispatches: state => {
+      return state.overview?.top_projects || [];
+    },
     
     // Revenue metrics
-    revenueOverTime: state => state.revenue?.revenue_timeline || [],
-    clientsByRevenue: state => state.revenue?.top_clients || [],
+    revenueOverTime: state => {
+      return state.revenue?.revenue_timeline || [];
+    },
+    clientsByRevenue: state => {
+      return state.revenue?.top_clients || [];
+    },
     revenueCategories: state => state.revenue?.categories || [],
-    revenueTotals: state => state.revenue?.totals || {},
+    revenueTotals: state => {
+      return state.revenue?.totals || {};
+    },
     
     // Additional revenue metrics
     averageRevenuePerDispatch: state => {
-      // Calculate based on total revenue and total dispatches
       const totalRevenue = state.header?.total_revenue?.current || 0;
       const totalDispatches = state.header?.total_dispatches?.current || 1; // Avoid division by zero
-      const average = totalDispatches > 0 ? totalRevenue / totalDispatches : 0;
-      console.log('Computed averageRevenuePerDispatch:', { totalRevenue, totalDispatches, average });
-      return average;
+      return totalRevenue / totalDispatches;
     },
     
     highestDailyRevenue: state => {
-      // Find the highest revenue day from the timeline
       const revenueTimeline = state.revenue?.revenue_timeline || [];
-      if (revenueTimeline.length === 0) return 0;
+      if (!revenueTimeline.length) return 0;
       
-      const highest = revenueTimeline.reduce((max, day) => {
-        return day.revenue > max ? day.revenue : max;
-      }, 0);
-      console.log('Computed highestDailyRevenue:', { timelineLength: revenueTimeline.length, highest });
-      return highest;
+      return Math.max(...revenueTimeline.map(day => day.revenue || 0));
     },
     
     lowestDailyRevenue: state => {
-      // Find the lowest revenue day from the timeline (excluding zero values)
       const revenueTimeline = state.revenue?.revenue_timeline || [];
-      if (revenueTimeline.length === 0) return 0;
+      if (!revenueTimeline.length) return 0;
       
-      // Filter out days with zero revenue first
+      // Filter out days with zero revenue
       const nonZeroDays = revenueTimeline.filter(day => day.revenue > 0);
-      if (nonZeroDays.length === 0) return 0;
+      if (!nonZeroDays.length) return 0;
       
-      const lowest = nonZeroDays.reduce((min, day) => {
-        return (day.revenue < min || min === 0) ? day.revenue : min;
-      }, nonZeroDays[0].revenue);
-      console.log('Computed lowestDailyRevenue:', { 
-        timelineLength: revenueTimeline.length, 
-        nonZeroDaysLength: nonZeroDays.length,
-        lowest 
-      });
-      return lowest;
+      return Math.min(...nonZeroDays.map(day => day.revenue));
     },
     
     // Cached status - determines if we should refetch data
@@ -140,60 +146,105 @@ export const useDispatchStore = defineStore('dispatch', {
     },
     
     // Helper to check if any section is loading
-    isLoading: state => Object.values(state.loading).some(status => status === true)
+    isLoading: state => state.loading === true,
+    
+    // Status helpers
+    jobStatusColor: () => (status) => {
+      if (!status) return '#9CA3AF'; // gray-400
+      
+      const statusLower = status.toLowerCase();
+      if (statusLower.includes('complete')) return '#22C55E'; // green-500
+      if (statusLower.includes('in progress')) return '#3B82F6'; // blue-500
+      if (statusLower.includes('schedul')) return '#F59E0B'; // amber-500
+      if (statusLower.includes('delay')) return '#EF4444'; // red-500
+      if (statusLower.includes('cancel')) return '#6B7280'; // gray-500
+      return '#9CA3AF'; // gray-400
+    },
+    
+    visitStatusColor: () => (status) => {
+      if (!status) return '#9CA3AF'; // gray-400
+      
+      const statusLower = status.toLowerCase();
+      if (statusLower.includes('complete')) return '#22C55E'; // green-500
+      if (statusLower.includes('fail')) return '#EF4444'; // red-500
+      if (statusLower.includes('schedul')) return '#3B82F6'; // blue-500
+      if (statusLower.includes('cancel')) return '#6B7280'; // gray-500
+      return '#9CA3AF'; // gray-400
+    },
+    
+    // Dashboard metrics
+    totalJobs: state => state.dashboardSummary?.total_jobs?.current || 0,
+    activeJobs: state => state.dashboardSummary?.active_jobs?.current || 0,
+    averageVisitsPerJob: state => state.dashboardSummary?.avg_visits_per_job?.current || 0,
+    
+    // Count of jobs by status
+    jobsByStatus: state => state.dashboardTrends?.jobs_by_status || [],
+    
+    // Job metrics over time
+    jobsOverTime: state => state.dashboardTrends?.jobs_timeline || [],
+    
+    // Current job details
+    jobDetails: state => state.currentJob?.job || null,
+    jobVisits: state => state.currentJob?.visits || [],
+    jobFinancials: state => state.currentJob?.financials || { invoices: [], lineItems: [] },
+    jobTimeline: state => state.currentJob?.timeline || { events: [], delays: [] },
+    jobAnalysis: state => state.currentJob?.analysis || { 
+      key_issues: [], 
+      outstanding_items: [], 
+      recommended_actions: [] 
+    },
+    
+    // Helper for pagination
+    totalPages: state => Math.ceil(state.pagination.total / state.pagination.limit)
   },
   
   actions: {
-    // Set date range for filtering dashboard data
+    // Action for setting loading state
+    setLoading(section, isLoading) {
+      this.loading = isLoading;
+    },
+
+    // Action for handling errors
+    setError(section, errorMessage) {
+      this.error = errorMessage;
+    },
+
+    // Action for clearing errors
+    clearErrors() {
+      this.error = null;
+    },
+
+    // Action for setting date range
     setDateRange(startDate, endDate) {
-      if (startDate && endDate) {
-        this.dateRange.startDate = startDate instanceof Date ? startDate : new Date(startDate);
-        this.dateRange.endDate = endDate instanceof Date ? endDate : new Date(endDate);
-        console.log('Date range set:', this.dateRange);
-      } else {
-        console.error('Invalid date range provided:', { startDate, endDate });
-      }
+      this.dateRange.startDate = startDate;
+      this.dateRange.endDate = endDate;
     },
     
-    // Debug helper to inspect the revenue data
-    debugRevenueData() {
-      console.log('--- DEBUG REVENUE DATA ---');
-      console.log('Header:', this.header);
-      console.log('Revenue data:', this.revenue);
-      console.log('Revenue totals:', this.revenueTotals);
-      console.log('Average revenue per dispatch:', this.averageRevenuePerDispatch);
-      console.log('Highest daily revenue:', this.highestDailyRevenue);
-      console.log('Lowest daily revenue:', this.lowestDailyRevenue);
-      console.log('Revenue timeline:', this.revenueOverTime?.slice(0, 3)); // Just show the first 3 entries
-      console.log('--- END DEBUG REVENUE DATA ---');
+    // Set pagination
+    setPagination(page, limit) {
+      this.pagination.page = page;
+      this.pagination.limit = limit;
     },
     
     // Fetch all dashboard data using the /dashboard/all endpoint
     async fetchDashboardData(forceFetch = false) {
       if (!this.dateRange.startDate || !this.dateRange.endDate) {
-        console.error('Date range not set');
         return;
       }
       
       // Use cache if available and not forced refresh
       if (this.isDataCached && !forceFetch) {
-        console.log('Using cached dashboard data');
         return;
       }
       
-      this.loading.dashboardData = true;
-      this.errors.dashboardData = null;
+      this.setLoading('dashboardData', true);
+      this.setError('dashboardData', null);
       
       try {
-        console.log('Fetching dashboard data for date range:', this.dateRange);
-        
         const response = await DispatchService.getDashboardAll(
           this.dateRange.startDate,
           this.dateRange.endDate
         );
-        
-        console.log('Dashboard data received:', response);
-        console.log('Response data structure:', response.data);
         
         // Handle the nested structure where everything is under 'data'
         if (response.data && response.data.success && response.data.data) {
@@ -204,80 +255,54 @@ export const useDispatchStore = defineStore('dispatch', {
           this.header = responseData.header;
           this.overview = responseData.overview;
           this.revenue = responseData.revenue;
-          
-          console.log('Extracted header:', this.header);
-          console.log('Extracted overview:', this.overview);
-          console.log('Extracted revenue:', this.revenue);
-          
-          // Debug revenue data after loading
-          this.debugRevenueData();
         } else {
-          console.error('Unexpected API response structure:', response.data);
-          this.errors.dashboardData = 'Unexpected data format received from the server';
+          this.setError('dashboardData', 'Unexpected data format received from the server');
         }
         
         // Update cache timestamp
         this.lastFetchTimestamp = Date.now();
-        
-        console.log('All dashboard data loaded');
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        this.errors.dashboardData = error.message || 'Failed to load dashboard data';
+        this.setError('dashboardData', error.message || 'Failed to load dashboard data');
       } finally {
-        this.loading.dashboardData = false;
+        this.setLoading('dashboardData', false);
       }
     },
     
-    // Fetch detailed dispatch records for the table view
-    async fetchDetailedDispatches(page = 1, perPage = 25, sortBy = null, sortOrder = null) {
+    // Fetch detailed dispatches for a given page
+    async fetchDetailedDispatches(page = 1, perPage = 10) {
       if (!this.dateRange.startDate || !this.dateRange.endDate) {
-        console.error('Date range not set');
         return;
       }
       
-      this.loading.details = true;
-      this.errors.details = null;
+      this.setLoading('details', true);
+      this.setError('details', null);
       
       try {
-        console.log('Fetching detailed dispatches:', { page, perPage, sortBy, sortOrder });
-        
-        const response = await DispatchService.getDashboardDetails(
-          this.dateRange.startDate,
-          this.dateRange.endDate,
+        const response = await DispatchService.getDetailedDispatches({
+          startDate: this.dateRange.startDate, 
+          endDate: this.dateRange.endDate,
           page,
-          perPage,
-          sortBy,
-          sortOrder
-        );
+          perPage
+        });
         
-        console.log('Detailed dispatches received:', response);
-        
-        // Handle the nested structure
         if (response.data && response.data.success && response.data.data) {
           const responseData = response.data.data;
           
           this.details = {
             dispatches: responseData.dispatches || [],
-            pagination: {
-              currentPage: parseInt(responseData.pagination?.current_page) || 1,
-              perPage: parseInt(responseData.pagination?.per_page) || perPage,
-              total: parseInt(responseData.pagination?.total) || 0,
-              totalPages: parseInt(responseData.pagination?.last_page) || 1
+            pagination: responseData.pagination || {
+              currentPage: page,
+              perPage: perPage,
+              total: 0
             }
           };
-          
-          console.log('Updated pagination info:', this.details.pagination);
         } else {
-          console.error('Unexpected API response structure for details:', response.data);
-          this.errors.details = 'Unexpected data format received from the server';
+          this.setError('details', 'Unexpected data format received from the server');
         }
-        
-        console.log('Detailed dispatches loaded:', this.details);
       } catch (error) {
-        console.error('Error fetching detailed dispatches:', error);
-        this.errors.details = error.message || 'Failed to load detailed dispatches';
+        this.setError('details', error.message || 'Failed to load detailed dispatches');
       } finally {
-        this.loading.details = false;
+        this.setLoading('details', false);
       }
     },
     
@@ -299,8 +324,8 @@ export const useDispatchStore = defineStore('dispatch', {
         return;
       }
       
-      this.loading.clientMetrics = true;
-      this.errors.clientMetrics = null;
+      this.setLoading('clientMetrics', true);
+      this.setError('clientMetrics', null);
       
       try {
         console.log('Fetching client metrics:', { sortBy, sortOrder });
@@ -333,15 +358,15 @@ export const useDispatchStore = defineStore('dispatch', {
           }
         } else {
           console.error('Unexpected API response structure for client metrics:', response.data);
-          this.errors.clientMetrics = 'Unexpected data format received from the server';
+          this.error = 'Unexpected data format received from the server';
         }
         
         console.log('Client metrics loaded:', this.clientMetrics);
       } catch (error) {
         console.error('Error fetching client metrics:', error);
-        this.errors.clientMetrics = error.message || 'Failed to load client metrics';
+        this.error = error.message || 'Failed to load client metrics';
       } finally {
-        this.loading.clientMetrics = false;
+        this.setLoading('clientMetrics', false);
       }
     },
     
@@ -393,14 +418,25 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Fetch dispatch data for Jobs table
     async fetchDispatchData(filters) {
-      this.loading.details = true;
-      this.errors.details = null;
+      console.log('[DEBUG] dispatchStore.fetchDispatchData - Starting with filters:', filters);
+      this.setLoading('details', true);
+      this.setError('details', null);
 
       try {
+        console.log('[DEBUG] dispatchStore.fetchDispatchData - Calling DispatchService.getDispatchData');
         const response = await DispatchService.getDispatchData(filters);
-        console.log('fetchDispatchData response:', response);
+        console.log('[DEBUG] dispatchStore.fetchDispatchData - Response received:', response.status);
+        console.log('[DEBUG] dispatchStore.fetchDispatchData - Response success:', response.data?.success);
+        
         if (response.data && response.data.success && response.data.data) {
+          console.log('[DEBUG] dispatchStore.fetchDispatchData - Data structure:', 
+            Object.keys(response.data.data));
+          console.log('[DEBUG] dispatchStore.fetchDispatchData - Dispatches count:', 
+            response.data.data.dispatches?.length || 0);
+          
           const rawRows = response.data.data.dispatches || [];
+          console.log('[DEBUG] dispatchStore.fetchDispatchData - Processing', rawRows.length, 'raw rows');
+          
           const mappedRows = rawRows.map(d => ({
             id: d["Ticket ID"] ?? d.ticket_id,
             customerName: d["Customer Name"] ?? d.customer_name,
@@ -457,6 +493,8 @@ export const useDispatchStore = defineStore('dispatch', {
             lineAmount: d["Line Amount"] ?? d.line_amount
           }));
 
+          console.log('[DEBUG] dispatchStore.fetchDispatchData - Mapped', mappedRows.length, 'rows');
+          
           // Deduplicate by id to avoid duplicate keys in DataTable
           const uniqueMap = new Map();
           mappedRows.forEach(row => {
@@ -466,15 +504,17 @@ export const useDispatchStore = defineStore('dispatch', {
           });
 
           this.dispatchRows = Array.from(uniqueMap.values());
+          console.log('[DEBUG] dispatchStore.fetchDispatchData - Final unique rows count:', this.dispatchRows.length);
         } else {
-          console.error('Unexpected API response:', response.data);
-          this.errors.details = 'Invalid response format';
+          console.error('[DEBUG] dispatchStore.fetchDispatchData - Unexpected API response:', response.data);
+          this.error = 'Invalid response format';
         }
       } catch (error) {
-        console.error('Error fetching dispatch data:', error);
-        this.errors.details = error.message || 'Failed to load dispatch data';
+        console.error('[DEBUG] dispatchStore.fetchDispatchData - Error:', error);
+        this.error = error.message || 'Failed to load dispatch data';
       } finally {
-        this.loading.details = false;
+        this.setLoading('details', false);
+        console.log('[DEBUG] dispatchStore.fetchDispatchData - Completed, loading status:', this.loading);
       }
     },
 
@@ -536,6 +576,255 @@ export const useDispatchStore = defineStore('dispatch', {
         console.error('Error analyzing ticket:', error);
         return { success: false, message: error.message || 'Failed to analyze ticket' };
       }
+    },
+    
+    // Dashboard Summary
+    async fetchDashboardSummary() {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getDashboardSummary();
+        
+        if (response.data && response.data.success) {
+          this.dashboardSummary = response.data.data;
+        } else {
+          throw new Error(response.data.message || 'Failed to load dashboard summary');
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard summary:', error);
+        this.error = error.message || 'Failed to load dashboard summary';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Dashboard Trends
+    async fetchDashboardTrends() {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getDashboardTrends();
+        
+        if (response.data && response.data.success) {
+          this.dashboardTrends = response.data.data;
+        } else {
+          throw new Error(response.data.message || 'Failed to load dashboard trends');
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard trends:', error);
+        this.error = error.message || 'Failed to load dashboard trends';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Projects list
+    async fetchProjects(params = {}) {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getProjects(params);
+        
+        if (response.data && response.data.success) {
+          this.projects = response.data.data.projects || [];
+          
+          if (response.data.data.pagination) {
+            this.pagination = response.data.data.pagination;
+          }
+        } else {
+          throw new Error(response.data.message || 'Failed to load projects');
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        this.error = error.message || 'Failed to load projects';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Project details
+    async fetchProject(projectId) {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getProject(projectId);
+        
+        if (response.data && response.data.success) {
+          this.currentProject = response.data.data;
+          this.jobs = response.data.data.jobs || [];
+        } else {
+          throw new Error(response.data.message || 'Failed to load project details');
+        }
+      } catch (error) {
+        console.error('Error fetching project:', error);
+        this.error = error.message || 'Failed to load project details';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Job details
+    async fetchJobDetails(jobId) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Starting for job ID:', jobId);
+        this.loading = true;
+        this.error = null;
+        
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Calling DispatchService.getJobDetails');
+        const response = await DispatchService.getJobDetails(jobId);
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Response received');
+        
+        if (response.data && response.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Response success:', response.data.success);
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Response data structure:', 
+            Object.keys(response.data.data || {}));
+          
+          // Format the response data using the helper method
+          this.currentJob = DispatchService.formatJobDetails(response.data.data);
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Formatted job data structure:', 
+            Object.keys(this.currentJob || {}));
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Number of visits:', 
+            this.currentJob?.visits?.length || 0);
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchJobDetails - API error:', 
+            response.data?.message || 'Unknown error');
+          throw new Error(response.data?.message || 'Failed to load job details');
+        }
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchJobDetails - Exception:', error);
+        this.error = error.message || 'Failed to load job details';
+      } finally {
+        this.loading = false;
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Completed, loading status:', this.loading);
+      }
+    },
+    
+    // Visit details via job analysis
+    async fetchVisitFromJob(jobId, visitId) {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        // First get job data with visits component
+        const jobResponse = await DispatchService.getJobVisits(jobId);
+        
+        if (jobResponse.data && jobResponse.data.success) {
+          const job = jobResponse.data.data;
+          
+          // Find the specific visit in the job data
+          const visit = job.visits.find(v => v.visit_id === visitId);
+          
+          if (visit) {
+            // Format the visit data using the helper method
+            this.currentVisit = DispatchService.formatVisitData(visit);
+          } else {
+            throw new Error('Visit not found in job data');
+          }
+        } else {
+          throw new Error(jobResponse.data.message || 'Failed to load job data');
+        }
+      } catch (error) {
+        console.error('Error fetching visit from job:', error);
+        this.error = error.message || 'Failed to load visit details';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Direct visit endpoint
+    async fetchVisit(visitId) {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getVisit(visitId);
+        
+        if (response.data && response.data.success) {
+          // Format the response data
+          this.currentVisit = DispatchService.formatVisitData(response.data.data);
+        } else {
+          throw new Error(response.data.message || 'Failed to load visit details');
+        }
+      } catch (error) {
+        console.error('Error fetching visit:', error);
+        this.error = error.message || 'Failed to load visit details';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Alerts
+    async fetchAlerts() {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.getAlerts();
+        
+        if (response.data && response.data.success) {
+          this.alerts = response.data.data.alerts || [];
+        } else {
+          throw new Error(response.data.message || 'Failed to load alerts');
+        }
+      } catch (error) {
+        console.error('Error fetching alerts:', error);
+        this.error = error.message || 'Failed to load alerts';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Submit visit issue resolution
+    async submitIssueResolution(visitId, issueId, resolution) {
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        const response = await DispatchService.submitIssueResolution(
+          visitId,
+          issueId,
+          resolution
+        );
+        
+        if (response.data && response.data.success) {
+          // Update the issue in the current visit if found
+          if (this.currentVisit && this.currentVisit.issues) {
+            const issue = this.currentVisit.issues.find(i => i.visitIssueId === issueId);
+            if (issue) {
+              if (!issue.resolutionAttempts) {
+                issue.resolutionAttempts = [];
+              }
+              
+              issue.resolutionAttempts.push({
+                attemptDescription: resolution.resolution_text,
+                outcome: resolution.resolution_status
+              });
+              
+              issue.status = resolution.resolution_status;
+            }
+          }
+          
+          return true;
+        } else {
+          throw new Error(response.data.message || 'Failed to submit resolution');
+        }
+      } catch (error) {
+        console.error('Error submitting resolution:', error);
+        this.error = error.message || 'Failed to submit resolution';
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Date formatter helper
+    formatDate(date) {
+      if (!date) return '';
+      return format(new Date(date), 'MMM d, yyyy');
     }
   }
 }); 

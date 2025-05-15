@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
@@ -16,6 +17,7 @@ import { useDispatchStore } from '@/stores/dispatchStore';
 import { format, startOfToday, endOfToday, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import KpiCard from '@/components/KpiCard.vue';
 import Drawer from 'primevue/drawer';
+import PermissionGuard from '@/components/PermissionGuard.vue';
 
 // Custom filter for date ranges
 FilterService.register('dateRange', (value, filter) => {
@@ -27,6 +29,10 @@ FilterService.register('dateRange', (value, filter) => {
 // Initialize the stores
 const customerStore = useCustomerStore();
 const dispatchStore = useDispatchStore();
+// Extract reactive state with storeToRefs
+const { customers, loading: customerLoading } = storeToRefs(customerStore);
+const { dispatchRows, loading: dispatchLoading } = storeToRefs(dispatchStore);
+
 const router = useRouter();
 
 // Selected values
@@ -49,9 +55,9 @@ const isCustomDateRange = computed(() => selectedDateRange.value === 'custom');
 // Computed properties for store state
 const customerOptions = computed(() => [
   { name: 'All Customers', number: null },
-  ...customerStore.customers
+  ...customers.value
 ]);
-const isLoadingCustomers = computed(() => customerStore.loading);
+const isLoadingCustomers = computed(() => customerLoading.value);
 
 // DataTable state
 const expandedRows = ref({});
@@ -66,6 +72,19 @@ const filters = ref({
   serviceDate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: 'dateRange' }] }
 });
 
+// DataTable pass-through (pt) properties for consistent styling
+const tablePassthrough = {
+  root: { class: 'border border-surface-200 rounded-lg overflow-hidden' },
+  header: { class: 'bg-surface-50 dark:bg-surface-800 p-4' },
+  footer: { class: 'bg-surface-50 dark:bg-surface-800 p-3' }
+};
+
+// Column pass-through (pt) properties
+const columnPassthrough = {
+  headerCell: { class: 'bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-200 font-medium' },
+  bodyCell: { class: 'p-3' }
+};
+
 // Safe global filter access with computed property
 const globalFilterValue = computed({
   get: () => filters.value.global?.value || '',
@@ -73,7 +92,7 @@ const globalFilterValue = computed({
     filters.value.global.value = val;
   }
 });
-const loading = computed(() => dispatchStore.loading.details);
+const loading = computed(() => dispatchLoading.value);
 const rowsPerPage = ref(10);
 
 // Filter options
@@ -136,18 +155,42 @@ const computePredefinedRange = (range) => {
 };
 
 const applyFilters = async () => {
-  const params = {
-    // only send customer_id if a specific customer chosen
-    ...(selectedCustomer.value ? { customer_id: parseInt(selectedCustomer.value, 10) } : {})
-  };
-  // Handle date range
-  let dateFrom, dateTo;
-  if (isCustomDateRange.value && customDateRange.value.length === 2) {
+  console.log('[DEBUG] JobsView: Starting applyFilters');
+  
+  const params = {};
+  
+  // Customer filter
+  if (selectedCustomer.value && selectedCustomer.value.number) {
+    console.log('[DEBUG] JobsView: Applying customer filters:', selectedCustomer.value);
+    params.customer_id = parseInt(selectedCustomer.value.number, 10);
+  } else {
+    console.log('[DEBUG] JobsView: No customer filters selected');
+  }
+  
+  // Status filter
+  if (selectedStatuses.value && selectedStatuses.value.length > 0) {
+    console.log('[DEBUG] JobsView: Applying status filters:', selectedStatuses.value);
+    params.statuses = selectedStatuses.value.join(',');
+  } else {
+    console.log('[DEBUG] JobsView: No status filters selected');
+  }
+  
+  // Date range filter
+  let dateFrom = null;
+  let dateTo = null;
+  
+  console.log('[DEBUG] JobsView: Selected date range:', selectedDateRange.value);
+  
+  if (selectedDateRange.value === 'custom' && customDateRange.value && customDateRange.value.length === 2) {
+    console.log('[DEBUG] JobsView: Custom date range selected:', customDateRange.value);
     dateFrom = customDateRange.value[0];
     dateTo = customDateRange.value[1];
   } else {
+    console.log('[DEBUG] JobsView: Predefined date range:', selectedDateRange.value);
     const range = computePredefinedRange(selectedDateRange.value);
     if (range) {
+      console.log('[DEBUG] JobsView: Calculated date range:', 
+        { start: range.start.toISOString(), end: range.end.toISOString() });
       dateFrom = range.start;
       dateTo = range.end;
     }
@@ -155,9 +198,15 @@ const applyFilters = async () => {
   if (dateFrom && dateTo) {
     params.date_from = format(dateFrom, 'yyyy-MM-dd');
     params.date_to = format(dateTo, 'yyyy-MM-dd');
+    console.log('[DEBUG] JobsView: Final date parameters:', 
+      { date_from: params.date_from, date_to: params.date_to });
   }
 
+  console.log('[DEBUG] JobsView: Calling dispatchStore.fetchDispatchData with params:', params);
   await dispatchStore.fetchDispatchData(params);
+  console.log('[DEBUG] JobsView: fetchDispatchData completed');
+  console.log('[DEBUG] JobsView: Received rows count:', dispatchStore.dispatchRows.length);
+  console.log('[DEBUG] JobsView: Error state:', dispatchStore.error);
 };
 
 const resetFilters = () => {
@@ -628,6 +677,14 @@ const drawerPtOptions = {
           <Button label="Focus Areas" icon="pi pi-filter" outlined @click="visibleFocus=true" size="small" />
           <Button label="Remove Focus" icon="pi pi-times" outlined severity="secondary" @click="clearFocus" size="small" />
           <Button label="Export CSV" icon="pi pi-file-export" outlined @click="exportCSV(dtRef)" size="small" />
+          <PermissionGuard :permissions="['jobs:create']">
+            <Button 
+              icon="pi pi-plus" 
+              label="New Job" 
+              class="p-button-primary"
+              @click="navigateToNewJob" 
+            />
+          </PermissionGuard>
         </div>
       </div>
       
@@ -652,7 +709,6 @@ const drawerPtOptions = {
         scrollHeight="calc(100vh - 420px)"
         removableSort
         tableStyle="min-width: 100%"
-        class="p-datatable-sm"
         :pt="dtPtOptions"
       >
         <template #empty>
@@ -670,7 +726,7 @@ const drawerPtOptions = {
 
         <Column expander :exportable="false" style="width: 3rem; flex: 0 0 3rem;" />
         
-        <Column field="id" header="Ticket ID" sortable style="width: 8rem; min-width: 8rem;">
+        <Column field="id" header="Ticket ID" sortable style="width: 8rem; min-width: 8rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <InputText v-model="filterModel.value" type="text" placeholder="Search by ID" class="w-full" />
@@ -682,7 +738,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="customerName" header="Customer Name" sortable style="width: 12rem; min-width: 12rem;">
+        <Column field="customerName" header="Customer Name" sortable style="width: 12rem; min-width: 12rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="w-full" />
@@ -694,7 +750,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="subject" header="Subject" sortable style="width: 15rem; min-width: 15rem;">
+        <Column field="subject" header="Subject" sortable style="width: 15rem; min-width: 15rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <InputText v-model="filterModel.value" type="text" placeholder="Search by subject" class="w-full" />
@@ -706,7 +762,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="status" header="Status" sortable style="width: 8rem; min-width: 8rem;">
+        <Column field="status" header="Status" sortable style="width: 8rem; min-width: 8rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <Select v-model="filterModel.value" :options="statusOptions" placeholder="Select status" class="w-full" />
@@ -721,7 +777,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="billing.billingStatus" header="Billing" sortable style="width: 8rem; min-width: 8rem;">
+        <Column field="billing.billingStatus" header="Billing" sortable style="width: 8rem; min-width: 8rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <Select v-model="filterModel.value" :options="billingStatusOptions" placeholder="Billing status" class="w-full" />
@@ -736,7 +792,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="cityState" header="City / State" sortable style="width: 10rem; min-width: 10rem;">
+        <Column field="cityState" header="City / State" sortable style="width: 10rem; min-width: 10rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <InputText v-model="filterModel.value" type="text" placeholder="Search by location" class="w-full" />
@@ -748,7 +804,7 @@ const drawerPtOptions = {
           </template>
         </Column>
         
-        <Column field="serviceDate" header="Service Date" sortable style="width: 10rem; min-width: 8rem;">
+        <Column field="serviceDate" header="Service Date" sortable style="width: 10rem; min-width: 8rem;" :pt="columnPassthrough">
           <template #filter="{ filterModel, filterCallback }">
             <div class="flex flex-col gap-2">
               <DatePicker v-model="filterModel.value" selectionMode="range" dateFormat="mm/dd/yy" placeholder="Select date range" class="w-full" />
@@ -767,8 +823,10 @@ const drawerPtOptions = {
           <template #body="{ data }">
             <div class="flex justify-center">
               <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm mr-1" tooltip="View Details" @click="viewDetails(data)" />
-              <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm mr-1" tooltip="Edit" />
-            <Button icon="pi pi-calendar" class="p-button-rounded p-button-text p-button-sm" tooltip="Schedule" />
+              <PermissionGuard :permissions="['jobs:update']">
+                <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm mr-1" tooltip="Edit" />
+              </PermissionGuard>
+              <Button icon="pi pi-calendar" class="p-button-rounded p-button-text p-button-sm" tooltip="Schedule" />
             </div>
           </template>
         </Column>

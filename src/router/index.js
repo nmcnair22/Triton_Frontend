@@ -3,6 +3,7 @@ import AuthLayout from '@/layout/AuthLayout.vue';
 import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
+import { useUserStore } from '@/stores/user';
 
 // Explicitly set development mode variable
 const isDevelopmentMode = import.meta.env.DEV;
@@ -36,7 +37,12 @@ const routes = [
                 path: '/dispatch/dashboard',
                 name: 'dispatch-dashboard',
                 meta: {
-                    breadcrumb: ['Dispatch Dashboard']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dispatch Dashboard', path: '/dispatch/dashboard' }
+                    ],
+                    requiresAuth: true,
+                    permissions: ['dispatch:read']
                 },
                 component: () => import('@/views/dispatch/DispatchDashboard.vue')
             },
@@ -44,7 +50,10 @@ const routes = [
                 path: '/dashboard',
                 name: 'dashboard',
                 meta: {
-                    breadcrumb: ['Dashboard']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dashboard', path: '/dashboard' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/DashboardView.vue')
             },
@@ -52,7 +61,11 @@ const routes = [
                 path: '/dashboard/projects/:projectId',
                 name: 'project-details',
                 meta: {
-                    breadcrumb: ['Dashboard', 'Project Details']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Project Details', path: '/dashboard/projects/:projectId' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/ProjectView.vue')
             },
@@ -60,7 +73,12 @@ const routes = [
                 path: '/dashboard/projects/:projectId/jobs/:jobId',
                 name: 'job-details',
                 meta: {
-                    breadcrumb: ['Dashboard', 'Project Details', 'Job Details']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Project Details', path: '/dashboard/projects/:projectId' },
+                        { label: 'Job Details', path: '/dashboard/projects/:projectId/jobs/:jobId' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/JobView.vue')
             },
@@ -68,7 +86,13 @@ const routes = [
                 path: '/dashboard/projects/:projectId/jobs/:jobId/visits/:visitId',
                 name: 'visit-details',
                 meta: {
-                    breadcrumb: ['Dashboard', 'Project Details', 'Job Details', 'Visit Details']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' }, 
+                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Project Details', path: '/dashboard/projects/:projectId' },
+                        { label: 'Job Details', path: '/dashboard/projects/:projectId/jobs/:jobId' },
+                        { label: 'Visit Details', path: '/dashboard/projects/:projectId/jobs/:jobId/visits/:visitId' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/VisitView.vue')
             },
@@ -76,7 +100,11 @@ const routes = [
                 path: '/dispatch/jobs',
                 name: 'dispatch-jobs',
                 meta: {
-                    breadcrumb: ['Dispatch', 'Field Service Jobs']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dispatch', path: '/dispatch/dashboard' },
+                        { label: 'Field Service Jobs', path: '/dispatch/jobs' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/JobsView.vue')
             },
@@ -84,7 +112,12 @@ const routes = [
                 path: '/dispatch/jobs/:id',
                 name: 'dispatch-job-details',
                 meta: {
-                    breadcrumb: ['Dispatch', 'Job Details']
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Dispatch', path: '/dispatch/dashboard' },
+                        { label: 'Field Service Jobs', path: '/dispatch/jobs' },
+                        { label: 'Job Details', path: '/dispatch/jobs/:id' }
+                    ]
                 },
                 component: () => import('@/views/dispatch/JobDetailsView.vue')
             },
@@ -760,49 +793,70 @@ const router = createRouter({
 });
 
 // Navigation guard for authentication
-router.beforeEach((to, from, next) => {
-    const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-    const requiredPermissions = to.meta.permissions || [];
-    const requiredRoles = to.meta.roles || [];
-    const isAuthenticated = AuthService.isAuthenticated();
+router.beforeEach(async (to, from, next) => {
+    // Skip auth check for public routes (login, callback, etc.)
+    const publicPages = ['/auth/login', '/auth/microsoft-callback', '/auth/register', '/auth/forgot-password', '/auth/verification', '/auth/new-password'];
+    const authRequired = !publicPages.includes(to.path);
     
-    // Not authenticated but route requires auth
-    if (requiresAuth && !isAuthenticated) {
-        // Store the intended destination for redirect after login
+    // Get stored auth token
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    
+    // Store the attempted URL for redirect after login
+    if (authRequired && !token) {
         localStorage.setItem('auth_redirect', to.fullPath);
-        return next({ name: 'login' });
+        return next('/auth/login');
     }
     
-    // Already authenticated but trying to access login page
-    if (to.name === 'login' && isAuthenticated) {
-        return next({ name: 'dashboard-marketing' });
-    }
-    
-    // Authenticated and route has permission requirements
-    if (isAuthenticated && (requiredPermissions.length > 0 || requiredRoles.length > 0)) {
-        // Check required permissions
-        const hasRequiredPermissions = requiredPermissions.length === 0 || 
-            requiredPermissions.some(permission => AuthService.hasPermission(permission));
+    if (token) {
+        try {
+            // If we're on the callback page, let it handle its own logic
+            if (to.path === '/auth/microsoft-callback') {
+                return next();
+            }
             
-        // Check required roles
-        const hasRequiredRoles = requiredRoles.length === 0 || 
-            requiredRoles.some(role => AuthService.hasRole(role));
+            // Check for permission requirements on the route
+            if (to.meta.permissions && to.meta.permissions.length > 0) {
+                // Get the user store
+                const userStore = useUserStore();
+                
+                // Check if user store is already initialized with permissions
+                if (!userStore.permissions || userStore.permissions.length === 0) {
+                    // Fetch current user to get fresh permissions
+                    await userStore.fetchCurrentUser();
+                }
+                
+                // Check if user has at least one of the required permissions
+                const hasPermission = to.meta.permissions.some(permission => 
+                    userStore.hasPermission(permission)
+                );
+                
+                if (!hasPermission) {
+                    console.warn(`Access denied to ${to.path} - missing required permissions:`, to.meta.permissions);
+                    return next({
+                        path: '/auth/access',
+                        query: { from: to.fullPath }
+                    });
+                }
+            }
             
-        // Redirect to access denied if missing permissions/roles
-        if (!hasRequiredPermissions || !hasRequiredRoles) {
-            console.warn('Access denied: Missing required permissions or roles');
-            return next({ name: 'access', query: { from: to.fullPath } });
+            // User is authenticated and has permission, proceed
+            return next();
+        } catch (error) {
+            console.error("Error checking permissions:", error);
+            // If there's an error checking permissions, proceed anyway
+            // The server will handle access control as a fallback
+            return next();
         }
     }
     
-    // Proceed to the route
-    next();
+    // If no auth required or we've handled all cases above, proceed
+    return next();
 });
 
 // Check for auth redirect after login
 router.afterEach((to) => {
     // If we've just logged in, check for a stored redirect
-    if (to.name === 'dashboard-marketing' && AuthService.isAuthenticated()) {
+    if (to.name === 'dashboard' && AuthService.isAuthenticated()) {
         const redirectPath = localStorage.getItem('auth_redirect');
         if (redirectPath) {
             localStorage.removeItem('auth_redirect');

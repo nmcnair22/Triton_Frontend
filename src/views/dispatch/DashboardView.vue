@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDispatchStore } from '@/stores/dispatchStore';
+import { storeToRefs } from 'pinia';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
@@ -13,9 +15,15 @@ import Breadcrumb from 'primevue/breadcrumb';
 import Tag from 'primevue/tag';
 import Chart from 'primevue/chart';
 import ProgressBar from 'primevue/progressbar';
+import { useToast } from 'primevue/usetoast';
 
 // Router for navigation
 const router = useRouter();
+const toast = useToast();
+
+// Initialize the dispatch store
+const dispatchStore = useDispatchStore();
+const { dashboardSummary, dashboardTrends, projects, alerts, loading, error } = storeToRefs(dispatchStore);
 
 // Breadcrumb navigation function
 const navigateTo = (path) => {
@@ -55,56 +63,27 @@ const statusOptions = ref([
   { name: 'At Risk', code: 'at_risk' }
 ]);
 
-// Mock data based on the provided JSON
-const dashboardData = ref({
+// Computed properties mapped from store data
+const dashboardData = computed(() => ({
   summary: {
-    totalProjects: 1,
-    totalJobs: 1,
-    totalVisits: 11,
-    openIssues: 11,
-    avgCompletionPct: 27.0,
-    atRiskCount: 2
+    totalProjects: dashboardSummary.value?.total_projects?.current || 0,
+    totalJobs: dashboardSummary.value?.total_jobs?.current || 0,
+    totalVisits: dashboardSummary.value?.total_visits?.current || 0,
+    openIssues: dashboardSummary.value?.open_issues?.current || 0,
+    avgCompletionPct: dashboardSummary.value?.avg_completion?.current || 0,
+    atRiskCount: dashboardSummary.value?.at_risk_count?.current || 0
   },
-  projectList: [
-    {
-      projectId: "3912",
-      name: "Network Installation – Hagerstown, MD",
-      customer: "Flynn",
-      siteCount: 1,
-      completionPct: 27.0,
-      atRiskScore: 62,
-      trend: "steady"
-    }
-  ],
-  globalTrends: [
-    { date: "2025-02-04", projectsCompleted: 0, issuesOpened: 3, visitsScheduled: 1 },
-    { date: "2025-03-01", projectsCompleted: 0, issuesOpened: 5, visitsScheduled: 2 },
-    { date: "2025-04-01", projectsCompleted: 0, issuesOpened: 8, visitsScheduled: 3 },
-    { date: "2025-05-12", projectsCompleted: 1, issuesOpened: 12, visitsScheduled: 5 }
-  ],
-  alerts: [
-    {
-      alertId: "A1",
-      type: "visitRevisitNeeded",
-      visitId: "VG1",
-      jobId: "6d815ec56dfb85e2182e01471c31e486",
-      message: "Revisit indicated for visit VG1",
-      createdAt: "2025-02-04T08:27:00Z"
-    },
-    {
-      alertId: "A2",
-      type: "issueHighImpact",
-      issue: "Site Not Ready",
-      jobId: "6d815ec56dfb85e2182e01471c31e486",
-      message: "Site readiness blocking multiple visits",
-      createdAt: "2025-02-04T08:43:59Z"
-    }
-  ]
-});
+  projectList: projects.value || [],
+  globalTrends: dashboardTrends.value?.global_trends || [],
+  alerts: alerts.value || []
+}));
 
 // Computed properties for charts
 const trendChartData = computed(() => {
-  const labels = dashboardData.value.globalTrends.map(item => {
+  const trends = dashboardData.value.globalTrends;
+  if (!trends || !trends.length) return { labels: [], datasets: [] };
+  
+  const labels = trends.map(item => {
     const date = new Date(item.date);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   });
@@ -114,21 +93,21 @@ const trendChartData = computed(() => {
     datasets: [
       {
         label: 'Issues Opened',
-        data: dashboardData.value.globalTrends.map(item => item.issuesOpened),
+        data: trends.map(item => item.issues_opened || 0),
         borderColor: '#FF6384',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
         tension: 0.4
       },
       {
         label: 'Visits Scheduled',
-        data: dashboardData.value.globalTrends.map(item => item.visitsScheduled),
+        data: trends.map(item => item.visits_scheduled || 0),
         borderColor: '#36A2EB',
         backgroundColor: 'rgba(54, 162, 235, 0.2)',
         tension: 0.4
       },
       {
         label: 'Projects Completed',
-        data: dashboardData.value.globalTrends.map(item => item.projectsCompleted),
+        data: trends.map(item => item.projects_completed || 0),
         borderColor: '#4BC0C0',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         tension: 0.4
@@ -161,22 +140,82 @@ const trendChartOptions = {
 
 // Methods
 const applyFilters = () => {
-  console.log('Applying filters:', {
+  console.log('[DEBUG] DashboardView: Applying filters:', {
     dateRange: dateRange.value,
     customer: selectedCustomer.value,
     status: selectedStatus.value
   });
-  // In a real implementation, this would fetch filtered data from the API
+  
+  // Call the store methods with the filter parameters
+  const params = {};
+  if (selectedCustomer.value) params.customer_id = selectedCustomer.value.code;
+  if (selectedStatus.value) params.status = selectedStatus.value.code;
+  
+  if (dateRange.value && dateRange.value.length === 2) {
+    params.date_from = dateRange.value[0];
+    params.date_to = dateRange.value[1];
+  }
+  
+  loadDashboardData(params);
 };
 
 const resetFilters = () => {
   dateRange.value = [new Date(new Date().setDate(new Date().getDate() - 30)), new Date()];
   selectedCustomer.value = null;
   selectedStatus.value = null;
-  applyFilters();
+  loadDashboardData();
+};
+
+const loadDashboardData = (params = {}) => {
+  console.log('[DEBUG] DashboardView: Loading dashboard data with params:', params);
+  
+  // First load summary data
+  dispatchStore.fetchDashboardSummary().catch(err => {
+    console.error('[DEBUG] DashboardView: Error fetching dashboard summary:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load dashboard summary data',
+      life: 3000
+    });
+  });
+  
+  // Then load trends data
+  dispatchStore.fetchDashboardTrends().catch(err => {
+    console.error('[DEBUG] DashboardView: Error fetching dashboard trends:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load dashboard trends data',
+      life: 3000
+    });
+  });
+  
+  // Load projects list
+  dispatchStore.fetchProjects(params).catch(err => {
+    console.error('[DEBUG] DashboardView: Error fetching projects:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load projects data',
+      life: 3000
+    });
+  });
+  
+  // Load alerts
+  dispatchStore.fetchAlerts().catch(err => {
+    console.error('[DEBUG] DashboardView: Error fetching alerts:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load alerts data',
+      life: 3000
+    });
+  });
 };
 
 const navigateToProject = (project) => {
+  console.log('[DEBUG] DashboardView: Navigating to project:', project.projectId);
   router.push(`/dashboard/projects/${project.projectId}`);
 };
 
@@ -207,8 +246,8 @@ const formatDate = (dateString) => {
 
 // Initialize data
 onMounted(() => {
-  console.log('Dashboard view mounted');
-  // In a real implementation, this would fetch data from the API
+  console.log('[DEBUG] DashboardView: Component mounted, fetching initial data');
+  loadDashboardData();
 });
 </script>
 

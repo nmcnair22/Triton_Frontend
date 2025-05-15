@@ -2,16 +2,19 @@
 import { useLayout } from '@/layout/composables/layout';
 import { ref } from 'vue';
 import AppBreadcrumb from './AppBreadcrumb.vue';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/stores/user';
+import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useConfirm } from 'primevue/useconfirm';
 import ConfirmDialog from 'primevue/confirmdialog';
 import Button from 'primevue/button';
 
 const { layoutState, isDarkTheme, toggleMenu, toggleConfigSidebar } = useLayout();
-const userStore = useUserStore();
 const router = useRouter();
 const confirm = useConfirm();
+const userStore = useUserStore();
+const { username, userAvatar } = storeToRefs(userStore);
+const menuMode = ref('static');
 
 const notificationsBars = [
     {

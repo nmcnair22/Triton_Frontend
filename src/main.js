@@ -14,8 +14,8 @@ import ToastService from 'primevue/toastservice';
 // RBAC components
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';
 
-// Import auth service
-import { AuthService } from './service/AuthService';
+// Import auth service from the correct path
+import { AuthService } from './auth/AuthService';
 
 import '@/assets/styles.scss';
 
@@ -28,14 +28,18 @@ if (csrfToken) {
   axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.content;
 }
 
-// Get token from local storage on app start
-AuthService.setupInterceptors();
+// Set token in axios headers if present
+const token = localStorage.getItem('token') || localStorage.getItem('auth_token'); 
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
 
 const app = createApp(App);
 const pinia = createPinia();
 
-app.use(router);
+// Mount pinia before router to ensure store is available for navigation guards
 app.use(pinia);
+app.use(router);
 
 // Generate palettes for CIS colors
 const cisNavyPalette = palette('#0B2244');

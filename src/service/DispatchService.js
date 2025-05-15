@@ -105,10 +105,202 @@ export const DispatchService = {
       .catch(error => this.handleApiError(error, 'getDispatchData'));
   },
   
-  // Get linked tickets for a specific dispatch
-  getLinkedTickets(dispatchId) {
-    console.log('DispatchService.getLinkedTickets - ID:', dispatchId);
-    return ApiService.get(`dispatch-reports/chains/${dispatchId}`, { record_type: 'dispatch' })
-      .catch(error => this.handleApiError(error, 'getLinkedTickets'));
+  // Get job analysis data with flexible component selection
+  getJobAnalysis(jobId, components = []) {
+    const defaultComponents = ['job', 'visits', 'timeline', 'analysis', 'financials'];
+    const include = components.length > 0 ? components : defaultComponents;
+    
+    console.log('[DEBUG] DispatchService.getJobAnalysis - Job ID:', jobId);
+    console.log('[DEBUG] DispatchService.getJobAnalysis - Components:', include);
+    
+    const endpoint = `dashboard/jobs/${jobId}/analysis`;
+    const params = { include: include.join(',') };
+    
+    console.log('[DEBUG] DispatchService.getJobAnalysis - Endpoint:', endpoint);
+    console.log('[DEBUG] DispatchService.getJobAnalysis - Params:', params);
+    
+    return ApiService.get(endpoint, params)
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getJobAnalysis - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getJobAnalysis - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getJobAnalysis - Data components received:', 
+            Object.keys(response.data.data));
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getJobAnalysis - Error:', error);
+        return this.handleApiError(error, 'getJobAnalysis');
+      });
+  },
+  
+  // Get comprehensive job details
+  getJobDetails(jobId) {
+    console.log('[DEBUG] DispatchService.getJobDetails - Job ID:', jobId);
+    console.log('[DEBUG] DispatchService.getJobDetails - Requesting all components');
+    
+    return this.getJobAnalysis(jobId, ['job', 'visits', 'timeline', 'financials', 'analysis', 'issues', 'metadata'])
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getJobDetails - Response received, forwarding to caller');
+        return response;
+      });
+  },
+  
+  // Get job data focused on visits
+  getJobVisits(jobId) {
+    console.log('[DEBUG] DispatchService.getJobVisits - Job ID:', jobId);
+    console.log('[DEBUG] DispatchService.getJobVisits - Requesting job and visits components');
+    
+    return this.getJobAnalysis(jobId, ['job', 'visits'])
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getJobVisits - Response received, forwarding to caller');
+        return response;
+      });
+  },
+  
+  // Get specific visit data
+  getVisit(visitId) {
+    console.log('[DEBUG] DispatchService.getVisit - Visit ID:', visitId);
+    
+    const endpoint = `visits/${visitId}`;
+    console.log('[DEBUG] DispatchService.getVisit - Endpoint:', endpoint);
+    
+    return ApiService.get(endpoint)
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getVisit - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getVisit - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getVisit - Data structure:', 
+            Object.keys(response.data.data));
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getVisit - Error:', error);
+        return this.handleApiError(error, 'getVisit');
+      });
+  },
+  
+  // Get visit materials
+  getVisitMaterials(visitId) {
+    return ApiService.get(`visits/${visitId}/materials`);
+  },
+  
+  // Get visit timeline
+  getVisitTimeline(visitId) {
+    return ApiService.get(`visits/${visitId}/timeline`);
+  },
+  
+  // Get visit key interactions
+  getVisitKeyInteractions(visitId) {
+    return ApiService.get(`visits/${visitId}/key-interactions`);
+  },
+  
+  // Get visit work performance
+  getVisitWorkPerformance(visitId) {
+    return ApiService.get(`visits/${visitId}/work-performance`);
+  },
+  
+  // Submit resolution for a visit issue
+  submitIssueResolution(visitId, issueId, resolution) {
+    return ApiService.post(`visits/${visitId}/issues/${issueId}/resolution`, resolution);
+  },
+  
+  // Get linked tickets
+  getLinkedTickets(jobId) {
+    return ApiService.get(`jobs/${jobId}/linked-tickets`);
+  },
+  
+  // Dashboard-level data
+  getDashboardSummary() {
+    return ApiService.get('dashboard/global');
+  },
+  
+  // Dashboard trends data
+  getDashboardTrends() {
+    return ApiService.get('dashboard/global/enhanced');
+  },
+  
+  // Project listings
+  getProjects(params = {}) {
+    return ApiService.get('dashboard/projects', params);
+  },
+  
+  // Project details
+  getProject(projectId) {
+    return ApiService.get(`dashboard/projects/${projectId}`);
+  },
+  
+  // System alerts
+  getAlerts() {
+    return ApiService.get('dashboard/alerts');
+  },
+  
+  // Data transformers
+  // These help convert API data to the format expected by frontend components
+  
+  formatJobDetails(apiData) {
+    if (!apiData) return null;
+    
+    return {
+      job: apiData.job || {},
+      visits: (apiData.visits || []).map(visit => ({
+        id: visit.id,
+        visitId: visit.visit_id,
+        jobId: visit.job_id,
+        phaseName: visit.phase_name || 'Site Visit',
+        visitDate: visit.visit_date,
+        status: visit.status,
+        timeIn: visit.time_in,
+        timeOut: visit.time_out,
+        timeOnSiteMin: visit.time_on_site_min,
+        revisitNeeded: visit.revisit_needed,
+        workSummary: visit.work_summary || visit.work_performed?.summary,
+        technicians: visit.technicians || [],
+        tasks: visit.tasks || [],
+        issues: visit.issues || []
+      })),
+      financials: {
+        invoices: apiData.financials?.invoices || [],
+        lineItems: apiData.financials?.line_items || []
+      },
+      timeline: apiData.timeline || {
+        events: [],
+        delays: []
+      },
+      analysis: apiData.analysis || {
+        key_issues: [],
+        outstanding_items: [],
+        recommended_actions: []
+      },
+      metadata: apiData.metadata || {}
+    };
+  },
+  
+  formatVisitData(apiData) {
+    if (!apiData) return null;
+    
+    return {
+      visit: {
+        visitId: apiData.visit_id,
+        jobId: apiData.job_id,
+        phaseName: apiData.phase_name || 'Site Visit',
+        visitDate: apiData.visit_date,
+        status: apiData.status,
+        timeIn: apiData.time_in,
+        timeOut: apiData.time_out,
+        timeOnSiteMin: apiData.time_on_site_min,
+        revisitNeeded: apiData.revisit_needed,
+        workSummary: apiData.work_summary || apiData.work_performed?.summary
+      },
+      technicians: apiData.technicians || [],
+      tasks: apiData.tasks || [],
+      issues: apiData.issues || []
+    };
   }
 }; 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -12,15 +12,26 @@ import Breadcrumb from 'primevue/breadcrumb';
 import Tag from 'primevue/tag';
 import Chart from 'primevue/chart';
 import Divider from 'primevue/divider';
+import { useDispatchStore } from '@/stores/dispatchStore';
+import { storeToRefs } from 'pinia';
+import { useToast } from 'primevue/usetoast';
 
 // Router and route
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const projectId = route.params.projectId;
+
+// Initialize the dispatch store
+const dispatchStore = useDispatchStore();
+const { currentProject, loading, error } = storeToRefs(dispatchStore);
+
+// Loading state
+const isLoading = computed(() => loading.value);
 
 // Breadcrumb navigation function
 const navigateTo = (path) => {
-  console.log('Navigating to:', path);
+  console.log('[DEBUG] ProjectView: Navigating to', path);
   router.push(path);
 };
 
@@ -32,77 +43,79 @@ const breadcrumbItems = computed(() => [
 ]);
 const breadcrumbHome = { icon: 'pi pi-home', route: '/' };
 
-// Mock data based on the provided JSON
-const projectData = ref({
-  project: {
-    projectId: "3912",
-    name: "Network Installation – Hagerstown, MD",
-    customer: "Flynn",
-    siteCount: 1,
-    completedSites: 0,
-    inProgressSites: 1,
-    notStartedSites: 0,
-    completionPct: 27.0,
-    trend: "steady"
-  },
-  kpis: {
-    visitsCompleted: 3,
-    visitsScheduled: 11,
-    totalVisits: 11,
-    issuesOpen: 11,
-    issuesHighImpact: 2,
-    totalIssues: 12,
-    last24h: {
-      newIssues: 0,
-      completedVisits: 0,
-      scheduledVisits: 1
-    }
-  },
-  sitesNeedingAttention: [
-    {
-      jobId: "6d815ec56dfb85e2182e01471c31e486",
-      location: "Hagerstown, MD",
-      status: "In Progress",
-      openIssues: 11,
-      highImpact: 2,
-      visitsCompleted: 3,
-      visitsTotal: 11,
-      scheduled: 1,
-      completionPct: 27
-    }
-  ],
-  priorityIssues: [
-    {
-      issueId: "ISS-1001",
-      impact: "High",
-      status: "Open",
-      ageDays: 97,
-      title: "Site Not Ready",
-      description: "Multiple visits impacted by site readiness issues",
-      siteJobId: "6d815ec56dfb85e2182e01471c31e486",
-      visitIds: ["VG1","VG2","VG3"],
-      assignedTo: "Joel"
-    }
-  ],
-  projectTrends: [
-    { date: "2025-02-04", completionPct: 27, issuesCount: 3, visitsCount: 3 },
-    { date: "2025-03-01", completionPct: 27, issuesCount: 5, visitsCount: 5 },
-    { date: "2025-04-01", completionPct: 27, issuesCount: 8, visitsCount: 8 },
-    { date: "2025-05-12", completionPct: 27, issuesCount: 12, visitsCount: 11 }
-  ],
-  issueAnalysis: {
-    byType: [
-      { type: "Site Not Ready", count: 5 },
-      { type: "Technical Issue", count: 1 },
-      { type: "Equipment Missing", count: 2 },
-      { type: "Access Denied", count: 3 },
-      { type: "Other", count: 1 }
-    ],
-    bySiteStatus: [
-      { status: "Completed", count: 1 },
-      { status: "In Progress", count: 11 }
-    ]
+// Project data from store
+const projectData = computed(() => {
+  // If we don't have data yet, return an empty structure
+  if (!currentProject.value) {
+    return {
+      project: {
+        projectId: projectId,
+        name: `Project ${projectId}`,
+        customer: '',
+        siteCount: 0,
+        completedSites: 0,
+        inProgressSites: 0,
+        notStartedSites: 0,
+        completionPct: 0,
+        trend: ''
+      },
+      kpis: {
+        visitsCompleted: 0,
+        visitsScheduled: 0,
+        totalVisits: 0,
+        issuesOpen: 0,
+        issuesHighImpact: 0,
+        totalIssues: 0,
+        last24h: {
+          newIssues: 0,
+          completedVisits: 0,
+          scheduledVisits: 0
+        }
+      },
+      sitesNeedingAttention: [],
+      priorityIssues: [],
+      projectTrends: [],
+      issueAnalysis: {
+        byType: [],
+        bySiteStatus: []
+      }
+    };
   }
+  
+  // Return the store data in the format the template expects
+  return {
+    project: {
+      projectId: currentProject.value.id || projectId,
+      name: currentProject.value.name || `Project ${projectId}`,
+      customer: currentProject.value.customer_name || '',
+      siteCount: currentProject.value.site_count || 0,
+      completedSites: currentProject.value.completed_sites || 0,
+      inProgressSites: currentProject.value.in_progress_sites || 0,
+      notStartedSites: currentProject.value.not_started_sites || 0,
+      completionPct: currentProject.value.completion_percentage || 0,
+      trend: currentProject.value.trend || ''
+    },
+    kpis: {
+      visitsCompleted: currentProject.value.kpis?.visits_completed || 0,
+      visitsScheduled: currentProject.value.kpis?.visits_scheduled || 0,
+      totalVisits: currentProject.value.kpis?.total_visits || 0,
+      issuesOpen: currentProject.value.kpis?.issues_open || 0,
+      issuesHighImpact: currentProject.value.kpis?.issues_high_impact || 0,
+      totalIssues: currentProject.value.kpis?.total_issues || 0,
+      last24h: {
+        newIssues: currentProject.value.kpis?.last_24h?.new_issues || 0,
+        completedVisits: currentProject.value.kpis?.last_24h?.completed_visits || 0,
+        scheduledVisits: currentProject.value.kpis?.last_24h?.scheduled_visits || 0
+      }
+    },
+    sitesNeedingAttention: currentProject.value.sites_needing_attention || [],
+    priorityIssues: currentProject.value.priority_issues || [],
+    projectTrends: currentProject.value.project_trends || [],
+    issueAnalysis: {
+      byType: currentProject.value.issue_analysis?.by_type || [],
+      bySiteStatus: currentProject.value.issue_analysis?.by_site_status || []
+    }
+  };
 });
 
 // Chart Data
@@ -118,7 +131,7 @@ const trendChartData = computed(() => {
       {
         label: 'Completion %',
         yAxisID: 'y',
-        data: projectData.value.projectTrends.map(item => item.completionPct),
+        data: projectData.value.projectTrends.map(item => item.completionPct || item.completion_pct),
         borderColor: '#4BC0C0',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         type: 'line',
@@ -128,7 +141,7 @@ const trendChartData = computed(() => {
       {
         label: 'Issues',
         yAxisID: 'y1',
-        data: projectData.value.projectTrends.map(item => item.issuesCount),
+        data: projectData.value.projectTrends.map(item => item.issuesCount || item.issues_count),
         borderColor: '#FF6384',
         backgroundColor: 'rgba(255, 99, 132, 0.7)',
         borderWidth: 1
@@ -136,7 +149,7 @@ const trendChartData = computed(() => {
       {
         label: 'Visits',
         yAxisID: 'y1',
-        data: projectData.value.projectTrends.map(item => item.visitsCount),
+        data: projectData.value.projectTrends.map(item => item.visitsCount || item.visits_count),
         borderColor: '#36A2EB',
         backgroundColor: 'rgba(54, 162, 235, 0.7)',
         borderWidth: 1
@@ -242,7 +255,25 @@ const siteStatusChartOptions = {
 
 // Methods
 const navigateToJob = (jobId) => {
+  console.log('[DEBUG] ProjectView: Navigating to job', jobId);
   router.push(`/dashboard/projects/${projectId}/jobs/${jobId}`);
+};
+
+const fetchProjectData = async () => {
+  console.log('[DEBUG] ProjectView: Fetching project data for ID:', projectId);
+  try {
+    await dispatchStore.fetchProject(projectId);
+    console.log('[DEBUG] ProjectView: Project data fetched successfully:', 
+      currentProject.value ? currentProject.value.name : 'No data');
+  } catch (err) {
+    console.error('[DEBUG] ProjectView: Error fetching project data:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load project data',
+      life: 3000
+    });
+  }
 };
 
 const getSeverity = (status) => {
@@ -251,6 +282,9 @@ const getSeverity = (status) => {
     case 'in progress': return 'info';
     case 'not started': return 'warning';
     case 'at risk': return 'danger';
+    case 'improving': return 'success';
+    case 'steady': return 'info';
+    case 'declining': return 'warning';
     default: return 'info';
   }
 };
@@ -269,10 +303,18 @@ const formatAgeDays = (days) => {
   return `${days} days`;
 };
 
+// Watch for route changes
+watch(() => route.params.projectId, (newProjectId) => {
+  if (newProjectId && newProjectId !== projectId) {
+    console.log('[DEBUG] ProjectView: Project ID changed, fetching new data:', newProjectId);
+    fetchProjectData();
+  }
+});
+
 // Initialize data
 onMounted(() => {
-  console.log('Project view mounted for project ID:', projectId);
-  // In a real implementation, this would fetch project data from the API using the projectId
+  console.log('[DEBUG] ProjectView: Component mounted for project ID:', projectId);
+  fetchProjectData();
 });
 </script>
 

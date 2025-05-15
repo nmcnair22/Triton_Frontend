@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useDispatchStore } from '@/stores/dispatchStore';
+import { storeToRefs } from 'pinia';
 import { useToast } from 'primevue/usetoast';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -30,6 +31,17 @@ import ProgressSpinner from 'primevue/progressspinner';
 const dispatchStore = useDispatchStore();
 const toast = useToast();
 
+// Extract reactive state from store using storeToRefs
+const { 
+  loading: storeLoading,
+  header,
+  overview,
+  revenue,
+  details,
+  dateRange: storeDateRange,
+  clientMetrics
+} = storeToRefs(dispatchStore);
+
 // Set this to false to disable debug features
 const showDebugTools = true;
 
@@ -47,17 +59,19 @@ const tabItems = ref([
 
 // Date range selection - initialize with defaults if not set
 const selectedDateRange = ref({
-  startDate: dispatchStore.dateRange.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
-  endDate: dispatchStore.dateRange.endDate || new Date()
+  startDate: storeDateRange.value.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
+  endDate: storeDateRange.value.endDate || new Date()
 });
 
 // Computed properties for dashboard data
-const isLoading = computed(() => dispatchStore.isLoading);
+const isLoading = computed(() => {
+  // Check if any section is loading
+  return Object.values(storeLoading.value).some(status => status === true);
+});
 
 // Computed data based on store
 const volumeOverTimeData = computed(() => {
-  const data = dispatchStore.volumeOverTime || [];
-  console.log('volumeOverTimeData computed property:', data);
+  const data = overview.value?.daily_volume || [];
   // Map the data to match the expected format
   return data.map(item => ({
     date: item.date, // API already provides the date in a good format
@@ -67,8 +81,7 @@ const volumeOverTimeData = computed(() => {
 
 // Sort status distribution data in descending order by count
 const statusDistributionData = computed(() => {
-  const data = dispatchStore.statusDistribution || [];
-  console.log('statusDistributionData computed property:', data);
+  const data = overview.value?.status_breakdown || [];
   // Map the data to match the expected format and sort by count in descending order
   return data
     .map(item => ({
@@ -80,8 +93,7 @@ const statusDistributionData = computed(() => {
 });
 
 const clientData = computed(() => {
-  const data = dispatchStore.clientDispatches || [];
-  console.log('clientData computed property:', data);
+  const data = overview.value?.top_clients || [];
   return data.map(item => ({
     name: item.name,
     value: item.count // API uses 'count' instead of 'value'
@@ -89,8 +101,7 @@ const clientData = computed(() => {
 });
 
 const projectData = computed(() => {
-  const data = dispatchStore.projectDispatches || [];
-  console.log('projectData computed property:', data);
+  const data = overview.value?.top_projects || [];
   return data.map(item => ({
     name: item.name,
     value: item.count // API uses 'count' instead of 'value'
@@ -98,8 +109,7 @@ const projectData = computed(() => {
 });
 
 const revenueOverTimeData = computed(() => {
-  const data = dispatchStore.revenueOverTime || [];
-  console.log('revenueOverTimeData computed property:', data);
+  const data = revenue.value?.revenue_timeline || [];
   return data.map(item => ({
     date: item.date,
     value: item.revenue
@@ -107,24 +117,23 @@ const revenueOverTimeData = computed(() => {
 });
 
 const clientsByRevenueData = computed(() => {
-  const data = dispatchStore.clientsByRevenue || [];
-  console.log('clientsByRevenueData computed property:', data);
+  const data = revenue.value?.top_clients || [];
   return data.map(item => ({
     name: item.client_name, // API uses 'client_name' instead of 'name'
     value: item.revenue
   }));
 });
 
-const dispatchRecords = computed(() => dispatchStore.details.dispatches);
-const paginationInfo = computed(() => dispatchStore.details.pagination);
+const dispatchRecords = computed(() => details.value.dispatches);
+const paginationInfo = computed(() => details.value.pagination);
 const totalRecords = computed(() => parseInt(paginationInfo.value.total) || 0);
 const currentPage = computed({
   get: () => parseInt(paginationInfo.value.currentPage) || 1,
-  set: (value) => dispatchStore.details.pagination.currentPage = value
+  set: (value) => details.value.pagination.currentPage = value
 });
 const pageSize = computed({
   get: () => parseInt(paginationInfo.value.perPage) || 10,
-  set: (value) => dispatchStore.details.pagination.perPage = value
+  set: (value) => details.value.pagination.perPage = value
 });
 
 // Formatting helpers
@@ -169,7 +178,7 @@ const getStatusClass = (status) => {
 function handleDateChange(newDateRange) {
   if (newDateRange.startDate && newDateRange.endDate) {
     dispatchStore.setDateRange(newDateRange.startDate, newDateRange.endDate);
-  refreshDashboard();
+    refreshDashboard();
     
     // If currently on details tab, reset pagination to page 1 and refresh
     if (activeTab.value === 'details') {

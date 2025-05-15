@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -16,16 +16,27 @@ import Tag from 'primevue/tag';
 import Chart from 'primevue/chart';
 import Divider from 'primevue/divider';
 import Timeline from 'primevue/timeline';
+import { useDispatchStore } from '@/stores/dispatchStore';
+import { storeToRefs } from 'pinia';
+import { useToast } from 'primevue/usetoast';
 
 // Router and route
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const projectId = route.params.projectId;
 const jobId = route.params.jobId;
 
+// Initialize the dispatch store
+const dispatchStore = useDispatchStore();
+const { currentJob, loading, error } = storeToRefs(dispatchStore);
+
+// Loading state
+const isLoading = computed(() => loading.value);
+
 // Breadcrumb navigation function
 const navigateTo = (path) => {
-  console.log('Navigating to:', path);
+  console.log('[DEBUG] JobView: Navigating to', path);
   router.push(path);
 };
 
@@ -41,204 +52,104 @@ const breadcrumbItems = computed(() => [
 ]);
 const breadcrumbHome = { icon: 'pi pi-home', route: '/' };
 
-// Mock data based on the provided JSON
-const jobData = ref({
-  job: {
-    jobId: "6d815ec56dfb85e2182e01471c31e486",
-    projectId: "3912",
-    location: "Hagerstown, MD",
-    status: "In Progress",
-    completionPct: 27.0,
-    startDate: "2025-02-04",
-    estimatedEndDate: "2025-06-15",
-    assignedManager: "Joel Smith",
-    notes: "Client requested expedited installation for main system",
-    siteName: "Flynn Store #1242"
-  },
-  kpis: {
-    visitsCompleted: 3,
-    visitsScheduled: 1,
-    totalVisits: 11,
-    issuesOpen: 11,
-    issuesHighImpact: 2,
-    issuesResolved: 1,
-    materialsUsed: 27,
-    materialsOrdered: 42
-  },
-  visits: [
-    {
-      visitId: "VG1",
-      date: "2025-02-04",
-      status: "Completed",
-      technicianName: "Mike Johnson",
-      duration: 4.5,
-      tasksCompleted: 3,
-      tasksTotal: 3,
-      hasIssues: true
+// Job data computed from store
+const jobData = computed(() => {
+  // If we don't have data yet, return an empty structure
+  if (!currentJob.value) {
+    return {
+      job: {
+        jobId: jobId,
+        projectId: projectId,
+        location: '',
+        status: '',
+        completionPct: 0,
+        startDate: '',
+        estimatedEndDate: '',
+        assignedManager: '',
+        notes: '',
+        siteName: ''
+      },
+      kpis: {
+        visitsCompleted: 0,
+        visitsScheduled: 0,
+        totalVisits: 0,
+        issuesOpen: 0,
+        issuesHighImpact: 0,
+        issuesResolved: 0,
+        materialsUsed: 0,
+        materialsOrdered: 0
+      },
+      visits: [],
+      timeline: [],
+      issues: [],
+      materials: []
+    };
+  }
+  
+  // Transform currentJob data to match the structure used in the template
+  return {
+    job: {
+      jobId: currentJob.value.job?.job_id || jobId,
+      projectId: currentJob.value.job?.project_id || projectId,
+      location: currentJob.value.job?.location || '',
+      status: currentJob.value.job?.status || '',
+      completionPct: currentJob.value.job?.completion_percentage || 0,
+      startDate: currentJob.value.job?.start_date || '',
+      estimatedEndDate: currentJob.value.job?.estimated_end_date || '',
+      assignedManager: currentJob.value.job?.assigned_manager || '',
+      notes: currentJob.value.job?.notes || '',
+      siteName: currentJob.value.job?.site_name || ''
     },
-    {
-      visitId: "VG2",
-      date: "2025-02-18",
-      status: "Completed",
-      technicianName: "Sarah Williams",
-      duration: 6.0,
-      tasksCompleted: 4,
-      tasksTotal: 4,
-      hasIssues: true
+    kpis: {
+      visitsCompleted: currentJob.value.analysis?.visits_completed || 0,
+      visitsScheduled: currentJob.value.analysis?.visits_scheduled || 0,
+      totalVisits: currentJob.value.visits?.length || 0,
+      issuesOpen: currentJob.value.analysis?.issues_open || 0,
+      issuesHighImpact: currentJob.value.analysis?.issues_high_impact || 0,
+      issuesResolved: currentJob.value.analysis?.issues_resolved || 0,
+      materialsUsed: currentJob.value.analysis?.materials_used || 0,
+      materialsOrdered: currentJob.value.analysis?.materials_ordered || 0
     },
-    {
-      visitId: "VG3",
-      date: "2025-03-01",
-      status: "Completed",
-      technicianName: "Mike Johnson",
-      duration: 3.0,
-      tasksCompleted: 2,
-      tasksTotal: 2,
-      hasIssues: true
-    },
-    {
-      visitId: "VG4",
-      date: "2025-03-15",
-      status: "Scheduled",
-      technicianName: "David Chen",
-      duration: null,
-      tasksCompleted: 0,
-      tasksTotal: 5,
-      hasIssues: false
-    },
-    {
-      visitId: "VG5",
-      date: "2025-04-01",
-      status: "Not Started",
-      technicianName: null,
-      duration: null,
-      tasksCompleted: 0,
-      tasksTotal: 4,
-      hasIssues: false
-    },
-    {
-      visitId: "VG6",
-      date: "2025-04-15",
-      status: "Not Started",
-      technicianName: null,
-      duration: null,
-      tasksCompleted: 0,
-      tasksTotal: 3,
-      hasIssues: false
-    },
-    {
-      visitId: "VG7",
-      date: "2025-05-01",
-      status: "Not Started",
-      technicianName: null,
-      duration: null,
-      tasksCompleted: 0,
-      tasksTotal: 6,
-      hasIssues: false
-    }
-  ],
-  timeline: [
-    {
-      date: "2025-02-04",
-      status: "Visit Completed",
-      details: "Initial site assessment completed by Mike Johnson",
-      icon: "pi pi-check-circle",
-      color: "#4caf50"
-    },
-    {
-      date: "2025-02-04",
-      status: "Issue Reported",
-      details: "Site not ready for equipment installation",
-      icon: "pi pi-exclamation-triangle",
-      color: "#ff9800"
-    },
-    {
-      date: "2025-02-18",
-      status: "Visit Completed",
-      details: "Network cabling installation by Sarah Williams",
-      icon: "pi pi-check-circle",
-      color: "#4caf50"
-    },
-    {
-      date: "2025-03-01",
-      status: "Visit Completed",
-      details: "Equipment delivery and initial setup by Mike Johnson",
-      icon: "pi pi-check-circle",
-      color: "#4caf50"
-    },
-    {
-      date: "2025-03-15",
-      status: "Visit Scheduled",
-      details: "System configuration and testing by David Chen",
-      icon: "pi pi-calendar",
-      color: "#2196f3"
-    }
-  ],
-  issues: [
-    {
-      issueId: "ISS-1001",
-      title: "Site Not Ready",
-      description: "The site was not prepared according to pre-installation requirements. Missing power outlets and network drops.",
-      status: "Open",
-      impact: "High",
-      reportedDate: "2025-02-04",
-      assignedTo: "Joel Smith"
-    },
-    {
-      issueId: "ISS-1002",
-      title: "Missing Equipment",
-      description: "Network switch model CX-4500 was not delivered with the main equipment shipment.",
-      status: "Open",
-      impact: "Medium",
-      reportedDate: "2025-03-01",
-      assignedTo: "Procurement Team"
-    },
-    {
-      issueId: "ISS-1003",
-      title: "Incorrect Specifications",
-      description: "The provided specifications for the server rack are incorrect. Need updated measurements.",
-      status: "Resolved",
-      impact: "Low",
-      reportedDate: "2025-02-18",
-      resolvedDate: "2025-02-25",
-      resolvedBy: "Sarah Williams"
-    }
-  ],
-  materials: [
-    {
-      materialId: "MAT-2001",
-      name: "Network Cable Cat6",
-      quantity: 500,
-      unit: "feet",
-      status: "Used",
-      dateUsed: "2025-02-18"
-    },
-    {
-      materialId: "MAT-2002",
-      name: "Server Rack 42U",
-      quantity: 1,
-      unit: "piece",
-      status: "Delivered",
-      dateDelivered: "2025-03-01"
-    },
-    {
-      materialId: "MAT-2003",
-      name: "Network Switch CX-4500",
-      quantity: 1,
-      unit: "piece",
-      status: "Ordered",
-      dateOrdered: "2025-02-10"
-    },
-    {
-      materialId: "MAT-2004",
-      name: "Fiber Optic Cable",
-      quantity: 100,
-      unit: "feet",
-      status: "Ordered",
-      dateOrdered: "2025-02-10"
-    }
-  ]
+    visits: currentJob.value.visits || [],
+    timeline: (currentJob.value.timeline?.events || []).map(event => ({
+      date: event.timestamp || event.date,
+      status: event.status || event.event_type,
+      details: event.event_description || event.details,
+      icon: getTimelineIcon(event.status || event.event_type),
+      color: getTimelineColor(event.status || event.event_type)
+    })),
+    issues: currentJob.value.analysis?.key_issues || [],
+    materials: currentJob.value.analysis?.materials || []
+  };
 });
+
+// Helper for timeline icons
+function getTimelineIcon(status) {
+  if (!status) return 'pi pi-question-circle';
+  
+  const statusLower = status.toLowerCase();
+  if (statusLower.includes('complete') || statusLower.includes('success')) return 'pi pi-check-circle';
+  if (statusLower.includes('progress')) return 'pi pi-spinner';
+  if (statusLower.includes('scheduled') || statusLower.includes('pending')) return 'pi pi-calendar';
+  if (statusLower.includes('issue') || statusLower.includes('problem')) return 'pi pi-exclamation-triangle';
+  if (statusLower.includes('cancel') || statusLower.includes('fail')) return 'pi pi-times-circle';
+  
+  return 'pi pi-question-circle';
+}
+
+// Helper for timeline colors
+function getTimelineColor(status) {
+  if (!status) return '#607D8B';
+  
+  const statusLower = status.toLowerCase();
+  if (statusLower.includes('complete') || statusLower.includes('success')) return '#4caf50';
+  if (statusLower.includes('progress')) return '#2196f3';
+  if (statusLower.includes('scheduled') || statusLower.includes('pending')) return '#2196f3';
+  if (statusLower.includes('issue') || statusLower.includes('problem')) return '#ff9800';
+  if (statusLower.includes('cancel') || statusLower.includes('fail')) return '#ef4444';
+  
+  return '#607D8B';
+}
 
 // Chart Data
 const progressChartData = computed(() => {
@@ -325,13 +236,42 @@ const getMaterialStatusSeverity = (status) => {
 };
 
 const navigateToVisit = (visitId) => {
+  console.log('[DEBUG] JobView: Navigating to visit:', visitId);
   router.push(`/dashboard/projects/${projectId}/jobs/${jobId}/visits/${visitId}`);
 };
 
+const fetchJobData = async () => {
+  console.log('[DEBUG] JobView: Fetching job data for job ID:', jobId);
+  try {
+    await dispatchStore.fetchJobDetails(jobId);
+    console.log('[DEBUG] JobView: Job data fetched successfully');
+    
+    if (dispatchStore.error) {
+      throw new Error(dispatchStore.error);
+    }
+  } catch (err) {
+    console.error('[DEBUG] JobView: Error fetching job data:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load job data: ' + (err.message || 'Unknown error'),
+      life: 3000
+    });
+  }
+};
+
+// Watch for route changes
+watch(() => route.params.jobId, (newJobId) => {
+  if (newJobId && newJobId !== jobId) {
+    console.log('[DEBUG] JobView: Job ID changed, fetching new data:', newJobId);
+    fetchJobData();
+  }
+});
+
 // Initialize data
 onMounted(() => {
-  console.log('Job view mounted for job ID:', jobId);
-  // In a real implementation, this would fetch job data from the API using the jobId
+  console.log('[DEBUG] JobView: Component mounted for job ID:', jobId);
+  fetchJobData();
 });
 </script>
 

@@ -1,5 +1,7 @@
 <script setup>
-import { hasPermission, hasRole, hasAnyPermission, hasAllPermissions, hasAnyRole } from '@/utils/rbac';
+import { computed } from 'vue';
+import { useUserStore } from '@/stores/user';
+import { storeToRefs } from 'pinia';
 
 /**
  * Guard component for conditionally rendering UI elements based on user permissions and roles
@@ -72,39 +74,75 @@ const props = defineProps({
   }
 });
 
+const userStore = useUserStore();
+const { hasPermission, hasRole } = storeToRefs(userStore);
+
+/**
+ * Safe wrapper for permission check with error handling
+ */
+const safeHasPermission = (permission) => {
+  try {
+    return hasPermission.value(permission);
+  } catch (error) {
+    console.error(`Error checking permission "${permission}":`, error);
+    return false;
+  }
+};
+
+/**
+ * Safe wrapper for role check with error handling
+ */
+const safeHasRole = (role) => {
+  try {
+    return hasRole.value(role);
+  } catch (error) {
+    console.error(`Error checking role "${role}":`, error);
+    return false;
+  }
+};
+
 /**
  * Determines if the user has access based on the provided permissions and roles
  */
-function canAccess() {
-  // Check single permission
-  if (props.permission) {
-    return hasPermission(props.permission);
+const canAccess = computed(() => {
+  try {
+    // Check single permission
+    if (props.permission) {
+      return safeHasPermission(props.permission);
+    }
+    
+    // Check multiple permissions
+    if (props.permissions && props.permissions.length > 0) {
+      if (props.allPermissions) {
+        // Must have ALL permissions
+        return props.permissions.every(perm => safeHasPermission(perm));
+      } else {
+        // Only needs ANY permission
+        return props.permissions.some(perm => safeHasPermission(perm));
+      }
+    }
+    
+    // Check single role
+    if (props.role) {
+      return safeHasRole(props.role);
+    }
+    
+    // Check multiple roles
+    if (props.roles && props.roles.length > 0) {
+      return props.roles.some(role => safeHasRole(role));
+    }
+    
+    // No conditions specified, allow access
+    return true;
+  } catch (error) {
+    console.error('Error in PermissionGuard access check:', error);
+    return false;
   }
-  
-  // Check multiple permissions
-  if (props.permissions && props.permissions.length > 0) {
-    return props.allPermissions 
-      ? hasAllPermissions(props.permissions)
-      : hasAnyPermission(props.permissions);
-  }
-  
-  // Check single role
-  if (props.role) {
-    return hasRole(props.role);
-  }
-  
-  // Check multiple roles
-  if (props.roles && props.roles.length > 0) {
-    return hasAnyRole(props.roles);
-  }
-  
-  // No conditions specified, allow access
-  return true;
-}
+});
 </script>
 
 <template>
-  <template v-if="canAccess()">
+  <template v-if="canAccess">
     <!-- Render default slot when access is allowed -->
     <slot></slot>
   </template>

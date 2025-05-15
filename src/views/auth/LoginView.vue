@@ -5,7 +5,7 @@ import Logo from '@/components/landing/LogoWidget.vue';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/stores/user';
 import { z } from 'zod';
 
 const router = useRouter();
