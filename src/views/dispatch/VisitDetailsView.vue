@@ -118,104 +118,35 @@ function getStatusIcon(status) {
   return `pi ${iconMap[status.toLowerCase()] || 'pi-question'}`;
 }
 
-async function loadVisitDetails() {
+// Handle loading of visit data
+async function loadVisitData() {
+  loading.value = true;
   try {
-    // Fetch visit details
-    const visitResponse = await dispatchStore.fetchVisitById(visitId.value);
-    visit.value = visitResponse;
-    
-    // Fetch job details if needed
-    if (!job.value && visitResponse.job_id) {
-      const jobResponse = await dispatchStore.fetchJobById(visitResponse.job_id);
-      job.value = jobResponse;
-    }
-    
-    // Create timeline events
-    if (visit.value) {
-      const events = [];
-      
-      // Add dispatch card events
-      if (visit.value.dispatch_cards && visit.value.dispatch_cards.length > 0) {
-        const dispatch = visit.value.dispatch_cards[0];
-        
-        if (dispatch.scheduled_at) {
-          events.push({
-            status: 'info',
-            date: formatDateTime(dispatch.scheduled_at),
-            icon: 'pi pi-calendar',
-            color: '#2196F3',
-            content: 'Scheduled',
-            detail: `Visit scheduled for ${formatDate(dispatch.scheduled_at)}`
-          });
-        }
-        
-        if (dispatch.dispatched_at) {
-          events.push({
-            status: 'info',
-            date: formatDateTime(dispatch.dispatched_at),
-            icon: 'pi pi-send',
-            color: '#9C27B0',
-            content: 'Dispatched',
-            detail: `Technician dispatched to site`
-          });
-        }
-      }
-      
-      // Add turnup card events
-      if (visit.value.turnup_cards && visit.value.turnup_cards.length > 0) {
-        const turnup = visit.value.turnup_cards[0];
-        
-        if (turnup.arrived_at) {
-          events.push({
-            status: 'success',
-            date: formatDateTime(turnup.arrived_at),
-            icon: 'pi pi-map-marker',
-            color: '#4CAF50',
-            content: 'Arrived',
-            detail: `Technician arrived on site`
-          });
-        }
-        
-        if (turnup.completed_at) {
-          events.push({
-            status: 'success',
-            date: formatDateTime(turnup.completed_at),
-            icon: 'pi pi-check-circle',
-            color: '#4CAF50',
-            content: 'Completed',
-            detail: `Visit completed at ${formatTime(turnup.completed_at)}`
-          });
-        }
-        
-        if (turnup.cancelled_at) {
-          events.push({
-            status: 'danger',
-            date: formatDateTime(turnup.cancelled_at),
-            icon: 'pi pi-times-circle',
-            color: '#F44336',
-            content: 'Cancelled',
-            detail: turnup.cancel_reason || 'Visit was cancelled'
-          });
-        }
-      }
-      
-      // Sort events chronologically
-      timelineEvents.value = events.sort((a, b) => new Date(a.date) - new Date(b.date));
+    await dispatchStore.fetchVisitById(route.params.id);
+    if (dispatchStore.error) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: dispatchStore.error,
+        life: 5000
+      });
     }
   } catch (error) {
     console.error('Error loading visit details:', error);
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load visit details',
-      life: 3000
+      detail: 'Failed to load visit details. The API endpoint may not be available.',
+      life: 5000
     });
+  } finally {
+    loading.value = false;
   }
 }
 
 // Load data on component mount
 onMounted(() => {
-  loadVisitDetails();
+  loadVisitData();
 });
 </script>
 

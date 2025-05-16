@@ -83,7 +83,10 @@ export const useDispatchStore = defineStore('dispatch', {
       page: 1,
       limit: 10,
       total: 0
-    }
+    },
+    
+    // Enhanced dashboard data
+    dashboardEnhanced: null
   }),
   
   getters: {
@@ -849,32 +852,27 @@ export const useDispatchStore = defineStore('dispatch', {
         this.loading = true;
         this.error = null;
         
-        console.log('[DEBUG] dispatchStore.fetchJobDetails - Calling DispatchService.getJobDetails');
-        const response = await DispatchService.getJobDetails(jobId);
-        console.log('[DEBUG] dispatchStore.fetchJobDetails - Response received');
+        // Option 1: Use the comprehensive endpoint for better performance
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Using complete job data endpoint');
+        const response = await DispatchService.getCompleteJobData(jobId);
         
         if (response.data && response.data.success) {
-          console.log('[DEBUG] dispatchStore.fetchJobDetails - Response success:', response.data.success);
-          console.log('[DEBUG] dispatchStore.fetchJobDetails - Response data structure:', 
-            Object.keys(response.data.data || {}));
-          
-          // Format the response data using the helper method
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Complete job data received');
           this.currentJob = DispatchService.formatJobDetails(response.data.data);
-          console.log('[DEBUG] dispatchStore.fetchJobDetails - Formatted job data structure:', 
-            Object.keys(this.currentJob || {}));
-          console.log('[DEBUG] dispatchStore.fetchJobDetails - Number of visits:', 
-            this.currentJob?.visits?.length || 0);
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Data formatted and stored in state');
         } else {
-          console.error('[DEBUG] dispatchStore.fetchJobDetails - API error:', 
-            response.data?.message || 'Unknown error');
-          throw new Error(response.data?.message || 'Failed to load job details');
+          console.error('[DEBUG] dispatchStore.fetchJobDetails - Invalid response format');
+          throw new Error('Invalid response format');
         }
+        
+        return this.currentJob;
       } catch (error) {
-        console.error('[DEBUG] dispatchStore.fetchJobDetails - Exception:', error);
+        console.error('[DEBUG] dispatchStore.fetchJobDetails - Error:', error);
         this.error = error.message || 'Failed to load job details';
+        throw error;
       } finally {
         this.loading = false;
-        console.log('[DEBUG] dispatchStore.fetchJobDetails - Completed, loading status:', this.loading);
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Completed');
       }
     },
     
@@ -1010,6 +1008,330 @@ export const useDispatchStore = defineStore('dispatch', {
     formatDate(date) {
       if (!date) return '';
       return format(new Date(date), 'MMM d, yyyy');
+    },
+
+    // === GlobalActivityView Actions ===
+    async loadDashboardData() {
+      try {
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Starting');
+        this.loading = true;
+        this.error = null;
+        
+        // Fetch global dashboard summary
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching global dashboard summary');
+        const globalResponse = await DispatchService.getDashboardGlobal();
+        if (globalResponse.data && globalResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Global dashboard data received');
+          this.dashboardSummary = globalResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid global dashboard response format');
+        }
+        
+        // Fetch enhanced dashboard with more details
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching enhanced dashboard data');
+        const enhancedResponse = await DispatchService.getDashboardGlobalEnhanced();
+        if (enhancedResponse.data && enhancedResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Enhanced dashboard data received');
+          this.dashboardEnhanced = enhancedResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid enhanced dashboard response format');
+        }
+        
+        // Fetch dashboard metrics
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching dashboard metrics');
+        const metricsResponse = await DispatchService.getDashboardMetrics();
+        if (metricsResponse.data && metricsResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Dashboard metrics data received');
+          this.dashboardTrends = metricsResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid metrics response format');
+        }
+        
+        // Fetch visits data for activity table
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching visits data');
+        await this.fetchVisitsData();
+        
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Dashboard data loaded successfully');
+        return { globalResponse, enhancedResponse, metricsResponse };
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.loadDashboardData - Error:', error);
+        this.error = error.message || 'Failed to load dashboard data';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchVisitsData(params = {}) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchVisitsData - Starting');
+        this.loading = true;
+        this.error = null;
+        
+        // Initialize visits as empty array to prevent undefined errors
+        if (!Array.isArray(this.visits)) {
+          this.visits = [];
+        }
+        
+        // Make the direct API call to fetch visits
+        console.log('[DEBUG] dispatchStore.fetchVisitsData - Calling API endpoint');
+        try {
+          const response = await DispatchService.getVisits(params);
+          
+          if (response.data && response.data.success) {
+            console.log('[DEBUG] dispatchStore.fetchVisitsData - Success from API, visits received:', 
+              response.data.data.data?.length || 0);
+            this.visits = response.data.data.data || [];
+            
+            // Update pagination info if provided
+            if (response.data.data.pagination) {
+              console.log('[DEBUG] dispatchStore.fetchVisitsData - Updating pagination info');
+              this.pagination = response.data.data.pagination;
+            }
+            
+            return response;
+          } else {
+            console.error('[DEBUG] dispatchStore.fetchVisitsData - Invalid response from API');
+            this.error = "Could not retrieve visits data";
+            return { data: { success: false, message: this.error } };
+          }
+        } catch (apiError) {
+          console.error('[DEBUG] dispatchStore.fetchVisitsData - API Error:', apiError);
+          this.error = "Visit data API endpoint not available";
+          return { data: { success: false, message: this.error } };
+        }
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchVisitsData - Error:', error);
+        this.error = error.message || 'Failed to load visits';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // === ProjectsView Actions ===
+    // Already implemented with fetchProjects
+
+    // === ProjectDetailsView Actions ===
+    async fetchProjectDetails(projectId) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Starting for project ID:', projectId);
+        this.loading = true;
+        this.error = null;
+        
+        // Fetch project details
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Fetching project details');
+        const projectResponse = await DispatchService.getProjectById(projectId);
+        this.currentProject = projectResponse;
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Project details received');
+        
+        // Fetch jobs for this project
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Fetching project jobs');
+        const jobsResponse = await DispatchService.fetchJobsByProject(projectId);
+        this.jobs = jobsResponse;
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Project jobs received:', jobsResponse.length);
+        
+        // Fetch project timeline
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Fetching project timeline');
+        const timelineResponse = await DispatchService.getProjectTimeline(projectId);
+        if (timelineResponse.data && timelineResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchProjectDetails - Project timeline received');
+          this.currentProject.timeline = timelineResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchProjectDetails - Invalid timeline response format');
+        }
+        
+        console.log('[DEBUG] dispatchStore.fetchProjectDetails - Project details loaded successfully');
+        return { projectResponse, jobsResponse, timelineResponse };
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchProjectDetails - Error:', error);
+        this.error = error.message || 'Failed to load project details';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // === JobsView Actions ===
+    async fetchJobs(params = {}) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchJobs - Starting');
+        this.loading = true;
+        this.error = null;
+        
+        // Apply filters from store state if not provided
+        const filterParams = params || {};
+        if (this.filters.date.start && this.filters.date.end) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Adding date filters');
+          filterParams.date_from = this.formatDateParam(this.filters.date.start);
+          filterParams.date_to = this.formatDateParam(this.filters.date.end);
+        }
+        
+        if (this.filters.status.length > 0) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Adding status filters');
+          filterParams.status = this.filters.status.join(',');
+        }
+        
+        if (this.filters.customer.length > 0) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Adding customer filters');
+          filterParams.customer_ids = this.filters.customer.join(',');
+        }
+        
+        if (this.filters.search) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Adding search term');
+          filterParams.search = this.filters.search;
+        }
+        
+        // Set pagination parameters
+        filterParams.page = this.pagination.page;
+        filterParams.per_page = this.pagination.limit;
+        
+        console.log('[DEBUG] dispatchStore.fetchJobs - Calling API with params:', filterParams);
+        const response = await DispatchService.getJobs(filterParams);
+        
+        if (response.data && response.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Success, jobs received:', response.data.data.data?.length || 0);
+          this.jobs = response.data.data.data || [];
+          
+          // Update pagination info if provided
+          if (response.data.data.pagination) {
+            console.log('[DEBUG] dispatchStore.fetchJobs - Updating pagination info');
+            this.pagination = response.data.data.pagination;
+          }
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchJobs - Invalid response format');
+        }
+        
+        // Fetch statistics for KPI metrics
+        console.log('[DEBUG] dispatchStore.fetchJobs - Fetching job statistics');
+        const statsResponse = await DispatchService.getJobStatistics();
+        if (statsResponse.data && statsResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchJobs - Job statistics received');
+          // Store metrics data for the KPIs
+          this.header = statsResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchJobs - Invalid statistics response format');
+        }
+        
+        console.log('[DEBUG] dispatchStore.fetchJobs - Jobs data loaded successfully');
+        return response;
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchJobs - Error:', error);
+        this.error = error.message || 'Failed to load jobs';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // === JobDetailsView Actions ===
+    // Enhancing existing fetchJobDetails
+    async fetchJobDetails(jobId) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Starting for job ID:', jobId);
+        this.loading = true;
+        this.error = null;
+        
+        // Option 1: Use the comprehensive endpoint for better performance
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Using complete job data endpoint');
+        const response = await DispatchService.getCompleteJobData(jobId);
+        
+        if (response.data && response.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Complete job data received');
+          this.currentJob = DispatchService.formatJobDetails(response.data.data);
+          console.log('[DEBUG] dispatchStore.fetchJobDetails - Data formatted and stored in state');
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchJobDetails - Invalid response format');
+          throw new Error('Invalid response format');
+        }
+        
+        return this.currentJob;
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchJobDetails - Error:', error);
+        this.error = error.message || 'Failed to load job details';
+        throw error;
+      } finally {
+        this.loading = false;
+        console.log('[DEBUG] dispatchStore.fetchJobDetails - Completed');
+      }
+    },
+
+    // === VisitDetailsView Actions ===
+    async fetchVisitById(visitId) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Starting for visit ID:', visitId);
+        this.loading = true;
+        this.error = null;
+        
+        // Fetch visit details
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching visit details');
+        const visitResponse = await DispatchService.getVisitById(visitId);
+        this.currentVisit = visitResponse;
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Visit details received');
+        
+        // Fetch visit timeline
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching visit timeline');
+        const timelineResponse = await DispatchService.getVisitTimeline(visitId);
+        if (timelineResponse.data && timelineResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchVisitById - Visit timeline received');
+          this.currentVisit.timeline = timelineResponse.data.data;
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchVisitById - Invalid timeline response format');
+        }
+        
+        // Fetch work performance data
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching work performance data');
+        const workResponse = await DispatchService.getVisitWorkPerformance(visitId);
+        if (workResponse.data && workResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchVisitById - Work performance data received');
+          this.currentVisit.tasks_performed = workResponse.data.data.tasks || [];
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchVisitById - Invalid work performance response format');
+        }
+        
+        // Fetch materials used
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching materials data');
+        const materialsResponse = await DispatchService.getVisitMaterials(visitId);
+        if (materialsResponse.data && materialsResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchVisitById - Materials data received');
+          this.currentVisit.materials_used = materialsResponse.data.data.materials || [];
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchVisitById - Invalid materials response format');
+        }
+        
+        // Fetch relationships
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching relationships data');
+        const relationshipsResponse = await DispatchService.getVisitRelationships(visitId);
+        if (relationshipsResponse.data && relationshipsResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchVisitById - Relationships data received');
+          // Add job info to the visit
+          if (relationshipsResponse.data.data.job) {
+            this.currentVisit.job = relationshipsResponse.data.data.job;
+          }
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchVisitById - Invalid relationships response format');
+        }
+        
+        // Fetch key interactions
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Fetching key interactions data');
+        const interactionsResponse = await DispatchService.getVisitKeyInteractions(visitId);
+        if (interactionsResponse.data && interactionsResponse.data.success) {
+          console.log('[DEBUG] dispatchStore.fetchVisitById - Key interactions data received');
+          this.currentVisit.key_interactions = interactionsResponse.data.data.interactions || [];
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchVisitById - Invalid interactions response format');
+        }
+        
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Visit data loaded successfully');
+        return this.currentVisit;
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchVisitById - Error:', error);
+        this.error = error.message || 'Failed to load visit details';
+        throw error;
+      } finally {
+        this.loading = false;
+        console.log('[DEBUG] dispatchStore.fetchVisitById - Completed');
+      }
     }
   }
 }); 

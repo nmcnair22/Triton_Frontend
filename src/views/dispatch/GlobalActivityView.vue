@@ -90,61 +90,78 @@ const tableLazyParams = ref({
 });
 
 // Computed properties
-const metricsData = computed(() => ({
-  totalVisits: {
-    title: 'Total Visits',
-    value: dashboardSummary.value?.summary?.visits?.total || 0,
-    previousValue: dashboardSummary.value?.summary?.visits?.previous || 0,
-    change: dashboardSummary.value?.summary?.visits?.change || 0,
-    icon: 'pi pi-calendar-plus',
-    color: 'primary'
-  },
-  completionRate: {
-    title: 'Success Rate',
-    value: dashboardSummary.value?.metrics_trend?.[0]?.completion_rate || 0,
-    previousValue: dashboardSummary.value?.metrics_trend?.[1]?.completion_rate || 0,
-    change: calculateChange(
-      dashboardSummary.value?.metrics_trend?.[0]?.completion_rate,
-      dashboardSummary.value?.metrics_trend?.[1]?.completion_rate
-    ),
-    icon: 'pi pi-check-circle',
-    color: 'success',
-    isPercentage: true
-  },
-  revisitRate: {
-    title: 'Revisit Rate',
-    value: dashboardSummary.value?.metrics_trend?.[0]?.revisit_rate || 0,
-    previousValue: dashboardSummary.value?.metrics_trend?.[1]?.revisit_rate || 0,
-    change: calculateChange(
-      dashboardSummary.value?.metrics_trend?.[0]?.revisit_rate,
-      dashboardSummary.value?.metrics_trend?.[1]?.revisit_rate
-    ),
-    icon: 'pi pi-refresh',
-    color: 'warning',
-    isPercentage: true
-  },
-  avgDuration: {
-    title: 'Avg. Duration',
-    value: dashboardSummary.value?.metrics_trend?.[0]?.avg_duration || 0,
-    previousValue: dashboardSummary.value?.metrics_trend?.[1]?.avg_duration || 0,
-    change: calculateChange(
-      dashboardSummary.value?.metrics_trend?.[0]?.avg_duration,
-      dashboardSummary.value?.metrics_trend?.[1]?.avg_duration
-    ),
-    icon: 'pi pi-clock',
-    color: 'info',
-    format: 'time'
-  }
-}));
+const metricsData = computed(() => {
+  // Try to get data from enhanced dashboard first, then fall back to regular dashboard
+  const enhancedData = dispatchStore.dashboardEnhanced || {};
+  const summaryData = dashboardSummary.value?.summary || {};
+  const metricsTrend = dashboardSummary.value?.metrics_trend || [];
+  
+  // Use enhanced data for visit metrics when available
+  const totalVisits = enhancedData.daily_statistics?.total_visits || summaryData.visits?.total || 0;
+  const previousTotalVisits = enhancedData.daily_statistics?.yesterday_total_visits || 
+                              summaryData.visits?.previous || 0;
+  
+  // Enhanced data has more detailed completion metrics
+  const completionRate = enhancedData.daily_statistics?.completion_rate || 
+                        metricsTrend[0]?.completion_rate || 0;
+  const previousCompletionRate = enhancedData.daily_statistics?.yesterday_completion_rate || 
+                                metricsTrend[1]?.completion_rate || 0;
+  
+  return {
+    totalVisits: {
+      title: 'Total Visits',
+      value: totalVisits,
+      previousValue: previousTotalVisits,
+      change: calculateChange(totalVisits, previousTotalVisits),
+      icon: 'pi pi-calendar-plus',
+      color: 'primary'
+    },
+    completionRate: {
+      title: 'Success Rate',
+      value: completionRate,
+      previousValue: previousCompletionRate,
+      change: calculateChange(completionRate, previousCompletionRate),
+      icon: 'pi pi-check-circle',
+      color: 'success',
+      isPercentage: true
+    },
+    revisitRate: {
+      title: 'Revisit Rate',
+      value: enhancedData.issues_summary?.revisit_rate || metricsTrend[0]?.revisit_rate || 0,
+      previousValue: metricsTrend[1]?.revisit_rate || 0,
+      change: calculateChange(
+        enhancedData.issues_summary?.revisit_rate || metricsTrend[0]?.revisit_rate || 0,
+        metricsTrend[1]?.revisit_rate || 0
+      ),
+      icon: 'pi pi-refresh',
+      color: 'warning',
+      isPercentage: true
+    },
+    avgDuration: {
+      title: 'Avg. Duration',
+      value: enhancedData.metrics?.avg_duration || metricsTrend[0]?.avg_duration || 0,
+      previousValue: metricsTrend[1]?.avg_duration || 0,
+      change: calculateChange(
+        enhancedData.metrics?.avg_duration || metricsTrend[0]?.avg_duration || 0,
+        metricsTrend[1]?.avg_duration || 0
+      ),
+      icon: 'pi pi-clock',
+      color: 'info',
+      format: 'time'
+    }
+  };
+});
 
 // Computed properties for activity feeds
 const revisitVisits = computed(() => {
+  if (!visits.value || !Array.isArray(visits.value)) return [];
   return visits.value.filter(visit => {
     return visit.metadata?.turnup_data?.revisit_indicated === 'Yes';
   });
 });
 
 const allVisitsWithIssues = computed(() => {
+  if (!visits.value || !Array.isArray(visits.value)) return [];
   return visits.value.filter(visit => {
     return visit.issues_encountered && visit.issues_encountered.length > 0;
   });
@@ -271,9 +288,25 @@ async function loadDashboardData() {
     await dispatchStore.loadDashboardData();
     await loadVisitsData();
     
-    // Update table data
-    tableData.value = jobs.value;
-    tableTotalRecords.value = jobs.value.length;
+    // If we have visits data from API, use it
+    if (Array.isArray(dispatchStore.visits) && dispatchStore.visits.length > 0) {
+      tableData.value = dispatchStore.visits;
+      tableTotalRecords.value = dispatchStore.visits.length;
+      console.log('Using visits API data for table:', dispatchStore.visits.length, 'records');
+    } 
+    // Otherwise, display no data available
+    else {
+      tableData.value = [];
+      tableTotalRecords.value = 0;
+      console.log('No visits data available for table');
+      
+      toast.add({
+        severity: 'info',
+        summary: 'Limited View',
+        detail: 'Visit data is not available. Please contact support if this issue persists.',
+        life: 5000
+      });
+    }
   } catch (err) {
     console.error('Error loading dashboard data:', err);
     toast.add({
@@ -282,6 +315,10 @@ async function loadDashboardData() {
       detail: 'Failed to load dashboard data. Please try again.',
       life: 3000
     });
+    
+    // Initialize empty table data
+    tableData.value = [];
+    tableTotalRecords.value = 0;
   } finally {
     tableLoading.value = false;
   }
@@ -291,128 +328,36 @@ async function loadDashboardData() {
 async function loadVisitsData() {
   try {
     visitsLoading.value = true;
-    // In a real implementation, this would call an API endpoint to fetch visits
-    // For now, we'll simulate by extracting visits data from the sample job
     
-    // Simulate API call by setting a delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Direct API call to fetch visits
+    const response = await dispatchStore.fetchVisitsData();
     
-    // Access a sample job that might have visits data
-    // In production, this would be an API call to fetch actual visits
-    const response = await fetch('/api/visits');
-    if (response.ok) {
-      const data = await response.json();
-      visits.value = data.visits;
+    // If there's an error from the API call, it will be in the store
+    if (dispatchStore.error) {
+      console.error('Error loading visits data:', dispatchStore.error);
+      toast.add({
+        severity: 'error',
+        summary: 'Error Loading Visits',
+        detail: 'Visit data not available. Some features will be limited.',
+        life: 5000
+      });
+      
+      // Always initialize visits as an empty array to prevent undefined errors
+      visits.value = [];
     } else {
-      // Use a fallback for demo purposes - actual implementation would connect to backend
-      // Using static visits data for demonstration
-      visits.value = [
-        // Sample visit data based on JSON structure
-        // In production, this would come from the API
-        {
-          "visit_id": "VG1",
-          "date": "2025-03-10",
-          "status": "Failed - Unable to make it to site",
-          "customer": "Flynn",
-          "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
-          "service_type": "Site Survey",
-          "dispatch_ticket_id": "2382281",
-          "turnup_ticket_id": "2399123",
-          "issues_encountered": [
-            {
-              "description": "Unable to make it to site",
-              "status": "Unresolved",
-              "mitigation": "Reschedule requested",
-              "related_to_previous_visit": false,
-              "needs_future_attention": true,
-              "resolution_attempts": [
-                {
-                  "attempt_description": "FST asking for re-schedule on Wednesday",
-                  "outcome": "Pending"
-                }
-              ]
-            }
-          ],
-          "metadata": {
-            "turnup_data": {
-              "revisit_indicated": "Yes"
-            }
-          }
-        },
-        {
-          "visit_id": "VG5",
-          "date": "2025-04-30",
-          "status": "Completed with Issues",
-          "customer": "Flynn",
-          "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
-          "service_type": "Phase 1",
-          "issues_encountered": [
-            {
-              "description": "Jhooks were not hung due to no room until abatement",
-              "status": "Unresolved",
-              "mitigation": "Will return with proper anchors",
-              "related_to_previous_visit": false,
-              "needs_future_attention": true
-            },
-            {
-              "description": "Service Loop was not made due to abatement",
-              "status": "Unresolved",
-              "mitigation": "To be completed after abatement",
-              "related_to_previous_visit": false,
-              "needs_future_attention": true
-            }
-          ],
-          "metadata": {
-            "turnup_data": {
-              "revisit_indicated": "Yes"
-            }
-          }
-        },
-        {
-          "visit_id": "VG6",
-          "date": "2025-05-01",
-          "status": "Completed Successfully",
-          "customer": "Flynn",
-          "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
-          "service_type": "P2",
-          "issues_encountered": [
-            {
-              "description": "MX did not come online after migration",
-              "status": "Resolved",
-              "mitigation": "Escalated to Meraki support, software update pushed",
-              "related_to_previous_visit": false,
-              "needs_future_attention": false,
-              "resolution_attempts": [
-                {
-                  "attempt_description": "Meraki support pushed an update",
-                  "outcome": "MX connection restored"
-                }
-              ]
-            },
-            {
-              "description": "POS2 power cable cut",
-              "status": "Unresolved",
-              "mitigation": "Flynn HD to order replacement",
-              "related_to_previous_visit": false,
-              "needs_future_attention": true
-            }
-          ],
-          "metadata": {
-            "turnup_data": {
-              "revisit_indicated": "No"
-            }
-          }
-        }
-      ];
+      visits.value = dispatchStore.visits || [];
     }
   } catch (err) {
     console.error('Error loading visits data:', err);
     toast.add({
       severity: 'error',
-      summary: 'Error Loading Visits',
-      detail: 'Failed to load visits data. Please try again.',
-      life: 3000
+      summary: 'Visit Data Unavailable',
+      detail: 'Visit data could not be loaded. Some features will be limited.',
+      life: 5000
     });
+    
+    // Always ensure visits is at least an empty array
+    visits.value = [];
   } finally {
     visitsLoading.value = false;
   }
@@ -582,14 +527,17 @@ watch(tableLazyParams, () => {
       <RevisitRequiredFeed
         :data="revisitVisits"
         :loading="visitsLoading"
+        emptyMessage="No revisit requests found"
       />
       <PartsIssuesFeed
         :data="allVisitsWithIssues"
         :loading="visitsLoading"
+        emptyMessage="No parts issues found"
       />
       <CriticalIssuesFeed
         :data="allVisitsWithIssues"
         :loading="visitsLoading"
+        emptyMessage="No critical issues found"
       />
     </div>
     
@@ -690,6 +638,7 @@ watch(tableLazyParams, () => {
             dataKey="id"
             v-model:filters="filters"
             filterDisplay="row"
+            emptyMessage="No visit activities found. This might be due to missing data from the API or applied filters."
           >
             <Column field="id" header="ID" sortable style="width: 80px">
               <template #body="{ data }">
