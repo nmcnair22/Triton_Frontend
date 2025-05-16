@@ -218,17 +218,71 @@ export const DispatchService = {
   
   // Dashboard-level data
   getDashboardSummary() {
-    return ApiService.get('dashboard/global');
+    console.log('[DEBUG] DispatchService.getDashboardSummary - Calling API endpoint: dashboard/global');
+    
+    return ApiService.get('dashboard/global')
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getDashboardSummary - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getDashboardSummary - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getDashboardSummary - Data structure:', 
+            Object.keys(response.data.data));
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getDashboardSummary - Error:', error);
+        return this.handleApiError(error, 'getDashboardSummary');
+      });
   },
   
   // Dashboard trends data
   getDashboardTrends() {
-    return ApiService.get('dashboard/global/enhanced');
+    console.log('[DEBUG] DispatchService.getDashboardTrends - Calling API endpoint: dashboard/global/enhanced');
+    
+    return ApiService.get('dashboard/global/enhanced')
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getDashboardTrends - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getDashboardTrends - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getDashboardTrends - Data structure:', 
+            Object.keys(response.data.data));
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getDashboardTrends - Error:', error);
+        return this.handleApiError(error, 'getDashboardTrends');
+      });
   },
   
   // Project listings
   getProjects(params = {}) {
-    return ApiService.get('dashboard/projects', params);
+    console.log('[DEBUG] DispatchService.getProjects - Calling API endpoint: dashboard/projects');
+    console.log('[DEBUG] DispatchService.getProjects - Params:', JSON.parse(JSON.stringify(params || {})));
+    
+    return ApiService.get('dashboard/projects', params)
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getProjects - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getProjects - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getProjects - Data structure:', 
+            Object.keys(response.data.data));
+          console.log('[DEBUG] DispatchService.getProjects - Projects count:', 
+            response.data.data.projects?.length || 0);
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getProjects - Error:', error);
+        return this.handleApiError(error, 'getProjects');
+      });
   },
   
   // Project details
@@ -238,7 +292,26 @@ export const DispatchService = {
   
   // System alerts
   getAlerts() {
-    return ApiService.get('dashboard/alerts');
+    console.log('[DEBUG] DispatchService.getAlerts - Calling API endpoint: dashboard/alerts');
+    
+    return ApiService.get('dashboard/alerts')
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getAlerts - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getAlerts - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getAlerts - Data structure:', 
+            Object.keys(response.data.data));
+          console.log('[DEBUG] DispatchService.getAlerts - Alerts count:', 
+            response.data.data.alerts?.length || 0);
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getAlerts - Error:', error);
+        return this.handleApiError(error, 'getAlerts');
+      });
   },
   
   // Data transformers

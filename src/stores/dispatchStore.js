@@ -45,17 +45,38 @@ export const useDispatchStore = defineStore('dispatch', {
     
     // Projects data
     projects: [],
+    selectedProjects: [],
     currentProject: null,
+    
+    // Customer data
+    customers: [],
+    selectedCustomers: [],
     
     // Jobs data
     jobs: [],
+    selectedJobs: [],
     currentJob: null,
     
     // Visits data
+    visits: [],
     currentVisit: null,
     
     // Alerts
     alerts: [],
+    
+    // Filters
+    filters: {
+      status: [],
+      priority: [],
+      customer: [],
+      project: [],
+      job: [],
+      date: {
+        start: null,
+        end: null
+      },
+      search: ''
+    },
     
     // Pagination
     pagination: {
@@ -194,36 +215,154 @@ export const useDispatchStore = defineStore('dispatch', {
       recommended_actions: [] 
     },
     
+    // For multi-selection
+    hasSelectedProjects: state => state.selectedProjects.length > 0,
+    hasSelectedCustomers: state => state.selectedCustomers.length > 0,
+    hasSelectedJobs: state => state.selectedJobs.length > 0,
+    
     // Helper for pagination
-    totalPages: state => Math.ceil(state.pagination.total / state.pagination.limit)
+    totalPages: state => Math.ceil(state.pagination.total / state.pagination.limit),
+    
+    // Helper for filter states
+    activeFilters: state => {
+      const active = [];
+      
+      if (state.filters.status.length > 0) active.push('status');
+      if (state.filters.priority.length > 0) active.push('priority');
+      if (state.filters.customer.length > 0) active.push('customer');
+      if (state.filters.project.length > 0) active.push('project');
+      if (state.filters.job.length > 0) active.push('job');
+      if (state.filters.date.start && state.filters.date.end) active.push('date');
+      if (state.filters.search) active.push('search');
+      
+      return active;
+    },
+    
+    // Get all status options
+    statusOptions: () => [
+      { label: 'Complete', value: 'complete', icon: 'pi pi-check-circle', color: 'bg-green-500' },
+      { label: 'In Progress', value: 'in_progress', icon: 'pi pi-sync', color: 'bg-blue-500' },
+      { label: 'Scheduled', value: 'scheduled', icon: 'pi pi-calendar', color: 'bg-amber-500' },
+      { label: 'Delayed', value: 'delayed', icon: 'pi pi-clock', color: 'bg-red-500' },
+      { label: 'Cancelled', value: 'cancelled', icon: 'pi pi-times-circle', color: 'bg-gray-500' },
+      { label: 'Pending', value: 'pending', icon: 'pi pi-hourglass', color: 'bg-purple-500' },
+      { label: 'Overdue', value: 'overdue', icon: 'pi pi-exclamation-circle', color: 'bg-red-600' },
+      { label: 'Failed', value: 'failed', icon: 'pi pi-times', color: 'bg-red-700' },
+      { label: 'Revisit', value: 'revisit', icon: 'pi pi-refresh', color: 'bg-blue-600' }
+    ],
+    
+    // Get all priority options
+    priorityOptions: () => [
+      { label: 'Critical', value: 'critical', icon: 'pi pi-exclamation-triangle', color: 'bg-red-600' },
+      { label: 'High', value: 'high', icon: 'pi pi-arrow-up', color: 'bg-orange-500' },
+      { label: 'Medium', value: 'medium', icon: 'pi pi-minus', color: 'bg-amber-500' },
+      { label: 'Low', value: 'low', icon: 'pi pi-arrow-down', color: 'bg-green-500' }
+    ]
   },
   
   actions: {
-    // Action for setting loading state
     setLoading(section, isLoading) {
+      if (section) {
+        // For future use if we want to track loading state per section
+      }
       this.loading = isLoading;
     },
-
-    // Action for handling errors
+    
     setError(section, errorMessage) {
+      if (section) {
+        // For future use if we want to track errors per section
+      }
       this.error = errorMessage;
     },
-
-    // Action for clearing errors
+    
     clearErrors() {
       this.error = null;
     },
-
-    // Action for setting date range
+    
     setDateRange(startDate, endDate) {
       this.dateRange.startDate = startDate;
       this.dateRange.endDate = endDate;
     },
     
-    // Set pagination
     setPagination(page, limit) {
       this.pagination.page = page;
-      this.pagination.limit = limit;
+      this.pagination.limit = limit || this.pagination.limit;
+    },
+    
+    // Add multi-selection methods
+    selectProject(project) {
+      if (!this.selectedProjects.some(p => p.id === project.id)) {
+        this.selectedProjects.push(project);
+      }
+    },
+    
+    unselectProject(projectId) {
+      this.selectedProjects = this.selectedProjects.filter(p => p.id !== projectId);
+    },
+    
+    selectCustomer(customer) {
+      if (!this.selectedCustomers.some(c => c.id === customer.id)) {
+        this.selectedCustomers.push(customer);
+      }
+    },
+    
+    unselectCustomer(customerId) {
+      this.selectedCustomers = this.selectedCustomers.filter(c => c.id !== customerId);
+    },
+    
+    selectJob(job) {
+      if (!this.selectedJobs.some(j => j.id === job.id)) {
+        this.selectedJobs.push(job);
+      }
+    },
+    
+    unselectJob(jobId) {
+      this.selectedJobs = this.selectedJobs.filter(j => j.id !== jobId);
+    },
+    
+    // Set filter methods
+    setStatusFilter(statuses) {
+      this.filters.status = Array.isArray(statuses) ? statuses : [statuses];
+    },
+    
+    setPriorityFilter(priorities) {
+      this.filters.priority = Array.isArray(priorities) ? priorities : [priorities];
+    },
+    
+    setCustomerFilter(customers) {
+      this.filters.customer = Array.isArray(customers) ? customers : [customers];
+    },
+    
+    setProjectFilter(projects) {
+      this.filters.project = Array.isArray(projects) ? projects : [projects];
+    },
+    
+    setJobFilter(jobs) {
+      this.filters.job = Array.isArray(jobs) ? jobs : [jobs];
+    },
+    
+    setDateFilter(start, end) {
+      this.filters.date.start = start;
+      this.filters.date.end = end;
+    },
+    
+    setSearchFilter(search) {
+      this.filters.search = search;
+    },
+    
+    resetFilters() {
+      this.filters = {
+        status: [],
+        priority: [],
+        customer: [],
+        project: [],
+        job: [],
+        date: {
+          start: null,
+          end: null
+        },
+        search: ''
+      };
     },
     
     // Fetch all dashboard data using the /dashboard/all endpoint
@@ -584,16 +723,27 @@ export const useDispatchStore = defineStore('dispatch', {
         this.loading = true;
         this.error = null;
         
+        console.log('[DEBUG] dispatchStore.fetchDashboardSummary - Calling API');
         const response = await DispatchService.getDashboardSummary();
+        console.log('[DEBUG] dispatchStore.fetchDashboardSummary - Response received:', {
+          status: response.status,
+          success: response.data?.success,
+          dataKeys: response.data?.data ? Object.keys(response.data.data) : []
+        });
         
         if (response.data && response.data.success) {
+          // Store the raw data from API
           this.dashboardSummary = response.data.data;
+          console.log('[DEBUG] dispatchStore.fetchDashboardSummary - Stored data:', this.dashboardSummary);
         } else {
           throw new Error(response.data.message || 'Failed to load dashboard summary');
         }
+        
+        return response;
       } catch (error) {
         console.error('Error fetching dashboard summary:', error);
         this.error = error.message || 'Failed to load dashboard summary';
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -605,16 +755,30 @@ export const useDispatchStore = defineStore('dispatch', {
         this.loading = true;
         this.error = null;
         
+        console.log('[DEBUG] dispatchStore.fetchDashboardTrends - Calling API');
         const response = await DispatchService.getDashboardTrends();
+        console.log('[DEBUG] dispatchStore.fetchDashboardTrends - Response received:', {
+          status: response.status,
+          success: response.data?.success,
+          dataKeys: response.data?.data ? Object.keys(response.data.data) : []
+        });
         
         if (response.data && response.data.success) {
+          // Store the raw data from API
           this.dashboardTrends = response.data.data;
+          console.log('[DEBUG] dispatchStore.fetchDashboardTrends - Stored data:', {
+            metricsCount: this.dashboardTrends?.metrics?.length || 0,
+            hasSummary: !!this.dashboardTrends?.summary,
+          });
         } else {
           throw new Error(response.data.message || 'Failed to load dashboard trends');
         }
+        
+        return response;
       } catch (error) {
         console.error('Error fetching dashboard trends:', error);
         this.error = error.message || 'Failed to load dashboard trends';
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -626,10 +790,18 @@ export const useDispatchStore = defineStore('dispatch', {
         this.loading = true;
         this.error = null;
         
+        console.log('[DEBUG] dispatchStore.fetchProjects - Calling with params:', JSON.parse(JSON.stringify(params)));
         const response = await DispatchService.getProjects(params);
+        console.log('[DEBUG] dispatchStore.fetchProjects - Response received:', {
+          status: response.status,
+          success: response.data?.success,
+          hasProjects: Array.isArray(response.data?.data?.data),
+          projectCount: response.data?.data?.data?.length || 0
+        });
         
         if (response.data && response.data.success) {
-          this.projects = response.data.data.projects || [];
+          // Handle nested data structure where projects are in data.data
+          this.projects = response.data.data.data || [];
           
           if (response.data.data.pagination) {
             this.pagination = response.data.data.pagination;
@@ -637,9 +809,12 @@ export const useDispatchStore = defineStore('dispatch', {
         } else {
           throw new Error(response.data.message || 'Failed to load projects');
         }
+        
+        return response;
       } catch (error) {
         console.error('Error fetching projects:', error);
         this.error = error.message || 'Failed to load projects';
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -763,16 +938,26 @@ export const useDispatchStore = defineStore('dispatch', {
         this.loading = true;
         this.error = null;
         
+        console.log('[DEBUG] dispatchStore.fetchAlerts - Calling API');
         const response = await DispatchService.getAlerts();
+        console.log('[DEBUG] dispatchStore.fetchAlerts - Response received:', {
+          status: response.status,
+          success: response.data?.success,
+          alertCount: response.data?.data?.data?.length || 0
+        });
         
         if (response.data && response.data.success) {
-          this.alerts = response.data.data.alerts || [];
+          // Handle nested data structure where alerts are in data.data
+          this.alerts = response.data.data.data || [];
         } else {
           throw new Error(response.data.message || 'Failed to load alerts');
         }
+        
+        return response;
       } catch (error) {
         console.error('Error fetching alerts:', error);
         this.error = error.message || 'Failed to load alerts';
+        throw error;
       } finally {
         this.loading = false;
       }

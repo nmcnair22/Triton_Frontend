@@ -17,7 +17,7 @@ import { useDispatchStore } from '@/stores/dispatchStore';
 import { format, startOfToday, endOfToday, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import KpiCard from '@/components/KpiCard.vue';
 import Drawer from 'primevue/drawer';
-import PermissionGuard from '@/components/PermissionGuard.vue';
+import PermissionGuard from '@/components/auth/PermissionGuard.vue';
 
 // Custom filter for date ranges
 FilterService.register('dateRange', (value, filter) => {

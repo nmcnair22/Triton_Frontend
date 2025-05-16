@@ -13,35 +13,19 @@ const model = ref([
                 to: '/dispatch/dashboard'
             },
             {
-                label: 'Project Hierarchy',
-                icon: 'pi pi-fw pi-sitemap',
-                items: [
-                    {
-                        label: 'Projects Dashboard',
-                        icon: 'pi pi-fw pi-folder',
-                        to: '/dashboard'
-                    },
-                    {
-                        label: 'Project Details',
-                        icon: 'pi pi-fw pi-folder-open',
-                        to: '/dashboard/projects/3912'
-                    },
-                    {
-                        label: 'Job Details',
-                        icon: 'pi pi-fw pi-briefcase',
-                        to: '/dashboard/projects/3912/jobs/6d815ec56dfb85e2182e01471c31e486'
-                    },
-                    {
-                        label: 'Visit Details',
-                        icon: 'pi pi-fw pi-calendar-plus',
-                        to: '/dashboard/projects/3912/jobs/6d815ec56dfb85e2182e01471c31e486/visits/VG1'
-                    },
-                    {
-                        label: 'All Jobs',
-                        icon: 'pi pi-fw pi-list',
-                        to: '/dispatch/jobs'
-                    }
-                ]
+                label: 'Global Activity',
+                icon: 'pi pi-fw pi-globe',
+                to: '/dispatch/global-activity'
+            },
+            {
+                label: 'Projects',
+                icon: 'pi pi-fw pi-folder',
+                to: '/dispatch/projects'
+            },
+            {
+                label: 'Jobs',
+                icon: 'pi pi-fw pi-briefcase',
+                to: '/dispatch/jobs'
             },
             {
                 label: 'Scheduling',

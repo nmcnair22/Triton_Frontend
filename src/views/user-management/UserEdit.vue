@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import MultiSelect from 'primevue/multiselect';
-import UserService from '@/services/UserService';
+import { UserService } from '@/service/UserService';
 
 const router = useRouter();
 const route = useRoute();
@@ -60,7 +60,7 @@ onMounted(async () => {
 // Fetch user data
 async function fetchUserData() {
     try {
-        const userData = await UserService.getUserById(userId);
+        const userData = await UserService.getUser(userId);
         roles.value = await UserService.getRoles();
         
         // Process user roles based on data structure

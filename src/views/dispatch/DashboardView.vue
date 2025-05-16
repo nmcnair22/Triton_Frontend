@@ -64,24 +64,34 @@ const statusOptions = ref([
 ]);
 
 // Computed properties mapped from store data
-const dashboardData = computed(() => ({
-  summary: {
-    totalProjects: dashboardSummary.value?.total_projects?.current || 0,
-    totalJobs: dashboardSummary.value?.total_jobs?.current || 0,
-    totalVisits: dashboardSummary.value?.total_visits?.current || 0,
-    openIssues: dashboardSummary.value?.open_issues?.current || 0,
-    avgCompletionPct: dashboardSummary.value?.avg_completion?.current || 0,
-    atRiskCount: dashboardSummary.value?.at_risk_count?.current || 0
-  },
-  projectList: projects.value || [],
-  globalTrends: dashboardTrends.value?.global_trends || [],
-  alerts: alerts.value || []
-}));
+const dashboardData = computed(() => {
+  const data = {
+    summary: {
+      totalProjects: dashboardSummary.value?.summary?.projects?.total || 0,
+      totalJobs: dashboardSummary.value?.summary?.jobs?.total || 0,
+      totalVisits: dashboardSummary.value?.summary?.visits?.total || 0,
+      openIssues: dashboardSummary.value?.summary?.issues?.open || 0,
+      avgCompletionPct: dashboardSummary.value?.metrics_trend?.[0]?.avg_completion_pct || 0,
+      atRiskCount: dashboardSummary.value?.summary?.projects?.health?.at_risk || 0
+    },
+    projectList: projects.value || [],
+    globalTrends: dashboardTrends.value?.metrics || [],
+    alerts: alerts.value || []
+  };
+  
+  console.log('[DEBUG] dashboardData computed values:', data);
+  return data;
+});
 
 // Computed properties for charts
 const trendChartData = computed(() => {
   const trends = dashboardData.value.globalTrends;
-  if (!trends || !trends.length) return { labels: [], datasets: [] };
+  if (!trends || !trends.length) {
+    console.log('[DEBUG] No trend data available for chart');
+    return { labels: [], datasets: [] };
+  }
+  
+  console.log('[DEBUG] Building chart with trends data:', trends);
   
   const labels = trends.map(item => {
     const date = new Date(item.date);
@@ -93,21 +103,21 @@ const trendChartData = computed(() => {
     datasets: [
       {
         label: 'Issues Opened',
-        data: trends.map(item => item.issues_opened || 0),
+        data: trends.map(item => item.issuesOpened || 0),
         borderColor: '#FF6384',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
         tension: 0.4
       },
       {
         label: 'Visits Scheduled',
-        data: trends.map(item => item.visits_scheduled || 0),
+        data: trends.map(item => item.visitsScheduled || 0),
         borderColor: '#36A2EB',
         backgroundColor: 'rgba(54, 162, 235, 0.2)',
         tension: 0.4
       },
       {
         label: 'Projects Completed',
-        data: trends.map(item => item.projects_completed || 0),
+        data: trends.map(item => item.projectsCompleted || 0),
         borderColor: '#4BC0C0',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         tension: 0.4
@@ -167,10 +177,12 @@ const resetFilters = () => {
 };
 
 const loadDashboardData = (params = {}) => {
-  console.log('[DEBUG] DashboardView: Loading dashboard data with params:', params);
+  console.log('[DEBUG] DashboardView: Loading dashboard data with params:', JSON.parse(JSON.stringify(params)));
   
   // First load summary data
-  dispatchStore.fetchDashboardSummary().catch(err => {
+  dispatchStore.fetchDashboardSummary().then(response => {
+    console.log('[DEBUG] DashboardView: Dashboard summary loaded successfully');
+  }).catch(err => {
     console.error('[DEBUG] DashboardView: Error fetching dashboard summary:', err);
     toast.add({
       severity: 'error',
@@ -181,7 +193,9 @@ const loadDashboardData = (params = {}) => {
   });
   
   // Then load trends data
-  dispatchStore.fetchDashboardTrends().catch(err => {
+  dispatchStore.fetchDashboardTrends().then(response => {
+    console.log('[DEBUG] DashboardView: Dashboard trends loaded successfully');
+  }).catch(err => {
     console.error('[DEBUG] DashboardView: Error fetching dashboard trends:', err);
     toast.add({
       severity: 'error',
@@ -192,7 +206,9 @@ const loadDashboardData = (params = {}) => {
   });
   
   // Load projects list
-  dispatchStore.fetchProjects(params).catch(err => {
+  dispatchStore.fetchProjects(params).then(response => {
+    console.log('[DEBUG] DashboardView: Projects loaded successfully');
+  }).catch(err => {
     console.error('[DEBUG] DashboardView: Error fetching projects:', err);
     toast.add({
       severity: 'error',
@@ -203,7 +219,9 @@ const loadDashboardData = (params = {}) => {
   });
   
   // Load alerts
-  dispatchStore.fetchAlerts().catch(err => {
+  dispatchStore.fetchAlerts().then(response => {
+    console.log('[DEBUG] DashboardView: Alerts loaded successfully');
+  }).catch(err => {
     console.error('[DEBUG] DashboardView: Error fetching alerts:', err);
     toast.add({
       severity: 'error',
@@ -215,8 +233,8 @@ const loadDashboardData = (params = {}) => {
 };
 
 const navigateToProject = (project) => {
-  console.log('[DEBUG] DashboardView: Navigating to project:', project.projectId);
-  router.push(`/dashboard/projects/${project.projectId}`);
+  console.log('[DEBUG] DashboardView: Navigating to project:', project.project_id);
+  router.push(`/dashboard/projects/${project.project_id}`);
 };
 
 const getSeverity = (trend) => {
@@ -427,29 +445,29 @@ onMounted(() => {
         class="p-datatable-sm"
         v-model:selection="selectedProject"
         selectionMode="single"
-        dataKey="projectId"
+        dataKey="project_id"
         @row-click="event => navigateToProject(event.data)"
       >
-        <Column field="projectId" header="ID" sortable style="width: 10%"></Column>
-        <Column field="name" header="Project Name" sortable style="width: 30%"></Column>
-        <Column field="customer" header="Customer" sortable style="width: 15%"></Column>
-        <Column field="siteCount" header="Sites" sortable style="width: 10%"></Column>
-        <Column field="completionPct" header="Completion %" sortable style="width: 15%">
+        <Column field="project_id" header="ID" sortable style="width: 10%"></Column>
+        <Column field="project_name" header="Project Name" sortable style="width: 30%"></Column>
+        <Column field="customer_name" header="Customer" sortable style="width: 15%"></Column>
+        <Column field="total_jobs" header="Sites" sortable style="width: 10%"></Column>
+        <Column field="completion_percentage" header="Completion %" sortable style="width: 15%">
           <template #body="slotProps">
             <div class="flex flex-col gap-1">
-              <div>{{ slotProps.data.completionPct }}%</div>
-              <ProgressBar :value="slotProps.data.completionPct" :showValue="false" style="height: 6px" />
+              <div>{{ slotProps.data.completion_percentage }}%</div>
+              <ProgressBar :value="slotProps.data.completion_percentage" :showValue="false" style="height: 6px" />
             </div>
           </template>
         </Column>
-        <Column field="trend" header="Trend" sortable style="width: 10%">
+        <Column field="status" header="Status" sortable style="width: 10%">
           <template #body="slotProps">
-            <Tag :value="slotProps.data.trend" :severity="getSeverity(slotProps.data.trend)" />
+            <Tag :value="slotProps.data.status" :severity="getSeverity(slotProps.data.status)" />
           </template>
         </Column>
-        <Column field="atRiskScore" header="Risk Score" sortable style="width: 10%">
+        <Column field="health_score" header="Risk Score" sortable style="width: 10%">
           <template #body="slotProps">
-            <Tag :value="slotProps.data.atRiskScore" :severity="getAtRiskSeverity(slotProps.data.atRiskScore)" />
+            <Tag :value="slotProps.data.health_score" :severity="getAtRiskSeverity(slotProps.data.health_score)" />
           </template>
         </Column>
       </DataTable>
@@ -469,13 +487,13 @@ onMounted(() => {
       <div class="bg-white dark:bg-surface-900 p-4 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">Alerts</h2>
         <div class="flex flex-col gap-4">
-          <div v-for="alert in dashboardData.alerts" :key="alert.alertId" class="border-b pb-4 border-gray-200 dark:border-gray-700 last:border-0">
+          <div v-for="alert in dashboardData.alerts" :key="alert.id" class="border-b pb-4 border-gray-200 dark:border-gray-700 last:border-0">
             <div class="flex items-start gap-3">
               <i class="pi pi-exclamation-triangle text-yellow-500 mt-1"></i>
               <div>
-                <h3 class="font-semibold">{{ alert.type === 'visitRevisitNeeded' ? 'Revisit Needed' : 'High Impact Issue' }}</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ alert.message }}</p>
-                <div class="text-xs text-gray-500 mt-1">{{ formatDate(alert.createdAt) }}</div>
+                <h3 class="font-semibold">{{ alert.title || 'Alert' }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ alert.description }}</p>
+                <div class="text-xs text-gray-500 mt-1">{{ formatDate(alert.created_at) }}</div>
               </div>
             </div>
           </div>

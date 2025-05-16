@@ -40,9 +40,18 @@ export const ApiService = {
   get(resource, params) {
     // Add logging to debug URL construction
     const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
-    console.log('ApiService.get - Full URL:', fullUrl, { params });
+    console.log('ApiService.get - Full URL:', fullUrl, { params: JSON.parse(JSON.stringify(params || {})) });
     
     return apiClient.get(resource, { params })
+      .then(response => {
+        // Log the successful response
+        console.log(`ApiService.get - Response for ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
       .catch(error => {
         console.error(`ApiService.get - Error for ${resource}:`, error);
         console.error('Error details:', {
@@ -58,9 +67,18 @@ export const ApiService = {
   post(resource, data) {
     // Add logging to debug URL construction
     const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
-    console.log('ApiService.post - Full URL:', fullUrl, { data });
+    console.log('ApiService.post - Full URL:', fullUrl, { data: JSON.parse(JSON.stringify(data || {})) });
     
     return apiClient.post(resource, data)
+      .then(response => {
+        // Log the successful response
+        console.log(`ApiService.post - Response for ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
       .catch(error => {
         console.error(`ApiService.post - Error for ${resource}:`, error);
         console.error('Error details:', {

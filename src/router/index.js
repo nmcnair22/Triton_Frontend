@@ -15,7 +15,7 @@ const routes = [
         children: [
             {
                 path: '/',
-                redirect: '/dispatch/dashboard'
+                redirect: '/dispatch/global-activity'
             },
             {
                 path: '/dashboard-marketing',
@@ -41,10 +41,46 @@ const routes = [
                         { label: 'Home', path: '/' },
                         { label: 'Dispatch Dashboard', path: '/dispatch/dashboard' }
                     ],
-                    requiresAuth: true,
-                    permissions: ['dispatch:read']
+                    requiresAuth: true
                 },
                 component: () => import('@/views/dispatch/DispatchDashboard.vue')
+            },
+            {
+                path: '/dispatch/global-activity',
+                name: 'global-activity',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Global Activity', path: '/dispatch/global-activity' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/GlobalActivityView.vue')
+            },
+            {
+                path: '/dispatch/projects',
+                name: 'dispatch-projects',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Projects', path: '/dispatch/projects' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/ProjectsView.vue')
+            },
+            {
+                path: '/dispatch/projects/:id',
+                name: 'dispatch-project-details',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Projects', path: '/dispatch/projects' },
+                        { label: 'Project Details', path: '/dispatch/projects/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/ProjectDetailsView.vue')
             },
             {
                 path: '/dashboard',
@@ -55,7 +91,7 @@ const routes = [
                         { label: 'Dashboard', path: '/dashboard' }
                     ]
                 },
-                component: () => import('@/views/dispatch/DashboardView.vue')
+                component: () => import('@/views/dispatch/GlobalActivityView.vue')
             },
             {
                 path: '/dashboard/projects/:projectId',
@@ -63,7 +99,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
-                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Global Activity', path: '/dispatch/global-activity' },
                         { label: 'Project Details', path: '/dashboard/projects/:projectId' }
                     ]
                 },
@@ -75,7 +111,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
-                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Global Activity', path: '/dispatch/global-activity' },
                         { label: 'Project Details', path: '/dashboard/projects/:projectId' },
                         { label: 'Job Details', path: '/dashboard/projects/:projectId/jobs/:jobId' }
                     ]
@@ -88,7 +124,7 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' }, 
-                        { label: 'Dashboard', path: '/dashboard' },
+                        { label: 'Global Activity', path: '/dispatch/global-activity' },
                         { label: 'Project Details', path: '/dashboard/projects/:projectId' },
                         { label: 'Job Details', path: '/dashboard/projects/:projectId/jobs/:jobId' },
                         { label: 'Visit Details', path: '/dashboard/projects/:projectId/jobs/:jobId/visits/:visitId' }
@@ -102,9 +138,9 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
-                        { label: 'Dispatch', path: '/dispatch/dashboard' },
-                        { label: 'Field Service Jobs', path: '/dispatch/jobs' }
-                    ]
+                        { label: 'Jobs', path: '/dispatch/jobs' }
+                    ],
+                    requiresAuth: true
                 },
                 component: () => import('@/views/dispatch/JobsView.vue')
             },
@@ -114,12 +150,54 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
-                        { label: 'Dispatch', path: '/dispatch/dashboard' },
-                        { label: 'Field Service Jobs', path: '/dispatch/jobs' },
+                        { label: 'Jobs', path: '/dispatch/jobs' },
                         { label: 'Job Details', path: '/dispatch/jobs/:id' }
-                    ]
+                    ],
+                    requiresAuth: true
                 },
                 component: () => import('@/views/dispatch/JobDetailsView.vue')
+            },
+            {
+                path: '/dispatch/visits/:id',
+                name: 'dispatch-visit-details',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Global Activity', path: '/dispatch/global-activity' },
+                        { label: 'Visit Details', path: '/dispatch/visits/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/VisitDetailsView.vue')
+            },
+            {
+                path: '/dispatch/jobs/:jobId/visits/:id',
+                name: 'dispatch-job-visit-details',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Jobs', path: '/dispatch/jobs' },
+                        { label: 'Job Details', path: '/dispatch/jobs/:jobId' },
+                        { label: 'Visit Details', path: '/dispatch/jobs/:jobId/visits/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/VisitDetailsView.vue')
+            },
+            {
+                path: '/dispatch/projects/:projectId/jobs/:jobId/visits/:id',
+                name: 'dispatch-project-job-visit-details',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Projects', path: '/dispatch/projects' },
+                        { label: 'Project Details', path: '/dispatch/projects/:projectId' },
+                        { label: 'Job Details', path: '/dispatch/projects/:projectId/jobs/:jobId' },
+                        { label: 'Visit Details', path: '/dispatch/projects/:projectId/jobs/:jobId/visits/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/dispatch/VisitDetailsView.vue')
             },
             {
                 path: '/streamline/dashboard',
