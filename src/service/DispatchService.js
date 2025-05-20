@@ -52,6 +52,36 @@ export const DispatchService = {
       });
   },
 
+  // Get turnups data from new API endpoint
+  getTurnups(params = {}) {
+    console.log('[DEBUG] DispatchService.getTurnups - Calling API endpoint: dispatch-reports/turnups');
+    console.log('[DEBUG] DispatchService.getTurnups - Params:', JSON.parse(JSON.stringify(params || {})));
+    
+    // Set default date range to last 7 days if not specified
+    if (!params.date_from) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      params.date_from = this.formatDateParam(sevenDaysAgo);
+    }
+    
+    return ApiService.get('dispatch-reports/turnups', params)
+      .then(response => {
+        console.log('[DEBUG] DispatchService.getTurnups - Response status:', response.status);
+        console.log('[DEBUG] DispatchService.getTurnups - Response success:', response.data?.success);
+        
+        if (response.data?.data) {
+          console.log('[DEBUG] DispatchService.getTurnups - Data received:', 
+            response.data.data.length || 0, 'records');
+        }
+        
+        return response;
+      })
+      .catch(error => {
+        console.error('[DEBUG] DispatchService.getTurnups - Error:', error);
+        return this.handleApiError(error, 'getTurnups');
+      });
+  },
+
   // Get enhanced global dashboard
   getDashboardGlobalEnhanced(params = {}) {
     console.log('[DEBUG] DispatchService.getDashboardGlobalEnhanced - Calling API endpoint: dashboard/global/enhanced');

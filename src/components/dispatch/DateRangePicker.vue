@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 
@@ -21,7 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
-// Local state for calendar value
+// Local state for date picker value
 const dates = ref(props.modelValue);
 
 // Menu for presets
@@ -125,7 +125,7 @@ watch(() => props.modelValue, (newValue) => {
 <template>
   <div class="date-range-picker">
     <div class="flex items-center">
-      <Calendar 
+      <DatePicker 
         v-model="dates" 
         selectionMode="range" 
         :showIcon="true"
@@ -156,11 +156,11 @@ watch(() => props.modelValue, (newValue) => {
 </template>
 
 <style scoped>
-:deep(.p-calendar) {
+:deep(.p-datepicker) {
   width: 100%;
 }
 
-:deep(.p-calendar .p-inputtext) {
+:deep(.p-datepicker .p-inputtext) {
   width: 100%;
 }
 

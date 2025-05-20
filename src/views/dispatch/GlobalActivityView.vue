@@ -48,20 +48,21 @@ const {
   loading, 
   error,
   selectedCustomers,
-  filters
+  filters,
+  turnups
 } = storeToRefs(dispatchStore);
 
 // Local reactive state
 const sidebarCollapsed = ref(false);
 const dateRange = ref([
-  new Date(new Date().setDate(new Date().getDate() - 30)), 
+  new Date(new Date().setDate(new Date().getDate() - 7)), 
   new Date()
 ]);
 const statusFilters = ref([
   { label: 'All', value: 'all', icon: 'pi pi-filter' },
-  { label: 'Overdue', value: 'overdue', icon: 'pi pi-exclamation-circle', color: 'bg-red-600' },
-  { label: 'Failed', value: 'failed', icon: 'pi pi-times', color: 'bg-red-700' },
-  { label: 'Revisit', value: 'revisit', icon: 'pi pi-refresh', color: 'bg-blue-600' }
+  { label: 'Open', value: 'Open', icon: 'pi pi-exclamation-circle', color: 'bg-blue-600' },
+  { label: 'Complete', value: 'Complete', icon: 'pi pi-check', color: 'bg-green-600' },
+  { label: 'Cancelled', value: 'Cancelled', icon: 'pi pi-times', color: 'bg-red-700' }
 ]);
 const activeStatusFilters = ref([]);
 const searchQuery = ref('');
@@ -88,6 +89,7 @@ const tableLazyParams = ref({
   sortField: null,
   sortOrder: null
 });
+const expandedRows = ref({});
 
 // Computed properties
 const metricsData = computed(() => {
@@ -96,16 +98,41 @@ const metricsData = computed(() => {
   const summaryData = dashboardSummary.value?.summary || {};
   const metricsTrend = dashboardSummary.value?.metrics_trend || [];
   
+  // Use default values when data isn't available
+  const defaultVisits = { total: 0, previous: 0 };
+  const defaultRate = { current: 0, previous: 0 };
+  
   // Use enhanced data for visit metrics when available
-  const totalVisits = enhancedData.daily_statistics?.total_visits || summaryData.visits?.total || 0;
+  const totalVisits = enhancedData.daily_statistics?.total_visits || 
+                      summaryData.visits?.total || 
+                      defaultVisits.total;
+                      
   const previousTotalVisits = enhancedData.daily_statistics?.yesterday_total_visits || 
-                              summaryData.visits?.previous || 0;
+                              summaryData.visits?.previous || 
+                              defaultVisits.previous;
   
   // Enhanced data has more detailed completion metrics
   const completionRate = enhancedData.daily_statistics?.completion_rate || 
-                        metricsTrend[0]?.completion_rate || 0;
+                        (metricsTrend[0]?.completion_rate ?? defaultRate.current);
+                        
   const previousCompletionRate = enhancedData.daily_statistics?.yesterday_completion_rate || 
-                                metricsTrend[1]?.completion_rate || 0;
+                                (metricsTrend[1]?.completion_rate ?? defaultRate.previous);
+  
+  // Safely get values with fallbacks for missing data
+  const getMetricValue = (path, fallback = 0) => {
+    try {
+      // Parse path like "issues_summary.revisit_rate" or "metrics.avg_duration"
+      const parts = path.split('.');
+      let value = enhancedData;
+      for (const part of parts) {
+        value = value[part];
+        if (value === undefined || value === null) return fallback;
+      }
+      return value;
+    } catch (e) {
+      return fallback;
+    }
+  };
   
   return {
     totalVisits: {
@@ -127,10 +154,10 @@ const metricsData = computed(() => {
     },
     revisitRate: {
       title: 'Revisit Rate',
-      value: enhancedData.issues_summary?.revisit_rate || metricsTrend[0]?.revisit_rate || 0,
+      value: getMetricValue('issues_summary.revisit_rate', metricsTrend[0]?.revisit_rate || 0),
       previousValue: metricsTrend[1]?.revisit_rate || 0,
       change: calculateChange(
-        enhancedData.issues_summary?.revisit_rate || metricsTrend[0]?.revisit_rate || 0,
+        getMetricValue('issues_summary.revisit_rate', metricsTrend[0]?.revisit_rate || 0),
         metricsTrend[1]?.revisit_rate || 0
       ),
       icon: 'pi pi-refresh',
@@ -139,10 +166,10 @@ const metricsData = computed(() => {
     },
     avgDuration: {
       title: 'Avg. Duration',
-      value: enhancedData.metrics?.avg_duration || metricsTrend[0]?.avg_duration || 0,
+      value: getMetricValue('metrics.avg_duration', metricsTrend[0]?.avg_duration || 0),
       previousValue: metricsTrend[1]?.avg_duration || 0,
       change: calculateChange(
-        enhancedData.metrics?.avg_duration || metricsTrend[0]?.avg_duration || 0,
+        getMetricValue('metrics.avg_duration', metricsTrend[0]?.avg_duration || 0),
         metricsTrend[1]?.avg_duration || 0
       ),
       icon: 'pi pi-clock',
@@ -175,31 +202,61 @@ function calculateChange(current, previous) {
 
 // Handle date range change
 function onDateRangeChange(newRange) {
+  console.log('Date range changed:', newRange);
   dateRange.value = newRange;
-  dispatchStore.setDateFilter(newRange[0], newRange[1]);
+  
+  // Set date filter in store
+  if (newRange && newRange.length === 2) {
+    dispatchStore.setDateFilter(newRange[0], newRange[1]);
+  } else {
+    // Reset date filter if no valid range
+    dispatchStore.setDateFilter(null, null);
+  }
+  
+  // Reset to first page when filters change
+  tableLazyParams.value.page = 0;
+  dispatchStore.turnupsPagination.page = 1;
+  
   loadDashboardData();
 }
 
 // Handle customer selection change
 function onCustomerChange(customers) {
+  console.log('Customer selection changed:', customers);
+  
   if (Array.isArray(customers)) {
-    dispatchStore.setCustomerFilter(customers.map(c => c.code));
+    // For turnups API, we use customer_name instead of code
+    dispatchStore.setCustomerFilter(customers.map(c => c.name || c.code));
   } else if (customers) {
-    dispatchStore.setCustomerFilter([customers.code]);
+    dispatchStore.setCustomerFilter([customers.name || customers.code]);
   } else {
     dispatchStore.setCustomerFilter([]);
   }
+  
+  // Reset to first page when filters change
+  tableLazyParams.value.page = 0;
+  dispatchStore.turnupsPagination.page = 1;
+  
   loadDashboardData();
 }
 
 // Handle status filters change
 function onStatusFilterChange(statuses) {
+  console.log('Status filters changed:', statuses);
   activeStatusFilters.value = statuses;
+  
+  // Handle the 'all' selection case
   if (statuses.includes('all')) {
     dispatchStore.setStatusFilter([]);
   } else {
+    // For turnups endpoint, we need to pass specific status values
     dispatchStore.setStatusFilter(statuses);
   }
+  
+  // Reset to first page when filters change
+  tableLazyParams.value.page = 0;
+  dispatchStore.turnupsPagination.page = 1;
+  
   loadDashboardData();
 }
 
@@ -211,8 +268,16 @@ function onSearchChange(event) {
 
 // Handle project selection in filter sidebar
 function onProjectFilterChange(projects) {
+  console.log('Project selection changed:', projects);
   selectedProjects.value = projects;
-  dispatchStore.setProjectFilter(projects.map(p => p.code));
+  
+  // For turnups API, we use project_name instead of code
+  dispatchStore.setProjectFilter(projects.map(p => p.name || p.code));
+  
+  // Reset to first page when filters change
+  tableLazyParams.value.page = 0;
+  dispatchStore.turnupsPagination.page = 1;
+  
   loadDashboardData();
 }
 
@@ -232,7 +297,7 @@ function resetAllFilters() {
     acceptClass: 'p-button-danger',
     accept: () => {
       dateRange.value = [
-        new Date(new Date().setDate(new Date().getDate() - 30)), 
+        new Date(new Date().setDate(new Date().getDate() - 7)), 
         new Date()
       ];
       selectedCustomers.value = [];
@@ -277,8 +342,8 @@ function navigateToJob(job) {
 }
 
 // Navigate to visit details
-function navigateToVisit(visit) {
-  router.push(`/dispatch/visits/${visit.id}`);
+function navigateToTurnup(turnup) {
+  router.push(`/dispatch/turnups/${turnup.id}`);
 }
 
 // Load dashboard data from store
@@ -286,24 +351,24 @@ async function loadDashboardData() {
   try {
     tableLoading.value = true;
     await dispatchStore.loadDashboardData();
-    await loadVisitsData();
     
-    // If we have visits data from API, use it
-    if (Array.isArray(dispatchStore.visits) && dispatchStore.visits.length > 0) {
-      tableData.value = dispatchStore.visits;
-      tableTotalRecords.value = dispatchStore.visits.length;
-      console.log('Using visits API data for table:', dispatchStore.visits.length, 'records');
+    // If we have turnups data from API, use it
+    if (Array.isArray(dispatchStore.turnups) && dispatchStore.turnups.length > 0) {
+      tableData.value = dispatchStore.turnups;
+      tableTotalRecords.value = dispatchStore.turnupsPagination.total;
+      console.log('Using turnups API data for table:', dispatchStore.turnups.length, 'records');
+      console.log('Total records available:', dispatchStore.turnupsPagination.total);
     } 
     // Otherwise, display no data available
     else {
       tableData.value = [];
       tableTotalRecords.value = 0;
-      console.log('No visits data available for table');
+      console.log('No turnups data available for table');
       
       toast.add({
         severity: 'info',
         summary: 'Limited View',
-        detail: 'Visit data is not available. Please contact support if this issue persists.',
+        detail: 'Turnup data is not available. Please contact support if this issue persists.',
         life: 5000
       });
     }
@@ -397,7 +462,14 @@ function buildFilterParams() {
 
 // Handle lazy loading for data table
 function onLazyLoad(event) {
+  console.log('Lazy load event triggered:', event);
   tableLazyParams.value = event;
+  
+  // Update pagination in the store
+  dispatchStore.turnupsPagination.page = event.page + 1; // PrimeVue uses 0-based index for pages
+  dispatchStore.turnupsPagination.limit = event.rows;
+  
+  // Trigger reload of turnups with new pagination
   loadDashboardData();
 }
 
@@ -414,6 +486,11 @@ function formatDate(date) {
 // Generate status tag with color
 function getStatusTag(status) {
   const statusMap = {
+    'Open': { severity: 'info', icon: 'pi pi-exclamation-circle' },
+    'Complete': { severity: 'success', icon: 'pi pi-check-circle' },
+    'Cancelled': { severity: 'danger', icon: 'pi pi-times-circle' },
+    'Incomplete': { severity: 'warning', icon: 'pi pi-sync' },
+    // Legacy mappings for backwards compatibility
     'complete': { severity: 'success', icon: 'pi pi-check-circle' },
     'in_progress': { severity: 'info', icon: 'pi pi-sync' },
     'scheduled': { severity: 'warning', icon: 'pi pi-calendar' },
@@ -425,7 +502,7 @@ function getStatusTag(status) {
     'revisit': { severity: 'info', icon: 'pi pi-refresh' },
   };
   
-  const info = statusMap[status.toLowerCase()] || { severity: 'secondary', icon: 'pi pi-question' };
+  const info = statusMap[status] || { severity: 'secondary', icon: 'pi pi-question' };
   
   return { severity: info.severity, icon: info.icon };
 }
@@ -603,7 +680,7 @@ watch(tableLazyParams, () => {
       <!-- Main Data Table -->
       <div class="flex-1 bg-white dark:bg-surface-900 rounded-lg shadow border border-gray-200 dark:border-surface-700">
         <div class="p-4 border-b border-gray-200 dark:border-surface-700 flex justify-between items-center">
-          <h2 class="text-xl font-semibold">Visit Activity</h2>
+          <h2 class="text-xl font-semibold">Turnup Activity</h2>
           <div>
             <Button 
               icon="pi pi-download" 
@@ -625,7 +702,7 @@ watch(tableLazyParams, () => {
             :value="tableData"
             :paginator="true"
             :rows="10"
-            :rowsPerPageOptions="[10, 25, 50]"
+            :rowsPerPageOptions="[10, 25, 50, 100]"
             :totalRecords="tableTotalRecords"
             :lazy="true"
             :loading="tableLoading"
@@ -638,47 +715,76 @@ watch(tableLazyParams, () => {
             dataKey="id"
             v-model:filters="filters"
             filterDisplay="row"
-            emptyMessage="No visit activities found. This might be due to missing data from the API or applied filters."
+            v-model:expandedRows="expandedRows"
+            emptyMessage="No turnups found in the selected date range. Try adjusting your filters or date range."
           >
+            <template #expansion="slotProps">
+              <div class="p-3 bg-gray-50 dark:bg-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 class="text-lg font-semibold mb-3">Dispatch Instructions</h3>
+                  <p class="whitespace-pre-line">{{ slotProps.data.dispatch_instructions || 'No instructions provided' }}</p>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold mb-3">Additional Details</h3>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="font-semibold">Created At:</div>
+                    <div>{{ formatDate(slotProps.data.created_at) }}</div>
+                    
+                    <div class="font-semibold">Last Activity:</div>
+                    <div>{{ formatDate(slotProps.data.last_activity) }}</div>
+                    
+                    <div class="font-semibold">Linked Dispatch ID:</div>
+                    <div>{{ slotProps.data.linked_dispatch_id || 'N/A' }}</div>
+                    
+                    <div class="font-semibold">Technician:</div>
+                    <div>{{ slotProps.data.technician || 'Not assigned' }}</div>
+                    
+                    <div class="font-semibold">Check-in Time:</div>
+                    <div>{{ slotProps.data.technician_in_time || 'Not checked in' }}</div>
+                    
+                    <div class="font-semibold">Check-out Time:</div>
+                    <div>{{ slotProps.data.technician_out_time || 'Not checked out' }}</div>
+                    
+                    <div class="font-semibold">Turnup Scope:</div>
+                    <div>{{ slotProps.data.turnup_scope_details || 'No scope details' }}</div>
+                  </div>
+                </div>
+              </div>
+            </template>
+            
+            <Column expander style="width: 3rem" />
+            
             <Column field="id" header="ID" sortable style="width: 80px">
               <template #body="{ data }">
                 <span class="font-semibold text-blue-600 dark:text-blue-400">{{ data.id }}</span>
               </template>
             </Column>
             
-            <Column field="customer.name" header="Customer" sortable style="min-width: 150px">
+            <Column field="customer_name" header="Customer" sortable style="min-width: 150px">
               <template #body="{ data }">
                 <div class="flex items-center">
-                  <img 
-                    v-if="data.customer?.logo" 
-                    :src="data.customer.logo" 
-                    :alt="data.customer.name"
-                    class="w-6 h-6 rounded-full mr-2"
-                  />
-                  <span>{{ data.customer?.name }}</span>
+                  <span>{{ data.customer_name }}</span>
                 </div>
               </template>
             </Column>
             
-            <Column field="project.name" header="Project" sortable style="min-width: 200px">
+            <Column field="site_id" header="Site ID" sortable style="min-width: 120px">
               <template #body="{ data }">
-                <div class="cursor-pointer hover:text-blue-600" @click="navigateToProject(data.project)">
-                  {{ data.project?.name }}
+                <div>
+                  {{ data.site_id }}
                 </div>
               </template>
             </Column>
             
-            <Column field="location.name" header="Location" sortable style="min-width: 200px">
+            <Column field="service_date" header="Service Date" sortable style="min-width: 120px">
               <template #body="{ data }">
-                <div class="cursor-pointer hover:text-blue-600" @click="navigateToJob(data)">
-                  {{ data.location?.name }}
-                </div>
+                {{ formatDate(data.service_date) }}
               </template>
             </Column>
             
-            <Column field="visit_date" header="Visit Date" sortable style="min-width: 120px">
+            <Column field="service_time" header="Time" sortable style="min-width: 100px">
               <template #body="{ data }">
-                {{ formatDate(data.visit_date) }}
+                {{ data.service_time ? data.service_time.substring(0, 5) : 'N/A' }}
               </template>
             </Column>
             
@@ -692,36 +798,19 @@ watch(tableLazyParams, () => {
               </template>
             </Column>
             
-            <Column field="completion_pct" header="Completion" sortable style="min-width: 120px">
+            <Column field="project_name" header="Project" sortable style="min-width: 180px">
               <template #body="{ data }">
                 <div>
-                  <ProgressBar 
-                    :value="data.completion_pct || 0" 
-                    :showValue="false"
-                    class="h-1.5 mb-1"
-                  />
-                  <span class="text-xs">{{ data.completion_pct || 0 }}%</span>
+                  {{ data.project_name || 'N/A' }}
                 </div>
               </template>
             </Column>
             
-            <Column field="duration" header="Duration" sortable style="min-width: 100px">
+            <Column field="project_manager_name" header="Project Manager" sortable style="min-width: 150px">
               <template #body="{ data }">
-                {{ data.duration || 'N/A' }}
-              </template>
-            </Column>
-            
-            <Column field="issues_count" header="Issues" sortable style="min-width: 80px">
-              <template #body="{ data }">
-                <Badge v-if="data.issues_count > 0" :value="data.issues_count" severity="danger" />
-                <span v-else>0</span>
-              </template>
-            </Column>
-            
-            <Column field="is_revisit" header="Revisit" sortable style="min-width: 80px">
-              <template #body="{ data }">
-                <i v-if="data.is_revisit" class="pi pi-check text-green-500"></i>
-                <i v-else class="pi pi-times text-gray-400"></i>
+                <div>
+                  {{ data.project_manager_name || 'N/A' }}
+                </div>
               </template>
             </Column>
             
@@ -731,13 +820,8 @@ watch(tableLazyParams, () => {
                   <Button 
                     icon="pi pi-eye" 
                     class="p-button-text p-button-rounded p-button-sm"
-                    @click="navigateToJob(data)"
+                    @click="navigateToTurnup(data)"
                     aria-label="View"
-                  />
-                  <Button 
-                    icon="pi pi-pencil" 
-                    class="p-button-text p-button-rounded p-button-sm"
-                    aria-label="Edit"
                   />
                 </div>
               </template>

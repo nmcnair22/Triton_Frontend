@@ -65,6 +65,9 @@ const formattedChange = computed(() => {
   if (props.loading) return '—';
   
   const change = Number(props.change);
+  // Check if change is a valid number
+  if (isNaN(change)) return '—';
+  
   return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
 });
 
@@ -73,6 +76,9 @@ const changeColor = computed(() => {
   if (props.loading) return 'text-gray-400';
   
   const change = Number(props.change);
+  // Check if change is a valid number
+  if (isNaN(change)) return 'text-gray-400';
+  
   if (change === 0) return 'text-gray-500';
   return change > 0 ? 'text-green-500' : 'text-red-500';
 });

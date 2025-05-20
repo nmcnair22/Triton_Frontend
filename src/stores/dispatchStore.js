@@ -61,6 +61,14 @@ export const useDispatchStore = defineStore('dispatch', {
     visits: [],
     currentVisit: null,
     
+    // Turnups data from new API
+    turnups: [],
+    turnupsPagination: {
+      page: 1,
+      limit: 10,
+      total: 0
+    },
+    
     // Alerts
     alerts: [],
     
@@ -1018,41 +1026,64 @@ export const useDispatchStore = defineStore('dispatch', {
         this.error = null;
         
         // Fetch global dashboard summary
-        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching global dashboard summary');
-        const globalResponse = await DispatchService.getDashboardGlobal();
-        if (globalResponse.data && globalResponse.data.success) {
-          console.log('[DEBUG] dispatchStore.loadDashboardData - Global dashboard data received');
-          this.dashboardSummary = globalResponse.data.data;
-        } else {
-          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid global dashboard response format');
+        try {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching global dashboard summary');
+          const globalResponse = await DispatchService.getDashboardGlobal();
+          if (globalResponse.data && globalResponse.data.success) {
+            console.log('[DEBUG] dispatchStore.loadDashboardData - Global dashboard data received');
+            this.dashboardSummary = globalResponse.data.data;
+          } else {
+            console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid global dashboard response format');
+          }
+        } catch (err) {
+          console.error('[DEBUG] dispatchStore.loadDashboardData - Error fetching global dashboard:', err);
+          // Continue execution despite this error
         }
         
         // Fetch enhanced dashboard with more details
-        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching enhanced dashboard data');
-        const enhancedResponse = await DispatchService.getDashboardGlobalEnhanced();
-        if (enhancedResponse.data && enhancedResponse.data.success) {
-          console.log('[DEBUG] dispatchStore.loadDashboardData - Enhanced dashboard data received');
-          this.dashboardEnhanced = enhancedResponse.data.data;
-        } else {
-          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid enhanced dashboard response format');
+        try {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching enhanced dashboard data');
+          const enhancedResponse = await DispatchService.getDashboardGlobalEnhanced();
+          if (enhancedResponse.data && enhancedResponse.data.success) {
+            console.log('[DEBUG] dispatchStore.loadDashboardData - Enhanced dashboard data received');
+            this.dashboardEnhanced = enhancedResponse.data.data;
+          } else {
+            console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid enhanced dashboard response format');
+          }
+        } catch (err) {
+          console.error('[DEBUG] dispatchStore.loadDashboardData - Error fetching enhanced dashboard:', err);
+          // Continue execution despite this error
         }
         
-        // Fetch dashboard metrics
-        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching dashboard metrics');
-        const metricsResponse = await DispatchService.getDashboardMetrics();
-        if (metricsResponse.data && metricsResponse.data.success) {
-          console.log('[DEBUG] dispatchStore.loadDashboardData - Dashboard metrics data received');
-          this.dashboardTrends = metricsResponse.data.data;
-        } else {
-          console.error('[DEBUG] dispatchStore.loadDashboardData - Invalid metrics response format');
+        // Fetch dashboard metrics - skip this if the endpoint doesn't exist
+        try {
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Attempting to fetch dashboard metrics');
+          // Set a short timeout for the metrics call to avoid long delays if endpoint doesn't exist
+          const metricsPromise = DispatchService.getDashboardMetrics();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Metrics endpoint timed out')), 2000)
+          );
+          
+          // Race between the metrics call and the timeout
+          const metricsResponse = await Promise.race([metricsPromise, timeoutPromise]);
+          
+          if (metricsResponse.data && metricsResponse.data.success) {
+            console.log('[DEBUG] dispatchStore.loadDashboardData - Dashboard metrics data received');
+            this.dashboardTrends = metricsResponse.data.data;
+          } else {
+            console.log('[DEBUG] dispatchStore.loadDashboardData - Metrics not available, using fallback data');
+          }
+        } catch (err) {
+          // Just log the error and continue, this endpoint is optional
+          console.log('[DEBUG] dispatchStore.loadDashboardData - Metrics endpoint not available, continuing without it');
         }
         
-        // Fetch visits data for activity table
-        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching visits data');
-        await this.fetchVisitsData();
+        // Fetch turnups data for activity table (using new endpoint)
+        console.log('[DEBUG] dispatchStore.loadDashboardData - Fetching turnups data');
+        const turnupResponse = await this.fetchTurnups();
         
         console.log('[DEBUG] dispatchStore.loadDashboardData - Dashboard data loaded successfully');
-        return { globalResponse, enhancedResponse, metricsResponse };
+        return { turnupResponse };
       } catch (error) {
         console.error('[DEBUG] dispatchStore.loadDashboardData - Error:', error);
         this.error = error.message || 'Failed to load dashboard data';
@@ -1331,6 +1362,83 @@ export const useDispatchStore = defineStore('dispatch', {
       } finally {
         this.loading = false;
         console.log('[DEBUG] dispatchStore.fetchVisitById - Completed');
+      }
+    },
+
+    // === TurnupsView Actions ===
+    async fetchTurnups(params = {}) {
+      try {
+        console.log('[DEBUG] dispatchStore.fetchTurnups - Starting');
+        this.loading = true;
+        this.error = null;
+        
+        // Apply filters from store state if not provided
+        const filterParams = params || {};
+        if (this.filters.date.start && this.filters.date.end) {
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding date filters');
+          filterParams.date_from = this.formatDateParam(this.filters.date.start);
+          filterParams.date_to = this.formatDateParam(this.filters.date.end);
+        }
+        
+        if (this.filters.status.length > 0) {
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding status filters');
+          // Handle turnup specific status values like 'Open', 'Complete'
+          filterParams.turnup_status = this.filters.status.join(',');
+        }
+        
+        if (this.filters.customer.length > 0) {
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding customer filters');
+          filterParams.customer_name = this.filters.customer.join(',');
+        }
+        
+        if (this.filters.search) {
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding search term');
+          filterParams.search = this.filters.search;
+        }
+        
+        // Set pagination parameters
+        filterParams.limit = this.turnupsPagination.limit;
+        filterParams.offset = (this.turnupsPagination.page - 1) * this.turnupsPagination.limit;
+        
+        console.log('[DEBUG] dispatchStore.fetchTurnups - Calling API with params:', filterParams);
+        const response = await DispatchService.getTurnups(filterParams);
+        
+        console.log('[DEBUG] dispatchStore.fetchTurnups - Response received:', response);
+        
+        if (response.data && response.data.success) {
+          // Log the full response to examine its structure
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Full response data:', response.data);
+          
+          // Handle the turnups data
+          this.turnups = response.data.data || [];
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Success, turnups received:', this.turnups.length);
+          
+          // Update pagination info based on response count
+          if (response.data.count !== undefined) {
+            console.log('[DEBUG] dispatchStore.fetchTurnups - Updating pagination info, total records:', response.data.count);
+            this.turnupsPagination = {
+              ...this.turnupsPagination,
+              total: response.data.count
+            };
+          }
+        } else {
+          console.error('[DEBUG] dispatchStore.fetchTurnups - Invalid response format:', response);
+          // If no data is returned, set turnups to empty array
+          this.turnups = [];
+          this.turnupsPagination.total = 0;
+        }
+        
+        console.log('[DEBUG] dispatchStore.fetchTurnups - Turnups data loaded successfully');
+        return response;
+      } catch (error) {
+        console.error('[DEBUG] dispatchStore.fetchTurnups - Error:', error);
+        this.error = error.message || 'Failed to load turnups';
+        // On error, set turnups to empty array 
+        this.turnups = [];
+        this.turnupsPagination.total = 0;
+        throw error;
+      } finally {
+        this.loading = false;
       }
     }
   }
