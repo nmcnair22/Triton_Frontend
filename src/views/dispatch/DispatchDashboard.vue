@@ -310,7 +310,7 @@ onMounted(async () => {
     </div>
 
     <!-- Error message display -->
-    <div v-if="dispatchStore.errors.dashboardData" class="col-12 mb-3">
+    <div v-if="dispatchStore.errors && dispatchStore.errors.dashboardData" class="col-12 mb-3">
       <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
         <h2 class="text-lg font-semibold text-red-700 mb-2">Error Loading Dashboard Data</h2>
         <p class="text-red-600">{{ dispatchStore.errors.dashboardData }}</p>

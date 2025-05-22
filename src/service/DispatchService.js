@@ -57,11 +57,19 @@ export const DispatchService = {
     console.log('[DEBUG] DispatchService.getTurnups - Calling API endpoint: dispatch-reports/turnups');
     console.log('[DEBUG] DispatchService.getTurnups - Params:', JSON.parse(JSON.stringify(params || {})));
     
-    // Set default date range to last 7 days if not specified
+    // Set default date range to last 30 days if not specified
     if (!params.date_from) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      params.date_from = this.formatDateParam(sevenDaysAgo);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      params.date_from = this.formatDateParam(thirtyDaysAgo);
+      console.log('[DEBUG] DispatchService.getTurnups - Setting default date_from to 30 days ago:', params.date_from);
+    }
+    
+    // Set default end date to today if not specified
+    if (!params.date_to) {
+      const today = new Date();
+      params.date_to = this.formatDateParam(today);
+      console.log('[DEBUG] DispatchService.getTurnups - Setting default date_to to today:', params.date_to);
     }
     
     return ApiService.get('dispatch-reports/turnups', params)

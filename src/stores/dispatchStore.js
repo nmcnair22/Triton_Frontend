@@ -7,8 +7,16 @@ import { ApiService } from '@/service/ApiService';
 export const useDispatchStore = defineStore('dispatch', {
   state: () => ({
     // Loading states
-    loading: false,
-    error: null,
+    loading: {
+      dashboardData: false,
+      details: false,
+      clientMetrics: false
+    },
+    errors: {
+      dashboardData: null,
+      details: null,
+      clientMetrics: null
+    },
     
     // Date range filter
     dateRange: {
@@ -66,7 +74,9 @@ export const useDispatchStore = defineStore('dispatch', {
     turnupsPagination: {
       page: 1,
       limit: 10,
-      total: 0
+      total: 0,
+      sortField: null,
+      sortOrder: null
     },
     
     // Alerts
@@ -178,7 +188,9 @@ export const useDispatchStore = defineStore('dispatch', {
     },
     
     // Helper to check if any section is loading
-    isLoading: state => state.loading === true,
+    isLoading: state => {
+      return Object.values(state.loading).some(status => status === true);
+    },
     
     // Status helpers
     jobStatusColor: () => (status) => {
@@ -274,20 +286,23 @@ export const useDispatchStore = defineStore('dispatch', {
   actions: {
     setLoading(section, isLoading) {
       if (section) {
-        // For future use if we want to track loading state per section
+        this.loading[section] = isLoading;
       }
-      this.loading = isLoading;
     },
     
     setError(section, errorMessage) {
       if (section) {
         // For future use if we want to track errors per section
       }
-      this.error = errorMessage;
+      this.errors[section] = errorMessage;
     },
     
     clearErrors() {
-      this.error = null;
+      this.errors = {
+        dashboardData: null,
+        details: null,
+        clientMetrics: null
+      };
     },
     
     setDateRange(startDate, endDate) {
@@ -1374,31 +1389,52 @@ export const useDispatchStore = defineStore('dispatch', {
         
         // Apply filters from store state if not provided
         const filterParams = params || {};
+        
+        // Date filters
         if (this.filters.date.start && this.filters.date.end) {
           console.log('[DEBUG] dispatchStore.fetchTurnups - Adding date filters');
           filterParams.date_from = this.formatDateParam(this.filters.date.start);
           filterParams.date_to = this.formatDateParam(this.filters.date.end);
         }
         
+        // Status filters
         if (this.filters.status.length > 0) {
           console.log('[DEBUG] dispatchStore.fetchTurnups - Adding status filters');
           // Handle turnup specific status values like 'Open', 'Complete'
           filterParams.turnup_status = this.filters.status.join(',');
         }
         
+        // Customer filters
         if (this.filters.customer.length > 0) {
           console.log('[DEBUG] dispatchStore.fetchTurnups - Adding customer filters');
           filterParams.customer_name = this.filters.customer.join(',');
         }
         
+        // Search term
         if (this.filters.search) {
           console.log('[DEBUG] dispatchStore.fetchTurnups - Adding search term');
           filterParams.search = this.filters.search;
         }
         
-        // Set pagination parameters
-        filterParams.limit = this.turnupsPagination.limit;
-        filterParams.offset = (this.turnupsPagination.page - 1) * this.turnupsPagination.limit;
+        // Project filters
+        if (this.filters.project.length > 0) {
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding project filters');
+          filterParams.project_name = this.filters.project.join(',');
+        }
+        
+        // Set pagination parameters for Laravel - using page, per_page format
+        const page = parseInt(this.turnupsPagination.page) || 1;
+        filterParams.page = page;
+        filterParams.per_page = parseInt(this.turnupsPagination.limit) || 10;
+        
+        // Add sorting parameters if present - using sort_by and sort_order (asc/desc) format for Laravel
+        if (this.turnupsPagination.sortField) {
+          filterParams.sort_by = this.turnupsPagination.sortField;
+          filterParams.sort_order = this.turnupsPagination.sortOrder === 1 ? 'asc' : 'desc';
+          
+          console.log('[DEBUG] dispatchStore.fetchTurnups - Adding sorting:', 
+            `${filterParams.sort_by} ${filterParams.sort_order}`);
+        }
         
         console.log('[DEBUG] dispatchStore.fetchTurnups - Calling API with params:', filterParams);
         const response = await DispatchService.getTurnups(filterParams);
@@ -1413,9 +1449,17 @@ export const useDispatchStore = defineStore('dispatch', {
           this.turnups = response.data.data || [];
           console.log('[DEBUG] dispatchStore.fetchTurnups - Success, turnups received:', this.turnups.length);
           
-          // Update pagination info based on response count
-          if (response.data.count !== undefined) {
-            console.log('[DEBUG] dispatchStore.fetchTurnups - Updating pagination info, total records:', response.data.count);
+          // Update pagination info based on response meta
+          if (response.data.meta) {
+            console.log('[DEBUG] dispatchStore.fetchTurnups - Updating pagination from meta data');
+            this.turnupsPagination = {
+              ...this.turnupsPagination,
+              page: response.data.meta.current_page || page,
+              total: response.data.meta.total || 0
+            };
+          } else if (response.data.count !== undefined) {
+            // Fallback for old API response format
+            console.log('[DEBUG] dispatchStore.fetchTurnups - Updating pagination info from count:', response.data.count);
             this.turnupsPagination = {
               ...this.turnupsPagination,
               total: response.data.count

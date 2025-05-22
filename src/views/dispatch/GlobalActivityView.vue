@@ -55,7 +55,7 @@ const {
 // Local reactive state
 const sidebarCollapsed = ref(false);
 const dateRange = ref([
-  new Date(new Date().setDate(new Date().getDate() - 7)), 
+  new Date(new Date().setDate(new Date().getDate() - 30)), 
   new Date()
 ]);
 const statusFilters = ref([
@@ -296,23 +296,27 @@ function resetAllFilters() {
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: () => {
-      dateRange.value = [
-        new Date(new Date().setDate(new Date().getDate() - 7)), 
-        new Date()
-      ];
+      // Set default date range to 30 days past to today
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      dateRange.value = [thirtyDaysAgo, new Date()];
+      
       selectedCustomers.value = [];
       activeStatusFilters.value = [];
       searchQuery.value = '';
       selectedProjects.value = [];
       selectedPriorities.value = [];
       
+      // Reset store filters and set date range to past 30 days
       dispatchStore.resetFilters();
+      dispatchStore.setDateFilter(thirtyDaysAgo, new Date());
+      
       loadDashboardData();
       
       toast.add({
         severity: 'info',
         summary: 'Filters Reset',
-        detail: 'All filters have been reset to default values',
+        detail: 'All filters have been reset to default values showing the past 30 days',
         life: 3000
       });
     }
@@ -354,9 +358,43 @@ async function loadDashboardData() {
     
     // If we have turnups data from API, use it
     if (Array.isArray(dispatchStore.turnups) && dispatchStore.turnups.length > 0) {
-      tableData.value = dispatchStore.turnups;
+      // Create a copy of the data so we don't modify the store directly
+      let sortedData = [...dispatchStore.turnups];
+      
+      // Apply client-side sorting if sort parameters are present
+      if (tableLazyParams.value && tableLazyParams.value.sortField) {
+        const { sortField, sortOrder } = tableLazyParams.value;
+        console.log(`Applying client-side sorting by ${sortField} in ${sortOrder === 1 ? 'ascending' : 'descending'} order`);
+        
+        sortedData.sort((a, b) => {
+          // Handle different data types (string, number, date)
+          let valueA = a[sortField];
+          let valueB = b[sortField];
+          
+          // Handle dates
+          if (sortField === 'service_date' || sortField.includes('date')) {
+            valueA = valueA ? new Date(valueA).getTime() : 0;
+            valueB = valueB ? new Date(valueB).getTime() : 0;
+          }
+          // Handle strings (case-insensitive)
+          else if (typeof valueA === 'string' && typeof valueB === 'string') {
+            valueA = valueA.toLowerCase();
+            valueB = valueB.toLowerCase();
+          }
+          // Handle null/undefined values
+          if (valueA === null || valueA === undefined) valueA = '';
+          if (valueB === null || valueB === undefined) valueB = '';
+          
+          // Compare values
+          if (valueA < valueB) return sortOrder === 1 ? -1 : 1;
+          if (valueA > valueB) return sortOrder === 1 ? 1 : -1;
+          return 0;
+        });
+      }
+      
+      tableData.value = sortedData;
       tableTotalRecords.value = dispatchStore.turnupsPagination.total;
-      console.log('Using turnups API data for table:', dispatchStore.turnups.length, 'records');
+      console.log('Using turnups API data for table:', sortedData.length, 'records');
       console.log('Total records available:', dispatchStore.turnupsPagination.total);
     } 
     // Otherwise, display no data available
@@ -463,14 +501,72 @@ function buildFilterParams() {
 // Handle lazy loading for data table
 function onLazyLoad(event) {
   console.log('Lazy load event triggered:', event);
+  
+  // Store the lazy loading parameters
   tableLazyParams.value = event;
   
-  // Update pagination in the store
-  dispatchStore.turnupsPagination.page = event.page + 1; // PrimeVue uses 0-based index for pages
-  dispatchStore.turnupsPagination.limit = event.rows;
+  const previousParams = { ...tableLazyParams.value };
   
-  // Trigger reload of turnups with new pagination
-  loadDashboardData();
+  // Ensure page is a valid number (PrimeVue uses 0-based indexing)
+  const page = (event.page !== undefined && !isNaN(event.page)) ? event.page + 1 : 1;
+  
+  // Check if this is just a sort operation (no page change)
+  const isSortOnly = previousParams.page === event.page;
+  
+  // Update pagination in the store
+  dispatchStore.turnupsPagination.page = page;
+  dispatchStore.turnupsPagination.limit = event.rows || 10;
+  
+  // Handle sorting if present - PrimeVue uses 1 for ascending, -1 for descending
+  if (event.sortField) {
+    console.log(`Sorting by ${event.sortField} in ${event.sortOrder === 1 ? 'ascending' : 'descending'} order`);
+    dispatchStore.turnupsPagination.sortField = event.sortField;
+    dispatchStore.turnupsPagination.sortOrder = event.sortOrder; // Store will convert 1/-1 to asc/desc
+    
+    // Apply client-side sorting immediately if we're just changing sort, not changing page
+    if (isSortOnly && Array.isArray(dispatchStore.turnups) && dispatchStore.turnups.length > 0) {
+      let sortedData = [...dispatchStore.turnups];
+      
+      sortedData.sort((a, b) => {
+        // Handle different data types (string, number, date)
+        let valueA = a[event.sortField];
+        let valueB = b[event.sortField];
+        
+        // Handle dates
+        if (event.sortField === 'service_date' || event.sortField.includes('date')) {
+          valueA = valueA ? new Date(valueA).getTime() : 0;
+          valueB = valueB ? new Date(valueB).getTime() : 0;
+        }
+        // Handle strings (case-insensitive)
+        else if (typeof valueA === 'string' && typeof valueB === 'string') {
+          valueA = valueA.toLowerCase();
+          valueB = valueB.toLowerCase();
+        }
+        // Handle null/undefined values
+        if (valueA === null || valueA === undefined) valueA = '';
+        if (valueB === null || valueB === undefined) valueB = '';
+        
+        // Compare values
+        if (valueA < valueB) return event.sortOrder === 1 ? -1 : 1;
+        if (valueA > valueB) return event.sortOrder === 1 ? 1 : -1;
+        return 0;
+      });
+      
+      // Update the table data without reloading from API
+      tableData.value = sortedData;
+      console.log('Applied client-side sorting without reloading data');
+    } else {
+      // If changing page or initial load, fetch from the backend
+      loadDashboardData();
+    }
+  } else {
+    // Clear sort if not present
+    dispatchStore.turnupsPagination.sortField = null;
+    dispatchStore.turnupsPagination.sortOrder = null;
+    
+    // Trigger reload of turnups with new pagination
+    loadDashboardData();
+  }
 }
 
 // Format date for display
@@ -509,6 +605,13 @@ function getStatusTag(status) {
 
 // Lifecycle hooks
 onMounted(() => {
+  // Set the initial date filter in the store to match the default 30-day date range
+  if (dateRange.value && dateRange.value.length === 2) {
+    console.log('Setting initial date filter to 30-day range:', dateRange.value);
+    dispatchStore.setDateFilter(dateRange.value[0], dateRange.value[1]);
+  }
+  
+  // Load the data
   loadDashboardData();
 });
 
@@ -562,7 +665,7 @@ watch(tableLazyParams, () => {
         :change="metricsData.totalVisits.change"
         :icon="metricsData.totalVisits.icon"
         :color="metricsData.totalVisits.color"
-        :loading="loading"
+        :loading="loading.dashboardData"
       />
       
       <MetricCard
@@ -573,7 +676,7 @@ watch(tableLazyParams, () => {
         :icon="metricsData.completionRate.icon"
         :color="metricsData.completionRate.color"
         :isPercentage="metricsData.completionRate.isPercentage"
-        :loading="loading"
+        :loading="loading.dashboardData"
       />
       
       <MetricCard
@@ -584,7 +687,7 @@ watch(tableLazyParams, () => {
         :icon="metricsData.revisitRate.icon"
         :color="metricsData.revisitRate.color"
         :isPercentage="metricsData.revisitRate.isPercentage"
-        :loading="loading"
+        :loading="loading.dashboardData"
       />
       
       <MetricCard
@@ -595,31 +698,12 @@ watch(tableLazyParams, () => {
         :icon="metricsData.avgDuration.icon"
         :color="metricsData.avgDuration.color"
         :format="metricsData.avgDuration.format"
-        :loading="loading"
-      />
-    </div>
-    
-    <!-- Activity Feed Components -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <RevisitRequiredFeed
-        :data="revisitVisits"
-        :loading="visitsLoading"
-        emptyMessage="No revisit requests found"
-      />
-      <PartsIssuesFeed
-        :data="allVisitsWithIssues"
-        :loading="visitsLoading"
-        emptyMessage="No parts issues found"
-      />
-      <CriticalIssuesFeed
-        :data="allVisitsWithIssues"
-        :loading="visitsLoading"
-        emptyMessage="No critical issues found"
+        :loading="loading.dashboardData"
       />
     </div>
     
     <!-- Main content area with filter sidebar and data table -->
-    <div class="flex gap-6">
+    <div class="flex gap-6 mb-6">
       <!-- Filter sidebar -->
       <div class="w-80 bg-white dark:bg-surface-900 rounded-lg shadow border border-gray-200 dark:border-surface-700">
         <div class="p-4 border-b border-gray-200 dark:border-surface-700">
@@ -709,11 +793,13 @@ watch(tableLazyParams, () => {
             @page="onLazyLoad"
             @sort="onLazyLoad"
             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+            :sortMode="'single'"
+            :defaultSortOrder="1"
+            :removableSort="true"
             responsiveLayout="scroll"
             stripedRows
             class="p-datatable-sm"
             dataKey="id"
-            v-model:filters="filters"
             filterDisplay="row"
             v-model:expandedRows="expandedRows"
             emptyMessage="No turnups found in the selected date range. Try adjusting your filters or date range."
@@ -829,6 +915,25 @@ watch(tableLazyParams, () => {
           </DataTable>
         </div>
       </div>
+    </div>
+    
+    <!-- Activity Feed Components - Moved below the table -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <RevisitRequiredFeed
+        :data="revisitVisits"
+        :loading="visitsLoading"
+        emptyMessage="No revisit requests found"
+      />
+      <PartsIssuesFeed
+        :data="allVisitsWithIssues"
+        :loading="visitsLoading"
+        emptyMessage="No parts issues found"
+      />
+      <CriticalIssuesFeed
+        :data="allVisitsWithIssues"
+        :loading="visitsLoading"
+        emptyMessage="No critical issues found"
+      />
     </div>
     
     <ConfirmDialog />
