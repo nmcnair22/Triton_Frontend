@@ -45,6 +45,11 @@ const model = ref([
                 label: 'Invoice Templates',
                 icon: 'pi pi-fw pi-file',
                 to: '/accounting/invoice-templates'
+            },
+            {
+                label: 'Field Service Billing',
+                icon: 'pi pi-fw pi-money-bill',
+                to: '/accounting/field-service-billing'
             }
         ]
     },
