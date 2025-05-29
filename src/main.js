@@ -96,6 +96,9 @@ import {
     faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 
+// Import custom icons (optional - if using Font Awesome approach)
+import { registerCustomIcons } from '@/utils/customIcons';
+
 // Add icons to the library
 library.add(
     faArrowTrendUp,
@@ -105,6 +108,9 @@ library.add(
     faChartLine,
     faCheckCircle
 );
+
+// Register custom icons (optional)
+registerCustomIcons();
 
 app.component('font-awesome-icon', FontAwesomeIcon);
 
