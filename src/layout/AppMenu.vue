@@ -67,6 +67,33 @@ const model = ref([
     },
     { separator: true },
     {
+        label: 'Finance',
+        icon: 'pi pi-wallet',
+        items: [
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-chart-pie',
+                to: '/finance/dashboard'
+            },
+            {
+                label: 'Invoicing',
+                icon: 'pi pi-fw pi-file-edit',
+                to: '/finance/invoicing'
+            },
+            {
+                label: 'Receivables',
+                icon: 'pi pi-fw pi-arrow-down',
+                to: '/finance/receivables'
+            },
+            {
+                label: 'Payables',
+                icon: 'pi pi-fw pi-arrow-up',
+                to: '/finance/payables'
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'WaveAI',
         icon: 'pi pi-bolt',
         items: [

@@ -9,6 +9,19 @@ export const useBillingStore = defineStore('billing', () => {
   const loading = ref(false);
   const error = ref(null);
   const viewMode = ref('payables'); // 'payables' or 'receivables'
+  
+  // New state for Dynamics data
+  const dynamicsData = ref([]);
+  const dynamicsLoading = ref(false);
+  const dynamicsError = ref(null);
+
+  // New state for detailed invoice and purchase data
+  const detailedInvoiceData = ref(null);
+  const detailedPurchaseData = ref(null);
+  const detailedInvoiceLoading = ref(false);
+  const detailedPurchaseLoading = ref(false);
+  const detailedInvoiceError = ref(null);
+  const detailedPurchaseError = ref(null);
 
   // Getters
   const hasData = computed(() => billingData.value.length > 0);
@@ -134,6 +147,112 @@ export const useBillingStore = defineStore('billing', () => {
     }
   }
 
+  // New function to fetch Dynamics 365 data
+  async function fetchDynamicsData(ticketId) {
+    if (!ticketId) return;
+    
+    dynamicsLoading.value = true;
+    dynamicsError.value = null;
+    
+    try {
+      console.log(`Fetching Dynamics 365 data for ticket: ${ticketId}`);
+      
+      const response = await ApiService.get(`/field-service-billing/dynamics/${ticketId}`);
+      
+      if (response.data && response.data.success) {
+        console.log(`Retrieved Dynamics data for ticket ${ticketId}:`, response.data.data);
+        dynamicsData.value = response.data.data;
+        return dynamicsData.value;
+      } else {
+        console.warn('No Dynamics data found or request unsuccessful:', response.data.message);
+        dynamicsData.value = [];
+        dynamicsError.value = response.data.message || 'No Dynamics data found';
+        return [];
+      }
+    } catch (err) {
+      dynamicsError.value = err.message || `Failed to fetch Dynamics data for ticket ${ticketId}`;
+      console.error(`Error fetching Dynamics data:`, err);
+      dynamicsData.value = [];
+      return [];
+    } finally {
+      dynamicsLoading.value = false;
+    }
+  }
+
+  // New function to fetch detailed invoice data
+  async function fetchDetailedInvoiceData(invoiceNumber) {
+    if (!invoiceNumber) return;
+    
+    detailedInvoiceLoading.value = true;
+    detailedInvoiceError.value = null;
+    
+    try {
+      console.log(`Fetching detailed invoice data for: ${invoiceNumber}`);
+      
+      const response = await ApiService.get(`/field-service-billing/dynamics-invoices`, {
+        params: {
+          invoice_number: invoiceNumber,
+          limit: 1000
+        }
+      });
+      
+      if (response.data && response.data.success) {
+        console.log(`Retrieved detailed invoice data for ${invoiceNumber}:`, response.data.data);
+        detailedInvoiceData.value = response.data.data;
+        return detailedInvoiceData.value;
+      } else {
+        console.warn('No detailed invoice data found:', response.data.message);
+        detailedInvoiceData.value = null;
+        detailedInvoiceError.value = response.data.message || 'No invoice data found';
+        return null;
+      }
+    } catch (err) {
+      detailedInvoiceError.value = err.message || `Failed to fetch detailed invoice data for ${invoiceNumber}`;
+      console.error(`Error fetching detailed invoice data:`, err);
+      detailedInvoiceData.value = null;
+      return null;
+    } finally {
+      detailedInvoiceLoading.value = false;
+    }
+  }
+
+  // New function to fetch detailed purchase data
+  async function fetchDetailedPurchaseData(documentNo) {
+    if (!documentNo) return;
+    
+    detailedPurchaseLoading.value = true;
+    detailedPurchaseError.value = null;
+    
+    try {
+      console.log(`Fetching detailed purchase data for: ${documentNo}`);
+      
+      const response = await ApiService.get(`/field-service-billing/dynamics-purchases`, {
+        params: {
+          document_no: documentNo,
+          limit: 1000
+        }
+      });
+      
+      if (response.data && response.data.success) {
+        console.log(`Retrieved detailed purchase data for ${documentNo}:`, response.data.data);
+        detailedPurchaseData.value = response.data.data;
+        return detailedPurchaseData.value;
+      } else {
+        console.warn('No detailed purchase data found:', response.data.message);
+        detailedPurchaseData.value = null;
+        detailedPurchaseError.value = response.data.message || 'No purchase data found';
+        return null;
+      }
+    } catch (err) {
+      detailedPurchaseError.value = err.message || `Failed to fetch detailed purchase data for ${documentNo}`;
+      console.error(`Error fetching detailed purchase data:`, err);
+      detailedPurchaseData.value = null;
+      return null;
+    } finally {
+      detailedPurchaseLoading.value = false;
+    }
+  }
+
   function setViewMode(mode) {
     if (mode === 'payables' || mode === 'receivables') {
       viewMode.value = mode;
@@ -145,6 +264,16 @@ export const useBillingStore = defineStore('billing', () => {
     billingData.value = [];
     currentTicket.value = null;
     error.value = null;
+    // Reset Dynamics state as well
+    dynamicsData.value = [];
+    dynamicsError.value = null;
+    // Reset detailed data state
+    detailedInvoiceData.value = null;
+    detailedPurchaseData.value = null;
+    detailedInvoiceLoading.value = false;
+    detailedPurchaseLoading.value = false;
+    detailedInvoiceError.value = null;
+    detailedPurchaseError.value = null;
   }
 
   return {
@@ -154,6 +283,19 @@ export const useBillingStore = defineStore('billing', () => {
     loading,
     error,
     viewMode,
+    
+    // New Dynamics state
+    dynamicsData,
+    dynamicsLoading,
+    dynamicsError,
+    
+    // New detailed data state
+    detailedInvoiceData,
+    detailedPurchaseData,
+    detailedInvoiceLoading,
+    detailedPurchaseLoading,
+    detailedInvoiceError,
+    detailedPurchaseError,
     
     // Getters
     hasData,
@@ -165,6 +307,9 @@ export const useBillingStore = defineStore('billing', () => {
     
     // Actions
     fetchBillingDataByTicket,
+    fetchDynamicsData,
+    fetchDetailedInvoiceData,
+    fetchDetailedPurchaseData,
     setViewMode,
     resetState
   };

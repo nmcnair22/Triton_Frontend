@@ -420,6 +420,38 @@ const routes = [
                     requiresAuth: true,
                     breadcrumb: ['Debug', 'Permissions']
                 }
+            },
+            {
+                path: '/finance/dashboard',
+                name: 'finance-dashboard',
+                meta: {
+                    breadcrumb: ['Finance', 'Dashboard']
+                },
+                component: () => import('@/views/finance/Dashboard.vue')
+            },
+            {
+                path: '/finance/invoicing',
+                name: 'finance-invoicing',
+                meta: {
+                    breadcrumb: ['Finance', 'Invoicing']
+                },
+                component: () => import('@/views/finance/InvoicingPage.vue')
+            },
+            {
+                path: '/finance/receivables',
+                name: 'finance-receivables',
+                meta: {
+                    breadcrumb: ['Finance', 'Receivables']
+                },
+                component: () => import('@/views/finance/ReceivablesPage.vue')
+            },
+            {
+                path: '/finance/payables',
+                name: 'finance-payables',
+                meta: {
+                    breadcrumb: ['Finance', 'Payables']
+                },
+                component: () => import('@/views/finance/PayablesPage.vue')
             }
         ],
         meta: { requiresAuth: true }

@@ -259,27 +259,215 @@ export const generateRandomMultiData = (startDate, endDate, intervalHours, minVa
  * @returns {string} The formatted date or empty string if invalid
  */
 export const formatDate = (date, format = 'mm/dd/yyyy') => {
-  if (!date) return '';
-  
-  try {
+    if (!date) return '';
+
     const d = new Date(date);
-    if (isNaN(d)) return '';
-    
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const day = d.getDate().toString().padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     const year = d.getFullYear();
-    
-    if (format === 'mm/dd/yyyy') {
-      return `${month}/${day}/${year}`;
-    } else if (format === 'yyyy-mm-dd') {
-      return `${year}-${month}-${day}`;
-    } else {
-      return `${month}/${day}/${year}`;
+
+    switch (format.toLowerCase()) {
+        case 'mm/dd/yyyy':
+            return `${month}/${day}/${year}`;
+        case 'dd/mm/yyyy':
+            return `${day}/${month}/${year}`;
+        case 'yyyy-mm-dd':
+            return `${year}-${month}-${day}`;
+        case 'mm-dd-yyyy':
+            return `${month}-${day}-${year}`;
+        case 'dd-mm-yyyy':
+            return `${day}-${month}-${year}`;
+        case 'mm.dd.yyyy':
+            return `${month}.${day}.${year}`;
+        case 'dd.mm.yyyy':
+            return `${day}.${month}.${year}`;
+        default:
+            return `${month}/${day}/${year}`;
     }
-  } catch (e) {
-    console.error('Error formatting date:', e);
-    return '';
-  }
+};
+
+/**
+ * Smart date formatter that handles Unix epoch dates and invalid dates gracefully
+ * @param {string|Date|number} dateInput - The date to format
+ * @param {Object} options - Formatting options
+ * @param {string} options.format - Date format ('mm/dd/yyyy', 'short', 'long', 'relative', etc.)
+ * @param {string} options.fallback - Text to show for invalid/missing dates (default: 'Date Missing')
+ * @param {boolean} options.showTime - Whether to include time (default: false)
+ * @param {string} options.locale - Locale for formatting (default: 'en-US')
+ * @returns {string} Formatted date string or fallback text
+ */
+export const formatDateSafe = (dateInput, options = {}) => {
+    const {
+        format = 'mm/dd/yyyy',
+        fallback = 'Date Missing',
+        showTime = false,
+        locale = 'en-US'
+    } = options;
+
+    // Handle null, undefined, empty string
+    if (!dateInput || dateInput === '' || dateInput === null || dateInput === undefined) {
+        return fallback;
+    }
+
+    let date;
+    
+    // Handle different input types
+    if (dateInput instanceof Date) {
+        date = dateInput;
+    } else if (typeof dateInput === 'string') {
+        // Handle common problematic strings
+        if (dateInput.trim() === '' || dateInput === '0' || dateInput === 'null') {
+            return fallback;
+        }
+        date = new Date(dateInput);
+    } else if (typeof dateInput === 'number') {
+        // Handle Unix timestamps (both seconds and milliseconds)
+        if (dateInput === 0 || dateInput < 0) {
+            return fallback;
+        }
+        // If it's a Unix timestamp in seconds (less than year 2001), convert to milliseconds
+        if (dateInput < 978307200) { // Jan 1, 2001 in seconds
+            date = new Date(dateInput * 1000);
+        } else {
+            date = new Date(dateInput);
+        }
+    } else {
+        return fallback;
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        return fallback;
+    }
+
+    // Check for Unix epoch dates (1969-1970 range)
+    const year = date.getFullYear();
+    if (year <= 1970 && year >= 1969) {
+        return fallback;
+    }
+
+    // Check for unrealistic future dates (beyond year 2100)
+    if (year > 2100) {
+        return fallback;
+    }
+
+    // Format the date based on the requested format
+    try {
+        switch (format.toLowerCase()) {
+            case 'short':
+                return date.toLocaleDateString(locale, { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric',
+                    ...(showTime && { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    })
+                });
+            
+            case 'long':
+                return date.toLocaleDateString(locale, { 
+                    weekday: 'long',
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    ...(showTime && { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    })
+                });
+            
+            case 'relative':
+                return formatRelativeDate(date);
+            
+            case 'iso':
+                return date.toISOString().split('T')[0];
+            
+            case 'mm/dd/yyyy':
+            case 'dd/mm/yyyy':
+            case 'yyyy-mm-dd':
+            case 'mm-dd-yyyy':
+            case 'dd-mm-yyyy':
+            case 'mm.dd.yyyy':
+            case 'dd.mm.yyyy':
+                // Use the existing formatDate function for these formats
+                const formattedDate = formatDate(date, format);
+                if (showTime) {
+                    const timeStr = date.toLocaleTimeString(locale, { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    return `${formattedDate} ${timeStr}`;
+                }
+                return formattedDate;
+            
+            default:
+                // Default to short format
+                return date.toLocaleDateString(locale, { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric',
+                    ...(showTime && { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    })
+                });
+        }
+    } catch (error) {
+        console.warn('Date formatting error:', error);
+        return fallback;
+    }
+};
+
+/**
+ * Format a date relative to now (e.g., "2 days ago", "in 3 hours")
+ * @param {Date} date - The date to format
+ * @returns {string} Relative date string
+ */
+export const formatRelativeDate = (date) => {
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+    if (Math.abs(diffDays) >= 7) {
+        // More than a week, show actual date
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+    } else if (Math.abs(diffDays) >= 1) {
+        // Days
+        return diffDays > 0 ? `in ${diffDays} day${diffDays > 1 ? 's' : ''}` : `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
+    } else if (Math.abs(diffHours) >= 1) {
+        // Hours
+        return diffHours > 0 ? `in ${diffHours} hour${diffHours > 1 ? 's' : ''}` : `${Math.abs(diffHours)} hour${Math.abs(diffHours) > 1 ? 's' : ''} ago`;
+    } else if (Math.abs(diffMinutes) >= 1) {
+        // Minutes
+        return diffMinutes > 0 ? `in ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}` : `${Math.abs(diffMinutes)} minute${Math.abs(diffMinutes) > 1 ? 's' : ''} ago`;
+    } else {
+        // Less than a minute
+        return 'just now';
+    }
+};
+
+/**
+ * Quick helper for common use cases - replaces Unix epoch dates with "Date Missing"
+ * @param {string|Date|number} dateInput - The date to format
+ * @param {string} customFallback - Custom fallback text (optional)
+ * @returns {string} Formatted date or fallback text
+ */
+export const safeDateFormat = (dateInput, customFallback = 'Date Missing') => {
+    return formatDateSafe(dateInput, { 
+        format: 'short', 
+        fallback: customFallback 
+    });
 };
 
 /**
