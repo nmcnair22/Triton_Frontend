@@ -4,6 +4,9 @@ import router from './router';
 import { createPinia } from 'pinia';
 import axios from 'axios';
 
+// Import Laravel Echo configuration
+import './echo';
+
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
 import Material from '@primeuix/themes/material';

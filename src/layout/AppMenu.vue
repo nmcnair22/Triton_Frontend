@@ -13,9 +13,9 @@ const model = ref([
                 to: '/dispatch/dashboard'
             },
             {
-                label: 'Global Activity',
-                icon: 'pi pi-fw pi-globe',
-                to: '/dispatch/global-activity'
+                label: 'Customers',
+                icon: 'pi pi-fw pi-users',
+                to: '/dispatch/customers'
             },
             {
                 label: 'Projects',
@@ -26,11 +26,6 @@ const model = ref([
                 label: 'Jobs',
                 icon: 'pi pi-fw pi-briefcase',
                 to: '/dispatch/jobs'
-            },
-            {
-                label: 'Scheduling',
-                icon: 'pi pi-fw pi-calendar',
-                to: '/dispatch/job-scheduling'
             }
         ]
     },

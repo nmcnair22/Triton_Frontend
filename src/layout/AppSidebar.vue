@@ -33,7 +33,7 @@ function onAnchorToggle() {
 <template>
     <div class="layout-sidebar" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
         <div class="sidebar-header">
-            <router-link :to="{ name: 'global-activity' }" class="logo">
+            <router-link :to="{ name: 'dispatch-dashboard' }" class="logo">
                 <img class="logo-image" :src="layoutConfig.menuTheme === 'light' ? '/layout/images/logo-dark.svg' : '/layout/images/logo-white.svg'" alt="diamond-layout" />
                 <span class="app-name title-h7">TRITON V3</span>
             </router-link>
