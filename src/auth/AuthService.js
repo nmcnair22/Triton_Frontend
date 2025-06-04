@@ -7,7 +7,6 @@ import { ref } from 'vue';
 import MicrosoftAuth from './MicrosoftAuth';
 import LocalAuth from './LocalAuth';
 import LogoutService from './LogoutService';
-import axios from 'axios';
 
 // Initialize reactive state
 const token = ref(localStorage.getItem('auth_token') || null);
@@ -38,8 +37,8 @@ export const AuthService = {
     token.value = newToken;
     localStorage.setItem('auth_token', newToken);
     
-    // Also update axios default headers
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    // Note: We don't set axios defaults here anymore to avoid env var issues
+    // Each API call will include the Authorization header individually
   },
   
   // Get the current user
@@ -200,6 +199,7 @@ export const AuthService = {
     }
     
     try {
+      const axios = (await import('axios')).default;
       const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/user`, {
         headers: {
           'Authorization': `Bearer ${this.getToken()}`
@@ -247,28 +247,7 @@ export const AuthService = {
     return `${url}${separator}token=${token}`;
   },
 
-  // Set up interceptors to handle authentication
-  setupInterceptors() {
-    // Get token from localStorage and set in axios defaults
-    const token = this.getToken();
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // Add response interceptor for 401 errors
-    axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        // Handle unauthorized responses
-        if (error.response && error.response.status === 401) {
-          console.error('Unauthorized API request - logging out');
-          this.clearSession();
-          window.location.href = '/auth/login';
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
+
 };
 
 export default AuthService; 

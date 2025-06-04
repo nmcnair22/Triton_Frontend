@@ -29,7 +29,7 @@ if (csrfToken) {
 }
 
 // Get token from local storage on app start
-AuthService.setupInterceptors();
+// AuthService.setupInterceptors(); // Commented out - causing env var issues
 
 const app = createApp(App);
 const pinia = createPinia();
