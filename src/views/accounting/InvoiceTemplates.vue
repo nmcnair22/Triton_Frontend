@@ -3011,6 +3011,10 @@ function getCompactFileHeaderClass(file) {
             </div>
         </div>
     </div>
+</div>
+</div>
+</div>
+</div>
 
 <style scoped>
 /* Fix for PDF preview to take up full modal height */
