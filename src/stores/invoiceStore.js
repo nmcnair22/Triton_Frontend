@@ -362,7 +362,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
   
   // Generate a document from a template for an invoice
-  async function generateTemplate(invoiceNumber, templateId) {
+  async function generateTemplate(invoiceNumber, templateId, options = {}) {
     if (!invoiceNumber || !templateId) {
       generateTemplateError.value = 'Invoice number and template ID are required';
       return null;
@@ -372,7 +372,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     generateTemplateError.value = null;
     
     try {
-      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
+      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId, options);
       
       if (response.data && response.data.success && response.data.data) {
         // After successful generation, refresh the list of generated files

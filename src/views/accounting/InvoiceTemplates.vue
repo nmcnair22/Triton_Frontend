@@ -230,6 +230,10 @@ async function loadCustomers() {
     // Clear documents when customer list changes
     invoiceStore.resetTemplateState();
     console.log('📄 After clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+    
+    // Auto-select Paradies if available
+    await autoSelectParadies();
+    
   } catch (err) {
     toast.add({ 
       severity: 'error', 
@@ -237,6 +241,36 @@ async function loadCustomers() {
       detail: 'Failed to load customers', 
       life: 3000 
     });
+  }
+}
+
+// Function to automatically select Paradies customer if available
+async function autoSelectParadies() {
+  if (!customers.value || customers.value.length === 0) {
+    console.log('👥 No customers available for auto-selection');
+    return;
+  }
+  
+  // Look for Paradies customer (case-insensitive search)
+  const paradiesCustomer = customers.value.find(customer => 
+    customer.name && customer.name.toLowerCase().includes('paradies')
+  );
+  
+  if (paradiesCustomer) {
+    console.log('🎯 Auto-selecting Paradies customer:', paradiesCustomer.name);
+    selectedCustomer.value = paradiesCustomer;
+    
+    // Trigger the customer change logic to load invoices and documents
+    await onCustomerChange();
+    
+    toast.add({ 
+      severity: 'info', 
+      summary: 'Auto-Selected', 
+      detail: `Automatically selected ${paradiesCustomer.name}`, 
+      life: 3000 
+    });
+  } else {
+    console.log('👥 Paradies customer not found in the list');
   }
 }
 
@@ -2103,6 +2137,13 @@ async function executeGenerateTemplate() {
   try {
     // Build request options
     const options = buildRequestOptions();
+    
+    // Debug logging
+    console.log('executeGenerateTemplate - Override settings:', {
+      useInvoiceDateOverride: useInvoiceDateOverride.value,
+      invoiceDateOverride: invoiceDateOverride.value,
+      options: options
+    });
     
     const result = await invoiceStore.generateTemplate(
       selectedCustomerInvoice.value.number, 

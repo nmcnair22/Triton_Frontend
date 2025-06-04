@@ -132,11 +132,21 @@ export const InvoiceService = {
   },
   
   // Generate a document from a template for an invoice
-  generateTemplate(invoiceNumber, templateId) {
-    return ApiService.post('/invoice-templates/generate', {
+  generateTemplate(invoiceNumber, templateId, options = {}) {
+    const payload = {
       invoice_number: invoiceNumber,
       template_id: templateId
-    });
+    };
+    
+    // Add options if provided
+    if (options && Object.keys(options).length > 0) {
+      payload.options = options;
+    }
+    
+    // Debug logging
+    console.log('ApiService.generateTemplate - Sending payload:', payload);
+    
+    return ApiService.post('/invoice-templates/generate', payload);
   },
   
   // Get generated files for an invoice
