@@ -7,6 +7,14 @@ import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/
 import { useToast } from 'primevue/usetoast';
 import { InvoiceService } from '@/service/ApiService';
 import ExcelPreview from '@/components/ExcelPreview.vue';
+import CustomerSelectionSection from '@/components/accounting/CustomerSelectionSection.vue';
+import InvoiceDataTableSection from '@/components/accounting/InvoiceDataTableSection.vue';
+import TemplateSelectionSection from '@/components/accounting/TemplateSelectionSection.vue';
+import DocumentLibrarySection from '@/components/accounting/DocumentLibrarySection.vue';
+import FilePreviewDialog from '@/components/accounting/FilePreviewDialog.vue';
+import InvoiceDetailDrawer from '@/components/accounting/InvoiceDetailDrawer.vue';
+import MergeHistoryDialog from '@/components/accounting/MergeHistoryDialog.vue';
+import DuplicateConfirmationDialog from '@/components/accounting/DuplicateConfirmationDialog.vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -23,7 +31,10 @@ import Tag from 'primevue/tag';
 import Message from 'primevue/message';
 import Divider from 'primevue/divider';
 import Toast from 'primevue/toast';
+import Drawer from 'primevue/drawer';
+import ToggleButton from 'primevue/togglebutton';
 import { useLayout } from '@/layout/composables/layout';
+import Checkbox from 'primevue/checkbox';
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -118,6 +129,13 @@ const customerListType = ref(true);
 
 // Template state
 const selectedTemplate = ref(null);
+
+// Invoice Date Override state
+const useInvoiceDateOverride = ref(false);
+const invoiceDateOverride = ref(null);
+const overrideDateError = ref('');
+const showOverrideConfirmation = ref(false);
+const pendingOverrideAction = ref(null);
 const availableTemplates = computed(() => invoiceStore.availableTemplates || []);
 const isLoadingTemplates = computed(() => invoiceStore.loadingTemplates);
 const templatesError = computed(() => invoiceStore.templatesError);
@@ -139,6 +157,30 @@ const previewIframe = ref(null);
 const previewError = ref(false);
 const previewErrorMessage = ref('');
 const previewLoaded = ref(false);
+
+// Invoice detail drawer
+const showInvoiceDrawer = ref(false);
+const drawerSelectedInvoice = ref(null);
+const drawerProducts = ref([]);
+const drawerIsInteractive = ref(false);
+const drawerSelectedGroupBy = ref({ name: 'None', value: 'none' });
+const drawerGroupedProducts = ref([]);
+const drawerIsRegrouping = ref(false);
+
+// Merge functionality
+const isMergeMode = ref(false);
+const selectedInvoicesForMerge = ref([]);
+const isMergingInvoices = ref(false);
+const mergeResult = ref(null);
+const mergeError = ref(null);
+const showMergeHistory = ref(false);
+const mergeHistoryData = ref([]);
+const isLoadingMergeHistory = ref(false);
+
+// Duplicate merge detection
+const showDuplicateConfirmation = ref(false);
+const duplicateDetails = ref(null);
+const pendingMergeRequest = ref(null);
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -171,6 +213,8 @@ onMounted(async () => {
 
 // Function to load customers based on selected list type
 async function loadCustomers() {
+  console.log('👥 loadCustomers called - customer list type:', customerListType.value ? 'active' : 'full');
+  
   try {
     if (customerListType.value) {
       await customerStore.fetchActiveCustomers();
@@ -179,9 +223,17 @@ async function loadCustomers() {
     }
     
     // Clear any previously selected customers when the list changes
+    console.log('📄 Before clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
     selectedCustomer.value = null;
     selectedCustomerInvoice.value = null;
     selectedTemplate.value = null;
+    // Clear documents when customer list changes
+    invoiceStore.resetTemplateState();
+    console.log('📄 After clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+    
+    // Auto-select Paradies if available
+    await autoSelectParadies();
+    
   } catch (err) {
     toast.add({ 
       severity: 'error', 
@@ -189,6 +241,36 @@ async function loadCustomers() {
       detail: 'Failed to load customers', 
       life: 3000 
     });
+  }
+}
+
+// Function to automatically select Paradies customer if available
+async function autoSelectParadies() {
+  if (!customers.value || customers.value.length === 0) {
+    console.log('👥 No customers available for auto-selection');
+    return;
+  }
+  
+  // Look for Paradies customer (case-insensitive search)
+  const paradiesCustomer = customers.value.find(customer => 
+    customer.name && customer.name.toLowerCase().includes('paradies')
+  );
+  
+  if (paradiesCustomer) {
+    console.log('🎯 Auto-selecting Paradies customer:', paradiesCustomer.name);
+    selectedCustomer.value = paradiesCustomer;
+    
+    // Trigger the customer change logic to load invoices and documents
+    await onCustomerChange();
+    
+    toast.add({ 
+      severity: 'info', 
+      summary: 'Auto-Selected', 
+      detail: `Automatically selected ${paradiesCustomer.name}`, 
+      life: 3000 
+    });
+  } else {
+    console.log('👥 Paradies customer not found in the list');
   }
 }
 
@@ -207,14 +289,7 @@ async function loadCustomerInvoices() {
     // Build a filter query for the selected customer
     const filterCondition = `customerId eq ${selectedCustomer.value.id}`;
     
-    await invoiceStore.fetchCustomerInvoices(filterCondition, {
-      page: lazyParams.page,
-      limit: lazyParams.rows,
-      sortField: lazyParams.sortField,
-      sortOrder: lazyParams.sortOrder
-    });
-    
-    totalInvoiceRecords.value = invoiceStore.totalCustomerInvoices;
+    await invoiceStore.fetchCustomerInvoices(filterCondition);
   } catch (err) {
     console.error('Failed to load customer invoices:', err);
   }
@@ -222,16 +297,33 @@ async function loadCustomerInvoices() {
 
 // Handle customer selection change
 async function onCustomerChange() {
+  console.log('🔄 onCustomerChange called - clearing documents');
+  
+  // Clear previous invoice selection and documents immediately
   selectedCustomerInvoice.value = null;
   selectedTemplate.value = null;
+  
+  // Ensure documents are cleared before proceeding
+  console.log('📄 Before reset - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+  invoiceStore.resetTemplateState();
+  console.log('📄 After reset - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+  
+  // Set the active tab to customer documents
   activeDocumentTab.value = 'customer';
+  
+  // Load customer invoices
   await loadCustomerInvoices();
   
-  // Load available templates for the selected customer
+  // Load available templates and customer documents for the selected customer
   if (selectedCustomer.value) {
+    console.log('👤 Loading data for customer:', selectedCustomer.value.name, 'ID:', selectedCustomer.value.id);
     await loadAvailableTemplates(selectedCustomer.value.id);
     // Load customer documents using the customer number
+    console.log('📂 About to load customer documents for:', selectedCustomer.value.number);
     await loadCustomerDocuments(selectedCustomer.value.number);
+    console.log('📂 After loading customer documents:', customerDocuments.value.length);
+  } else {
+    console.log('❌ No customer selected, skipping document load');
   }
 }
 
@@ -257,16 +349,32 @@ function clearFilter() {
 }
 
 // Handle customer invoice selection change
-async function onCustomerInvoiceSelect() {
-  if (selectedCustomerInvoice.value) {
+async function onCustomerInvoiceSelect(event) {
+  console.log('🧾 onCustomerInvoiceSelect called', event);
+  
+  if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
+    console.log('📋 Selected invoice:', selectedCustomerInvoice.value.number);
+    
+    // Clear previous documents immediately to prevent showing old data
+    console.log('📄 Before reset (invoice) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+    invoiceStore.resetTemplateState();
+    console.log('📄 After reset (invoice) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+    
     activeDocumentTab.value = 'invoice';
     // Load generated files for the selected invoice
+    console.log('📂 About to load generated files for invoice:', selectedCustomerInvoice.value.number);
     await loadGeneratedFiles(selectedCustomerInvoice.value.number);
+    console.log('📂 After loading generated files:', generatedFiles.value.length);
     
     // If there's a customer ID, refine the template list
-    if (selectedCustomer.value && selectedCustomerInvoice.value.number) {
+    if (selectedCustomer.value && selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
       await loadAvailableTemplates(selectedCustomer.value.id, selectedCustomerInvoice.value.number);
     }
+  } else {
+    console.log('❌ No invoice selected - clearing all documents');
+    // If no invoice is selected, clear all documents
+    invoiceStore.resetTemplateState();
+    console.log('📄 After clearing (no invoice):', generatedFiles.value.length, customerDocuments.value.length);
   }
 }
 
@@ -297,19 +405,62 @@ function getRowClass(data) {
   return '';
 }
 
+// Function to get due date information with context
+function getDueDateInfo(dueDate, status) {
+  const date = new Date(dueDate);
+  const today = new Date();
+  const diffTime = date - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  
+  let contextInfo = '';
+  let contextClass = 'text-surface-600 dark:text-surface-400';
+  
+  if (status === 'paid') {
+    contextInfo = 'Paid';
+    contextClass = 'text-green-600 dark:text-green-400';
+  } else if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    contextInfo = `Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}`;
+    contextClass = 'text-red-600 dark:text-red-400 font-medium';
+  } else if (diffDays === 0) {
+    contextInfo = 'Due today';
+    contextClass = 'text-orange-600 dark:text-orange-400 font-medium';
+  } else if (diffDays <= 3) {
+    contextInfo = `Due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    contextClass = 'text-yellow-600 dark:text-yellow-400';
+  } else if (diffDays <= 7) {
+    contextInfo = `Due in ${diffDays} days`;
+    contextClass = 'text-blue-600 dark:text-blue-400';
+  } else {
+    contextInfo = `Due in ${diffDays} days`;
+  }
+  
+  return {
+    date: formattedDate,
+    context: contextInfo,
+    contextClass
+  };
+}
+
 // Watch for changes to interactive mode
 watch(isInteractive, async (newValue) => {
   if (newValue) {
-    // Show toast message when interactive mode is enabled with specific group
-    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000, group: 'invoice-bottom' });
+    // Show toast message when interactive mode is enabled
+    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000 });
     
     if (selectedInvoice.value) {
       // When interactive mode is enabled and an invoice is selected
       await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
     }
   } else {
-    // Show toast message when interactive mode is disabled with specific group
-    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000, group: 'invoice-bottom' });
+    // Show toast message when interactive mode is disabled
+    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000 });
   }
 });
 
@@ -902,42 +1053,26 @@ async function generateTemplateDocument() {
     return;
   }
   
-  try {
-    const result = await invoiceStore.generateTemplate(
-      selectedCustomerInvoice.value.number, 
-      selectedTemplate.value.id
-    );
-    
-    if (result) {
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Template Generated', 
-        detail: 'Template document has been generated successfully', 
-        life: 3000 
-      });
-      
-      // Refresh the file list
-      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
-      
-      // Switch to the invoice documents tab
-      activeDocumentTab.value = 'invoice';
-    } else {
+  // Validate invoice date override if enabled
+  if (useInvoiceDateOverride.value) {
+    validateCurrentOverrideDate();
+    if (overrideDateError.value) {
       toast.add({ 
         severity: 'error', 
-        summary: 'Error', 
-        detail: generateTemplateError.value || 'Failed to generate template document', 
-        life: 3000 
+        summary: 'Invalid Override Date', 
+        detail: overrideDateError.value, 
+        life: 4000 
       });
+      return;
     }
-  } catch (err) {
-    console.error('Error generating template:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to generate template document', 
-      life: 3000 
-    });
+    
+    // Show confirmation dialog for override
+    showConfirmationDialog('generate');
+    return;
   }
+  
+  // If no override, proceed directly
+  await executeGenerateTemplate();
 }
 
 // Function to download a generated file
@@ -1166,392 +1301,1075 @@ function onIframeError(event) {
   previewLoaded.value = false;
   previewErrorMessage.value = 'Failed to load preview';
 }
+
+// Function to open invoice detail drawer
+async function openInvoiceDrawer(invoice) {
+  try {
+    showInvoiceDrawer.value = true;
+    drawerSelectedInvoice.value = null;
+    drawerProducts.value = [];
+    drawerIsInteractive.value = false;
+    drawerSelectedGroupBy.value = { name: 'None', value: 'none' };
+    drawerGroupedProducts.value = [];
+    
+    // Load the full invoice details
+    const fullInvoice = await invoiceStore.fetchInvoice(invoice.id);
+    if (fullInvoice) {
+      drawerSelectedInvoice.value = fullInvoice;
+      drawerProducts.value = fullInvoice.items || [];
+    }
+  } catch (err) {
+    console.error(`Failed to load invoice #${invoice.id}:`, err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load invoice details', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to handle drawer interactive mode toggle
+async function onDrawerInteractiveToggle() {
+  if (drawerIsInteractive.value && drawerSelectedInvoice.value) {
+    await fetchDrawerEnrichedInvoiceData(drawerSelectedInvoice.value.number || drawerSelectedInvoice.value.id);
+  } else {
+    // Reset to basic products when interactive mode is turned off
+    if (drawerSelectedInvoice.value) {
+      drawerProducts.value = drawerSelectedInvoice.value.items || [];
+    }
+    drawerSelectedGroupBy.value = { name: 'None', value: 'none' };
+    drawerGroupedProducts.value = [];
+  }
+}
+
+// Function to fetch enriched invoice data for drawer
+async function fetchDrawerEnrichedInvoiceData(documentNumber) {
+  if (!documentNumber) return;
+  
+  try {
+    await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
+    
+    const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
+    if (enrichedInvoice && enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
+      drawerProducts.value = enrichedInvoice.enrichedItems.map(item => ({
+        description: item.description,
+        quantity: item.quantity.toString(),
+        price: formatCurrency(item.unitPrice),
+        total: formatCurrency(item.amountIncludingTax),
+        rawItem: item
+      }));
+      
+      applyDrawerGrouping();
+    }
+  } catch (err) {
+    console.error('Error fetching enriched invoice data for drawer:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load enriched invoice data', 
+      life: 3000 
+    });
+  }
+}
+
+// Function to apply grouping to drawer products
+function applyDrawerGrouping() {
+  if (drawerSelectedGroupBy.value.value === 'none' || !drawerProducts.value || drawerProducts.value.length === 0) {
+    drawerIsRegrouping.value = false;
+    drawerGroupedProducts.value = [];
+    return;
+  }
+  
+  drawerIsRegrouping.value = true;
+  
+  setTimeout(() => {
+    const rawItems = drawerProducts.value.map(product => product.rawItem);
+    const { groups, groupNames } = groupInvoiceItems(rawItems, drawerSelectedGroupBy.value.value);
+    
+    const groupsWithType = groups.map(group => ({
+      ...group,
+      groupType: drawerSelectedGroupBy.value.name
+    }));
+    
+    drawerGroupedProducts.value = groupsWithType;
+    drawerIsRegrouping.value = false;
+  }, 300);
+}
+
+// Watch for changes in drawer groupBy
+watch(drawerSelectedGroupBy, () => {
+  if (drawerIsInteractive.value) {
+    applyDrawerGrouping();
+  }
+});
+
+// Watch for merge mode changes to ensure proper table behavior
+watch(isMergeMode, (newValue) => {
+  // Clear selections when switching modes
+  if (newValue) {
+    // Switching to merge mode - clear single selection
+    selectedCustomerInvoice.value = null;
+    selectedInvoicesForMerge.value = [];
+  } else {
+    // Switching to single mode - clear multi selection
+    selectedInvoicesForMerge.value = [];
+    selectedCustomerInvoice.value = null;
+  }
+});
+
+// Merge functionality functions
+function toggleMergeMode() {
+  // The isMergeMode.value has already been updated by the v-model when this function is called
+  if (isMergeMode.value) {
+    // Entering merge mode
+    toast.add({ 
+      severity: 'success', 
+      summary: 'Merge Mode Enabled', 
+      detail: 'Select 2-50 invoices to merge into a single template', 
+      life: 4000 
+    });
+  } else {
+    // Exiting merge mode
+    toast.add({ 
+      severity: 'info', 
+      summary: 'Merge Mode Disabled', 
+      detail: 'Returned to single invoice selection', 
+      life: 3000 
+    });
+  }
+}
+
+function validateMergeSelection() {
+  const errors = [];
+  
+  if (!selectedInvoicesForMerge.value || selectedInvoicesForMerge.value.length < 2) {
+    errors.push('Please select at least 2 invoices to merge');
+  }
+  
+  if (selectedInvoicesForMerge.value.length > 50) {
+    errors.push('Maximum 50 invoices can be merged at once');
+  }
+  
+  if (!selectedTemplate.value) {
+    errors.push('Please select a template for the merge');
+  }
+  
+  // Check if all invoices belong to the same customer
+  if (selectedInvoicesForMerge.value.length > 1) {
+    const firstCustomer = selectedInvoicesForMerge.value[0].customerId;
+    const differentCustomer = selectedInvoicesForMerge.value.find(invoice => invoice.customerId !== firstCustomer);
+    if (differentCustomer) {
+      errors.push('All invoices must belong to the same customer');
+    }
+  }
+  
+  return errors;
+}
+
+async function mergeSelectedInvoices() {
+  const validationErrors = validateMergeSelection();
+  if (validationErrors.length > 0) {
+    validationErrors.forEach(error => {
+      toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: error,
+        life: 4000
+      });
+    });
+    return;
+  }
+  
+  // Validate invoice date override if enabled
+  if (useInvoiceDateOverride.value) {
+    validateCurrentOverrideDate();
+    if (overrideDateError.value) {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Invalid Override Date', 
+        detail: overrideDateError.value, 
+        life: 4000 
+      });
+      return;
+    }
+    
+    // Show confirmation dialog for override
+    showConfirmationDialog('merge');
+    return;
+  }
+  
+  // If no override, proceed directly with merge
+  await executeMergeInvoices();
+}
+
+// Function to handle duplicate confirmation
+async function handleDuplicateConfirmation(overwrite) {
+  showDuplicateConfirmation.value = false;
+  
+  if (!overwrite) {
+    // User chose to keep existing merge
+    toast.add({ 
+      severity: 'info', 
+      summary: 'Merge Cancelled', 
+      detail: 'Keeping existing merge. No new merge was created.', 
+      life: 3000 
+    });
+    duplicateDetails.value = null;
+    pendingMergeRequest.value = null;
+    return;
+  }
+  
+  // User chose to overwrite - retry with force_overwrite flag
+  if (!pendingMergeRequest.value) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'No pending merge request found', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  try {
+    isMergingInvoices.value = true;
+    mergeError.value = null;
+    
+    // Debug: Log the pending merge request to see what's being sent
+    console.log('Sending merge request with force_overwrite:', pendingMergeRequest.value);
+    
+    const result = await invoiceStore.mergeInvoices(pendingMergeRequest.value);
+    
+    if (result && result.success) {
+      mergeResult.value = result;
+      
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Merge Regenerated', 
+        detail: `Regenerated merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`, 
+        life: 5000 
+      });
+      
+      // Reset selections
+      selectedInvoicesForMerge.value = [];
+      
+      // Refresh the invoice list
+      await loadCustomerInvoices();
+      
+      // Switch to invoice documents tab
+      activeDocumentTab.value = 'invoice';
+      
+      // Load the generated files for the merged invoice
+      if (result.data && result.data.merged_invoice_number) {
+        try {
+          await loadGeneratedFiles(result.data.merged_invoice_number);
+        } catch (fileError) {
+          console.warn('Could not load generated files:', fileError);
+        }
+      }
+      
+    } else {
+      throw new Error(result?.message || 'Merge regeneration failed');
+    }
+    
+  } catch (err) {
+    console.error('Error regenerating merge:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Regeneration Failed', 
+      detail: err.message || 'Failed to regenerate merged invoice', 
+      life: 5000 
+    });
+  } finally {
+    isMergingInvoices.value = false;
+    duplicateDetails.value = null;
+    pendingMergeRequest.value = null;
+  }
+}
+
+async function loadMergeHistory() {
+  if (!selectedCustomer.value) {
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'No Customer Selected', 
+      detail: 'Please select a customer to view merge history', 
+      life: 3000 
+    });
+    return;
+  }
+  
+  try {
+    isLoadingMergeHistory.value = true;
+    const history = await invoiceStore.getCustomerMergeHistory(selectedCustomer.value.number);
+    mergeHistoryData.value = history.data || [];
+    showMergeHistory.value = true;
+  } catch (err) {
+    console.error('Error loading merge history:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load merge history', 
+      life: 3000 
+    });
+  } finally {
+    isLoadingMergeHistory.value = false;
+  }
+}
+
+function getMergeStatusSeverity(status) {
+  switch (status) {
+    case 'completed': return 'success';
+    case 'processing': return 'info';
+    case 'failed': return 'danger';
+    default: return 'secondary';
+  }
+}
+
+// Computed properties for merge functionality
+const canMerge = computed(() => {
+  return isMergeMode.value && 
+         selectedInvoicesForMerge.value.length >= 2 && 
+         selectedInvoicesForMerge.value.length <= 50 && 
+         selectedTemplate.value &&
+         !isMergingInvoices.value;
+});
+
+const mergeButtonLabel = computed(() => {
+  if (isMergingInvoices.value) {
+    return 'Merging...';
+  }
+  if (selectedInvoicesForMerge.value.length === 0) {
+    return 'Select Invoices to Merge';
+  }
+  if (selectedInvoicesForMerge.value.length === 1) {
+    return 'Select More Invoices';
+  }
+  return `Merge ${selectedInvoicesForMerge.value.length} Invoices`;
+});
+
+const mergeSelectionSummary = computed(() => {
+  if (!isMergeMode.value || selectedInvoicesForMerge.value.length === 0) {
+    return '';
+  }
+  
+  const count = selectedInvoicesForMerge.value.length;
+  const totalAmount = selectedInvoicesForMerge.value.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
+  
+  return `${count} invoice${count !== 1 ? 's' : ''} selected • Total: ${formatCurrency(totalAmount)}`;
+});
+
+// Function to view merge details
+function viewMergeDetails(mergeData) {
+  toast.add({ 
+    severity: 'info', 
+    summary: 'Merge Details', 
+    detail: `Original invoices: ${mergeData.original_invoices.join(', ')}`, 
+    life: 5000 
+  });
+}
+
+// Function to download merged files
+async function downloadMergedFiles(mergeData) {
+  try {
+    // Load the generated files for the merged invoice
+    await loadGeneratedFiles(mergeData.merged_invoice);
+    
+    // Switch to invoice documents tab
+    activeDocumentTab.value = 'invoice';
+    
+    // Close the merge history dialog
+    showMergeHistory.value = false;
+    
+    toast.add({ 
+      severity: 'success', 
+      summary: 'Files Loaded', 
+      detail: `Loaded files for merged invoice ${mergeData.merged_invoice}`, 
+      life: 3000 
+    });
+  } catch (err) {
+    console.error('Error loading merged files:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Failed to load merged invoice files', 
+      life: 3000 
+    });
+  }
+}
+
+// Computed property for DataTable selection model
+const tableSelection = computed({
+  get() {
+    return isMergeMode.value ? selectedInvoicesForMerge.value : selectedCustomerInvoice.value;
+  },
+  set(value) {
+    if (isMergeMode.value) {
+      selectedInvoicesForMerge.value = Array.isArray(value) ? value : [];
+    } else {
+      selectedCustomerInvoice.value = value;
+    }
+  }
+});
+
+function getRemainingAmountClass(remainingAmount) {
+  if (remainingAmount > 0) {
+    return 'font-semibold text-red-600 dark:text-red-400';
+  } else if (remainingAmount < 0) {
+    return 'font-semibold text-green-600 dark:text-green-400';
+  } else {
+    return 'font-medium text-green-600 dark:text-green-400';
+  }
+}
+
+// Enhanced Document Management Section
+const selectedDocuments = ref([]);
+const documentSearchTerm = ref('');
+const documentTypeFilter = ref('');
+const documentSortOptions = ref([
+  { label: 'Date Created', value: 'created_at' },
+  { label: 'Invoice Number', value: 'invoice_number' },
+  { label: 'Template Name', value: 'template_name' },
+  { label: 'Generated By', value: 'generated_by' },
+  { label: 'File Type', value: 'file_type' }
+]);
+const documentTypeOptions = ref([
+  { label: 'All Types', value: '' },
+  { label: 'PDF', value: 'pdf' },
+  { label: 'Excel', value: 'excel' },
+  { label: 'Word', value: 'word' }
+]);
+const documentSortBy = ref('created_at');
+
+// Document Content Views
+const filteredCustomerDocuments = computed(() => {
+  let documents = customerDocuments.value || [];
+  
+  if (documentSearchTerm.value) {
+    const searchTerm = documentSearchTerm.value.toLowerCase();
+    documents = documents.filter(file => 
+      (file.filename || '').toLowerCase().includes(searchTerm) ||
+      (file.template_name || '').toLowerCase().includes(searchTerm) ||
+      (file.generated_by || '').toLowerCase().includes(searchTerm) ||
+      (file.invoice_number || '').toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  if (documentTypeFilter.value) {
+    const typeFilter = documentTypeFilter.value.toLowerCase();
+    documents = documents.filter(file => 
+      (file.fileType || '').toLowerCase().includes(typeFilter) ||
+      (file.filename || '').toLowerCase().includes(typeFilter)
+    );
+  }
+  
+  // Sort documents
+  if (documentSortBy.value) {
+    documents.sort((a, b) => {
+      const aVal = a[documentSortBy.value] || '';
+      const bVal = b[documentSortBy.value] || '';
+      return aVal.localeCompare(bVal);
+    });
+  }
+  
+  return documents;
+});
+
+const filteredInvoiceDocuments = computed(() => {
+  let documents = generatedFiles.value || [];
+  
+  if (documentSearchTerm.value) {
+    const searchTerm = documentSearchTerm.value.toLowerCase();
+    documents = documents.filter(file => 
+      (file.filename || '').toLowerCase().includes(searchTerm) ||
+      (file.template_name || '').toLowerCase().includes(searchTerm) ||
+      (file.generated_by || '').toLowerCase().includes(searchTerm) ||
+      (file.fileCategory || '').toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  if (documentTypeFilter.value) {
+    const typeFilter = documentTypeFilter.value.toLowerCase();
+    documents = documents.filter(file => 
+      (file.fileType || '').toLowerCase().includes(typeFilter) ||
+      (file.filename || '').toLowerCase().includes(typeFilter)
+    );
+  }
+  
+  // Sort documents
+  if (documentSortBy.value) {
+    documents.sort((a, b) => {
+      const aVal = a[documentSortBy.value] || '';
+      const bVal = b[documentSortBy.value] || '';
+      return aVal.localeCompare(bVal);
+    });
+  }
+  
+  return documents;
+});
+
+const filteredMergedDocuments = computed(() => {
+  let documents = mergeHistoryData.value || [];
+  
+  if (documentSearchTerm.value) {
+    const searchTerm = documentSearchTerm.value.toLowerCase();
+    documents = documents.filter(document => 
+      (document.merged_invoice || '').toLowerCase().includes(searchTerm) ||
+      (document.template_used || '').toLowerCase().includes(searchTerm) ||
+      (document.original_count || '').toString().includes(searchTerm) ||
+      (document.total_amount || '').toString().includes(searchTerm)
+    );
+  }
+  
+  if (documentTypeFilter.value) {
+    const typeFilter = documentTypeFilter.value.toLowerCase();
+    documents = documents.filter(document => 
+      (document.template_used || '').toLowerCase().includes(typeFilter)
+    );
+  }
+  
+  // Sort documents
+  if (documentSortBy.value === 'merge_date') {
+    documents.sort((a, b) => new Date(b.merge_date) - new Date(a.merge_date));
+  } else if (documentSortBy.value) {
+    documents.sort((a, b) => {
+      const aVal = a[documentSortBy.value] || '';
+      const bVal = b[documentSortBy.value] || '';
+      return aVal.localeCompare(bVal);
+    });
+  }
+  
+  return documents;
+});
+
+// Document Actions
+function downloadAllCustomerDocuments() {
+  filteredCustomerDocuments.value.forEach(file => {
+    downloadFile(file);
+  });
+  toast.add({ 
+    severity: 'success', 
+    summary: 'Download Started', 
+    detail: `Downloading ${filteredCustomerDocuments.value.length} customer documents`, 
+    life: 3000 
+  });
+}
+
+function downloadAllInvoiceDocuments() {
+  filteredInvoiceDocuments.value.forEach(file => {
+    downloadFile(file);
+  });
+  toast.add({ 
+    severity: 'success', 
+    summary: 'Download Started', 
+    detail: `Downloading ${filteredInvoiceDocuments.value.length} invoice documents`, 
+    life: 3000 
+  });
+}
+
+function downloadSelectedFiles() {
+  const filesToDownload = [];
+  
+  // Find selected files from both customer and invoice documents
+  [...filteredCustomerDocuments.value, ...filteredInvoiceDocuments.value].forEach(file => {
+    if (selectedDocuments.value.includes(file.id)) {
+      filesToDownload.push(file);
+    }
+  });
+  
+  filesToDownload.forEach(file => {
+    downloadFile(file);
+  });
+  
+  toast.add({ 
+    severity: 'success', 
+    summary: 'Download Started', 
+    detail: `Downloading ${filesToDownload.length} selected files`, 
+    life: 3000 
+  });
+}
+
+function clearDocumentSelection() {
+  selectedDocuments.value = [];
+}
+
+function refreshDocuments() {
+  if (selectedCustomer.value) {
+    loadCustomerDocuments(selectedCustomer.value.number);
+  }
+  if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
+    loadGeneratedFiles(selectedCustomerInvoice.value.number);
+  }
+  if (activeDocumentTab.value === 'merged') {
+    loadMergeHistory();
+  }
+}
+
+function shareFile(file) {
+  // Implement sharing functionality - could open a dialog with sharing options
+  toast.add({ 
+    severity: 'info', 
+    summary: 'Share Feature', 
+    detail: 'File sharing functionality coming soon', 
+    life: 3000 
+  });
+}
+
+function getFileTypeHeaderClass(file) {
+  const fileType = file.fileType || file.originalData?.type || '';
+  if (fileType === 'excel' || file.filename?.toLowerCase().includes('.xlsx') || file.filename?.toLowerCase().includes('.xls')) {
+    return 'bg-gradient-to-br from-green-500 to-green-600';
+  }
+  if (fileType === 'pdf' || file.filename?.toLowerCase().includes('.pdf')) {
+    return 'bg-gradient-to-br from-red-500 to-red-600';
+  }
+  if (fileType === 'word' || file.filename?.toLowerCase().includes('.docx') || file.filename?.toLowerCase().includes('.doc')) {
+    return 'bg-gradient-to-br from-blue-500 to-blue-600';
+  }
+  return 'bg-gradient-to-br from-gray-500 to-gray-600';
+}
+
+function getFileTypeLabel(file) {
+  const fileType = file.fileType || file.originalData?.type || '';
+  if (fileType === 'excel' || file.filename?.toLowerCase().includes('.xlsx') || file.filename?.toLowerCase().includes('.xls')) {
+    return 'Excel';
+  }
+  if (fileType === 'pdf' || file.filename?.toLowerCase().includes('.pdf')) {
+    return 'PDF';
+  }
+  if (fileType === 'word' || file.filename?.toLowerCase().includes('.docx') || file.filename?.toLowerCase().includes('.doc')) {
+    return 'Word';
+  }
+  return 'Document';
+}
+
+function formatFileDate(date) {
+  if (!date) return 'No date';
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
+}
+
+function formatTimeAgo(date) {
+  if (!date) return '';
+  try {
+    const now = new Date();
+    const diff = Math.abs(now - new Date(date));
+    const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diff / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diff / (1000 * 60));
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    return 'just now';
+  } catch (error) {
+    return '';
+  }
+}
+
+function hasAnyDocuments() {
+  return (filteredCustomerDocuments.value && filteredCustomerDocuments.value.length > 0) ||
+         (filteredInvoiceDocuments.value && filteredInvoiceDocuments.value.length > 0) ||
+         (filteredMergedDocuments.value && filteredMergedDocuments.value.length > 0);
+}
+
+function switchDocumentTab(tab) {
+  activeDocumentTab.value = tab;
+  
+  // Load merge history when switching to merged tab
+  if (tab === 'merged' && selectedCustomer.value) {
+    loadMergeHistory();
+  }
+  
+  // Clear search and filters when switching tabs
+  documentSearchTerm.value = '';
+  documentTypeFilter.value = '';
+  selectedDocuments.value = [];
+}
+
+function viewSourceInvoices(mergeData) {
+  // Show a dialog or expand details to show the original invoices that were merged
+  toast.add({ 
+    severity: 'info', 
+    summary: 'Source Invoices', 
+    detail: `This merged invoice was created from ${mergeData.original_count} original invoices`, 
+    life: 4000 
+  });
+  
+  // You could implement a dialog here to show the list of original invoice numbers
+  console.log('Viewing source invoices for merge:', mergeData);
+}
+
+// Invoice Date Override Functions
+function validateOverrideDate(date) {
+  if (!date) {
+    return 'Override date is required when enabled';
+  }
+  
+  const selectedDate = new Date(date);
+  
+  // Check if date is valid
+  if (isNaN(selectedDate.getTime())) {
+    return 'Invalid date format. Please use YYYY-MM-DD format';
+  }
+  
+  // Check date range
+  const minDate = new Date('2020-01-01');
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  
+  if (selectedDate < minDate) {
+    return 'Override date must be after 2020-01-01';
+  }
+  
+  if (selectedDate > maxDate) {
+    return `Override date must be before ${maxDate.getFullYear()}-12-31`;
+  }
+  
+  return '';
+}
+
+function formatDateForAPI(date) {
+  if (!date) return null;
+  
+  // If it's already a string in YYYY-MM-DD format, return it
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+  
+  // If it's a Date object, format it
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return null;
+  
+  return dateObj.toISOString().split('T')[0]; // YYYY-MM-DD format
+}
+
+function onOverrideToggle() {
+  if (!useInvoiceDateOverride.value) {
+    // Clear override data when disabled
+    invoiceDateOverride.value = null;
+    overrideDateError.value = '';
+  } else {
+    // Set default to current date when enabled
+    invoiceDateOverride.value = new Date();
+    validateCurrentOverrideDate();
+  }
+}
+
+function onOverrideDateSelect(date) {
+  invoiceDateOverride.value = date;
+  validateCurrentOverrideDate();
+}
+
+function validateCurrentOverrideDate() {
+  if (useInvoiceDateOverride.value) {
+    overrideDateError.value = validateOverrideDate(invoiceDateOverride.value);
+  } else {
+    overrideDateError.value = '';
+  }
+}
+
+function buildRequestOptions() {
+  const options = {};
+  
+  if (useInvoiceDateOverride.value && invoiceDateOverride.value) {
+    const formattedDate = formatDateForAPI(invoiceDateOverride.value);
+    if (formattedDate) {
+      options.invoice_date_override = formattedDate;
+    }
+  }
+  
+  return options;
+}
+
+function formatOverrideDateForDisplay() {
+  if (!invoiceDateOverride.value) return '';
+  
+  const date = new Date(invoiceDateOverride.value);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+}
+
+function getOverrideDatePrefix() {
+  if (!invoiceDateOverride.value) return '';
+  
+  const date = new Date(invoiceDateOverride.value);
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  
+  return `${months[date.getMonth()]}_${date.getFullYear()}`;
+}
+
+function showConfirmationDialog(action) {
+  pendingOverrideAction.value = action;
+  showOverrideConfirmation.value = true;
+}
+
+function cancelOverrideConfirmation() {
+  showOverrideConfirmation.value = false;
+  pendingOverrideAction.value = null;
+}
+
+async function confirmOverrideAndProceed() {
+  showOverrideConfirmation.value = false;
+  
+  if (pendingOverrideAction.value === 'generate') {
+    await executeGenerateTemplate();
+  } else if (pendingOverrideAction.value === 'merge') {
+    await executeMergeInvoices();
+  }
+  
+  pendingOverrideAction.value = null;
+}
+
+async function executeGenerateTemplate() {
+  try {
+    // Build request options
+    const options = buildRequestOptions();
+    
+    // Debug logging
+    console.log('executeGenerateTemplate - Override settings:', {
+      useInvoiceDateOverride: useInvoiceDateOverride.value,
+      invoiceDateOverride: invoiceDateOverride.value,
+      options: options
+    });
+    
+    const result = await invoiceStore.generateTemplate(
+      selectedCustomerInvoice.value.number, 
+      selectedTemplate.value.id,
+      options
+    );
+    
+    if (result) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Template Generated', 
+        detail: useInvoiceDateOverride.value 
+          ? `Template generated with override date: ${formatOverrideDateForDisplay()}`
+          : 'Template document has been generated successfully', 
+        life: 4000 
+      });
+      
+      // Refresh the file list
+      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
+      
+      // Switch to the invoice documents tab
+      activeDocumentTab.value = 'invoice';
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: generateTemplateError.value || 'Failed to generate template document', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error generating template:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to generate template document', 
+      life: 3000 
+    });
+  }
+}
+
+async function executeMergeInvoices() {
+  // This will contain the actual merge logic from mergeSelectedInvoices
+  // We'll move the core logic here and call this from both places
+  const validationErrors = validateMergeSelection();
+  if (validationErrors.length > 0) {
+    validationErrors.forEach(error => {
+      toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: error,
+        life: 4000
+      });
+    });
+    return;
+  }
+
+  // Build merge request
+  const invoiceNumbers = selectedInvoicesForMerge.value.map(invoice => invoice.number);
+  let templateOverride = null;
+  if (selectedTemplate.value.type) {
+    templateOverride = selectedTemplate.value.type.toLowerCase();
+  }
+
+  // Build base options
+  const baseOptions = {
+    format: 'both' // Generate both PDF and Excel
+  };
+  
+  // Add invoice date override if enabled
+  const overrideOptions = buildRequestOptions();
+  const options = { ...baseOptions, ...overrideOptions };
+  
+  const mergeRequest = {
+    invoice_numbers: invoiceNumbers,
+    template_id: selectedTemplate.value.id,
+    template_override: templateOverride,
+    options: options
+  };
+
+  try {
+    isMergingInvoices.value = true;
+    mergeError.value = null;
+
+    // Send request to backend
+    const result = await invoiceStore.mergeInvoices(mergeRequest);
+
+    if (result && result.success) {
+      mergeResult.value = result;
+      toast.add({
+        severity: 'success',
+        summary: 'Merge Successful',
+        detail: useInvoiceDateOverride.value 
+          ? `Created merged invoice ${result.data.merged_invoice_number} with override date: ${formatOverrideDateForDisplay()}`
+          : `Created merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`,
+        life: 5000
+      });
+
+      // Reset selections and refresh view
+      selectedInvoicesForMerge.value = [];
+      await loadCustomerInvoices();
+      activeDocumentTab.value = 'invoice';
+
+      if (result.data && result.data.merged_invoice_number) {
+        try {
+          await loadGeneratedFiles(result.data.merged_invoice_number);
+        } catch (fileError) {
+          console.warn('Could not load generated files:', fileError);
+        }
+      }
+    } else {
+      throw new Error(result?.message || 'Merge operation failed');
+    }
+  } catch (err) {
+    console.error('Error merging invoices:', err);
+    mergeError.value = err.message;
+    
+    if (err.response?.data?.duplicate_detected) {
+      duplicateDetails.value = err.response.data;
+      pendingMergeRequest.value = mergeRequest;
+      showDuplicateConfirmation.value = true;
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Merge Failed',
+        detail: err.message || 'Failed to merge invoices',
+        life: 4000
+      });
+    }
+  } finally {
+    isMergingInvoices.value = false;
+  }
+}
 </script>
 
 <template>
-    <Toast position="bottom-center" />
+    <Toast position="top-right" />
     <div class="grid">
         <div class="col-12">
             <div class="card">
                 <h5>Invoice Templates</h5>
                 
-                <div class="mb-4 p-2" style="display: flex; align-items: center;">
-                    <!-- Select taking exactly 35% width -->
-                    <div style="width: 35%;">
-                        <Select 
-                            v-model="selectedCustomer" 
-                            :options="customerStore.customers" 
-                            optionLabel="name" 
-                            placeholder="Select Customer"
-                            filter
-                            :disabled="isLoadingCustomers"
-                            @change="onCustomerChange"
-                            class="w-full" />
-                    </div>
-                    
-                    <!-- Fixed spacing between Select and toggle -->
-                    <div style="margin-left: 2rem; display: flex; align-items: center;">
-                        <label style="margin-right: 0.5rem;">Full list / Only active customers</label>
-                        <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
-                    </div>
-                </div>
+                <!-- Customer Selection Section -->
+                <CustomerSelectionSection
+                    v-model:selectedCustomer="selectedCustomer"
+                    v-model:customerListType="customerListType"
+                    :customers="customerStore.customers"
+                    :isLoadingCustomers="isLoadingCustomers"
+                    @customer-change="onCustomerChange"
+                    @customer-list-type-change="onCustomerListTypeChange"
+                />
                 
-                <!-- Invoice Table -->
-                <div class="card p-4 mb-4">
-                    <DataTable v-model:selection="selectedCustomerInvoice" :value="customerInvoices || []" dataKey="id"
-                             :paginator="true" :rows="lazyParams.rows" :totalRecords="totalInvoiceRecords"
-                             :loading="isLoadingCustomerInvoices" :rowHover="true" stripedRows
-                             :metaKeySelection="false" selectionMode="single"
-                             filterDisplay="menu" v-model:filters="filters"
-                             :globalFilterFields="['number', 'customerName', 'dueDate', 'total', 'remainingAmount', 'status']"
-                             @page="onPage" @row-select="onCustomerInvoiceSelect" @sort="onSort"
-                             :rowsPerPageOptions="rowsPerPageOptions" @rows-change="onRowsPerPageChange"
-                             :rowClass="getRowClass"
-                             tableStyle="min-width: 50rem">
-                        <template #header>
-                            <div class="flex justify-between">
-                                <Button type="button" icon="pi pi-filter-slash" label="Clear" outlined @click="clearFilter()" />
-                                <IconField>
-                                    <InputIcon>
-                                        <i class="pi pi-search" />
-                                    </InputIcon>
-                                    <InputText v-model="filters['global'].value" placeholder="Search Invoice" />
-                                </IconField>
-                            </div>
-                        </template>
-                        <template #empty>
-                            <div class="flex flex-column align-items-center p-5">
-                                <i class="pi pi-file text-5xl text-primary mb-3"></i>
-                                <span v-if="!selectedCustomer" class="text-lg">Please select a customer above to view invoices</span>
-                                <span v-else class="text-lg">No invoices found for the selected customer</span>
-                            </div>
-                        </template>
-                        <template #loading>Loading customer invoices...</template>
-                        
-                        <Column field="customerName" header="Customer" style="min-width: 10rem" sortable>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="number" header="Invoice #" style="min-width: 8rem" sortable>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by number" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="dueDate" header="Due Date" style="min-width: 10rem" sortable>
-                            <template #body="slotProps">
-                                <span :class="formatDueDate(slotProps.data.dueDate, slotProps.data.status).class">
-                                    {{ formatDueDate(slotProps.data.dueDate, slotProps.data.status).message }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <DatePicker v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="mm/dd/yyyy" />
-                            </template>
-                        </Column>
-                        <Column field="total" header="Invoice Total" dataType="numeric" style="min-width: 10rem" sortable
-                               :showFilterMatchModes="true" 
-                               :filterMatchModeOptions="[
-                                 {label: 'Equals', value: FilterMatchMode.EQUALS},
-                                 {label: 'Less Than', value: FilterMatchMode.LESS_THAN},
-                                 {label: 'Greater Than', value: FilterMatchMode.GREATER_THAN},
-                                 {label: 'Less Than or Equal To', value: FilterMatchMode.LESS_THAN_OR_EQUAL_TO},
-                                 {label: 'Greater Than or Equal To', value: FilterMatchMode.GREATER_THAN_OR_EQUAL_TO}
-                               ]">
-                            <template #body="slotProps">
-                                {{ formatCurrency(slotProps.data.total) }}
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" mode="currency" currency="USD" locale="en-US" class="p-column-filter" placeholder="Search by amount" />
-                            </template>
-                        </Column>
-                        <Column field="remainingAmount" header="Amount Due" dataType="numeric" style="min-width: 10rem" sortable
-                               :showFilterMatchModes="true" 
-                               :filterMatchModeOptions="[
-                                 {label: 'Equals', value: FilterMatchMode.EQUALS},
-                                 {label: 'Less Than', value: FilterMatchMode.LESS_THAN},
-                                 {label: 'Greater Than', value: FilterMatchMode.GREATER_THAN},
-                                 {label: 'Less Than or Equal To', value: FilterMatchMode.LESS_THAN_OR_EQUAL_TO},
-                                 {label: 'Greater Than or Equal To', value: FilterMatchMode.GREATER_THAN_OR_EQUAL_TO}
-                               ]">
-                            <template #body="slotProps">
-                                <span :class="{'text-red-500 font-medium': slotProps.data.remainingAmount > 0}">
-                                    {{ formatCurrency(slotProps.data.remainingAmount) }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" mode="currency" currency="USD" locale="en-US" class="p-column-filter" placeholder="Search by amount" />
-                            </template>
-                        </Column>
-                        <Column field="status" header="Status" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <Tag :value="slotProps.data.status" :severity="slotProps.data.status === 'open' ? 'info' : (slotProps.data.status === 'paid' ? 'success' : 'warning')" />
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <Select v-model="filterModel.value" :options="['open', 'unpaid', 'paid']" placeholder="Select Status" class="p-column-filter" showClear>
-                                    <template #option="slotProps">
-                                        <Tag :value="slotProps.option" 
-                                             :severity="slotProps.option === 'open' ? 'info' : (slotProps.option === 'paid' ? 'success' : 'warning')" />
-                                    </template>
-                                </Select>
-                            </template>
-                        </Column>
-                    </DataTable>
-                </div>
+                <!-- Invoice DataTable Section -->
+                <InvoiceDataTableSection
+                    :tableSelection="tableSelection"
+                    :customerInvoices="customerInvoices"
+                    :isLoadingCustomerInvoices="isLoadingCustomerInvoices"
+                    :isMergeMode="isMergeMode"
+                    :filters="filters"
+                    :selectedCustomer="selectedCustomer"
+                    :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                    :mergeSelectionSummary="mergeSelectionSummary"
+                    :getDueDateInfo="getDueDateInfo"
+                    :getRemainingAmountClass="getRemainingAmountClass"
+                    :getRowClass="getRowClass"
+                    :formatCurrency="formatCurrency"
+                    :FilterMatchMode="FilterMatchMode"
+                    @update:tableSelection="tableSelection = $event"
+                    @update:filters="filters = $event"
+                    @update:isMergeMode="isMergeMode = $event; toggleMergeMode()"
+                    @row-select="onCustomerInvoiceSelect"
+                    @row-unselect="onCustomerInvoiceSelect"
+                    @sort="onSort"
+                    @clear-filter="clearFilter"
+                    @refresh-invoices="loadCustomerInvoices"
+                    @load-merge-history="loadMergeHistory"
+                    @open-invoice-drawer="openInvoiceDrawer"
+                />
                 
                 <!-- Template and Files Section -->
                 <div class="grid grid-cols-12 gap-4">
-                    <!-- Available Templates Section -->
+                    <!-- Template Selection Section -->
                     <div class="col-span-12 md:col-span-5 xl:col-span-4">
-                        <div class="card">
-                            <div class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Available Templates</div>
-                            
-                            <!-- Loading templates message -->
-                            <div v-if="isLoadingTemplates" class="flex justify-center items-center p-4">
-                                <ProgressSpinner style="width: 50px; height: 50px" />
-                                <span class="ml-3">Loading templates...</span>
-                            </div>
-                            
-                            <!-- Error loading templates -->
-                            <div v-else-if="templatesError" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-                                <div class="text-lg text-yellow-500">{{ templatesError }}</div>
-                            </div>
-                            
-                            <!-- No templates available message -->
-                            <div v-else-if="!selectedCustomer" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-users text-4xl text-primary mb-3"></i>
-                                <div class="text-lg">Select a customer to see available templates</div>
-                            </div>
-                            
-                            <!-- No templates for selected customer -->
-                            <div v-else-if="availableTemplates.length === 0" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
-                                <div class="text-lg">No templates available for this customer</div>
-                                <div v-if="selectedCustomerInvoice" class="text-sm text-surface-600 dark:text-surface-400 mt-2">
-                                    Try selecting a different invoice or customer
-                                </div>
-                            </div>
-                            
-                            <!-- Templates list -->
-                            <div v-else>
-                                <ul class="list-none p-0 m-0">
-                                    <li v-for="template in availableTemplates" :key="template.id" 
-                                        class="p-3 mb-2 flex items-center justify-between cursor-pointer border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all hover:shadow hover:bg-surface-50 dark:hover:bg-surface-800"
-                                        :class="{ 'bg-surface-50 dark:bg-surface-800 border-primary-300 dark:border-primary-700': selectedTemplate?.id === template.id }"
-                                        @click="selectedTemplate = template">
-                                        <div class="flex items-center">
-                                            <i class="pi pi-file-pdf text-2xl mr-3 text-primary-500" v-if="template.output_format === 'pdf'"></i>
-                                            <i class="pi pi-file-excel text-2xl mr-3 text-green-500" v-else-if="template.output_format === 'excel'"></i>
-                                            <i class="pi pi-file text-2xl mr-3 text-blue-500" v-else></i>
-                                            <div>
-                                                <div class="text-surface-900 dark:text-surface-0 font-medium">{{ template.name }}</div>
-                                                <div class="text-surface-600 dark:text-surface-400 text-sm">{{ template.description || 'No description' }}</div>
-                                            </div>
-                                        </div>
-                                        <Tag v-if="template.type" :severity="getTemplateTypeBadge(template.type).severity">
-                                            {{ getTemplateTypeBadge(template.type).label }}
-                                        </Tag>
-                                    </li>
-                                </ul>
-                                
-                                <!-- Generate template button -->
-                                <div class="mt-4">
-                                    <Button 
-                                        label="Generate Template" 
-                                        icon="pi pi-file-export" 
-                                        class="w-full" 
-                                        :disabled="!selectedTemplate || !selectedCustomerInvoice || isGeneratingTemplate" 
-                                        :loading="isGeneratingTemplate"
-                                        @click="generateTemplateDocument" />
-                                </div>
-                            </div>
-                        </div>
+                        <TemplateSelectionSection
+                            :isLoadingTemplates="isLoadingTemplates"
+                            :templatesError="templatesError"
+                            :selectedCustomer="selectedCustomer"
+                            :availableTemplates="availableTemplates"
+                            :selectedTemplate="selectedTemplate"
+                            :selectedCustomerInvoice="selectedCustomerInvoice"
+                            :isMergeMode="isMergeMode"
+                            :isGeneratingTemplate="isGeneratingTemplate"
+                            :mergeButtonLabel="mergeButtonLabel"
+                            :canMerge="canMerge"
+                            :isMergingInvoices="isMergingInvoices"
+                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                            :getTemplateTypeBadge="getTemplateTypeBadge"
+                            v-model:useInvoiceDateOverride="useInvoiceDateOverride"
+                            v-model:invoiceDateOverride="invoiceDateOverride"
+                            :overrideDateError="overrideDateError"
+                            @template-select="selectedTemplate = $event"
+                            @generate-template="generateTemplateDocument"
+                            @merge-invoices="mergeSelectedInvoices"
+                            @override-toggle="onOverrideToggle"
+                            @date-select="onOverrideDateSelect"
+                        />
                     </div>
                     
-                    <!-- Generated Files Section -->
+                    <!-- Document Library Section -->
                     <div class="col-span-12 md:col-span-7 xl:col-span-8">
-                        <div class="card">
-                            <div class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Document Library</div>
-                            
-                            <!-- Document Type Tabs -->
-                            <div class="flex justify-between items-center mb-4 border-b border-surface-200 dark:border-surface-700">
-                                <div class="flex">
-                                    <div class="pb-3 px-4 cursor-pointer font-medium border-b-2 transition-colors duration-200"
-                                         :class="[activeDocumentTab === 'customer' ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400']"
-                                         @click="activeDocumentTab = 'customer'">
-                                        Customer Documents
-                                    </div>
-                                    <div class="pb-3 px-4 font-medium border-b-2 transition-colors duration-200"
-                                         :class="[
-                                            activeDocumentTab === 'invoice' ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400',
-                                            !selectedCustomerInvoice ? 'text-surface-400 cursor-not-allowed' : 'cursor-pointer'
-                                         ]"
-                                         @click="selectedCustomerInvoice && (activeDocumentTab = 'invoice')">
-                                        Invoice Documents
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Loading files message -->
-                            <div v-if="isLoadingGeneratedFiles || isLoadingCustomerDocuments" class="flex justify-center items-center p-4">
-                                <ProgressSpinner style="width: 50px; height: 50px" />
-                                <span class="ml-3">Loading documents...</span>
-                            </div>
-                            
-                            <!-- Error loading files -->
-                            <div v-else-if="generatedFilesError || customerDocumentsError" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-                                <div class="text-lg text-yellow-500">{{ generatedFilesError || customerDocumentsError }}</div>
-                            </div>
-                            
-                            <!-- No customer selected message -->
-                            <div v-else-if="!selectedCustomer" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-users text-4xl text-primary mb-3"></i>
-                                <div class="text-lg">Select a customer to see documents</div>
-                            </div>
-                            
-                            <!-- Invoice Documents View -->
-                            <div v-else-if="activeDocumentTab === 'invoice'">
-                                <!-- No files generated message -->
-                                <div v-if="generatedFiles.length === 0" class="p-4 flex flex-col items-center justify-center">
-                                    <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
-                                    <div class="text-lg">No documents have been generated for this invoice</div>
-                                    <div class="text-sm text-surface-600 dark:text-surface-400 mt-2">
-                                        Select a template and click "Generate Template" to create documents
-                                    </div>
-                                </div>
-                                
-                                <!-- Files grid for invoice documents -->
-                                <div v-else>
-                                    <div class="mb-3 text-lg font-medium">
-                                        Invoice #{{ selectedCustomerInvoice.number }} Documents
-                                    </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                                        <div v-for="(file, index) in generatedFiles" :key="file?.id || index" 
-                                             class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
-                                            <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon and background, color-coded by file type -->
-                                                <div class="py-2 px-3" 
-                                                     :class="[
-                                                        file.fileType === 'excel' || (file.originalData?.type === 'excel') ? 
-                                                            'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800' : 
-                                                        file.fileType === 'pdf' || (file.originalData?.type === 'pdf') ? 
-                                                            'bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800' :
-                                                            'bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700'
-                                                     ]">
-                                                    <div class="flex items-center">
-                                                        <i :class="[getFileIcon(file), 'text-xl mr-2']"></i>
-                                                        <span class="font-medium truncate flex-1 text-sm">
-                                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- File metadata -->
-                                                <div class="p-3 text-sm text-surface-600 dark:text-surface-400 flex-1">
-                                                    <div class="mb-2 flex items-center">
-                                                        <i class="pi pi-calendar text-sm mr-2"></i>
-                                                        <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
-                                                    </div>
-                                                    <div v-if="file.fileCategory" class="mb-2 flex items-center">
-                                                        <i class="pi pi-file text-sm mr-2"></i>
-                                                        <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
-                                                    </div>
-                                                    <div v-if="file.template_name" class="flex items-center truncate">
-                                                        <i class="pi pi-tag text-sm mr-2"></i>
-                                                        <span>{{ file.template_name }}</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- File actions -->
-                                                <div class="flex border-t border-surface-200 dark:border-surface-700">
-                                                    <Button icon="pi pi-eye" label="Preview" text class="flex-1 justify-center border-right" @click="previewFile(file)" />
-                                                    <div class="border-l border-surface-200 dark:border-surface-700"></div>
-                                                    <Button icon="pi pi-download" label="Download" text class="flex-1 justify-center" @click="downloadFile(file)" />
-                                                </div>
-                                            </div>
-                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400 p-6">
-                                                <i class="pi pi-file-excel text-3xl mb-2"></i>
-                                                <span>Invalid file data</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Customer Documents View -->
-                            <div v-else-if="activeDocumentTab === 'customer'">
-                                <!-- No customer documents message -->
-                                <div v-if="customerDocuments.length === 0" class="p-4 flex flex-col items-center justify-center">
-                                    <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
-                                    <div class="text-lg">No documents found for this customer</div>
-                                    <div class="text-sm text-surface-600 dark:text-surface-400 mt-2">
-                                        Select an invoice and generate templates to create documents
-                                    </div>
-                                </div>
-                                
-                                <!-- Files grid for customer documents -->
-                                <div v-else>
-                                    <div class="mb-3 text-lg font-medium">
-                                        {{ selectedCustomer.name }} Documents
-                                    </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                                        <div v-for="(file, index) in customerDocuments" :key="file?.id || index" 
-                                             class="border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden">
-                                            <div v-if="file" class="flex flex-col h-full">
-                                                <!-- File header with icon and background, color-coded by file type -->
-                                                <div class="py-2 px-3" 
-                                                     :class="[
-                                                        file.fileType === 'excel' || (file.originalData?.type === 'excel') ? 
-                                                            'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800' : 
-                                                        file.fileType === 'pdf' || (file.originalData?.type === 'pdf') ? 
-                                                            'bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800' :
-                                                            'bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700'
-                                                     ]">
-                                                    <div class="flex items-center">
-                                                        <i :class="[getFileIcon(file), 'text-xl mr-2']"></i>
-                                                        <span class="font-medium truncate flex-1 text-sm">
-                                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- File metadata -->
-                                                <div class="p-3 text-sm text-surface-600 dark:text-surface-400 flex-1">
-                                                    <div class="mb-2 flex items-center">
-                                                        <i class="pi pi-calendar text-sm mr-2"></i>
-                                                        <span>{{ file.created_at ? formatDate(file.created_at) : 'No date' }}</span>
-                                                    </div>
-                                                    <div class="mb-2 flex items-center" v-if="file.invoice_number">
-                                                        <i class="pi pi-file-invoice text-sm mr-2"></i>
-                                                        <span>Invoice #{{ file.invoice_number }}</span>
-                                                    </div>
-                                                    <div v-if="file.fileCategory" class="mb-2 flex items-center">
-                                                        <i class="pi pi-file text-sm mr-2"></i>
-                                                        <span class="capitalize">{{ file.fileCategory }} {{ file.fileType?.toUpperCase() }}</span>
-                                                    </div>
-                                                    <div v-if="file.template_name" class="flex items-center truncate">
-                                                        <i class="pi pi-tag text-sm mr-2"></i>
-                                                        <span>{{ file.template_name }}</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- File actions -->
-                                                <div class="flex border-t border-surface-200 dark:border-surface-700">
-                                                    <Button icon="pi pi-eye" label="Preview" text class="flex-1 justify-center border-right" @click="previewFile(file)" />
-                                                    <div class="border-l border-surface-200 dark:border-surface-700"></div>
-                                                    <Button icon="pi pi-download" label="Download" text class="flex-1 justify-center" @click="downloadFile(file)" />
-                                                </div>
-                                            </div>
-                                            <div v-else class="flex flex-col h-full justify-center items-center text-surface-400 p-6">
-                                                <i class="pi pi-file-excel text-3xl mb-2"></i>
-                                                <span>Invalid file data</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <DocumentLibrarySection
+                            :activeDocumentTab="activeDocumentTab"
+                            :isLoadingGeneratedFiles="isLoadingGeneratedFiles"
+                            :isLoadingCustomerDocuments="isLoadingCustomerDocuments"
+                            :generatedFilesError="generatedFilesError"
+                            :customerDocumentsError="customerDocumentsError"
+                            :selectedCustomer="selectedCustomer"
+                            :selectedCustomerInvoice="selectedCustomerInvoice"
+                            :generatedFiles="generatedFiles"
+                            :customerDocuments="customerDocuments"
+                            :getFileIcon="getFileIcon"
+                            :formatDate="formatDate"
+                            @update:activeDocumentTab="activeDocumentTab = $event"
+                            @preview-file="previewFile"
+                            @download-file="downloadFile"
+                        />
                     </div>
                 </div>
             </div>
@@ -1559,76 +2377,609 @@ function onIframeError(event) {
     </div>
     
     <!-- File Preview Dialog -->
-    <Dialog v-model:visible="showFilePreview" :style="{ width: '90vw', height: '80vh' }" modal header="File Preview" :closable="true">
-        <div v-if="selectedFile" class="w-full h-full flex flex-col">
-            <div class="flex justify-between items-center mb-3">
-                <div class="font-medium text-lg flex items-center">
-                    <i :class="[getFileIcon(selectedFile), 'mr-2']"></i>
-                    {{ selectedFile.filename || selectedFile.fullPath?.split('/').pop() || 'Unnamed file' }}
-                    <span class="ml-3 text-sm text-400">{{ formatDate(selectedFile.created_at) }}</span>
+    <FilePreviewDialog
+        :showFilePreview="showFilePreview"
+        :selectedFile="selectedFile"
+        :previewError="previewError"
+        :previewErrorMessage="previewErrorMessage"
+        :previewUrl="previewUrl"
+        :getFileIcon="getFileIcon"
+        :formatDate="formatDate"
+        @update:showFilePreview="showFilePreview = $event"
+        @download-file="downloadFile"
+        @iframe-load="onIframeLoad"
+        @iframe-error="onIframeError"
+    />
+
+    <!-- Invoice Detail Drawer -->
+    <InvoiceDetailDrawer
+        :showInvoiceDrawer="showInvoiceDrawer"
+        :drawerSelectedInvoice="drawerSelectedInvoice"
+        :drawerIsInteractive="drawerIsInteractive"
+        :drawerSelectedGroupBy="drawerSelectedGroupBy"
+        :groupByOptions="groupByOptions"
+        :drawerProducts="drawerProducts"
+        :drawerIsRegrouping="drawerIsRegrouping"
+        :drawerGroupedProducts="drawerGroupedProducts"
+        :formatDate="formatDate"
+        :formatCurrency="formatCurrency"
+        @update:showInvoiceDrawer="showInvoiceDrawer = $event"
+        @update:drawerIsInteractive="drawerIsInteractive = $event"
+        @update:drawerSelectedGroupBy="drawerSelectedGroupBy = $event"
+        @drawer-interactive-toggle="onDrawerInteractiveToggle"
+    />
+    
+    <!-- Merge History Dialog -->
+    <MergeHistoryDialog
+        :showMergeHistory="showMergeHistory"
+        :isLoadingMergeHistory="isLoadingMergeHistory"
+        :mergeHistoryData="mergeHistoryData"
+        :selectedCustomer="selectedCustomer"
+        :formatCurrency="formatCurrency"
+        :formatDate="formatDate"
+        @update:showMergeHistory="showMergeHistory = $event"
+        @view-merge-details="viewMergeDetails"
+        @download-merged-files="downloadMergedFiles"
+    />
+    
+    <!-- Duplicate Merge Confirmation Dialog -->
+    <DuplicateConfirmationDialog
+        :showDuplicateConfirmation="showDuplicateConfirmation"
+        :duplicateDetails="duplicateDetails"
+        :selectedInvoicesForMerge="selectedInvoicesForMerge"
+        @update:showDuplicateConfirmation="showDuplicateConfirmation = $event"
+        @handle-duplicate-confirmation="handleDuplicateConfirmation"
+    />
+
+    <!-- Enhanced Document Management Section -->
+    <div class="col-span-12 md:col-span-7 xl:col-span-8">
+        <div class="card">
+            <!-- Document Library Header with Actions -->
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="pi pi-folder-open text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0">Document Library</h2>
+                        <p class="text-sm text-surface-600 dark:text-surface-400">Manage and organize your invoice documents</p>
+                    </div>
                 </div>
-                <Button icon="pi pi-download" text @click="downloadFile(selectedFile)" />
+                
+                <!-- Document Actions Toolbar -->
+                <div class="flex items-center gap-2">
+                    <Button v-if="selectedDocuments.length > 0" 
+                            icon="pi pi-download" 
+                            :label="`Download ${selectedDocuments.length} files`"
+                            size="small" 
+                            severity="success"
+                            @click="downloadSelectedFiles" />
+                    <Button v-if="selectedDocuments.length > 0" 
+                            icon="pi pi-times" 
+                            label="Clear Selection"
+                            size="small" 
+                            text
+                            @click="clearDocumentSelection" />
+                    <Button icon="pi pi-refresh" 
+                            label="Refresh"
+                            size="small" 
+                            outlined
+                            @click="refreshDocuments" 
+                            :loading="isLoadingGeneratedFiles || isLoadingCustomerDocuments" />
+                </div>
             </div>
             
-            <!-- Error display if preview fails -->
-            <Message v-if="previewError" severity="error" :closable="false" class="mb-4 w-full">
-                <div class="flex flex-col">
-                    <span class="font-bold">Failed to load preview</span>
-                    <span>{{ previewErrorMessage }}</span>
-                    <div class="mt-2">
-                        <Button label="Try downloading instead" icon="pi pi-download" 
-                                @click="downloadFile(selectedFile)" class="p-button-sm" />
-                    </div>
+            <!-- Enhanced Document Type Navigation -->
+            <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-1 mb-6">
+                <div class="flex">
+                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
+                            :class="[
+                                activeDocumentTab === 'customer' 
+                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
+                                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100'
+                            ]"
+                            @click="switchDocumentTab('customer')">
+                        <i class="pi pi-users text-sm"></i>
+                        <span>Customer Documents</span>
+                        <Tag v-if="customerDocuments.length > 0" 
+                             :value="customerDocuments.length.toString()" 
+                             severity="info" 
+                             class="ml-1" />
+                    </button>
+                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
+                            :class="[
+                                activeDocumentTab === 'invoice' 
+                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
+                                    : selectedCustomerInvoice 
+                                        ? 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100' 
+                                        : 'text-surface-400 cursor-not-allowed'
+                            ]"
+                            @click="selectedCustomerInvoice && switchDocumentTab('invoice')"
+                            :disabled="!selectedCustomerInvoice">
+                        <i class="pi pi-file-invoice text-sm"></i>
+                        <span>Invoice Documents</span>
+                        <Tag v-if="generatedFiles.length > 0" 
+                             :value="generatedFiles.length.toString()" 
+                             severity="success" 
+                             class="ml-1" />
+                    </button>
+                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
+                            :class="[
+                                activeDocumentTab === 'merged' 
+                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
+                                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100'
+                            ]"
+                            @click="switchDocumentTab('merged')">
+                        <i class="pi pi-objects-column text-sm"></i>
+                        <span>Merged Invoices</span>
+                        <Tag v-if="mergeHistoryData.length > 0" 
+                             :value="mergeHistoryData.length.toString()" 
+                             severity="warning" 
+                             class="ml-1" />
+                    </button>
                 </div>
-            </Message>
+            </div>
             
-            <div class="flex-1 overflow-hidden">
-                <!-- PDF Preview iframe - only for PDFs -->
-                <div v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
-                     class="w-full h-full relative" style="height: calc(70vh - 6rem);">
-                    <div v-if="!previewError" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800 z-0">
-                        <ProgressSpinner class="w-12 h-12" />
-                        <span class="ml-2">Loading preview...</span>
+            <!-- Document Search and Filter Bar -->
+            <div v-if="hasAnyDocuments" class="flex flex-col sm:flex-row gap-3 mb-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg">
+                <div class="flex-1">
+                    <IconField>
+                        <InputIcon>
+                            <i class="pi pi-search" />
+                        </InputIcon>
+                        <InputText v-model="documentSearchTerm" 
+                                   placeholder="Search documents by name, type, or invoice..." 
+                                   class="w-full" 
+                                   size="small" />
+                    </IconField>
+                </div>
+                <div class="flex gap-2">
+                    <Select v-model="documentTypeFilter" 
+                            :options="documentTypeOptions" 
+                            optionLabel="label" 
+                            optionValue="value"
+                            placeholder="All Types" 
+                            class="w-32" 
+                            size="small" 
+                            showClear />
+                    <Select v-model="documentSortBy" 
+                            :options="documentSortOptions" 
+                            optionLabel="label" 
+                            optionValue="value"
+                            placeholder="Sort by" 
+                            class="w-32" 
+                            size="small" />
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div v-if="isLoadingGeneratedFiles || isLoadingCustomerDocuments" 
+                 class="flex justify-center items-center p-12">
+                <div class="text-center">
+                    <ProgressSpinner class="w-12 h-12 mb-4" />
+                    <div class="font-medium text-surface-600 dark:text-surface-400">Loading documents...</div>
+                    <div class="text-sm text-surface-500 dark:text-surface-500 mt-1">Please wait while we fetch your files</div>
+                </div>
+            </div>
+            
+            <!-- Error State -->
+            <div v-else-if="generatedFilesError || customerDocumentsError" 
+                 class="flex flex-col items-center justify-center p-12">
+                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+                    <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
+                </div>
+                <div class="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error Loading Documents</div>
+                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
+                    {{ generatedFilesError || customerDocumentsError }}
+                </div>
+                <Button label="Try Again" 
+                        icon="pi pi-refresh" 
+                        class="mt-4" 
+                        size="small" 
+                        @click="refreshDocuments" />
+            </div>
+            
+            <!-- No Customer Selected -->
+            <div v-else-if="!selectedCustomer" 
+                 class="flex flex-col items-center justify-center p-12">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+                    <i class="pi pi-users text-blue-500 text-2xl"></i>
+                </div>
+                <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select a Customer</div>
+                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
+                    Choose a customer from the dropdown above to view their documents and generate new templates
+                </div>
+            </div>
+            
+            <!-- Document Content Views -->
+            <div v-else>
+                <!-- Customer Documents View -->
+                <div v-if="activeDocumentTab === 'customer'">
+                    <div v-if="filteredCustomerDocuments.length === 0" 
+                         class="flex flex-col items-center justify-center p-12">
+                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
+                            <i class="pi pi-folder-open text-surface-400 text-2xl"></i>
+                        </div>
+                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Customer Documents</div>
+                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
+                            {{ selectedCustomer.name }} doesn't have any documents yet. Generate templates from invoices to create documents.
+                        </div>
                     </div>
                     
-                    <iframe 
-                        v-if="!previewError"
-                        :src="previewUrl" 
-                        class="w-full h-full border-0 relative z-10"
-                        title="PDF Preview"
-                        @load="onIframeLoad"
-                        @error="onIframeError"
-                        ref="previewIframe"
-                        style="height: calc(70vh - 6rem) !important; min-height: 400px !important;"
-                    ></iframe>
-                    
-                    <!-- Fallback if preview fails -->
-                    <div v-if="previewError" class="flex flex-col items-center justify-center h-full">
-                        <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
-                        <p class="text-xl mb-4">Preview failed to load</p>
-                        <p class="text-sm text-surface-600 dark:text-surface-400 mb-4 max-w-lg text-center">
-                            The server returned an error while trying to preview this file. 
-                            You can try downloading it instead.
-                        </p>
-                        <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
+                    <div v-else>
+                        <!-- Customer Documents Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                                    <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">{{ selectedCustomer.name }}</h3>
+                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredCustomerDocuments.length }} documents</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <Button v-if="filteredCustomerDocuments.length > 0" 
+                                        icon="pi pi-download" 
+                                        label="Download All"
+                                        size="small" 
+                                        outlined
+                                        @click="downloadAllCustomerDocuments" />
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Documents Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div v-for="(file, index) in filteredCustomerDocuments" 
+                                 :key="file?.id || index" 
+                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600"
+                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
+                                
+                                <!-- Document Selection Checkbox -->
+                                <div class="absolute top-3 left-3 z-10">
+                                    <Checkbox v-model="selectedDocuments" 
+                                              :value="file.id" 
+                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
+                                </div>
+                                
+                                <!-- File Type Header -->
+                                <div class="h-20 flex items-center justify-center"
+                                     :class="getFileTypeHeaderClass(file)">
+                                    <i :class="[getFileIcon(file), 'text-3xl text-white']"></i>
+                                </div>
+                                
+                                <!-- Document Info -->
+                                <div class="p-4">
+                                    <div class="mb-3">
+                                        <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm mb-1 truncate" 
+                                            :title="file.filename || 'Unnamed file'">
+                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                        </h4>
+                                        <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+                                            <span>{{ getFileTypeLabel(file) }}</span>
+                                            <span>•</span>
+                                            <span>{{ formatFileDate(file.created_at) }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Document Metadata -->
+                                    <div class="space-y-2 mb-4">
+                                        <div v-if="file.invoice_number" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-file-invoice text-primary-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400">Invoice #{{ file.invoice_number }}</span>
+                                        </div>
+                                        <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-tag text-orange-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
+                                        </div>
+                                        <div v-if="file.generated_by" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-user text-green-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400">{{ file.generated_by }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Document Actions -->
+                                    <div class="flex gap-1">
+                                        <Button icon="pi pi-eye" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Preview'"
+                                                @click="previewFile(file)" />
+                                        <Button icon="pi pi-download" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Download'"
+                                                @click="downloadFile(file)" />
+                                        <Button icon="pi pi-share-alt" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Share'"
+                                                @click="shareFile(file)" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Excel Preview - only for Excel files -->
-                <div v-else-if="selectedFile && (selectedFile.fileType === 'excel' || selectedFile.originalData?.type === 'excel')"
-                     class="w-full h-full">
-                    <ExcelPreview :file="selectedFile" :fileUrl="previewUrl" />
+                <!-- Invoice Documents View -->
+                <div v-else-if="activeDocumentTab === 'invoice'">
+                    <div v-if="!selectedCustomerInvoice" 
+                         class="flex flex-col items-center justify-center p-12">
+                        <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="pi pi-file-invoice text-orange-500 text-2xl"></i>
+                        </div>
+                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select an Invoice</div>
+                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
+                            Choose an invoice from the table above to view its generated documents
+                        </div>
+                    </div>
+                    
+                    <div v-else-if="filteredInvoiceDocuments.length === 0" 
+                         class="flex flex-col items-center justify-center p-12">
+                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
+                            <i class="pi pi-file-plus text-surface-400 text-2xl"></i>
+                        </div>
+                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Documents Generated</div>
+                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
+                            No documents have been generated for invoice #{{ selectedCustomerInvoice.number }}. Use the template selection section above to generate documents.
+                        </div>
+                    </div>
+                    
+                    <div v-else>
+                        <!-- Invoice Documents Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                                    <i class="pi pi-file-invoice text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Invoice #{{ selectedCustomerInvoice.number }}</h3>
+                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredInvoiceDocuments.length }} documents</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <Button v-if="filteredInvoiceDocuments.length > 0" 
+                                        icon="pi pi-download" 
+                                        label="Download All"
+                                        size="small" 
+                                        outlined
+                                        @click="downloadAllInvoiceDocuments" />
+                            </div>
+                        </div>
+                        
+                        <!-- Invoice Documents Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div v-for="(file, index) in filteredInvoiceDocuments" 
+                                 :key="file?.id || index" 
+                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600"
+                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
+                                
+                                <!-- Document Selection Checkbox -->
+                                <div class="absolute top-3 left-3 z-10">
+                                    <Checkbox v-model="selectedDocuments" 
+                                              :value="file.id" 
+                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
+                                </div>
+                                
+                                <!-- File Type Header -->
+                                <div class="h-20 flex items-center justify-center"
+                                     :class="getFileTypeHeaderClass(file)">
+                                    <i :class="[getFileIcon(file), 'text-3xl text-white']"></i>
+                                </div>
+                                
+                                <!-- Document Info -->
+                                <div class="p-4">
+                                    <div class="mb-3">
+                                        <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm mb-1 truncate" 
+                                            :title="file.filename || 'Unnamed file'">
+                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
+                                        </h4>
+                                        <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+                                            <span>{{ getFileTypeLabel(file) }}</span>
+                                            <span>•</span>
+                                            <span>{{ formatFileDate(file.created_at) }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Document Metadata -->
+                                    <div class="space-y-2 mb-4">
+                                        <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-tag text-orange-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
+                                        </div>
+                                        <div v-if="file.fileCategory" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-bookmark text-blue-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400 capitalize">{{ file.fileCategory }}</span>
+                                        </div>
+                                        <div v-if="file.generated_by" class="flex items-center gap-2 text-xs">
+                                            <i class="pi pi-user text-green-500"></i>
+                                            <span class="text-surface-600 dark:text-surface-400">{{ file.generated_by }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Document Actions -->
+                                    <div class="flex gap-1">
+                                        <Button icon="pi pi-eye" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Preview'"
+                                                @click="previewFile(file)" />
+                                        <Button icon="pi pi-download" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Download'"
+                                                @click="downloadFile(file)" />
+                                        <Button icon="pi pi-share-alt" 
+                                                size="small" 
+                                                text 
+                                                class="flex-1"
+                                                v-tooltip.top="'Share'"
+                                                @click="shareFile(file)" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- For other file types, show a download prompt -->
-                <div v-else class="flex flex-col items-center justify-center h-full">
-                    <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
-                    <p class="text-xl mb-4">This file type cannot be previewed directly</p>
-                    <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
+                <!-- Merged Invoices View -->
+                <div v-else-if="activeDocumentTab === 'merged'">
+                    <div v-if="filteredMergedDocuments.length === 0" 
+                         class="flex flex-col items-center justify-center p-12">
+                        <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="pi pi-objects-column text-purple-500 text-2xl"></i>
+                        </div>
+                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Merged Invoices</div>
+                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md mb-4">
+                            {{ selectedCustomer?.name || 'This customer' }} hasn't created any merged invoices yet. Use the merge mode to combine multiple invoices.
+                        </div>
+                        <Button label="Enable Merge Mode" 
+                                icon="pi pi-objects-column" 
+                                @click="isMergeMode = true" 
+                                outlined />
+                    </div>
+                    
+                    <div v-else>
+                        <!-- Merged Documents Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                                    <i class="pi pi-objects-column text-purple-600 dark:text-purple-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Merged Invoices</h3>
+                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredMergedDocuments.length }} merged documents</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Merged Documents Table -->
+                        <DataTable :value="filteredMergedDocuments" 
+                                   responsiveLayout="scroll" 
+                                   :paginator="true" 
+                                   :rows="10"
+                                   class="modern-table">
+                            <Column field="merged_invoice" header="Merged Invoice" sortable>
+                                <template #body="slotProps">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                                            <i class="pi pi-objects-column text-purple-600 dark:text-purple-400 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.merged_invoice }}</div>
+                                            <div class="text-xs text-surface-500 dark:text-surface-400">Merged Invoice</div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </Column>
+                            <Column field="original_count" header="Source Invoices" sortable>
+                                <template #body="slotProps">
+                                    <Tag :value="`${slotProps.data.original_count} invoices`" severity="info" />
+                                </template>
+                            </Column>
+                            <Column field="total_amount" header="Total Amount" sortable>
+                                <template #body="slotProps">
+                                    <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(slotProps.data.total_amount) }}</span>
+                                </template>
+                            </Column>
+                            <Column field="merge_date" header="Created" sortable>
+                                <template #body="slotProps">
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-medium text-surface-900 dark:text-surface-0">{{ formatDate(slotProps.data.merge_date) }}</span>
+                                        <span class="text-xs text-surface-500 dark:text-surface-400">{{ formatTimeAgo(slotProps.data.merge_date) }}</span>
+                                    </div>
+                                </template>
+                            </Column>
+                            <Column field="template_used" header="Template" sortable>
+                                <template #body="slotProps">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.template_used }}</span>
+                                        <span v-if="slotProps.data.template_override" class="text-xs text-orange-600 dark:text-orange-400 uppercase">
+                                            {{ slotProps.data.template_override }}
+                                        </span>
+                                    </div>
+                                </template>
+                            </Column>
+                            <Column header="Actions" style="width: 12rem">
+                                <template #body="slotProps">
+                                    <div class="flex gap-1">
+                                        <Button icon="pi pi-eye" 
+                                                size="small" 
+                                                text 
+                                                rounded 
+                                                v-tooltip.top="'View Details'"
+                                                @click="viewMergeDetails(slotProps.data)" />
+                                        <Button icon="pi pi-download" 
+                                                size="small" 
+                                                text 
+                                                rounded 
+                                                v-tooltip.top="'Download Files'"
+                                                @click="downloadMergedFiles(slotProps.data)" />
+                                        <Button icon="pi pi-history" 
+                                                size="small" 
+                                                text 
+                                                rounded 
+                                                v-tooltip.top="'View Source Invoices'"
+                                                @click="viewSourceInvoices(slotProps.data)" />
+                                    </div>
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
                 </div>
             </div>
         </div>
-    </Dialog>
+        <!-- Invoice Date Override Confirmation Dialog -->
+        <Dialog v-model:visible="showOverrideConfirmation" 
+                header="Confirm Invoice Date Override" 
+                :style="{ width: '500px' }" 
+                modal>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-exclamation-triangle text-3xl text-orange-500 mt-1"></i>
+                    <div class="flex-1">
+                        <div class="font-semibold text-lg mb-2">Invoice Date Override Enabled</div>
+                        <div class="text-surface-600 dark:text-surface-400 mb-3">
+                            You have enabled invoice date override. This will change how your documents are generated:
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-surface-700 dark:text-surface-300 mb-3">
+                            <li>PDF invoices will display the override date instead of the original invoice date</li>
+                            <li>Due dates will be calculated from the override date</li>
+                            <li>Files will be named using the override month/year</li>
+                            <li>Merge history will record the override date</li>
+                        </ul>
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                            <div class="font-medium text-blue-800 dark:text-blue-200 mb-1">Selected Override Date:</div>
+                            <div class="text-blue-700 dark:text-blue-300">{{ formatOverrideDateForDisplay() }}</div>
+                            <div class="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                                Files will be named: <strong>{{ getOverrideDatePrefix() }}_[Template]_Invoice.pdf</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <Button label="Cancel" 
+                            icon="pi pi-times" 
+                            text 
+                            @click="cancelOverrideConfirmation" />
+                    <Button label="Confirm & Generate" 
+                            icon="pi pi-check" 
+                            @click="confirmOverrideAndProceed" 
+                            severity="success" />
+                </div>
+            </template>
+        </Dialog>
+    </div>
 </template>
 
 <style scoped>
@@ -1661,5 +3012,334 @@ iframe {
 /* Ensure consistent spacing in file cards */
 .file-metadata {
   min-height: 120px;
+}
+
+/* Enhanced selected row styling */
+:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode selected row styling */
+:deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Hover effect for rows */
+:deep(.p-datatable .p-datatable-tbody > tr:hover) {
+  background: rgba(59, 130, 246, 0.05) !important;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode hover effect */
+:deep(.dark .p-datatable .p-datatable-tbody > tr:hover) {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Compact invoice table styling */
+:deep(.compact-invoice-table) {
+  font-size: 0.875rem;
+}
+
+:deep(.compact-invoice-table .p-datatable-thead > tr > th) {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+:deep(.dark .compact-invoice-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.compact-invoice-table .p-datatable-tbody > tr > td) {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--surface-100);
+}
+
+:deep(.dark .compact-invoice-table .p-datatable-tbody > tr > td) {
+  border-bottom: 1px solid var(--surface-700);
+}
+
+/* Group table specific styling */
+:deep(.group-table .p-datatable-thead > tr > th) {
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+:deep(.dark .group-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-600);
+}
+
+/* Modern document management styling */
+.document-card {
+  transition: all 0.3s ease;
+  border: 1px solid var(--surface-200);
+  background: var(--surface-0);
+}
+
+.dark .document-card {
+  border: 1px solid var(--surface-700);
+  background: var(--surface-800);
+}
+
+.document-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-300);
+}
+
+.dark .document-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: var(--primary-600);
+}
+
+.document-card.selected {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);
+}
+
+/* File type header gradients */
+.file-header-pdf {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.file-header-excel {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.file-header-word {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.file-header-default {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+/* Enhanced tab navigation */
+.document-tabs {
+  background: var(--surface-50);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+}
+
+.dark .document-tabs {
+  background: var(--surface-800);
+}
+
+.document-tab {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.document-tab.active {
+  background: var(--surface-0);
+  color: var(--primary-600);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .document-tab.active {
+  background: var(--surface-700);
+  color: var(--primary-400);
+}
+
+.document-tab:not(.active) {
+  color: var(--surface-600);
+}
+
+.dark .document-tab:not(.active) {
+  color: var(--surface-400);
+}
+
+.document-tab:not(.active):hover {
+  color: var(--surface-900);
+}
+
+.dark .document-tab:not(.active):hover {
+  color: var(--surface-100);
+}
+
+/* Search and filter bar styling */
+.search-filter-bar {
+  background: var(--surface-50);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--surface-200);
+}
+
+.dark .search-filter-bar {
+  background: var(--surface-800);
+  border: 1px solid var(--surface-700);
+}
+
+/* Document grid improvements */
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .document-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Document metadata styling */
+.document-metadata {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--surface-600);
+}
+
+.dark .document-metadata {
+  color: var(--surface-400);
+}
+
+.document-metadata i {
+  width: 1rem;
+  text-align: center;
+}
+
+/* Action buttons styling */
+.document-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.document-actions .p-button {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.5rem;
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--surface-900);
+}
+
+.dark .empty-state-title {
+  color: var(--surface-0);
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  color: var(--surface-600);
+  max-width: 24rem;
+  margin: 0 auto;
+}
+
+.dark .empty-state-description {
+  color: var(--surface-400);
+}
+
+/* Modern table styling */
+:deep(.modern-table) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--surface-200);
+}
+
+:deep(.dark .modern-table) {
+  border: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-thead > tr > th) {
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 1rem;
+}
+
+:deep(.dark .modern-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-tbody > tr > td) {
+  padding: 1rem;
+  border-bottom: 1px solid var(--surface-100);
+}
+
+:deep(.dark .modern-table .p-datatable-tbody > tr > td) {
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-tbody > tr:hover) {
+  background: var(--surface-50);
+}
+
+:deep(.dark .modern-table .p-datatable-tbody > tr:hover) {
+  background: var(--surface-800);
+}
+
+/* Checkbox styling improvements */
+:deep(.p-checkbox) {
+  transition: all 0.2s ease;
+}
+
+:deep(.p-checkbox:hover) {
+  transform: scale(1.1);
+}
+
+/* Loading spinner improvements */
+:deep(.p-progress-spinner) {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .document-library-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .document-actions-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .search-filter-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 </style>

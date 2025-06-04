@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import * as XLSX from 'xlsx';
 import Button from 'primevue/button';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import ProgressSpinner from 'primevue/progressspinner';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -167,7 +167,7 @@ watch(() => props.fileUrl, () => {
       <!-- Sheet selector -->
       <div class="flex items-center mb-3 gap-3">
         <label class="font-medium">Sheet:</label>
-        <Dropdown 
+        <Select 
           v-model="selectedSheet" 
           :options="sheets" 
           optionLabel="label" 

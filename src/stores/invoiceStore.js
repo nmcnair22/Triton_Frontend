@@ -362,7 +362,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
   
   // Generate a document from a template for an invoice
-  async function generateTemplate(invoiceNumber, templateId) {
+  async function generateTemplate(invoiceNumber, templateId, options = {}) {
     if (!invoiceNumber || !templateId) {
       generateTemplateError.value = 'Invoice number and template ID are required';
       return null;
@@ -372,7 +372,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     generateTemplateError.value = null;
     
     try {
-      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
+      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId, options);
       
       if (response.data && response.data.success && response.data.data) {
         // After successful generation, refresh the list of generated files
@@ -584,15 +584,55 @@ export const useInvoiceStore = defineStore('invoice', () => {
     }
   }
   
-  // Reset template state
+  // Merge functionality
+  async function mergeInvoices(mergeRequest) {
+    try {
+      const response = await InvoiceService.mergeInvoices(mergeRequest);
+      return response.data;
+    } catch (err) {
+      // Preserve the original error response for proper error handling
+      throw err;
+    }
+  }
+
+  async function getCustomerMergeHistory(customerNumber, limit = 25) {
+    try {
+      const response = await InvoiceService.getCustomerMergeHistory(customerNumber, limit);
+      return response.data;
+    } catch (err) {
+      // Preserve the original error response for proper error handling
+      throw err;
+    }
+  }
+
+  async function getMergeHistory(mergedInvoiceNumber) {
+    try {
+      const response = await InvoiceService.getMergeHistory(mergedInvoiceNumber);
+      return response.data;
+    } catch (err) {
+      // Preserve the original error response for proper error handling
+      throw err;
+    }
+  }
+
+  async function findMergeContaining(originalInvoiceNumber) {
+    try {
+      const response = await InvoiceService.findMergeContaining(originalInvoiceNumber);
+      return response.data;
+    } catch (err) {
+      // Preserve the original error response for proper error handling
+      throw err;
+    }
+  }
+
   function resetTemplateState() {
     availableTemplates.value = [];
-    templatesError.value = null;
     generatedFiles.value = [];
-    generatedFilesError.value = null;
-    generateTemplateError.value = null;
     customerDocuments.value = [];
+    templatesError.value = null;
+    generatedFilesError.value = null;
     customerDocumentsError.value = null;
+    generateTemplateError.value = null;
   }
 
   return {
@@ -642,6 +682,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
     fetchGeneratedFiles,
     fetchCustomerDocuments,
     downloadGeneratedFile,
-    resetTemplateState
+    resetTemplateState,
+    
+    // Merge functionality
+    mergeInvoices,
+    getCustomerMergeHistory,
+    getMergeHistory,
+    findMergeContaining
   };
 }); 

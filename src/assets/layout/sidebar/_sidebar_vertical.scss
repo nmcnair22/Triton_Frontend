@@ -17,18 +17,17 @@
     .logo {
         text-align: center;
         display: flex;
+        justify-content: center;
+        align-items: center;
         outline: 0 none;
-        padding: 1rem 1rem;
+        padding: 1.5rem 1rem;
         transition:
             background-color var(--transition-duration),
             box-shadow var(--transition-duration);
     }
 
     .logo-image {
-        width: 2rem;
-        height: 2rem;
         vertical-align: middle;
-        margin-right: 0.5rem;
     }
 
     .app-name {
