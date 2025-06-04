@@ -90,6 +90,19 @@ export const AuthService = {
     return userData.roles.some(r => r === role || r.name === role);
   },
   
+  // Get current user data from localStorage (for backward compatibility)
+  getUserData() {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        return JSON.parse(userData);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  },
+  
   // Login with Microsoft (redirect to Microsoft login)
   loginWithMicrosoft() {
     this.microsoft.login();
@@ -232,6 +245,29 @@ export const AuthService = {
     
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}token=${token}`;
+  },
+
+  // Set up interceptors to handle authentication
+  setupInterceptors() {
+    // Get token from localStorage and set in axios defaults
+    const token = this.getToken();
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Add response interceptor for 401 errors
+    axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // Handle unauthorized responses
+        if (error.response && error.response.status === 401) {
+          console.error('Unauthorized API request - logging out');
+          this.clearSession();
+          window.location.href = '/auth/login';
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 };
 
