@@ -3016,410 +3016,6 @@ function getCompactFileHeaderClass(file) {
 </div>
 </div>
 
-<style scoped>
-/* Fix for PDF preview to take up full modal height */
-:deep(.p-dialog-content) {
-  overflow: hidden;
-  height: auto !important;
-  padding-bottom: 0 !important;
-}
-
-/* Make sure iframe takes full height */
-iframe {
-  width: 100%; 
-  height: 100%;
-  border: none;
-  display: block;
-}
-
-/* Excel preview container styles */
-.excel-preview :deep(.p-datatable) {
-  height: 100%;
-}
-
-/* Fix spacing for file cards */
-.file-card-header {
-  display: flex;
-  align-items: center;
-}
-
-/* Ensure consistent spacing in file cards */
-.file-metadata {
-  min-height: 120px;
-}
-
-/* Enhanced selected row styling */
-:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%) !important;
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2) !important;
-  transition: all 0.2s ease;
-}
-
-/* Dark mode selected row styling */
-:deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
-  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
-}
-
-/* Hover effect for rows */
-:deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: rgba(59, 130, 246, 0.05) !important;
-  transition: all 0.2s ease;
-}
-
-/* Dark mode hover effect */
-:deep(.dark .p-datatable .p-datatable-tbody > tr:hover) {
-  background: rgba(59, 130, 246, 0.1) !important;
-}
-
-/* Compact invoice table styling */
-:deep(.compact-invoice-table) {
-  font-size: 0.875rem;
-}
-
-:deep(.compact-invoice-table .p-datatable-thead > tr > th) {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  background: var(--surface-50);
-  border-bottom: 1px solid var(--surface-200);
-}
-
-:deep(.dark .compact-invoice-table .p-datatable-thead > tr > th) {
-  background: var(--surface-800);
-  border-bottom: 1px solid var(--surface-700);
-}
-
-:deep(.compact-invoice-table .p-datatable-tbody > tr > td) {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--surface-100);
-}
-
-:deep(.dark .compact-invoice-table .p-datatable-tbody > tr > td) {
-  border-bottom: 1px solid var(--surface-700);
-}
-
-/* Group table specific styling */
-:deep(.group-table .p-datatable-thead > tr > th) {
-  background: var(--surface-0);
-  border-bottom: 1px solid var(--surface-200);
-}
-
-:deep(.dark .group-table .p-datatable-thead > tr > th) {
-  background: var(--surface-800);
-  border-bottom: 1px solid var(--surface-600);
-}
-
-/* Modern document management styling */
-.document-card {
-  transition: all 0.2s ease;
-  border: 1px solid var(--surface-200);
-  background: var(--surface-0);
-  border-radius: 0.5rem;
-}
-
-.dark .document-card {
-  border: 1px solid var(--surface-700);
-  background: var(--surface-800);
-}
-
-.document-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: var(--primary-300);
-}
-
-.dark .document-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  border-color: var(--primary-600);
-}
-
-.document-card.selected {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.2);
-}
-
-/* Compact file header styling */
-.compact-file-header {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-bottom: 1px solid var(--surface-200);
-}
-
-.dark .compact-file-header {
-  border-bottom: 1px solid var(--surface-700);
-}
-
-/* Remove the old chunky file type headers */
-.file-header-pdf,
-.file-header-excel,
-.file-header-word,
-.file-header-default {
-  display: none;
-}
-
-/* Enhanced tab navigation */
-.document-tabs {
-  background: var(--surface-50);
-  border-radius: 0.75rem;
-  padding: 0.25rem;
-}
-
-.dark .document-tabs {
-  background: var(--surface-800);
-}
-
-.document-tab {
-  transition: all 0.2s ease;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.document-tab.active {
-  background: var(--surface-0);
-  color: var(--primary-600);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.dark .document-tab.active {
-  background: var(--surface-700);
-  color: var(--primary-400);
-}
-
-.document-tab:not(.active) {
-  color: var(--surface-600);
-}
-
-.dark .document-tab:not(.active) {
-  color: var(--surface-400);
-}
-
-.document-tab:not(.active):hover {
-  color: var(--surface-900);
-}
-
-.dark .document-tab:not(.active):hover {
-  color: var(--surface-100);
-}
-
-/* Search and filter bar styling */
-.search-filter-bar {
-  background: var(--surface-50);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  border: 1px solid var(--surface-200);
-}
-
-.dark .search-filter-bar {
-  background: var(--surface-800);
-  border: 1px solid var(--surface-700);
-}
-
-/* Document grid improvements - more compact */
-.document-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.75rem;
-}
-
-@media (max-width: 768px) {
-  .document-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-}
-
-/* Document metadata styling - more compact */
-.document-metadata {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-  color: var(--surface-600);
-  line-height: 1.3;
-}
-
-.dark .document-metadata {
-  color: var(--surface-400);
-}
-
-.document-metadata i {
-  width: 0.875rem;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-/* Action buttons styling - more compact */
-.document-actions {
-  display: flex;
-  gap: 0.125rem;
-  margin-top: 0.5rem;
-}
-
-.document-actions .p-button {
-  flex: 1;
-  justify-content: center;
-  font-size: 0.75rem;
-  padding: 0.375rem 0.5rem;
-  min-height: auto;
-}
-
-/* Compact spacing */
-.compact-spacing {
-  padding: 0.75rem;
-}
-
-.compact-spacing > * + * {
-  margin-top: 0.5rem;
-}
-
-/* Better visual hierarchy for compact design */
-.compact-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: 0.25rem;
-}
-
-.compact-subtitle {
-  font-size: 0.75rem;
-  color: var(--surface-500);
-  line-height: 1.3;
-}
-
-.dark .compact-subtitle {
-  color: var(--surface-400);
-}
-
-/* Empty state styling */
-.empty-state {
-  text-align: center;
-  padding: 2rem 1rem;
-}
-
-.empty-state-icon {
-  width: 3rem;
-  height: 3rem;
-  margin: 0 auto 0.75rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-state-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.375rem;
-  color: var(--surface-900);
-}
-
-.dark .empty-state-title {
-  color: var(--surface-0);
-}
-
-.empty-state-description {
-  font-size: 0.875rem;
-  color: var(--surface-600);
-  max-width: 20rem;
-  margin: 0 auto;
-  line-height: 1.4;
-}
-
-.dark .empty-state-description {
-  color: var(--surface-400);
-}
-
-/* Modern table styling */
-:deep(.modern-table) {
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid var(--surface-200);
-}
-
-:deep(.dark .modern-table) {
-  border: 1px solid var(--surface-700);
-}
-
-:deep(.modern-table .p-datatable-thead > tr > th) {
-  background: var(--surface-50);
-  border-bottom: 1px solid var(--surface-200);
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.75rem;
-}
-
-:deep(.dark .modern-table .p-datatable-thead > tr > th) {
-  background: var(--surface-800);
-  border-bottom: 1px solid var(--surface-700);
-}
-
-:deep(.modern-table .p-datatable-tbody > tr > td) {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--surface-100);
-  font-size: 0.875rem;
-}
-
-:deep(.dark .modern-table .p-datatable-tbody > tr > td) {
-  border-bottom: 1px solid var(--surface-700);
-}
-
-:deep(.modern-table .p-datatable-tbody > tr:hover) {
-  background: var(--surface-50);
-}
-
-:deep(.dark .modern-table .p-datatable-tbody > tr:hover) {
-  background: var(--surface-800);
-}
-
-/* Checkbox styling improvements */
-:deep(.p-checkbox) {
-  transition: all 0.2s ease;
-}
-
-:deep(.p-checkbox:hover) {
-  transform: scale(1.05);
-}
-
-/* Loading spinner improvements */
-:deep(.p-progress-spinner) {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Responsive improvements */
-@media (max-width: 640px) {
-  .document-library-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  
-  .document-actions-toolbar {
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-  
-  .search-filter-bar {
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  
-  .compact-spacing {
-    padding: 0.5rem;
-  }
-}
-</style>
 
 <!-- File Preview Dialog -->
 <Dialog v-model:visible="showFilePreview" :style="{ width: '90vw', height: '80vh' }" modal header="File Preview" :closable="true">
@@ -3943,3 +3539,407 @@ iframe {
     </template>
 </Dialog>
 </template>
+<style scoped>
+/* Fix for PDF preview to take up full modal height */
+:deep(.p-dialog-content) {
+  overflow: hidden;
+  height: auto !important;
+  padding-bottom: 0 !important;
+}
+
+/* Make sure iframe takes full height */
+iframe {
+  width: 100%; 
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Excel preview container styles */
+.excel-preview :deep(.p-datatable) {
+  height: 100%;
+}
+
+/* Fix spacing for file cards */
+.file-card-header {
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure consistent spacing in file cards */
+.file-metadata {
+  min-height: 120px;
+}
+
+/* Enhanced selected row styling */
+:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode selected row styling */
+:deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Hover effect for rows */
+:deep(.p-datatable .p-datatable-tbody > tr:hover) {
+  background: rgba(59, 130, 246, 0.05) !important;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode hover effect */
+:deep(.dark .p-datatable .p-datatable-tbody > tr:hover) {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Compact invoice table styling */
+:deep(.compact-invoice-table) {
+  font-size: 0.875rem;
+}
+
+:deep(.compact-invoice-table .p-datatable-thead > tr > th) {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+:deep(.dark .compact-invoice-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.compact-invoice-table .p-datatable-tbody > tr > td) {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--surface-100);
+}
+
+:deep(.dark .compact-invoice-table .p-datatable-tbody > tr > td) {
+  border-bottom: 1px solid var(--surface-700);
+}
+
+/* Group table specific styling */
+:deep(.group-table .p-datatable-thead > tr > th) {
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--surface-200);
+}
+
+:deep(.dark .group-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-600);
+}
+
+/* Modern document management styling */
+.document-card {
+  transition: all 0.2s ease;
+  border: 1px solid var(--surface-200);
+  background: var(--surface-0);
+  border-radius: 0.5rem;
+}
+
+.dark .document-card {
+  border: 1px solid var(--surface-700);
+  background: var(--surface-800);
+}
+
+.document-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary-300);
+}
+
+.dark .document-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: var(--primary-600);
+}
+
+.document-card.selected {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.2);
+}
+
+/* Compact file header styling */
+.compact-file-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--surface-200);
+}
+
+.dark .compact-file-header {
+  border-bottom: 1px solid var(--surface-700);
+}
+
+/* Remove the old chunky file type headers */
+.file-header-pdf,
+.file-header-excel,
+.file-header-word,
+.file-header-default {
+  display: none;
+}
+
+/* Enhanced tab navigation */
+.document-tabs {
+  background: var(--surface-50);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+}
+
+.dark .document-tabs {
+  background: var(--surface-800);
+}
+
+.document-tab {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.document-tab.active {
+  background: var(--surface-0);
+  color: var(--primary-600);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .document-tab.active {
+  background: var(--surface-700);
+  color: var(--primary-400);
+}
+
+.document-tab:not(.active) {
+  color: var(--surface-600);
+}
+
+.dark .document-tab:not(.active) {
+  color: var(--surface-400);
+}
+
+.document-tab:not(.active):hover {
+  color: var(--surface-900);
+}
+
+.dark .document-tab:not(.active):hover {
+  color: var(--surface-100);
+}
+
+/* Search and filter bar styling */
+.search-filter-bar {
+  background: var(--surface-50);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--surface-200);
+}
+
+.dark .search-filter-bar {
+  background: var(--surface-800);
+  border: 1px solid var(--surface-700);
+}
+
+/* Document grid improvements - more compact */
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .document-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* Document metadata styling - more compact */
+.document-metadata {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--surface-600);
+  line-height: 1.3;
+}
+
+.dark .document-metadata {
+  color: var(--surface-400);
+}
+
+.document-metadata i {
+  width: 0.875rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Action buttons styling - more compact */
+.document-actions {
+  display: flex;
+  gap: 0.125rem;
+  margin-top: 0.5rem;
+}
+
+.document-actions .p-button {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  min-height: auto;
+}
+
+/* Compact spacing */
+.compact-spacing {
+  padding: 0.75rem;
+}
+
+.compact-spacing > * + * {
+  margin-top: 0.5rem;
+}
+
+/* Better visual hierarchy for compact design */
+.compact-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.25rem;
+}
+
+.compact-subtitle {
+  font-size: 0.75rem;
+  color: var(--surface-500);
+  line-height: 1.3;
+}
+
+.dark .compact-subtitle {
+  color: var(--surface-400);
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.empty-state-icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+  color: var(--surface-900);
+}
+
+.dark .empty-state-title {
+  color: var(--surface-0);
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  color: var(--surface-600);
+  max-width: 20rem;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.dark .empty-state-description {
+  color: var(--surface-400);
+}
+
+/* Modern table styling */
+:deep(.modern-table) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--surface-200);
+}
+
+:deep(.dark .modern-table) {
+  border: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-thead > tr > th) {
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-200);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.75rem;
+}
+
+:deep(.dark .modern-table .p-datatable-thead > tr > th) {
+  background: var(--surface-800);
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-tbody > tr > td) {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--surface-100);
+  font-size: 0.875rem;
+}
+
+:deep(.dark .modern-table .p-datatable-tbody > tr > td) {
+  border-bottom: 1px solid var(--surface-700);
+}
+
+:deep(.modern-table .p-datatable-tbody > tr:hover) {
+  background: var(--surface-50);
+}
+
+:deep(.dark .modern-table .p-datatable-tbody > tr:hover) {
+  background: var(--surface-800);
+}
+
+/* Checkbox styling improvements */
+:deep(.p-checkbox) {
+  transition: all 0.2s ease;
+}
+
+:deep(.p-checkbox:hover) {
+  transform: scale(1.05);
+}
+
+/* Loading spinner improvements */
+:deep(.p-progress-spinner) {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .document-library-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .document-actions-toolbar {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  
+  .search-filter-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .compact-spacing {
+    padding: 0.5rem;
+  }
+}
+</style>
