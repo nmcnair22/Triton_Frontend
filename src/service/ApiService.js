@@ -145,45 +145,12 @@ export const InvoiceService = {
   },
   
   // Download a generated file
-  downloadGeneratedFile(jobId, fileType = 'pdf', subtype = null) {
-    // Get the current authentication token
-    const token = AuthService.getToken();
-    // Remove 'Bearer ' prefix if present
-    const tokenValue = token ? token.replace('Bearer ', '') : '';
-    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
-    
-    let url = `/invoice-templates/download/${jobId}/${fileType}`;
-    
-    // If subtype is provided (for PDF files like 'summary', 'consolidated', etc.), add it to the URL
+  downloadGeneratedFile(fileId, fileType, subtype = null) {
+    let url = `/invoice-templates/download/${fileId}/${fileType}`;
     if (subtype) {
       url += `/${subtype}`;
     }
-    
-    // Add token parameter
-    url += tokenParam;
-    
-    console.log('Download URL:', url);
-    
-    // Create a full URL with the base URL
-    const fullUrl = `${apiClient.defaults.baseURL}${url}`;
-    
-    // Create a simple anchor element and click it
-    // This is the most reliable way to trigger a browser download with the original filename
-    const a = document.createElement('a');
-    a.href = fullUrl;
-    a.target = '_blank'; // This helps with popup blockers
-    a.rel = 'noopener noreferrer';
-    
-    // Append to body and click
-    document.body.appendChild(a);
-    a.click();
-    
-    // Remove after a short delay
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 100);
-    
-    return Promise.resolve(true);
+    return ApiService.downloadFile(url);
   },
   
   // Get file preview URL
@@ -247,5 +214,22 @@ export const InvoiceService = {
   // Get all documents for a specific invoice
   getInvoiceDocuments(invoiceNumber) {
     return ApiService.get(`/invoice-templates/invoice-documents?invoice_number=${invoiceNumber}`);
+  },
+  
+  // Merge functionality
+  mergeInvoices(mergeRequest) {
+    return ApiService.post('/invoice-templates/generate-merged', mergeRequest);
+  },
+
+  getCustomerMergeHistory(customerNumber, limit = 25) {
+    return ApiService.get(`/invoice-templates/customer-merge-history/${customerNumber}`, { limit });
+  },
+
+  getMergeHistory(mergedInvoiceNumber) {
+    return ApiService.get(`/invoice-templates/merge-history/${mergedInvoiceNumber}`);
+  },
+
+  findMergeContaining(originalInvoiceNumber) {
+    return ApiService.get(`/invoice-templates/find-merge/${originalInvoiceNumber}`);
   }
 }; 

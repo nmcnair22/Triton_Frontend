@@ -1017,177 +1017,343 @@ watch(customerInvoices, () => {
             </div>
             
             <div class="col-12 mt-4">
-                <div class="card p-5 overflow-auto shadow-[0px_1px_2px_0px_rgba(18,18,23,0.05)]">
+                <div class="card p-0 overflow-hidden shadow-lg border-0 rounded-2xl bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
                     <!-- Loading state -->
-                    <div v-if="isLoading" class="flex justify-center items-center p-4">
-                        <ProgressSpinner />
+                    <div v-if="isLoading" class="flex justify-center items-center p-12">
+                        <div class="text-center">
+                            <ProgressSpinner class="w-16 h-16" />
+                            <div class="mt-6 text-lg font-medium text-surface-600 dark:text-surface-400">Loading invoice details...</div>
+                            <div class="mt-2 text-sm text-surface-500 dark:text-surface-500">Please wait while we fetch the invoice information</div>
+                        </div>
                     </div>
                     
                     <!-- Error message -->
-                    <div v-else-if="error" class="flex justify-center items-center p-4">
-                        <Message severity="info">Please select an invoice from the table above to view details</Message>
+                    <div v-else-if="error" class="flex justify-center items-center p-12">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="pi pi-info-circle text-2xl text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div class="text-lg font-medium text-surface-600 dark:text-surface-400 mb-2">No Invoice Selected</div>
+                            <div class="text-sm text-surface-500 dark:text-surface-500">Please select an invoice from the table above to view details</div>
+                        </div>
                     </div>
                     
                     <!-- Invoice content -->
                     <div v-else-if="selectedInvoice">
-                        <!-- Interactive tools panel - only shows when interactive mode is enabled -->
-                        <div v-if="isInteractive" class="mb-4 p-3 border-1 border-surface-200 dark:border-surface-700">
-                            <h5>Interactive Tools</h5>
-                            <div class="field grid">
-                                <label for="groupBy" class="col-12 md:col-2 md:mb-0 mb-2 font-medium">Group By:</label>
-                                <div class="col-12 md:col-10">
-                                    <Select 
-                                        id="groupBy"
-                                        v-model="selectedGroupBy" 
-                                        :options="groupByOptions" 
-                                        optionLabel="name" 
-                                        placeholder="Select Grouping"
-                                        class="w-full"
-                                    />
+                        <!-- Modern Invoice Header with Gradient Background -->
+                        <div class="relative text-white" style="background: linear-gradient(135deg, #082944 0%, #297FB7 100%);">
+                            <div class="absolute inset-0 bg-black/10"></div>
+                            <div class="relative px-8 py-10">
+                                <div class="flex items-start justify-between mb-8">
+                                    <!-- Company Branding Section -->
+                                    <div class="flex-1">
+                                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                                            <img src="/layout/images/cis-logo-tagline-white.png" alt="CIS Logo" width="180" height="45" class="mb-4" />
+                                            <div class="text-white/90 text-sm leading-relaxed">
+                                                <div>1023 Calle Sombra Unit B</div>
+                                                <div>San Clemente, CA 92673</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Invoice Title & Interactive Toggle -->
+                                    <div class="flex flex-col items-end gap-4">
+                                        <ToggleButton 
+                                            v-model="isInteractive" 
+                                            onLabel="Interactive Mode" 
+                                            offLabel="Standard View" 
+                                            onIcon="pi pi-cog" 
+                                            offIcon="pi pi-eye" 
+                                            :class="isInteractive ? 'p-button-success' : 'p-button-secondary'"
+                                            class="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
+                                        />
+                                        <div class="text-right">
+                                            <div class="text-white/80 text-sm font-medium uppercase tracking-wider mb-2">Invoice</div>
+                                            <div class="text-3xl font-bold text-white">{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</div>
+                                            <div class="mt-2">
+                                                <Tag :value="selectedInvoice?.status?.toUpperCase() || 'UNKNOWN'" 
+                                                     :severity="selectedInvoice?.status === 'paid' ? 'success' : selectedInvoice?.status === 'open' ? 'info' : 'warning'"
+                                                     class="text-sm font-medium px-3 py-1" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="flex items-start pt-6 px-6 pb-9 gap-6 flex-wrap-reverse">
-                            <div class="flex-1">
-                                <svg class="fill-surface-950 dark:fill-surface-0" width="125" height="32" viewBox="0 0 125 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M26.8844 16C27.5005 16 28.0045 15.4997 27.9555 14.8856C27.7658 12.5094 26.9717 10.2143 25.6405 8.222C24.1022 5.91972 21.9157 4.12531 19.3575 3.06569C16.7994 2.00607 13.9844 1.72882 11.2687 2.26901C8.55298 2.8092 6.05843 4.14257 4.1005 6.1005C2.14257 8.05843 0.809203 10.553 0.269011 13.2687C-0.27118 15.9844 0.00606599 18.7994 1.06569 21.3575C2.12531 23.9157 3.91972 26.1022 6.222 27.6405C8.21425 28.9717 10.5094 29.7658 12.8856 29.9555C13.4997 30.0045 14 29.5005 14 28.8844V25.5155C14 24.8994 13.4983 24.4076 12.8877 24.326C11.6208 24.1567 10.4041 23.6998 9.33319 22.9843C7.95182 22.0613 6.87517 20.7494 6.2394 19.2145C5.60362 17.6796 5.43728 15.9906 5.76139 14.3612C6.08551 12.7318 6.88553 11.235 8.06028 10.0603C9.23504 8.88553 10.7318 8.08551 12.3612 7.76139C13.9906 7.43728 15.6796 7.60362 17.2145 8.2394C18.7494 8.87517 20.0613 9.95182 20.9843 11.3332C21.6998 12.4041 22.1567 13.6208 22.326 14.8877C22.4076 15.4983 22.8994 16 23.5155 16H26.8844Z"
-                                    />
-                                    <path
-                                        d="M20.3442 17.9561C20.4501 17.6123 20.1787 17.2829 19.819 17.2829H16.3982C15.7821 17.2829 15.2826 17.7823 15.2826 18.3984V21.8191C15.2826 22.1788 15.612 22.4502 15.9558 22.3443C18.0484 21.6999 19.6997 20.0487 20.3442 17.9561Z"
-                                    />
-                                    <path
-                                        d="M23.1621 17.2829C22.6154 17.2829 22.1582 17.6844 22.013 18.2115C21.2385 21.0236 19.0234 23.2387 16.2113 24.0131C15.6842 24.1582 15.2826 24.6155 15.2826 25.1622V28.8845C15.2826 29.5006 15.7821 30 16.3982 30H18.6292C19.2453 30 19.7448 29.5006 19.7448 28.8845V25.0941C19.7448 24.8904 19.991 24.7885 20.135 24.9325L24.4655 29.263C24.9011 29.6986 25.6075 29.6986 26.0431 29.263L27.2627 28.0434C27.6983 27.6077 27.6983 26.9014 27.2627 26.4658L22.9322 22.1353C22.7882 21.9913 22.8902 21.745 23.0938 21.745H26.8842C27.5003 21.745 27.9997 21.2456 27.9997 20.6295V18.3984C27.9997 17.7823 27.5003 17.2829 26.8842 17.2829H23.1621Z"
-                                    />
-                                    <path
-                                        d="M47.624 10.048C44.144 10.048 42.152 12.568 42.152 16.36C42.152 20.272 44.408 22.408 47.648 22.408C50.696 22.408 52.544 20.728 52.544 17.92V17.848H47.24V15.136H55.4V25H52.808L52.616 22.984C51.656 24.328 49.664 25.264 47.288 25.264C42.368 25.264 38.936 21.688 38.936 16.288C38.936 10.96 42.416 7.168 47.696 7.168C51.704 7.168 54.8 9.496 55.304 13.072H52.064C51.512 11.008 49.736 10.048 47.624 10.048ZM63.3494 25.312C59.8214 25.312 57.3494 22.744 57.3494 19.072C57.3494 15.352 59.7734 12.784 63.2534 12.784C66.8054 12.784 69.0614 15.16 69.0614 18.856V19.744L60.1334 19.768C60.3494 21.856 61.4534 22.912 63.3974 22.912C65.0054 22.912 66.0614 22.288 66.3974 21.16H69.1094C68.6054 23.752 66.4454 25.312 63.3494 25.312ZM63.2774 15.184C61.5494 15.184 60.4934 16.12 60.2054 17.896H66.1574C66.1574 16.264 65.0294 15.184 63.2774 15.184ZM74.0928 25H71.1648V13.144H73.8768L74.1168 14.68C74.8608 13.48 76.3008 12.784 77.9088 12.784C80.8848 12.784 82.4208 14.632 82.4208 17.704V25H79.4928V18.4C79.4928 16.408 78.5088 15.448 76.9968 15.448C75.1968 15.448 74.0928 16.696 74.0928 18.616V25ZM90.3616 25.312C86.8336 25.312 84.3616 22.744 84.3616 19.072C84.3616 15.352 86.7856 12.784 90.2656 12.784C93.8176 12.784 96.0736 15.16 96.0736 18.856V19.744L87.1456 19.768C87.3616 21.856 88.4656 22.912 90.4096 22.912C92.0176 22.912 93.0736 22.288 93.4096 21.16H96.1216C95.6176 23.752 93.4576 25.312 90.3616 25.312ZM90.2896 15.184C88.5616 15.184 87.5056 16.12 87.2176 17.896H93.1696C93.1696 16.264 92.0416 15.184 90.2896 15.184ZM97.265 21.4H100.049C100.073 22.432 100.841 23.08 102.185 23.08C103.553 23.08 104.297 22.528 104.297 21.664C104.297 21.064 103.985 20.632 102.929 20.392L100.793 19.888C98.657 19.408 97.625 18.4 97.625 16.504C97.625 14.176 99.593 12.784 102.329 12.784C104.993 12.784 106.793 14.32 106.817 16.624H104.033C104.009 15.616 103.337 14.968 102.209 14.968C101.057 14.968 100.385 15.496 100.385 16.384C100.385 17.056 100.913 17.488 101.921 17.728L104.057 18.232C106.049 18.688 107.057 19.6 107.057 21.424C107.057 23.824 105.017 25.312 102.089 25.312C99.137 25.312 97.265 23.728 97.265 21.4ZM110.51 10.768C109.502 10.768 108.71 9.976 108.71 8.992C108.71 8.008 109.502 7.24 110.51 7.24C111.47 7.24 112.262 8.008 112.262 8.992C112.262 9.976 111.47 10.768 110.51 10.768ZM109.046 25V13.144H111.974V25H109.046ZM113.847 21.4H116.631C116.655 22.432 117.423 23.08 118.767 23.08C120.135 23.08 120.879 22.528 120.879 21.664C120.879 21.064 120.567 20.632 119.511 20.392L117.375 19.888C115.239 19.408 114.207 18.4 114.207 16.504C114.207 14.176 116.175 12.784 118.911 12.784C121.575 12.784 123.375 14.32 123.399 16.624H120.615C120.591 15.616 119.919 14.968 118.791 14.968C117.639 14.968 116.967 15.496 116.967 16.384C116.967 17.056 117.495 17.488 118.503 17.728L120.639 18.232C122.631 18.688 123.639 19.6 123.639 21.424C123.639 23.824 121.599 25.312 118.671 25.312C115.719 25.312 113.847 23.728 113.847 21.4Z"
-                                    />
-                                </svg>
-                                <div class="mt-3 body-xsmall text-left">CIS<br>1023 Calle Sombra Unit B San Clemente, CA 92673</div>
-                            </div>
-                            <div class="flex flex-col text-right">
-                                <ToggleButton 
-                                    v-model="isInteractive" 
-                                    onLabel="Interactive On" 
-                                    offLabel="Interactive Off" 
-                                    onIcon="pi pi-check" 
-                                    offIcon="pi pi-times" 
-                                    :class="isInteractive ? 'p-button-outlined p-button-success' : 'p-button-outlined p-button-help'"
-                                    class="mb-4"
-                                />
-                                <h1 class="title-h6">Invoice</h1>
-                                <span class="mt-1.5 body-medium">{{ selectedInvoice?.number || selectedInvoice?.id || '' }}</span>
-                            </div>
-                        </div>
-                        <Divider />
-                        <div class="px-6 pb-9 pt-6 flex items-start gap-6 flex-wrap-reverse">
-                            <div class="flex-1">
-                                <div class="label-medium text-surface-500">Bill To:</div>
-                                <div class="mt-2 label-medium">{{ selectedInvoice?.customer?.company || '' }}</div>
-                                <div class="body-small text-left mt-0.5" v-html="selectedInvoice?.customer?.address.replace(/\n/g, '<br />') || ''"></div>
-                            </div>
-                            <div class="flex flex-col gap-3 min-w-64">
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Client Name</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ selectedInvoice?.customer?.name || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Date</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ formatDate(selectedInvoice?.date) || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Due Date</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ formatDate(selectedInvoice?.dueDate) || '' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-6">
-                                    <span class="body-small">Customer</span>
-                                    <span class="label-small text-surface-950 dark:text-surface-0">{{ selectedInvoice?.customer?.id || '' }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <Divider />
-                        <!-- Invoice Items Section -->
-                        <div>
-                            <!-- Regrouping loading state -->
-                            <div v-if="isRegrouping" class="flex justify-center items-center p-4">
-                                <ProgressSpinner />
-                            </div>
-
-                            <!-- Standard non-grouped display (when interactive is off or no grouping selected) -->
-                            <DataTable v-else-if="!isInteractive || selectedGroupBy.value === 'none'" 
-                                     :value="products" tableStyle="min-width: 50rem">
-                                <Column field="description" header="Description" />
-                                <Column field="quantity" header="Quantity" />
-                                <Column field="price" header="Unit Price" />
-                                <Column field="total" header="Amount" />
-                            </DataTable>
-
-                            <!-- Grouped display (when interactive is on and grouping is selected) -->
-                            <div v-else-if="groupedProducts.length > 0" class="grouped-invoice">
-                                <div v-for="(group, index) in groupedProducts" :key="index" class="mb-5">
-                                    <!-- Group Header -->
-                                    <div class="flex justify-content-between align-items-center p-3 bg-surface-100 dark:bg-surface-800 mb-2 rounded">
-                                        <h3 class="m-0 text-lg font-medium">
-                                            <span class="font-bold">{{ group.groupType }}</span> : {{ group.name }}
-                                        </h3>
+                        <!-- Invoice Details Section -->
+                        <div class="px-8 py-8">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                <!-- Bill To Section -->
+                                <div class="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-700">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                                            <i class="pi pi-user text-primary-600 dark:text-primary-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Bill To</h3>
                                     </div>
-                                    
-                                    <!-- Group Items DataTable -->
-                                    <DataTable :value="group.items.map(item => ({
-                                        description: item.description,
-                                        quantity: item.quantity.toString(),
-                                        price: formatCurrency(item.unitPrice),
-                                        total: formatCurrency(item.amountIncludingTax)
-                                    }))" class="mb-0" tableStyle="min-width: 50rem">
-                                        <Column field="description" header="Description" />
-                                        <Column field="quantity" header="Quantity" class="text-center" style="text-align: center;" />
-                                        <Column field="price" header="Unit Price" />
-                                        <Column field="total" header="Amount" />
+                                    <div class="space-y-3">
+                                        <div class="text-xl font-bold text-surface-900 dark:text-surface-0">
+                                            {{ selectedInvoice?.customer?.company || selectedInvoice?.customer?.name || 'N/A' }}
+                                        </div>
+                                        <div class="text-surface-600 dark:text-surface-400 leading-relaxed" 
+                                             v-html="selectedInvoice?.customer?.address?.replace(/\n/g, '<br />') || 'No address provided'">
+                                        </div>
+                                        <div v-if="selectedInvoice?.customer?.id" class="inline-flex items-center gap-2 px-3 py-1 bg-surface-100 dark:bg-surface-700 rounded-full text-sm">
+                                            <i class="pi pi-id-card text-xs text-surface-500"></i>
+                                            <span class="text-surface-700 dark:text-surface-300">ID: {{ selectedInvoice.customer.id }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Invoice Information -->
+                                <div class="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-700">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                            <i class="pi pi-calendar text-blue-600 dark:text-blue-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Invoice Details</h3>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div class="flex justify-between items-center py-2 border-b border-surface-100 dark:border-surface-700">
+                                            <span class="text-surface-600 dark:text-surface-400 font-medium">Issue Date</span>
+                                            <span class="text-surface-900 dark:text-surface-0 font-semibold">{{ formatDate(selectedInvoice?.date) || 'N/A' }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-2 border-b border-surface-100 dark:border-surface-700">
+                                            <span class="text-surface-600 dark:text-surface-400 font-medium">Due Date</span>
+                                            <span class="text-surface-900 dark:text-surface-0 font-semibold">{{ formatDate(selectedInvoice?.dueDate) || 'N/A' }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-2 border-b border-surface-100 dark:border-surface-700">
+                                            <span class="text-surface-600 dark:text-surface-400 font-medium">Customer ID</span>
+                                            <span class="text-surface-900 dark:text-surface-0 font-semibold">{{ selectedInvoice?.customer?.id || 'N/A' }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center py-2">
+                                            <span class="text-surface-600 dark:text-surface-400 font-medium">Payment Status</span>
+                                            <Tag :value="selectedInvoice?.status?.toUpperCase() || 'UNKNOWN'" 
+                                                 :severity="selectedInvoice?.status === 'paid' ? 'success' : selectedInvoice?.status === 'open' ? 'info' : 'warning'"
+                                                 class="font-medium" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Interactive Tools Panel -->
+                            <div v-if="isInteractive" class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 mb-8 border border-blue-200 dark:border-blue-800">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                                        <i class="pi pi-cog text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Interactive Analysis Tools</h3>
+                                        <p class="text-sm text-surface-600 dark:text-surface-400">Group and analyze invoice line items by different criteria</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="groupBy" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Group By Category</label>
+                                        <Select 
+                                            id="groupBy"
+                                            v-model="selectedGroupBy" 
+                                            :options="groupByOptions" 
+                                            optionLabel="name" 
+                                            placeholder="Select Grouping Method"
+                                            class="w-full"
+                                        />
+                                    </div>
+                                    <div class="flex items-end">
+                                        <div class="text-sm text-surface-600 dark:text-surface-400">
+                                            <i class="pi pi-info-circle mr-1"></i>
+                                            Grouping helps analyze spending patterns and service categories
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Invoice Items Section -->
+                            <div class="bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-700 overflow-hidden">
+                                <div class="bg-gradient-to-r from-surface-50 to-surface-100 dark:from-surface-800 dark:to-surface-700 px-6 py-4 border-b border-surface-200 dark:border-surface-600">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                            <i class="pi pi-list text-green-600 dark:text-green-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Line Items</h3>
+                                        <div v-if="products.length > 0" class="ml-auto">
+                                            <Tag :value="`${products.length} items`" severity="info" class="text-xs" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-6">
+                                    <!-- Regrouping loading state -->
+                                    <div v-if="isRegrouping" class="flex justify-center items-center py-12">
+                                        <div class="text-center">
+                                            <ProgressSpinner class="w-12 h-12" />
+                                            <div class="mt-4 text-surface-600 dark:text-surface-400">Analyzing and grouping items...</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Standard non-grouped display -->
+                                    <DataTable v-else-if="!isInteractive || selectedGroupBy.value === 'none'" 
+                                             :value="products" 
+                                             tableStyle="min-width: 50rem"
+                                             :rowHover="true"
+                                             stripedRows
+                                             responsiveLayout="scroll"
+                                             class="modern-invoice-table">
+                                        <Column field="description" header="Description" class="font-medium">
+                                            <template #body="slotProps">
+                                                <div class="py-2">
+                                                    <div class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.description }}</div>
+                                                </div>
+                                            </template>
+                                        </Column>
+                                        <Column field="quantity" header="Qty" class="text-center" style="width: 100px">
+                                            <template #body="slotProps">
+                                                <div class="text-center">
+                                                    <span class="inline-flex items-center justify-center w-12 h-8 bg-surface-100 dark:bg-surface-700 rounded-lg text-sm font-medium">
+                                                        {{ slotProps.data.quantity }}
+                                                    </span>
+                                                </div>
+                                            </template>
+                                        </Column>
+                                        <Column field="price" header="Unit Price" class="text-right" style="width: 120px">
+                                            <template #body="slotProps">
+                                                <div class="text-right font-medium text-surface-700 dark:text-surface-300">{{ slotProps.data.price }}</div>
+                                            </template>
+                                        </Column>
+                                        <Column field="total" header="Amount" class="text-right" style="width: 120px">
+                                            <template #body="slotProps">
+                                                <div class="text-right font-bold text-surface-900 dark:text-surface-0">{{ slotProps.data.total }}</div>
+                                            </template>
+                                        </Column>
                                     </DataTable>
-                                    
-                                    <!-- Group Subtotal with simple bottom border -->
-                                    <div class="border-top-2 border-surface-200 dark:border-surface-700 mb-4">
-                                        <div class="py-3" style="text-align: right; padding-right: 32px;">
-                                            <span class="font-medium">{{ group.groupType }} Subtotal: <span class="font-bold">{{ formatCurrency(group.total) }}</span></span>
+
+                                    <!-- Grouped display -->
+                                    <div v-else-if="groupedProducts.length > 0" class="space-y-6">
+                                        <div v-for="(group, index) in groupedProducts" :key="index" class="border border-surface-200 dark:border-surface-700 rounded-xl overflow-hidden">
+                                            <!-- Group Header -->
+                                            <div class="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 px-6 py-4 border-b border-primary-200 dark:border-primary-700">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                                                            <i class="pi pi-tag text-white text-sm"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-lg font-bold text-primary-900 dark:text-primary-100">{{ group.name }}</h4>
+                                                            <p class="text-sm text-primary-700 dark:text-primary-300">{{ group.groupType }} • {{ group.items.length }} items</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div class="text-2xl font-bold text-primary-900 dark:text-primary-100">{{ formatCurrency(group.total) }}</div>
+                                                        <div class="text-sm text-primary-700 dark:text-primary-300">Group Total</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Group Items DataTable -->
+                                            <div class="bg-white dark:bg-surface-800">
+                                                <DataTable :value="group.items.map(item => ({
+                                                    description: item.description,
+                                                    quantity: item.quantity.toString(),
+                                                    price: formatCurrency(item.unitPrice),
+                                                    total: formatCurrency(item.amountIncludingTax)
+                                                }))" 
+                                                tableStyle="min-width: 50rem"
+                                                :rowHover="true"
+                                                class="modern-invoice-table group-table">
+                                                    <Column field="description" header="Description" class="font-medium">
+                                                        <template #body="slotProps">
+                                                            <div class="py-2">
+                                                                <div class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.description }}</div>
+                                                            </div>
+                                                        </template>
+                                                    </Column>
+                                                    <Column field="quantity" header="Qty" class="text-center" style="width: 100px">
+                                                        <template #body="slotProps">
+                                                            <div class="text-center">
+                                                                <span class="inline-flex items-center justify-center w-12 h-8 bg-surface-100 dark:bg-surface-700 rounded-lg text-sm font-medium">
+                                                                    {{ slotProps.data.quantity }}
+                                                                </span>
+                                                            </div>
+                                                        </template>
+                                                    </Column>
+                                                    <Column field="price" header="Unit Price" class="text-right" style="width: 120px">
+                                                        <template #body="slotProps">
+                                                            <div class="text-right font-medium text-surface-700 dark:text-surface-300">{{ slotProps.data.price }}</div>
+                                                        </template>
+                                                    </Column>
+                                                    <Column field="total" header="Amount" class="text-right" style="width: 120px">
+                                                        <template #body="slotProps">
+                                                            <div class="text-right font-bold text-surface-900 dark:text-surface-0">{{ slotProps.data.total }}</div>
+                                                        </template>
+                                                    </Column>
+                                                </DataTable>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <!-- Divider between groups (except for the last one) -->
-                                    <Divider v-if="index < groupedProducts.length - 1" class="border-2 border-surface-200 dark:border-surface-700 my-4" />
+                                    <!-- No items message -->
+                                    <div v-else class="text-center py-12">
+                                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <i class="pi pi-inbox text-2xl text-surface-400"></i>
+                                        </div>
+                                        <div class="text-lg font-medium text-surface-600 dark:text-surface-400 mb-2">No items found</div>
+                                        <div class="text-sm text-surface-500 dark:text-surface-500">This invoice doesn't contain any line items</div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- No items message -->
-                            <div v-else class="p-4 text-center text-surface-400">
-                                No items found for this invoice
-                            </div>
-                            
-                            <div class="py-6 px-4 flex items-start gap-6 flex-wrap sm:flex-row flex-col">
-                                <div class="flex-1 body-small text-left text-surface-950 dark:text-surface-0">
-                                    <div v-if="selectedInvoice?.status" class="flex align-items-center gap-2">
-                                        <span class="font-bold">Status:</span>
-                                        <Tag :value="selectedInvoice.status" 
-                                             :severity="selectedInvoice.status === 'open' ? 'info' : (selectedInvoice.status === 'paid' ? 'success' : 'warning')"
-                                             class="text-base"></Tag>
+                            <!-- Invoice Totals Section -->
+                            <div class="mt-8 bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-800 dark:to-surface-700 rounded-2xl p-8 border border-surface-200 dark:border-surface-700">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <!-- Payment Information -->
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-4 flex items-center gap-2">
+                                            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                                <i class="pi pi-credit-card text-blue-600 dark:text-blue-400 text-sm"></i>
+                                            </div>
+                                            Payment Information
+                                        </h3>
+                                        <div class="space-y-3 text-sm">
+                                            <div class="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                                                <i class="pi pi-building text-xs"></i>
+                                                <span>Wire Transfer: CIS Business Account</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                                                <i class="pi pi-credit-card text-xs"></i>
+                                                <span>ACH: Routing 123456789</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                                                <i class="pi pi-envelope text-xs"></i>
+                                                <span>Questions? billing@cis.com</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex flex-col gap-3 min-w-52">
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Subtotal</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Tax ({{ selectedInvoice?.vatRate || 0 }}%)</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.vat) }}</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="label-small text-surface-950 dark:text-surface-0">Total</span>
-                                        <span>{{ formatCurrency(selectedInvoice?.total) }}</span>
-                                    </div>
-                                    <div class="flex items-center justify-between" v-if="selectedInvoice?.remainingAmount > 0">
-                                        <span class="label-small text-red-500 font-medium">Amount Due</span>
-                                        <span class="text-red-500 font-medium">{{ formatCurrency(selectedInvoice?.remainingAmount) }}</span>
+                                    
+                                    <!-- Financial Summary -->
+                                    <div class="bg-white dark:bg-surface-800 rounded-xl p-6 shadow-sm border border-surface-200 dark:border-surface-700">
+                                        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-6">Invoice Summary</h3>
+                                        <div class="space-y-4">
+                                            <div class="flex justify-between items-center py-2 border-b border-surface-100 dark:border-surface-700">
+                                                <span class="text-surface-600 dark:text-surface-400 font-medium">Subtotal</span>
+                                                <span class="text-lg font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center py-2 border-b border-surface-100 dark:border-surface-700">
+                                                <span class="text-surface-600 dark:text-surface-400 font-medium">Tax ({{ selectedInvoice?.vatRate || 0 }}%)</span>
+                                                <span class="text-lg font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(selectedInvoice?.vat) }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg px-4 border border-primary-200 dark:border-primary-800">
+                                                <span class="text-lg font-bold text-primary-900 dark:text-primary-100">Total Amount</span>
+                                                <span class="text-2xl font-bold text-primary-900 dark:text-primary-100">{{ formatCurrency(selectedInvoice?.total) }}</span>
+                                            </div>
+                                            <div v-if="selectedInvoice?.remainingAmount > 0" class="flex justify-between items-center py-3 bg-red-50 dark:bg-red-900/20 rounded-lg px-4 border border-red-200 dark:border-red-800">
+                                                <span class="text-lg font-bold text-red-900 dark:text-red-100 flex items-center gap-2">
+                                                    <i class="pi pi-exclamation-triangle text-sm"></i>
+                                                    Amount Due
+                                                </span>
+                                                <span class="text-2xl font-bold text-red-900 dark:text-red-100">{{ formatCurrency(selectedInvoice?.remainingAmount) }}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1195,12 +1361,199 @@ watch(customerInvoices, () => {
                     </div>
                     
                     <!-- No invoice selected state -->
-                    <div v-else class="flex flex-column align-items-center p-5">
-                        <i class="pi pi-file text-5xl text-primary mb-3"></i>
-                        <span class="text-lg">Please select an invoice from the table above to view details</span>
+                    <div v-else class="flex justify-center items-center p-12">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="pi pi-file text-2xl text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div class="text-lg font-medium text-surface-600 dark:text-surface-400 mb-2">No Invoice Selected</div>
+                            <div class="text-sm text-surface-500 dark:text-surface-500">Please select an invoice from the table above to view details</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Enhanced selected row styling */
+:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode selected row styling */
+:deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Hover effect for selected rows */
+:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected:hover) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.4), 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Dark mode hover effect for selected rows */
+:deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected:hover) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.2) 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Remove the ::before pseudo-element that was creating the left border */
+:deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected::before) {
+  display: none;
+}
+
+/* Modern Invoice Table Styling */
+:deep(.modern-invoice-table) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.modern-invoice-table .p-datatable-header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+  padding: 1rem;
+}
+
+:deep(.dark .modern-invoice-table .p-datatable-header) {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-bottom: 2px solid #475569;
+}
+
+:deep(.modern-invoice-table .p-datatable-thead > tr > th) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+  padding: 1rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+:deep(.dark .modern-invoice-table .p-datatable-thead > tr > th) {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-bottom: 2px solid #475569;
+  color: #cbd5e1;
+}
+
+:deep(.modern-invoice-table .p-datatable-tbody > tr) {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+:deep(.dark .modern-invoice-table .p-datatable-tbody > tr) {
+  border-bottom: 1px solid #334155;
+}
+
+:deep(.modern-invoice-table .p-datatable-tbody > tr:hover) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.dark .modern-invoice-table .p-datatable-tbody > tr:hover) {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+:deep(.modern-invoice-table .p-datatable-tbody > tr > td) {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border: none;
+}
+
+/* Group table specific styling */
+:deep(.group-table .p-datatable-tbody > tr > td) {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+:deep(.group-table .p-datatable-thead > tr > th) {
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  background: #f8fafc;
+}
+
+:deep(.dark .group-table .p-datatable-thead > tr > th) {
+  background: #1e293b;
+}
+
+/* Smooth animations for all interactive elements */
+:deep(.p-button) {
+  transition: all 0.2s ease;
+}
+
+:deep(.p-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.p-card) {
+  transition: all 0.2s ease;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.p-card:hover) {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Enhanced tag styling */
+:deep(.p-tag) {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Professional gradient backgrounds */
+.invoice-gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.invoice-card-shadow {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  :deep(.modern-invoice-table .p-datatable-tbody > tr > td) {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  :deep(.modern-invoice-table .p-datatable-thead > tr > th) {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Print-friendly styles */
+@media print {
+  .card {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+  }
+  
+  .bg-gradient-to-r {
+    background: #1e40af !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .modern-invoice-table {
+    box-shadow: none !important;
+  }
+}
+</style>
