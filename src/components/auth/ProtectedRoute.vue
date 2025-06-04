@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { AuthService } from '@/service/AuthService';
+import { AuthService } from '@/auth/AuthService';
 import { hasPermission, hasRole, hasAnyPermission, hasAllPermissions, hasAnyRole } from '@/utils/rbac';
 import ProgressSpinner from 'primevue/progressspinner';
 

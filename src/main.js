@@ -15,7 +15,7 @@ import ToastService from 'primevue/toastservice';
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';
 
 // Import auth service
-import { AuthService } from './service/AuthService';
+import { AuthService } from './auth/AuthService';
 
 import '@/assets/styles.scss';
 

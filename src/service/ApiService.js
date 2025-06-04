@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthService } from './AuthService';
+import { AuthService } from '../auth/AuthService';
 
 // Create axios instance with base URL
 const apiClient = axios.create({
@@ -167,15 +167,35 @@ export const InvoiceService = {
   getFilePreviewUrl(fileId, fileType = 'pdf', subtype = null) {
     // Get the current authentication token
     const token = AuthService.getToken();
-    // Remove 'Bearer ' prefix if present
-    const tokenValue = token ? token.replace('Bearer ', '') : '';
-    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
     
-    console.log('Creating preview URL with token param:', {
+    // Fallback: if AuthService doesn't return a token, try localStorage directly
+    const fallbackToken = token || localStorage.getItem('auth_token');
+    
+    // Enhanced debug logging for production troubleshooting
+    console.log('🔍 getFilePreviewUrl Debug:', {
       fileId,
       fileType,
       subtype,
-      hasToken: !!tokenValue
+      rawToken: token,
+      fallbackToken: fallbackToken,
+      tokenLength: token ? token.length : 0,
+      fallbackTokenLength: fallbackToken ? fallbackToken.length : 0,
+      tokenType: typeof token,
+      localStorage_token: localStorage.getItem('auth_token'),
+      localStorage_token_length: localStorage.getItem('auth_token') ? localStorage.getItem('auth_token').length : 0,
+      environment: import.meta.env.MODE,
+      isAuthenticated: AuthService.isAuthenticated(),
+      baseURL: apiClient.defaults.baseURL
+    });
+    
+    // Remove 'Bearer ' prefix if present
+    const tokenValue = fallbackToken ? fallbackToken.replace('Bearer ', '') : '';
+    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
+    
+    console.log('🔍 Token processing:', {
+      tokenValue: tokenValue ? `${tokenValue.substring(0, 10)}...` : 'null',
+      tokenParam: tokenParam,
+      hasTokenParam: !!tokenParam
     });
     
     let url = '';
