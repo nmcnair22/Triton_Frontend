@@ -182,6 +182,13 @@ const showDuplicateConfirmation = ref(false);
 const duplicateDetails = ref(null);
 const pendingMergeRequest = ref(null);
 
+// Merge group detection for selected invoices
+const existingMergeGroups = ref([]);
+const isCheckingMergeGroups = ref(false);
+const showMergePreview = ref(false);
+
+
+
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
   lazyParams.rows = event.rows;
@@ -1151,6 +1158,9 @@ async function downloadFile(file) {
   }
 }
 
+// Alias for downloadFile to match template expectations
+const downloadGeneratedFile = downloadFile;
+
 // Function to preview a file
 function previewFile(file) {
   if (!file) {
@@ -1535,10 +1545,16 @@ async function handleDuplicateConfirmation(overwrite) {
     isMergingInvoices.value = true;
     mergeError.value = null;
     
-    // Debug: Log the pending merge request to see what's being sent
-    console.log('Sending merge request with force_overwrite:', pendingMergeRequest.value);
+    // Add force_overwrite flag to the pending merge request
+    const mergeRequestWithOverwrite = {
+      ...pendingMergeRequest.value,
+      force_overwrite: true
+    };
     
-    const result = await invoiceStore.mergeInvoices(pendingMergeRequest.value);
+    // Debug: Log the merge request to see what's being sent
+    console.log('Sending merge request with force_overwrite:', mergeRequestWithOverwrite);
+    
+    const result = await invoiceStore.mergeInvoices(mergeRequestWithOverwrite);
     
     if (result && result.success) {
       mergeResult.value = result;
@@ -2224,6 +2240,8 @@ async function executeMergeInvoices() {
     options: options
   };
 
+  console.log('🔄 Sending merge request:', mergeRequest);
+
   try {
     isMergingInvoices.value = true;
     mergeError.value = null;
@@ -2259,9 +2277,16 @@ async function executeMergeInvoices() {
     }
   } catch (err) {
     console.error('Error merging invoices:', err);
+    console.log('Error response status:', err.response?.status);
+    console.log('Error response data:', err.response?.data);
     mergeError.value = err.message;
     
-    if (err.response?.data?.duplicate_detected) {
+    // Check for duplicate detection (409 error or specific error types)
+    if (err.response?.status === 409 || 
+        err.response?.data?.error_type === 'duplicate_merge' || 
+        err.response?.data?.requires_confirmation) {
+      console.log('Duplicate merge detected, showing confirmation dialog');
+      console.log('Duplicate details:', err.response.data);
       duplicateDetails.value = err.response.data;
       pendingMergeRequest.value = mergeRequest;
       showDuplicateConfirmation.value = true;
@@ -2277,6 +2302,180 @@ async function executeMergeInvoices() {
     isMergingInvoices.value = false;
   }
 }
+
+// Function to check for existing merge groups containing selected invoices
+async function checkForExistingMergeGroups(selectedInvoices) {
+  if (!selectedInvoices || selectedInvoices.length < 2) {
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    return;
+  }
+
+  try {
+    isCheckingMergeGroups.value = true;
+    
+    // Get invoice numbers from selected invoices
+    const invoiceNumbers = selectedInvoices.map(invoice => invoice.number);
+    
+    // Get customer number for the API call
+    const customerNumber = selectedCustomer.value?.number || selectedCustomer.value?.customer_number;
+    
+    if (!customerNumber) {
+      console.error('No customer selected for merge group lookup');
+      existingMergeGroups.value = [];
+      showMergePreview.value = false;
+      return;
+    }
+    
+    // Call backend to check for conflicts (existing merge groups)
+    const response = await invoiceStore.findMergeGroupsForInvoices(invoiceNumbers, customerNumber);
+    
+    if (response && response.data) {
+      // Backend returns conflicts array when has_conflicts is true
+      if (response.data.has_conflicts && response.data.conflicts) {
+        existingMergeGroups.value = response.data.conflicts.map(conflict => ({
+          id: conflict.merge_group_id,
+          merged_invoice_number: conflict.merged_invoice_number,
+          group_identifier: conflict.group_identifier,
+          created_date: conflict.created_at,
+          original_invoices: conflict.existing_invoices,
+          template_used: conflict.template_used,
+          template_override: conflict.template_override,
+          document_count: conflict.document_count,
+          total_amount: conflict.total_amount,
+          conflicting_invoices: conflict.conflicting_invoices
+        }));
+        showMergePreview.value = true;
+        
+        // Switch to merge preview tab
+        activeDocumentTab.value = 'merge-preview';
+        
+        console.log('📊 Found existing merge groups:', existingMergeGroups.value);
+      } else {
+        existingMergeGroups.value = [];
+        showMergePreview.value = false;
+      }
+    } else {
+      existingMergeGroups.value = [];
+      showMergePreview.value = false;
+    }
+  } catch (err) {
+    console.error('Error checking for existing merge groups:', err);
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+  } finally {
+    isCheckingMergeGroups.value = false;
+  }
+}
+
+// Watch for changes in selected invoices for merge
+watch(selectedInvoicesForMerge, async (newSelection) => {
+  if (isMergeMode.value && newSelection.length >= 2) {
+    await checkForExistingMergeGroups(newSelection);
+  } else {
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
+    // Switch back to appropriate tab
+    if (activeDocumentTab.value === 'merge-preview') {
+      activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+    }
+  }
+}, { deep: true });
+
+// Handle viewing merge group documents
+async function viewMergeDocuments(mergeGroup) {
+  console.log('📄 Viewing documents for merge group:', mergeGroup.merged_invoice_number);
+  
+  try {
+    // Get detailed merge group data with documents
+    const response = await invoiceStore.getMergeGroupById(mergeGroup.group_identifier);
+    
+    if (response && response.data) {
+      // Switch to customer documents tab and show merge group documents
+      activeDocumentTab.value = 'customer';
+      
+      // You could filter customer documents to show only merge group documents
+      // For now, we'll show a toast with the document count
+      const documentCount = response.data.documents ? response.data.documents.length : 0;
+      
+      toast.add({
+        severity: 'info',
+        summary: 'Merge Documents',
+        detail: `Found ${documentCount} documents for merge group ${mergeGroup.merged_invoice_number}`,
+        life: 3000
+      });
+    }
+  } catch (err) {
+    console.error('Error loading merge group documents:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load merge group documents',
+      life: 3000
+    });
+  }
+}
+
+// Handle re-merging a group
+async function reMergeGroup(mergeGroup) {
+  console.log('🔄 Re-merging group:', mergeGroup.merged_invoice_number);
+  
+  try {
+    // Prepare the merge group for re-merge on the backend
+    await invoiceStore.prepareMergeGroupForRemerge(mergeGroup.group_identifier);
+    
+    // Set up the merge with the original invoices
+    const originalInvoices = mergeGroup.original_invoices.map(invoiceNumber => {
+      // Find the invoice object from our data
+      return customerInvoices.value.find(inv => inv.number === invoiceNumber) || { number: invoiceNumber };
+    });
+    
+    selectedInvoicesForMerge.value = originalInvoices;
+    isMergeMode.value = true;
+    
+    // Show confirmation dialog asking if they want to overwrite
+    showDuplicateConfirmation.value = true;
+    duplicateDetails.value = {
+      existing_merge: {
+        merged_invoice_number: mergeGroup.merged_invoice_number,
+        created_date: mergeGroup.created_date,
+        original_invoices: mergeGroup.original_invoices,
+        template_used: mergeGroup.template_used
+      },
+      invoice_numbers: mergeGroup.original_invoices
+    };
+    
+    // Set up the pending merge request
+    pendingMergeRequest.value = {
+      invoice_numbers: mergeGroup.original_invoices,
+      template_id: mergeGroup.template_used,
+      template_override: mergeGroup.template_override,
+      force_overwrite: true, // Since this is a re-merge, we want to overwrite
+      options: {
+        format: selectedFormat.value,
+        invoice_date_override: invoiceDateOverride.value
+      }
+    };
+    
+    toast.add({
+      severity: 'warn',
+      summary: 'Re-merge Confirmation',
+      detail: `Confirm re-merging ${mergeGroup.original_invoices.length} invoices`,
+      life: 5000
+    });
+  } catch (err) {
+    console.error('Error preparing re-merge:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Re-merge Error',
+      detail: 'Failed to prepare merge group for re-merge',
+      life: 3000
+    });
+  }
+}
+
+
 </script>
 
 <template>
@@ -2356,19 +2555,26 @@ async function executeMergeInvoices() {
                     <div class="col-span-12 md:col-span-7 xl:col-span-8">
                         <DocumentLibrarySection
                             :activeDocumentTab="activeDocumentTab"
+                            :selectedCustomerInvoice="selectedCustomerInvoice"
                             :isLoadingGeneratedFiles="isLoadingGeneratedFiles"
                             :isLoadingCustomerDocuments="isLoadingCustomerDocuments"
                             :generatedFilesError="generatedFilesError"
                             :customerDocumentsError="customerDocumentsError"
                             :selectedCustomer="selectedCustomer"
-                            :selectedCustomerInvoice="selectedCustomerInvoice"
                             :generatedFiles="generatedFiles"
                             :customerDocuments="customerDocuments"
                             :getFileIcon="getFileIcon"
                             :formatDate="formatDate"
-                            @update:activeDocumentTab="activeDocumentTab = $event"
+                            :isMergeMode="isMergeMode"
+                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                            :existingMergeGroups="existingMergeGroups"
+                            :isCheckingMergeGroups="isCheckingMergeGroups"
+                            :showMergePreview="showMergePreview"
+                            @tab-change="activeDocumentTab = $event"
                             @preview-file="previewFile"
-                            @download-file="downloadFile"
+                            @download-file="downloadGeneratedFile"
+                            @view-merge-documents="viewMergeDocuments"
+                            @re-merge-group="reMergeGroup"
                         />
                     </div>
                 </div>

@@ -625,6 +625,44 @@ export const useInvoiceStore = defineStore('invoice', () => {
     }
   }
 
+  async function findMergeGroupsForInvoices(invoiceNumbers, customerNumber) {
+    try {
+      if (!customerNumber) {
+        throw new Error('Customer number is required for merge group lookup');
+      }
+
+      // Make the API call with the correct data structure
+      const requestData = {
+        invoice_numbers: invoiceNumbers,
+        customer_number: customerNumber
+      };
+      
+      const response = await InvoiceService.checkMergeConflicts(requestData);
+      return response;
+    } catch (err) {
+      // Preserve the original error response for proper error handling
+      throw err;
+    }
+  }
+
+  async function getMergeGroupsForCustomer(customerNumber, options = {}) {
+    try {
+      const response = await InvoiceService.getMergeGroupsForCustomer(customerNumber, options);
+      return response;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async function getMergeGroupById(groupIdentifier) {
+    try {
+      const response = await InvoiceService.getMergeGroupById(groupIdentifier);
+      return response;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   function resetTemplateState() {
     availableTemplates.value = [];
     generatedFiles.value = [];
@@ -688,6 +726,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
     mergeInvoices,
     getCustomerMergeHistory,
     getMergeHistory,
-    findMergeContaining
+    findMergeContaining,
+    findMergeGroupsForInvoices,
+    getMergeGroupsForCustomer,
+    getMergeGroupById
   };
 }); 

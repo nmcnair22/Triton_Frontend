@@ -296,5 +296,26 @@ export const InvoiceService = {
 
   findMergeContaining(originalInvoiceNumber) {
     return ApiService.get(`/invoice-templates/find-merge/${originalInvoiceNumber}`);
+  },
+
+  checkMergeConflicts(requestData) {
+    return ApiService.post('/merge-groups/check-conflicts', requestData);
+  },
+
+  getMergeGroupsForCustomer(customerNumber, options = {}) {
+    const params = new URLSearchParams({
+      customer_number: customerNumber,
+      status: options.status || 'active',
+      limit: options.limit || 50
+    });
+    return ApiService.get(`/merge-groups?${params}`);
+  },
+
+  getMergeGroupById(groupIdentifier) {
+    return ApiService.get(`/merge-groups/${groupIdentifier}`);
+  },
+
+  prepareMergeGroupForRemerge(groupIdentifier) {
+    return ApiService.post(`/merge-groups/${groupIdentifier}/prepare-remerge`);
   }
 }; 
