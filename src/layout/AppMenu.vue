@@ -10,7 +10,7 @@ const model = ref([
             {
                 label: 'Visit Details',
                 icon: 'pi pi-fw pi-calendar-plus',
-                to: '/field-services/visit-details'
+                to: '/field-services/visit-management'
             }
         ]
     },

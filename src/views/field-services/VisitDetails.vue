@@ -12,7 +12,7 @@
               Visit Management
             </h1>
             <p class="text-surface-600 dark:text-surface-300 mt-1">
-              Comprehensive field service visit tracking and analytics
+              Gateway to comprehensive field service visits - click any visit for detailed analysis
             </p>
           </div>
         </div>
@@ -38,34 +38,31 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatsCard
           title="Total Visits"
-          :value="visitStats?.overview?.total || 0"
+          :value="visitsStore.overallStats?.total || 0"
           icon="pi pi-calendar"
           color="primary"
-          :trend="visitStatsTrend?.total || 0"
+          :trend="visitsStore.statTrends?.total || 0"
         />
         <StatsCard
           title="Completion Rate"
-          :value="visitStats?.overview?.completionRate || 0"
+          :value="`${visitsStore.overallStats?.completionRate || 0}%`"
           icon="pi pi-check-circle"
           color="success"
-          is-percentage
-          :trend="visitStatsTrend?.completionRate || 0"
+          :trend="visitsStore.statTrends?.completionRate || 0"
         />
         <StatsCard
           title="Avg Quality Score"
-          :value="visitStats?.overview?.avgQualityScore || 0"
+          :value="visitsStore.overallStats?.avgQualityScore || 0"
           icon="pi pi-star"
           color="warning"
-          format="decimal"
-          :trend="visitStatsTrend?.avgQualityScore || 0"
+          :trend="visitsStore.statTrends?.avgQualityScore || 0"
         />
         <StatsCard
           title="Total Revenue"
-          :value="visitStats?.overview?.totalRevenue || 0"
+          :value="`$${(visitsStore.overallStats?.totalRevenue || 0).toLocaleString()}`"
           icon="pi pi-dollar"
           color="info"
-          format="currency"
-          :trend="visitStatsTrend?.totalRevenue || 0"
+          :trend="visitsStore.statTrends?.totalRevenue || 0"
         />
       </div>
     </div>
@@ -545,6 +542,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, useId } from 'vue';
+import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useVisitsStore } from '@/stores/visitsStore';
 import { useCustomerStore } from '@/stores/customerStore';
@@ -558,6 +556,7 @@ import CreateVisitForm from '@/components/field-services/CreateVisitForm.vue';
 const titleId = useId();
 
 // Store instances
+const router = useRouter();
 const visitsStore = useVisitsStore();
 const customerStore = useCustomerStore();
 const toast = useToast();
@@ -717,12 +716,8 @@ function toggleQuickFilter(filter) {
 }
 
 function openVisitDetail(visit) {
-  selectedVisitForDetail.value = visit;
-  showVisitDetail.value = true;
-  
-  // Load additional visit details
-  visitsStore.fetchVisit(visit.id);
-  visitsStore.fetchVisitTimeline(visit.id);
+  // Navigate to the dedicated visit detail page
+  router.push(`/field-services/visit/${visit.id}`);
 }
 
 function closeVisitDetail() {

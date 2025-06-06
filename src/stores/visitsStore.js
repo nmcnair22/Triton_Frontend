@@ -82,6 +82,46 @@ export const useVisitsStore = defineStore('visits', () => {
 
   const visitTrends = computed(() => visitStats.value.trends || {});
 
+  // Computed statistics for dashboard
+  const overallStats = computed(() => {
+    const totalCount = visits.value.length;
+    const completed = visits.value.filter(v => v.status === 'completed').length;
+    const inProgress = visits.value.filter(v => v.status === 'in_progress').length;
+    const scheduled = visits.value.filter(v => v.status === 'scheduled').length;
+    
+    // Calculate completion rate
+    const completionRate = totalCount > 0 ? Math.round((completed / totalCount) * 100) : 0;
+    
+    // Calculate average quality score from AI insights
+    const qualityScores = visits.value
+      .filter(v => v.aiInsights && v.aiInsights.qualityRating)
+      .map(v => v.aiInsights.qualityRating);
+    const avgQualityScore = qualityScores.length > 0 
+      ? Math.round((qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length) * 10) / 10
+      : 0;
+    
+    // Calculate total revenue
+    const totalRevenue = visits.value.reduce((sum, visit) => sum + (visit.revenue || 0), 0);
+    
+    return {
+      total: totalCount,
+      completed,
+      inProgress,
+      scheduled,
+      completionRate,
+      avgQualityScore,
+      totalRevenue
+    };
+  });
+
+  // Mock trend data (will be replaced with real API data later)
+  const statTrends = computed(() => ({
+    total: 12.5,
+    completionRate: 8.3,
+    avgQualityScore: 4.2,
+    totalRevenue: 15.7
+  }));
+
   // Actions
   async function fetchVisits(params = {}) {
     loading.value = true;
@@ -377,6 +417,8 @@ export const useVisitsStore = defineStore('visits', () => {
     upcomingVisits,
     filteredVisits,
     visitTrends,
+    overallStats,
+    statTrends,
     
     // Actions
     fetchVisits,

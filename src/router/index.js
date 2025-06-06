@@ -15,7 +15,7 @@ const routes = [
         children: [
             {
                 path: '/',
-                redirect: '/field-services/visit-details'
+                redirect: '/field-services/visit-management'
             },
             {
                 path: '/dashboard-marketing',
@@ -34,17 +34,31 @@ const routes = [
                 component: () => import('@/views/apps/StreamlineDashboard.vue')
             },
             {
-                path: '/field-services/visit-details',
-                name: 'visit-details',
+                path: '/field-services/visit-management',
+                name: 'visit-management',
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
                         { label: 'Field Services', path: '/field-services' },
-                        { label: 'Visit Details', path: '/field-services/visit-details' }
+                        { label: 'Visit Management', path: '/field-services/visit-management' }
                     ],
                     requiresAuth: true
                 },
                 component: () => import('@/views/field-services/VisitDetails.vue')
+            },
+            {
+                path: '/field-services/visit/:id',
+                name: 'visit-detail',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Visit Management', path: '/field-services/visit-management' },
+                        { label: 'Visit Detail', path: '/field-services/visit/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/field-services/VisitDetailPage.vue')
             },
 
             {
@@ -782,7 +796,7 @@ router.beforeEach(async (to, from, next) => {
 // Check for auth redirect after login
 router.afterEach((to) => {
     // If we've just logged in, check for a stored redirect
-    if (to.name === 'visit-details' && AuthService.isAuthenticated()) {
+    if (to.name === 'visit-management' && AuthService.isAuthenticated()) {
         const redirectPath = localStorage.getItem('auth_redirect');
         if (redirectPath) {
             localStorage.removeItem('auth_redirect');
