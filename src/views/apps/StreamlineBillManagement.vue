@@ -4,9 +4,9 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import TabMenu from 'primevue/tabmenu';
 import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import Button from 'primevue/button';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import Drawer from 'primevue/drawer';
 import TabView from 'primevue/tabview';
@@ -591,34 +591,34 @@ const getDisputeStatusClass = (status) => {
             </div>
 
             <div class="flex flex-wrap gap-3">
-                <Dropdown 
+                <Select 
                     v-model="selectedVendor" 
                     :options="vendorOptions" 
                     optionLabel="name" 
                     placeholder="Vendor" 
                     class="w-full md:w-auto"
                 />
-                <Dropdown 
+                <Select 
                     v-model="selectedServiceType" 
                     :options="serviceTypeOptions" 
                     optionLabel="name" 
                     placeholder="Service Type" 
                     class="w-full md:w-auto"
                 />
-                <Dropdown 
+                <Select 
                     v-model="selectedLocation" 
                     :options="locationOptions" 
                     optionLabel="name" 
                     placeholder="Location" 
                     class="w-full md:w-auto"
                 />
-                <Calendar 
+                <DatePicker 
                     v-model="selectedDateRange" 
                     selectionMode="range" 
                     placeholder="Due Date" 
                     class="w-full md:w-auto"
                 />
-                <Dropdown 
+                <Select 
                     v-model="selectedAmountRange" 
                     :options="amountRangeOptions" 
                     optionLabel="name" 
@@ -861,7 +861,7 @@ const getDisputeStatusClass = (status) => {
                         <InputText placeholder="Search disputes..." class="w-full" />
                     </span>
                     <div class="flex gap-2">
-                        <Dropdown placeholder="All Vendors" class="w-48" />
+                        <Select placeholder="All Vendors" class="w-48" />
                         <Button icon="pi pi-plus" label="Create Dispute" severity="primary" />
                     </div>
                 </div>
@@ -980,7 +980,7 @@ const getDisputeStatusClass = (status) => {
                         <InputText placeholder="Search credits..." class="w-full" />
                     </span>
                     <div class="flex gap-2">
-                        <Dropdown placeholder="All Vendors" class="w-48" />
+                        <Select placeholder="All Vendors" class="w-48" />
                         <Button icon="pi pi-plus" label="Add Credit" severity="primary" />
                     </div>
                 </div>
@@ -1097,7 +1097,7 @@ const getDisputeStatusClass = (status) => {
                         <i class="pi pi-search" />
                         <InputText placeholder="Search resolved disputes..." class="w-full" />
                     </span>
-                    <Dropdown placeholder="All Vendors" class="w-48" />
+                    <Select placeholder="All Vendors" class="w-48" />
                 </div>
 
                 <!-- Resolved Disputes Table -->

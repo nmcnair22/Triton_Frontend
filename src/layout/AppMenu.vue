@@ -8,24 +8,9 @@ const model = ref([
         icon: 'pi pi-home',
         items: [
             {
-                label: 'Operational Dashboard',
-                icon: 'pi pi-fw pi-th-large',
-                to: '/dispatch/dashboard'
-            },
-            {
-                label: 'Customers',
-                icon: 'pi pi-fw pi-users',
-                to: '/dispatch/customers'
-            },
-            {
-                label: 'Projects',
-                icon: 'pi pi-fw pi-folder',
-                to: '/dispatch/projects'
-            },
-            {
-                label: 'Jobs',
-                icon: 'pi pi-fw pi-briefcase',
-                to: '/dispatch/jobs'
+                label: 'Visit Details',
+                icon: 'pi pi-fw pi-calendar-plus',
+                to: '/field-services/visit-details'
             }
         ]
     },

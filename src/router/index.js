@@ -15,7 +15,7 @@ const routes = [
         children: [
             {
                 path: '/',
-                redirect: '/dispatch/dashboard'
+                redirect: '/field-services/visit-details'
             },
             {
                 path: '/dashboard-marketing',
@@ -34,103 +34,19 @@ const routes = [
                 component: () => import('@/views/apps/StreamlineDashboard.vue')
             },
             {
-                path: '/dispatch/dashboard',
-                name: 'dispatch-dashboard',
+                path: '/field-services/visit-details',
+                name: 'visit-details',
                 meta: {
                     breadcrumb: [
                         { label: 'Home', path: '/' },
-                        { label: 'Dispatch Dashboard', path: '/dispatch/dashboard' }
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Visit Details', path: '/field-services/visit-details' }
                     ],
                     requiresAuth: true
                 },
-                component: () => import('@/views/dispatch-v2/dashboard/DashboardView.vue')
+                component: () => import('@/views/field-services/VisitDetails.vue')
             },
-            {
-                path: '/dispatch/customers',
-                name: 'dispatch-customers',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Customers', path: '/dispatch/customers' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/customer/CustomerListView.vue')
-            },
-            {
-                path: '/dispatch/customers/:id',
-                name: 'dispatch-customer-details',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Customers', path: '/dispatch/customers' },
-                        { label: 'Customer Details', path: '/dispatch/customers/:id' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/customer/CustomerView.vue')
-            },
-            {
-                path: '/dispatch/projects',
-                name: 'dispatch-projects',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Projects', path: '/dispatch/projects' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/project/ProjectListView.vue')
-            },
-            {
-                path: '/dispatch/projects/:id',
-                name: 'dispatch-project-details',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Projects', path: '/dispatch/projects' },
-                        { label: 'Project Details', path: '/dispatch/projects/:id' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/project/ProjectView.vue')
-            },
-            {
-                path: '/dispatch/jobs',
-                name: 'dispatch-jobs',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Jobs', path: '/dispatch/jobs' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/job/JobListView.vue')
-            },
-            {
-                path: '/dispatch/jobs/:id',
-                name: 'dispatch-job-details',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Jobs', path: '/dispatch/jobs' },
-                        { label: 'Job Details', path: '/dispatch/jobs/:id' }
-                    ],
-                    requiresAuth: true
-                },
-                component: () => import('@/views/dispatch-v2/job/JobView.vue')
-            },
-            {
-                path: '/dashboard',
-                name: 'dashboard',
-                meta: {
-                    breadcrumb: [
-                        { label: 'Home', path: '/' },
-                        { label: 'Dashboard', path: '/dashboard' }
-                    ]
-                },
-                component: () => import('@/views/dispatch-v2/dashboard/DashboardView.vue')
-            },
+
             {
                 path: '/streamline/dashboard',
                 name: 'streamline-dashboard',
@@ -866,7 +782,7 @@ router.beforeEach(async (to, from, next) => {
 // Check for auth redirect after login
 router.afterEach((to) => {
     // If we've just logged in, check for a stored redirect
-    if (to.name === 'dashboard' && AuthService.isAuthenticated()) {
+    if (to.name === 'visit-details' && AuthService.isAuthenticated()) {
         const redirectPath = localStorage.getItem('auth_redirect');
         if (redirectPath) {
             localStorage.removeItem('auth_redirect');

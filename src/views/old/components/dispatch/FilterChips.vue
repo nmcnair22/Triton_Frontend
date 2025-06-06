@@ -1,7 +1,12 @@
 <script setup>
 import { computed } from 'vue';
 
-const props = defineProps({
+// Vue 3.5 Reactive Props Destructure - Extract props directly
+const { 
+  modelValue = [], 
+  options = [], 
+  multiSelect = false 
+} = defineProps({
   modelValue: {
     type: Array,
     default: () => []
@@ -22,9 +27,9 @@ const emit = defineEmits(['update:modelValue', 'change']);
 function toggleChip(item) {
   let newValue;
   
-  if (props.multiSelect) {
+  if (multiSelect) {
     // For multi-select, toggle the item in the array
-    newValue = [...props.modelValue];
+    newValue = [...modelValue];
     
     const index = newValue.indexOf(item.value);
     if (index >= 0) {
@@ -34,7 +39,7 @@ function toggleChip(item) {
     }
   } else {
     // For single select, replace the whole selection
-    if (props.modelValue.includes(item.value)) {
+    if (modelValue.includes(item.value)) {
       newValue = [];
     } else {
       newValue = [item.value];
@@ -47,7 +52,7 @@ function toggleChip(item) {
 
 // Check if a chip is selected
 function isSelected(item) {
-  return props.modelValue.includes(item.value);
+  return modelValue.includes(item.value);
 }
 </script>
 

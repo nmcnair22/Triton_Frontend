@@ -1,7 +1,18 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 
-const props = defineProps({
+// Vue 3.5 Reactive Props Destructure
+const { 
+  title,
+  value,
+  change = 0,
+  previousValue = null,
+  icon = 'pi pi-chart-bar',
+  color = 'primary',
+  isPercentage = false,
+  loading = false,
+  format = 'number'
+} = defineProps({
   title: {
     type: String,
     required: true
@@ -40,47 +51,51 @@ const props = defineProps({
   }
 });
 
+// Vue 3.5 useId() for accessibility
+const titleId = useId();
+const valueId = useId();
+
 // Format value based on format type
 const formattedValue = computed(() => {
-  if (props.loading) return '—';
+  if (loading) return '—';
   
-  if (props.isPercentage) {
-    return `${Number(props.value).toFixed(1)}%`;
+  if (isPercentage) {
+    return `${Number(value).toFixed(1)}%`;
   }
   
-  switch (props.format) {
+  switch (format) {
     case 'currency':
-      return formatCurrency(props.value);
+      return formatCurrency(value);
     case 'percent':
-      return `${Number(props.value).toFixed(1)}%`;
+      return `${Number(value).toFixed(1)}%`;
     case 'time':
-      return formatTime(props.value);
+      return formatTime(value);
     default:
-      return formatNumber(props.value);
+      return formatNumber(value);
   }
 });
 
 // Format change indicator
 const formattedChange = computed(() => {
-  if (props.loading) return '—';
+  if (loading) return '—';
   
-  const change = Number(props.change);
+  const changeNum = Number(change);
   // Check if change is a valid number
-  if (isNaN(change)) return '—';
+  if (isNaN(changeNum)) return '—';
   
-  return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+  return `${changeNum >= 0 ? '+' : ''}${changeNum.toFixed(1)}%`;
 });
 
 // Determine change indicator color
 const changeColor = computed(() => {
-  if (props.loading) return 'text-gray-400';
+  if (loading) return 'text-gray-400';
   
-  const change = Number(props.change);
+  const changeNum = Number(change);
   // Check if change is a valid number
-  if (isNaN(change)) return 'text-gray-400';
+  if (isNaN(changeNum)) return 'text-gray-400';
   
-  if (change === 0) return 'text-gray-500';
-  return change > 0 ? 'text-green-500' : 'text-red-500';
+  if (changeNum === 0) return 'text-gray-500';
+  return changeNum > 0 ? 'text-green-500' : 'text-red-500';
 });
 
 // Determine icon color class
@@ -94,7 +109,7 @@ const iconColorClass = computed(() => {
     'secondary': 'text-purple-600'
   };
   
-  return colorMap[props.color] || colorMap.primary;
+  return colorMap[color] || colorMap.primary;
 });
 
 // Determine icon background color class
@@ -108,7 +123,7 @@ const iconBgClass = computed(() => {
     'secondary': 'bg-purple-100'
   };
   
-  return bgMap[props.color] || bgMap.primary;
+  return bgMap[color] || bgMap.primary;
 });
 
 // Format number with commas

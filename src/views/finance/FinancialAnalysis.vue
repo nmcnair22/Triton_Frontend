@@ -11,7 +11,7 @@ import TabPanel from 'primevue/tabpanel';
 import Dropdown from 'primevue/dropdown';
 import MultiSelect from 'primevue/multiselect';
 import InputText from 'primevue/inputtext';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import Divider from 'primevue/divider';
 import ProgressBar from 'primevue/progressbar';
 import ToggleButton from 'primevue/togglebutton';
@@ -473,14 +473,14 @@ const applyDimensionFilters = () => {
           <!-- Period Selection -->
           <div class="md:col-span-3">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period</label>
-            <Dropdown v-model="selectedPeriod" :options="periodOptions" optionLabel="name" 
+                            <Select v-model="selectedPeriod" :options="periodOptions" optionLabel="name" 
                      class="w-full" @change="handlePeriodChange" />
           </div>
           
           <!-- Date Range (visible only for Custom Range) -->
           <div class="md:col-span-3" v-if="selectedPeriod.code === 'CR'">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
-            <Calendar v-model="dateRange" selectionMode="range" dateFormat="mm/dd/yy" 
+                                            <DatePicker v-model="dateRange" selectionMode="range" dateFormat="mm/dd/yy" 
                      class="w-full" showIcon />
           </div>
           
@@ -494,7 +494,7 @@ const applyDimensionFilters = () => {
           <!-- Comparison Period (visible only when comparison is enabled) -->
           <div class="md:col-span-3" v-if="comparisonEnabled">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Compare To</label>
-            <Dropdown v-model="selectedComparisonPeriod" :options="comparisonPeriodOptions" 
+                            <Select v-model="selectedComparisonPeriod" :options="comparisonPeriodOptions" 
                      optionLabel="name" class="w-full" />
           </div>
         </div>

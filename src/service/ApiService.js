@@ -131,6 +131,79 @@ export const ApiService = {
   // Add specific API methods related to your domain
 };
 
+// Visit-specific API services
+export const VisitService = {
+  // Get all visits with optional filtering
+  getVisits(params) {
+    return ApiService.get('/visits', params);
+  },
+  
+  // Get a specific visit by ID
+  getVisit(id) {
+    return ApiService.get(`/visits/${id}`);
+  },
+  
+  // Get visit timeline
+  getVisitTimeline(id) {
+    return ApiService.get(`/visits/${id}/timeline`);
+  },
+  
+  // Add timeline event
+  addTimelineEvent(id, event) {
+    return ApiService.post(`/visits/${id}/timeline`, event);
+  },
+  
+  // Get visit analytics
+  getVisitAnalytics(id) {
+    return ApiService.get(`/visits/${id}/analytics`);
+  },
+  
+  // Get visit statistics
+  getVisitStats(params = {}) {
+    return ApiService.get('/visits/stats/overview', params);
+  },
+  
+  // Get visit trends
+  getVisitTrends(params = {}) {
+    return ApiService.get('/visits/stats/trends', params);
+  },
+  
+  // Update visit status
+  updateVisitStatus(id, status, notes = '') {
+    return ApiService.patch(`/visits/${id}`, { status, notes });
+  },
+  
+  // Assign technician to visit
+  assignTechnician(id, technicianId) {
+    return ApiService.patch(`/visits/${id}/assign-technician`, { technician_id: technicianId });
+  },
+  
+  // Create a new visit
+  createVisit(visit) {
+    return ApiService.post('/visits', visit);
+  },
+  
+  // Update an existing visit
+  updateVisit(visit) {
+    return ApiService.put(`/visits/${visit.id}`, visit);
+  },
+  
+  // Delete a visit
+  deleteVisit(id) {
+    return ApiService.delete(`/visits/${id}`);
+  },
+  
+  // Batch operations
+  batchUpdateStatus(visitIds, status) {
+    return ApiService.patch('/visits/batch/update-status', { visit_ids: visitIds, status });
+  },
+  
+  // Export visits
+  exportVisits(params = {}) {
+    return ApiService.post('/visits/export/bulk', params);
+  }
+};
+
 // Invoice-specific API services
 export const InvoiceService = {
   // Get all invoices with optional filtering

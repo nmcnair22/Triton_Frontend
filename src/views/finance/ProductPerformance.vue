@@ -8,7 +8,7 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import MultiSelect from 'primevue/multiselect';
 import InputText from 'primevue/inputtext';
 import Divider from 'primevue/divider';
@@ -455,7 +455,7 @@ const toggleChartType = () => {
           <!-- Time Period Selection -->
           <div class="md:col-span-3">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period</label>
-            <Dropdown v-model="selectedTimePeriod" :options="timeOptions" optionLabel="name" 
+                            <Select v-model="selectedTimePeriod" :options="timeOptions" optionLabel="name" 
                       class="w-full" />
           </div>
           

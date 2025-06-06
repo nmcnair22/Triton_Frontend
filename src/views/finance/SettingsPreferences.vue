@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import Card from 'primevue/card';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Button from 'primevue/button';

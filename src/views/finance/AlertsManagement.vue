@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
@@ -647,21 +647,21 @@ onUnmounted(() => {
                 
                 <div class="field mb-4">
                   <label for="alertType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Type</label>
-                  <Dropdown id="alertType" v-model="alertForm.type" :options="alertTypeOptions" optionLabel="name" 
+                  <Select id="alertType" v-model="alertForm.type" :options="alertTypeOptions" optionLabel="name" 
                             placeholder="Select Alert Type" :class="{'p-invalid': formErrors.type}" />
                   <small v-if="formErrors.type" class="p-error">{{ formErrors.type }}</small>
                 </div>
                 
                 <div class="field mb-4">
                   <label for="metric" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Metric</label>
-                  <Dropdown id="metric" v-model="alertForm.metric" :options="metricOptions" optionLabel="name" 
+                  <Select id="metric" v-model="alertForm.metric" :options="metricOptions" optionLabel="name" 
                             placeholder="Select Metric" :disabled="!alertForm.type" :class="{'p-invalid': formErrors.metric}" />
                   <small v-if="formErrors.metric" class="p-error">{{ formErrors.metric }}</small>
                 </div>
                 
                 <div class="field mb-4">
                   <label for="condition" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition</label>
-                  <Dropdown id="condition" v-model="alertForm.condition" :options="conditionOptions" optionLabel="name" 
+                  <Select id="condition" v-model="alertForm.condition" :options="conditionOptions" optionLabel="name" 
                            placeholder="Select Condition" :class="{'p-invalid': formErrors.condition}" />
                   <small v-if="formErrors.condition" class="p-error">{{ formErrors.condition }}</small>
                 </div>
