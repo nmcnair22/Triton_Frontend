@@ -16,7 +16,12 @@ export default defineConfig({
         include: ['quill', '@primevue/forms' ]
     },
     plugins: [
-        vue(),
+        vue({
+            script: {
+                defineModel: true,
+                propsDestructure: true
+            }
+        }),
         Components({
             resolvers: [PrimeVueResolver()]
         })

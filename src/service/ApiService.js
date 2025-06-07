@@ -258,13 +258,23 @@ export const InvoiceService = {
         }
       }
       else {
-        // Fallback to original behavior for compatibility
-        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
+        // For composite IDs without enough parts, include the file type
+        if (fileType) {
+          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}/${fileType}${tokenParam}`;
+        } else {
+          // Fallback to original behavior for compatibility (though this may not work)
+          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
+        }
       }
     }
     else {
-      // Fallback to original behavior for compatibility
-      url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
+      // For simple numeric IDs or non-composite IDs, include the file type
+      if (fileType) {
+        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}/${fileType}${tokenParam}`;
+      } else {
+        // Fallback to original behavior for compatibility (though this may not work)
+        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
+      }
     }
     
     console.log('Preview URL constructed:', url);
@@ -286,17 +296,8 @@ export const InvoiceService = {
     return ApiService.post('/invoice-templates/generate-merged', mergeRequest);
   },
 
-  getCustomerMergeHistory(customerNumber, limit = 25) {
-    return ApiService.get(`/invoice-templates/customer-merge-history/${customerNumber}`, { limit });
-  },
-
-  getMergeHistory(mergedInvoiceNumber) {
-    return ApiService.get(`/invoice-templates/merge-history/${mergedInvoiceNumber}`);
-  },
-
-  findMergeContaining(originalInvoiceNumber) {
-    return ApiService.get(`/invoice-templates/find-merge/${originalInvoiceNumber}`);
-  },
+  // OLD METHODS - REMOVED TO PREVENT CONFUSION
+  // These have been replaced by the new merge groups endpoints below
 
   checkMergeConflicts(requestData) {
     return ApiService.post('/merge-groups/check-conflicts', requestData);
@@ -308,11 +309,38 @@ export const InvoiceService = {
       status: options.status || 'active',
       limit: options.limit || 50
     });
-    return ApiService.get(`/merge-groups?${params}`);
+    
+    const url = `/merge-groups?${params}`;
+    console.log('🔍 API: getMergeGroupsForCustomer request:', {
+      customerNumber,
+      options,
+      url,
+      fullUrl: `${apiClient.defaults.baseURL}${url}`
+    });
+    
+    return ApiService.get(url)
+      .then(response => {
+        console.log('✅ API: getMergeGroupsForCustomer success:', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('❌ API: getMergeGroupsForCustomer error:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          url: error.config?.url
+        });
+        throw error;
+      });
   },
 
   getMergeGroupById(groupIdentifier) {
     return ApiService.get(`/merge-groups/${groupIdentifier}`);
+  },
+
+  getMergeGroupDetails(groupIdentifier) {
+    return ApiService.get(`/merge-groups/${groupIdentifier}/details`);
   },
 
   prepareMergeGroupForRemerge(groupIdentifier) {

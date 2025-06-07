@@ -597,33 +597,63 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
   async function getCustomerMergeHistory(customerNumber, limit = 25) {
     try {
-      const response = await InvoiceService.getCustomerMergeHistory(customerNumber, limit);
-      return response.data;
+      console.log('🔍 Store: Getting merge history for customer:', customerNumber);
+      console.log('🔍 Store: Request parameters:', { customerNumber, limit });
+      
+      // Use the new merge groups endpoint instead of the old merge history
+      const response = await InvoiceService.getMergeGroupsForCustomer(customerNumber, { 
+        status: 'active', 
+        limit: limit 
+      });
+      
+      console.log('🔍 Store: Raw API response:', response);
+      
+      // Handle the new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        const result = {
+          data: response.data.data,
+          success: true
+        };
+        console.log('🔍 Store: Returning processed data:', result);
+        return result;
+      }
+      
+      console.log('🔍 Store: Returning raw response:', response);
+      return response;
     } catch (err) {
-      // Preserve the original error response for proper error handling
+      console.error('❌ Store: Error in getCustomerMergeHistory:', err);
+      console.error('❌ Store: Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        config: {
+          url: err.config?.url,
+          method: err.config?.method,
+          params: err.config?.params
+        }
+      });
+      
+      // If it's a 500 error, return empty data with error info
+      if (err.response?.status === 500) {
+        console.warn('⚠️ Store: Backend returned 500 error, returning empty merge history');
+        return {
+          data: [],
+          success: false,
+          error: {
+            type: 'backend_unavailable',
+            status: 500,
+            message: 'Merge history endpoint is not available. This feature may not be implemented yet.'
+          }
+        };
+      }
+      
+      // For other errors, preserve the original error response for proper error handling
       throw err;
     }
   }
 
-  async function getMergeHistory(mergedInvoiceNumber) {
-    try {
-      const response = await InvoiceService.getMergeHistory(mergedInvoiceNumber);
-      return response.data;
-    } catch (err) {
-      // Preserve the original error response for proper error handling
-      throw err;
-    }
-  }
-
-  async function findMergeContaining(originalInvoiceNumber) {
-    try {
-      const response = await InvoiceService.findMergeContaining(originalInvoiceNumber);
-      return response.data;
-    } catch (err) {
-      // Preserve the original error response for proper error handling
-      throw err;
-    }
-  }
+  // OLD METHODS REMOVED - Use new merge groups methods instead
 
   async function findMergeGroupsForInvoices(invoiceNumbers, customerNumber) {
     try {
@@ -638,6 +668,18 @@ export const useInvoiceStore = defineStore('invoice', () => {
       };
       
       const response = await InvoiceService.checkMergeConflicts(requestData);
+      
+      // Handle the new backend response structure
+      if (response.data && response.data.success) {
+        return {
+          data: {
+            has_conflicts: response.data.has_conflicts,
+            conflicts: response.data.conflicts || []
+          },
+          success: true
+        };
+      }
+      
       return response;
     } catch (err) {
       // Preserve the original error response for proper error handling
@@ -648,6 +690,15 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function getMergeGroupsForCustomer(customerNumber, options = {}) {
     try {
       const response = await InvoiceService.getMergeGroupsForCustomer(customerNumber, options);
+      
+      // Handle the new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          data: response.data.data,
+          success: true
+        };
+      }
+      
       return response;
     } catch (err) {
       throw err;
@@ -657,9 +708,39 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function getMergeGroupById(groupIdentifier) {
     try {
       const response = await InvoiceService.getMergeGroupById(groupIdentifier);
+      
+      // Handle the new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          data: response.data.data,
+          success: true
+        };
+      }
+      
       return response;
     } catch (err) {
       throw err;
+    }
+  }
+
+  async function getMergeGroupDetails(groupIdentifier) {
+    try {
+      // Try to get detailed merge group data with documents
+      const response = await InvoiceService.getMergeGroupDetails(groupIdentifier);
+      
+      // The new backend endpoint returns data in response.data.data format
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          data: response.data.data,
+          success: true
+        };
+      }
+      
+      return response;
+    } catch (err) {
+      console.error('Error fetching merge group details:', err);
+      // Fallback to basic merge group data
+      return await getMergeGroupById(groupIdentifier);
     }
   }
 
@@ -725,10 +806,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
     // Merge functionality
     mergeInvoices,
     getCustomerMergeHistory,
-    getMergeHistory,
-    findMergeContaining,
     findMergeGroupsForInvoices,
     getMergeGroupsForCustomer,
-    getMergeGroupById
+    getMergeGroupById,
+    getMergeGroupDetails
   };
 }); 

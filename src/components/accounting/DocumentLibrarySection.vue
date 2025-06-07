@@ -18,6 +18,11 @@
              @click="selectedCustomerInvoice && $emit('tab-change', 'invoice')">
           Invoice Documents
         </div>
+        <div class="pb-3 px-4 cursor-pointer font-medium border-b-2 transition-colors duration-200"
+             :class="[activeDocumentTab === 'merged' ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400']"
+             @click="$emit('tab-change', 'merged')">
+          Merge History
+        </div>
       </div>
     </div>
     
@@ -181,6 +186,109 @@
       </div>
     </div>
     
+    <!-- Merge History View -->
+    <div v-else-if="activeDocumentTab === 'merged'" class="merge-history-view">
+      <!-- Loading State -->
+      <div v-if="props.isLoadingMergeHistory" class="flex justify-center items-center p-12">
+        <div class="text-center">
+          <ProgressSpinner class="w-12 h-12 mb-4" />
+          <div class="font-medium text-surface-600 dark:text-surface-400">Loading merge history...</div>
+        </div>
+      </div>
+      
+      <!-- No Merge History -->
+      <div v-else-if="!props.mergeHistoryData || props.mergeHistoryData.length === 0" class="text-center p-12">
+        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+          <i class="pi pi-history text-amber-500 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-2">No Merge History</h3>
+        <p class="text-surface-600 dark:text-surface-400 mb-4">
+          No merged invoices found for this customer.
+        </p>
+        <p class="text-sm text-surface-500 dark:text-surface-500">
+          Use merge mode to combine multiple invoices into a single template.
+        </p>
+      </div>
+      
+      <!-- Merge History Table -->
+      <div v-else class="space-y-4">
+        <div class="text-center mb-6">
+          <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-2">Merge History</h3>
+          <p class="text-surface-600 dark:text-surface-400">
+            Found {{ props.mergeHistoryData.length }} merged invoice(s) for this customer.
+          </p>
+        </div>
+        
+        <!-- Merge History Cards -->
+        <div class="grid gap-4">
+          <div
+            v-for="merge in props.mergeHistoryData"
+            :key="merge.merged_invoice_number"
+            class="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+            @click="$emit('view-merge-details', merge)"
+          >
+            <!-- Merge Header -->
+            <div class="p-6 border-b border-surface-200 dark:border-surface-700">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-lg font-semibold text-surface-900 dark:text-surface-0 flex items-center gap-3">
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      {{ merge.merged_invoice_number }}
+                    </span>
+                    <Badge 
+                      :value="`${merge.original_count || merge.invoice_count || 0} invoices`" 
+                      class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
+                    />
+                  </h4>
+                  <div class="flex items-center gap-4 mt-2 text-sm text-surface-600 dark:text-surface-400">
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-calendar"></i>
+                      {{ formatDate(merge.created_at || merge.merge_date) }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-tag"></i>
+                      {{ merge.template_used || merge.template_name || 'Unknown Template' }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-dollar"></i>
+                      ${{ (merge.total_amount || 0).toLocaleString() }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="flex gap-2">
+                  <Button
+                    icon="pi pi-eye"
+                    label="View Details"
+                    size="small"
+                    outlined
+                    class="text-primary-600 border-primary-600 hover:bg-primary-50"
+                    @click.stop="$emit('view-merge-details', merge)"
+                  />
+                  <Button
+                    icon="pi pi-download"
+                    label="Download"
+                    size="small"
+                    severity="success"
+                    outlined
+                    @click.stop="$emit('download-merge-files', merge)"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Quick Info -->
+            <div class="p-4 bg-surface-50 dark:bg-surface-900">
+              <div class="text-sm text-surface-600 dark:text-surface-400">
+                <span class="font-medium">Original Invoices:</span>
+                <span class="ml-2">{{ getOriginalInvoicesPreview(merge) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Merge Preview View (only show when in merge mode) -->
     <div v-else-if="props.isMergeMode && props.selectedInvoicesForMerge.length >= 2" class="merge-preview-view">
       <!-- Loading State -->
@@ -374,6 +482,14 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  mergeHistoryData: {
+    type: Array,
+    default: () => []
+  },
+  isLoadingMergeHistory: {
+    type: Boolean,
+    default: false
+  },
   isLoadingGeneratedFiles: Boolean,
   generatedFilesError: String,
   generatedFiles: Array,
@@ -381,7 +497,7 @@ const props = defineProps({
   formatDate: Function
 });
 
-defineEmits(['tab-change', 'preview-file', 'download-file', 'view-merge-documents', 're-merge-group']);
+defineEmits(['tab-change', 'preview-file', 'download-file', 'view-merge-documents', 're-merge-group', 'view-merge-details', 'download-merge-files']);
 
 // Helper functions
 function getOverlapCount(mergeGroup) {
@@ -418,5 +534,17 @@ function getFileTypeColor(filename) {
     default:
       return 'bg-surface-500';
   }
+}
+
+function getOriginalInvoicesPreview(merge) {
+  if (!merge.original_invoices || merge.original_invoices.length === 0) {
+    return 'No invoices';
+  }
+  
+  if (merge.original_invoices.length <= 3) {
+    return merge.original_invoices.join(', ');
+  }
+  
+  return `${merge.original_invoices.slice(0, 3).join(', ')} and ${merge.original_invoices.length - 3} more`;
 }
 </script> 

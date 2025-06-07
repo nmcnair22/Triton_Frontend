@@ -15,6 +15,7 @@ import FilePreviewDialog from '@/components/accounting/FilePreviewDialog.vue';
 import InvoiceDetailDrawer from '@/components/accounting/InvoiceDetailDrawer.vue';
 import MergeHistoryDialog from '@/components/accounting/MergeHistoryDialog.vue';
 import DuplicateConfirmationDialog from '@/components/accounting/DuplicateConfirmationDialog.vue';
+import MergeDetailsModal from '@/components/accounting/MergeDetailsModal.vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -176,6 +177,12 @@ const mergeError = ref(null);
 const showMergeHistory = ref(false);
 const mergeHistoryData = ref([]);
 const isLoadingMergeHistory = ref(false);
+
+// Merge details modal state
+const showMergeDetailsModal = ref(false);
+const selectedMergeDetails = ref(null);
+const isLoadingMergeDetails = ref(false);
+const mergeDetailsError = ref(null);
 
 // Duplicate merge detection
 const showDuplicateConfirmation = ref(false);
@@ -1432,7 +1439,14 @@ watch(isMergeMode, (newValue) => {
 function toggleMergeMode() {
   // The isMergeMode.value has already been updated by the v-model when this function is called
   if (isMergeMode.value) {
-    // Entering merge mode
+    // Entering merge mode - switch to merge history tab
+    activeDocumentTab.value = 'merged';
+    // Clear any existing selections
+    selectedInvoicesForMerge.value = [];
+    tableSelection.value = [];
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
     toast.add({ 
       severity: 'success', 
       summary: 'Merge Mode Enabled', 
@@ -1440,7 +1454,14 @@ function toggleMergeMode() {
       life: 4000 
     });
   } else {
-    // Exiting merge mode
+    // Exiting merge mode - switch back to appropriate tab
+    activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+    // Clear merge selections
+    selectedInvoicesForMerge.value = [];
+    tableSelection.value = [];
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
     toast.add({ 
       severity: 'info', 
       summary: 'Merge Mode Disabled', 
@@ -1603,7 +1624,7 @@ async function handleDuplicateConfirmation(overwrite) {
   }
 }
 
-async function loadMergeHistory() {
+async function loadMergeHistory(showModal = false) {
   if (!selectedCustomer.value) {
     toast.add({ 
       severity: 'warn', 
@@ -1616,17 +1637,72 @@ async function loadMergeHistory() {
   
   try {
     isLoadingMergeHistory.value = true;
+    
+    console.log('🔍 Loading merge history for customer:', selectedCustomer.value.number);
+    
     const history = await invoiceStore.getCustomerMergeHistory(selectedCustomer.value.number);
+    
+    console.log('🔍 Raw merge history response:', history);
+    console.log('🔍 Merge history data:', history.data);
+    
+    // Check if the response indicates an error (like backend unavailable)
+    if (!history.success && history.error) {
+      mergeHistoryData.value = [];
+      
+      // Show appropriate toast based on error type
+      if (history.error.type === 'backend_unavailable') {
+        toast.add({ 
+          severity: 'warn', 
+          summary: 'Backend Issue', 
+          detail: history.error.message, 
+          life: 5000 
+        });
+      } else {
+        toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: history.error.message || 'Failed to load merge history', 
+          life: 3000 
+        });
+      }
+      return;
+    }
+    
     mergeHistoryData.value = history.data || [];
-    showMergeHistory.value = true;
+    
+    console.log('🔍 Final mergeHistoryData:', mergeHistoryData.value);
+    
+    // Only show the modal if explicitly requested
+    if (showModal) {
+      showMergeHistory.value = true;
+    }
   } catch (err) {
-    console.error('Error loading merge history:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load merge history', 
-      life: 3000 
+    console.error('❌ Error loading merge history:', err);
+    console.error('❌ Error details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
     });
+    
+    // Clear any existing data on error
+    mergeHistoryData.value = [];
+    
+    // Show different messages based on error type
+    if (err.response?.status === 500) {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'Backend Issue', 
+        detail: 'Merge history endpoint is not available. This feature may not be implemented yet.', 
+        life: 5000 
+      });
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'Failed to load merge history', 
+        life: 3000 
+      });
+    }
   } finally {
     isLoadingMergeHistory.value = false;
   }
@@ -1675,13 +1751,61 @@ const mergeSelectionSummary = computed(() => {
 });
 
 // Function to view merge details
-function viewMergeDetails(mergeData) {
-  toast.add({ 
-    severity: 'info', 
-    summary: 'Merge Details', 
-    detail: `Original invoices: ${mergeData.original_invoices.join(', ')}`, 
-    life: 5000 
-  });
+async function viewMergeDetails(mergeData) {
+  console.log('📊 Viewing merge details:', mergeData);
+  
+  try {
+    isLoadingMergeDetails.value = true;
+    mergeDetailsError.value = null;
+    showMergeDetailsModal.value = true;
+    
+    // If we already have detailed data, use it
+    if (mergeData.documents && mergeData.original_invoices) {
+      selectedMergeDetails.value = mergeData;
+      return;
+    }
+    
+    // Extract the group identifier from the merge data
+    // The group_identifier is the merged_invoice_number without the "+" suffix
+    let groupIdentifier = mergeData.group_identifier;
+    
+    if (!groupIdentifier && mergeData.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeData.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('📊 Using group identifier:', groupIdentifier);
+    
+    // Otherwise, fetch detailed merge group data from backend
+    const response = await invoiceStore.getMergeGroupDetails(groupIdentifier);
+    
+    if (response && response.data) {
+      selectedMergeDetails.value = response.data;
+    } else {
+      // Fallback to the provided data if backend call fails
+      selectedMergeDetails.value = mergeData;
+    }
+    
+  } catch (err) {
+    console.error('Error loading merge details:', err);
+    mergeDetailsError.value = err.message || 'Failed to load merge details';
+    
+    // Still show the modal with available data
+    selectedMergeDetails.value = mergeData;
+    
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Partial Data', 
+      detail: 'Some merge details could not be loaded, showing available information', 
+      life: 4000 
+    });
+  } finally {
+    isLoadingMergeDetails.value = false;
+  }
 }
 
 // Function to download merged files
@@ -1711,6 +1835,129 @@ async function downloadMergedFiles(mergeData) {
       life: 3000 
     });
   }
+}
+
+// Merge details modal event handlers
+function onMergeDetailsRetry() {
+  if (selectedMergeDetails.value) {
+    viewMergeDetails(selectedMergeDetails.value);
+  }
+}
+
+async function onDownloadAllMergeFiles(mergeDetails) {
+  try {
+    // Download all files for this merge
+    if (mergeDetails.documents && mergeDetails.documents.length > 0) {
+      for (const document of mergeDetails.documents) {
+        await downloadGeneratedFile(document);
+      }
+      
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Download Started', 
+        detail: `Downloading ${mergeDetails.documents.length} files from merge ${mergeDetails.merged_invoice_number}`, 
+        life: 3000 
+      });
+    } else {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'No Files', 
+        detail: 'No documents found for this merge', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error downloading merge files:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Download Failed', 
+      detail: 'Failed to download merge files', 
+      life: 3000 
+    });
+  }
+}
+
+function onReMergeFromDetails(mergeDetails) {
+  // Close the details modal
+  showMergeDetailsModal.value = false;
+  
+  // Call the existing re-merge function
+  reMergeGroup(mergeDetails);
+}
+
+function onPreviewMergeDocument(document) {
+  console.log('🔍 Preview merge document:', document);
+  console.log('🔍 Document structure:', {
+    id: document.id,
+    job_id: document.job_id,
+    document_type: document.document_type,
+    document_subtype: document.document_subtype,
+    file_name: document.file_name,
+    filename: document.filename,
+    fileType: document.fileType,
+    file_type: document.file_type,
+    type: document.type,
+    preview_url: document.preview_url
+  });
+  
+  // Transform merge document to match expected structure
+  const transformedDocument = {
+    // Use job_id as the main ID for preview (like regular documents)
+    id: document.job_id || document.id,
+    // Map the merge document fields to expected fields
+    filename: document.file_name || document.filename,
+    fileType: document.document_type || document.fileType,
+    fileCategory: document.document_subtype || document.fileCategory,
+    // Keep original data for fallback
+    originalData: {
+      ...document,
+      type: document.document_type,
+      subtype: document.document_subtype
+    }
+  };
+  
+  console.log('🔍 Transformed document for preview:', transformedDocument);
+  
+  // Use the existing preview function with transformed document
+  previewFile(transformedDocument);
+}
+
+function onDownloadMergeDocument(document) {
+  console.log('🔍 Download merge document:', document);
+  
+  // Transform merge document to match expected structure
+  const transformedDocument = {
+    // Use job_id as the main ID for download (like regular documents)
+    id: document.job_id || document.id,
+    // Map the merge document fields to expected fields
+    filename: document.file_name || document.filename,
+    fileType: document.document_type || document.fileType,
+    fileCategory: document.document_subtype || document.fileCategory,
+    // Keep original data for fallback
+    originalData: {
+      ...document,
+      type: document.document_type,
+      subtype: document.document_subtype
+    }
+  };
+  
+  console.log('🔍 Transformed document for download:', transformedDocument);
+  
+  // Use the existing download function with transformed document
+  downloadGeneratedFile(transformedDocument);
+}
+
+function onDownloadAllMergeDocuments(documents) {
+  documents.forEach(document => {
+    downloadGeneratedFile(document);
+  });
+  
+  toast.add({ 
+    severity: 'success', 
+    summary: 'Download Started', 
+    detail: `Downloading ${documents.length} documents`, 
+    life: 3000 
+  });
 }
 
 // Computed property for DataTable selection model
@@ -2383,13 +2630,34 @@ watch(selectedInvoicesForMerge, async (newSelection) => {
   }
 }, { deep: true });
 
+// Watch for tab changes to load merge history when needed
+watch(activeDocumentTab, async (newTab) => {
+  if (newTab === 'merged' && selectedCustomer.value && mergeHistoryData.value.length === 0) {
+    await loadMergeHistory();
+  }
+});
+
 // Handle viewing merge group documents
 async function viewMergeDocuments(mergeGroup) {
   console.log('📄 Viewing documents for merge group:', mergeGroup.merged_invoice_number);
   
   try {
+    // Extract the group identifier from the merge data
+    let groupIdentifier = mergeGroup.group_identifier;
+    
+    if (!groupIdentifier && mergeGroup.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('📄 Using group identifier for documents:', groupIdentifier);
+    
     // Get detailed merge group data with documents
-    const response = await invoiceStore.getMergeGroupById(mergeGroup.group_identifier);
+    const response = await invoiceStore.getMergeGroupById(groupIdentifier);
     
     if (response && response.data) {
       // Switch to customer documents tab and show merge group documents
@@ -2422,8 +2690,22 @@ async function reMergeGroup(mergeGroup) {
   console.log('🔄 Re-merging group:', mergeGroup.merged_invoice_number);
   
   try {
+    // Extract the group identifier from the merge data
+    let groupIdentifier = mergeGroup.group_identifier;
+    
+    if (!groupIdentifier && mergeGroup.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('🔄 Using group identifier for re-merge:', groupIdentifier);
+    
     // Prepare the merge group for re-merge on the backend
-    await invoiceStore.prepareMergeGroupForRemerge(mergeGroup.group_identifier);
+    await invoiceStore.prepareMergeGroupForRemerge(groupIdentifier);
     
     // Set up the merge with the original invoices
     const originalInvoices = mergeGroup.original_invoices.map(invoiceNumber => {
@@ -2518,7 +2800,7 @@ async function reMergeGroup(mergeGroup) {
                     @sort="onSort"
                     @clear-filter="clearFilter"
                     @refresh-invoices="loadCustomerInvoices"
-                    @load-merge-history="loadMergeHistory"
+                    @load-merge-history="loadMergeHistory(true)"
                     @open-invoice-drawer="openInvoiceDrawer"
                 />
                 
@@ -2570,11 +2852,15 @@ async function reMergeGroup(mergeGroup) {
                             :existingMergeGroups="existingMergeGroups"
                             :isCheckingMergeGroups="isCheckingMergeGroups"
                             :showMergePreview="showMergePreview"
+                            :mergeHistoryData="mergeHistoryData"
+                            :isLoadingMergeHistory="isLoadingMergeHistory"
                             @tab-change="activeDocumentTab = $event"
                             @preview-file="previewFile"
                             @download-file="downloadGeneratedFile"
                             @view-merge-documents="viewMergeDocuments"
                             @re-merge-group="reMergeGroup"
+                            @view-merge-details="viewMergeDetails"
+                            @download-merge-files="downloadMergedFiles"
                         />
                     </div>
                 </div>
@@ -2637,555 +2923,25 @@ async function reMergeGroup(mergeGroup) {
         @handle-duplicate-confirmation="handleDuplicateConfirmation"
     />
 
-    <!-- Enhanced Document Management Section -->
-    <div class="col-span-12 md:col-span-7 xl:col-span-8">
-        <div class="card">
-            <!-- Document Library Header with Actions -->
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                        <i class="pi pi-folder-open text-white text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0">Document Library</h2>
-                        <p class="text-sm text-surface-600 dark:text-surface-400">Manage and organize your invoice documents</p>
-                    </div>
-                </div>
-                
-                <!-- Document Actions Toolbar -->
-                <div class="flex items-center gap-2">
-                    <Button v-if="selectedDocuments.length > 0" 
-                            icon="pi pi-download" 
-                            :label="`Download ${selectedDocuments.length} files`"
-                            size="small" 
-                            severity="success"
-                            @click="downloadSelectedFiles" />
-                    <Button v-if="selectedDocuments.length > 0" 
-                            icon="pi pi-times" 
-                            label="Clear Selection"
-                            size="small" 
-                            text
-                            @click="clearDocumentSelection" />
-                    <Button icon="pi pi-refresh" 
-                            label="Refresh"
-                            size="small" 
-                            outlined
-                            @click="refreshDocuments" 
-                            :loading="isLoadingGeneratedFiles || isLoadingCustomerDocuments" />
-                </div>
-            </div>
-            
-            <!-- Enhanced Document Type Navigation -->
-            <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-1 mb-6">
-                <div class="flex">
-                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
-                            :class="[
-                                activeDocumentTab === 'customer' 
-                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
-                                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100'
-                            ]"
-                            @click="switchDocumentTab('customer')">
-                        <i class="pi pi-users text-sm"></i>
-                        <span>Customer Documents</span>
-                        <Tag v-if="customerDocuments.length > 0" 
-                             :value="customerDocuments.length.toString()" 
-                             severity="info" 
-                             class="ml-1" />
-                    </button>
-                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
-                            :class="[
-                                activeDocumentTab === 'invoice' 
-                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
-                                    : selectedCustomerInvoice 
-                                        ? 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100' 
-                                        : 'text-surface-400 cursor-not-allowed'
-                            ]"
-                            @click="selectedCustomerInvoice && switchDocumentTab('invoice')"
-                            :disabled="!selectedCustomerInvoice">
-                        <i class="pi pi-file-invoice text-sm"></i>
-                        <span>Invoice Documents</span>
-                        <Tag v-if="generatedFiles.length > 0" 
-                             :value="generatedFiles.length.toString()" 
-                             severity="success" 
-                             class="ml-1" />
-                    </button>
-                    <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200"
-                            :class="[
-                                activeDocumentTab === 'merged' 
-                                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm' 
-                                    : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100'
-                            ]"
-                            @click="switchDocumentTab('merged')">
-                        <i class="pi pi-objects-column text-sm"></i>
-                        <span>Merged Invoices</span>
-                        <Tag v-if="mergeHistoryData.length > 0" 
-                             :value="mergeHistoryData.length.toString()" 
-                             severity="warning" 
-                             class="ml-1" />
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Document Search and Filter Bar -->
-            <div v-if="hasAnyDocuments" class="flex flex-col sm:flex-row gap-3 mb-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg">
-                <div class="flex-1">
-                    <IconField>
-                        <InputIcon>
-                            <i class="pi pi-search" />
-                        </InputIcon>
-                        <InputText v-model="documentSearchTerm" 
-                                   placeholder="Search documents by name, type, or invoice..." 
-                                   class="w-full" 
-                                   size="small" />
-                    </IconField>
-                </div>
-                <div class="flex gap-2">
-                    <Select v-model="documentTypeFilter" 
-                            :options="documentTypeOptions" 
-                            optionLabel="label" 
-                            optionValue="value"
-                            placeholder="All Types" 
-                            class="w-32" 
-                            size="small" 
-                            showClear />
-                    <Select v-model="documentSortBy" 
-                            :options="documentSortOptions" 
-                            optionLabel="label" 
-                            optionValue="value"
-                            placeholder="Sort by" 
-                            class="w-32" 
-                            size="small" />
-                </div>
-            </div>
-            
-            <!-- Loading State -->
-            <div v-if="isLoadingGeneratedFiles || isLoadingCustomerDocuments" 
-                 class="flex justify-center items-center p-12">
-                <div class="text-center">
-                    <ProgressSpinner class="w-12 h-12 mb-4" />
-                    <div class="font-medium text-surface-600 dark:text-surface-400">Loading documents...</div>
-                    <div class="text-sm text-surface-500 dark:text-surface-500 mt-1">Please wait while we fetch your files</div>
-                </div>
-            </div>
-            
-            <!-- Error State -->
-            <div v-else-if="generatedFilesError || customerDocumentsError" 
-                 class="flex flex-col items-center justify-center p-12">
-                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-                    <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
-                </div>
-                <div class="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error Loading Documents</div>
-                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                    {{ generatedFilesError || customerDocumentsError }}
-                </div>
-                <Button label="Try Again" 
-                        icon="pi pi-refresh" 
-                        class="mt-4" 
-                        size="small" 
-                        @click="refreshDocuments" />
-            </div>
-            
-            <!-- No Customer Selected -->
-            <div v-else-if="!selectedCustomer" 
-                 class="flex flex-col items-center justify-center p-12">
-                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
-                    <i class="pi pi-users text-blue-500 text-2xl"></i>
-                </div>
-                <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select a Customer</div>
-                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                    Choose a customer from the dropdown above to view their documents and generate new templates
-                </div>
-            </div>
-            
-            <!-- Document Content Views -->
-            <div v-else>
-                <!-- Customer Documents View -->
-                <div v-if="activeDocumentTab === 'customer'">
-                    <div v-if="filteredCustomerDocuments.length === 0" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-folder-open text-surface-400 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Customer Documents</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                            {{ selectedCustomer.name }} doesn't have any documents yet. Generate templates from invoices to create documents.
-                        </div>
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Customer Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">{{ selectedCustomer.name }}</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredCustomerDocuments.length }} documents</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Button v-if="filteredCustomerDocuments.length > 0" 
-                                        icon="pi pi-download" 
-                                        label="Download All"
-                                        size="small" 
-                                        outlined
-                                        @click="downloadAllCustomerDocuments" />
-                            </div>
-                        </div>
-                        
-                        <!-- Customer Documents Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="(file, index) in filteredCustomerDocuments" 
-                                 :key="file?.id || index" 
-                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600"
-                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
-                                
-                                <!-- Document Selection Checkbox -->
-                                <div class="absolute top-3 left-3 z-10">
-                                    <Checkbox v-model="selectedDocuments" 
-                                              :value="file.id" 
-                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
-                                </div>
-                                
-                                <!-- File Type Header -->
-                                <div class="h-20 flex items-center justify-center"
-                                     :class="getFileTypeHeaderClass(file)">
-                                    <i :class="[getFileIcon(file), 'text-3xl text-white']"></i>
-                                </div>
-                                
-                                <!-- Document Info -->
-                                <div class="p-4">
-                                    <div class="mb-3">
-                                        <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm mb-1 truncate" 
-                                            :title="file.filename || 'Unnamed file'">
-                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                        </h4>
-                                        <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
-                                            <span>{{ getFileTypeLabel(file) }}</span>
-                                            <span>•</span>
-                                            <span>{{ formatFileDate(file.created_at) }}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Document Metadata -->
-                                    <div class="space-y-2 mb-4">
-                                        <div v-if="file.invoice_number" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-file-invoice text-primary-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400">Invoice #{{ file.invoice_number }}</span>
-                                        </div>
-                                        <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-tag text-orange-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
-                                        </div>
-                                        <div v-if="file.generated_by" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-user text-green-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400">{{ file.generated_by }}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Document Actions -->
-                                    <div class="flex gap-1">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Preview'"
-                                                @click="previewFile(file)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Download'"
-                                                @click="downloadFile(file)" />
-                                        <Button icon="pi pi-share-alt" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Share'"
-                                                @click="shareFile(file)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Invoice Documents View -->
-                <div v-else-if="activeDocumentTab === 'invoice'">
-                    <div v-if="!selectedCustomerInvoice" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-file-invoice text-orange-500 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select an Invoice</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                            Choose an invoice from the table above to view its generated documents
-                        </div>
-                    </div>
-                    
-                    <div v-else-if="filteredInvoiceDocuments.length === 0" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-file-plus text-surface-400 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Documents Generated</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                            No documents have been generated for invoice #{{ selectedCustomerInvoice.number }}. Use the template selection section above to generate documents.
-                        </div>
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Invoice Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-file-invoice text-green-600 dark:text-green-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Invoice #{{ selectedCustomerInvoice.number }}</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredInvoiceDocuments.length }} documents</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Button v-if="filteredInvoiceDocuments.length > 0" 
-                                        icon="pi pi-download" 
-                                        label="Download All"
-                                        size="small" 
-                                        outlined
-                                        @click="downloadAllInvoiceDocuments" />
-                            </div>
-                        </div>
-                        
-                        <!-- Invoice Documents Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="(file, index) in filteredInvoiceDocuments" 
-                                 :key="file?.id || index" 
-                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600"
-                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
-                                
-                                <!-- Document Selection Checkbox -->
-                                <div class="absolute top-3 left-3 z-10">
-                                    <Checkbox v-model="selectedDocuments" 
-                                              :value="file.id" 
-                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
-                                </div>
-                                
-                                <!-- File Type Header -->
-                                <div class="h-20 flex items-center justify-center"
-                                     :class="getFileTypeHeaderClass(file)">
-                                    <i :class="[getFileIcon(file), 'text-3xl text-white']"></i>
-                                </div>
-                                
-                                <!-- Document Info -->
-                                <div class="p-4">
-                                    <div class="mb-3">
-                                        <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm mb-1 truncate" 
-                                            :title="file.filename || 'Unnamed file'">
-                                            {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                        </h4>
-                                        <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
-                                            <span>{{ getFileTypeLabel(file) }}</span>
-                                            <span>•</span>
-                                            <span>{{ formatFileDate(file.created_at) }}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Document Metadata -->
-                                    <div class="space-y-2 mb-4">
-                                        <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-tag text-orange-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
-                                        </div>
-                                        <div v-if="file.fileCategory" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-bookmark text-blue-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400 capitalize">{{ file.fileCategory }}</span>
-                                        </div>
-                                        <div v-if="file.generated_by" class="flex items-center gap-2 text-xs">
-                                            <i class="pi pi-user text-green-500"></i>
-                                            <span class="text-surface-600 dark:text-surface-400">{{ file.generated_by }}</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Document Actions -->
-                                    <div class="flex gap-1">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Preview'"
-                                                @click="previewFile(file)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Download'"
-                                                @click="downloadFile(file)" />
-                                        <Button icon="pi pi-share-alt" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Share'"
-                                                @click="shareFile(file)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Merged Invoices View -->
-                <div v-else-if="activeDocumentTab === 'merged'">
-                    <div v-if="filteredMergedDocuments.length === 0" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-objects-column text-purple-500 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Merged Invoices</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md mb-4">
-                            {{ selectedCustomer?.name || 'This customer' }} hasn't created any merged invoices yet. Use the merge mode to combine multiple invoices.
-                        </div>
-                        <Button label="Enable Merge Mode" 
-                                icon="pi pi-objects-column" 
-                                @click="isMergeMode = true" 
-                                outlined />
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Merged Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-objects-column text-purple-600 dark:text-purple-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Merged Invoices</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredMergedDocuments.length }} merged documents</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Merged Documents Table -->
-                        <DataTable :value="filteredMergedDocuments" 
-                                   responsiveLayout="scroll" 
-                                   :paginator="true" 
-                                   :rows="10"
-                                   class="modern-table">
-                            <Column field="merged_invoice" header="Merged Invoice" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                                            <i class="pi pi-objects-column text-purple-600 dark:text-purple-400 text-sm"></i>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.merged_invoice }}</div>
-                                            <div class="text-xs text-surface-500 dark:text-surface-400">Merged Invoice</div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column field="original_count" header="Source Invoices" sortable>
-                                <template #body="slotProps">
-                                    <Tag :value="`${slotProps.data.original_count} invoices`" severity="info" />
-                                </template>
-                            </Column>
-                            <Column field="total_amount" header="Total Amount" sortable>
-                                <template #body="slotProps">
-                                    <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(slotProps.data.total_amount) }}</span>
-                                </template>
-                            </Column>
-                            <Column field="merge_date" header="Created" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-surface-900 dark:text-surface-0">{{ formatDate(slotProps.data.merge_date) }}</span>
-                                        <span class="text-xs text-surface-500 dark:text-surface-400">{{ formatTimeAgo(slotProps.data.merge_date) }}</span>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column field="template_used" header="Template" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex flex-col">
-                                        <span class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.template_used }}</span>
-                                        <span v-if="slotProps.data.template_override" class="text-xs text-orange-600 dark:text-orange-400 uppercase">
-                                            {{ slotProps.data.template_override }}
-                                        </span>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column header="Actions" style="width: 12rem">
-                                <template #body="slotProps">
-                                    <div class="flex gap-1">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'View Details'"
-                                                @click="viewMergeDetails(slotProps.data)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'Download Files'"
-                                                @click="downloadMergedFiles(slotProps.data)" />
-                                        <Button icon="pi pi-history" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'View Source Invoices'"
-                                                @click="viewSourceInvoices(slotProps.data)" />
-                                    </div>
-                                </template>
-                            </Column>
-                        </DataTable>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Invoice Date Override Confirmation Dialog -->
-        <Dialog v-model:visible="showOverrideConfirmation" 
-                header="Confirm Invoice Date Override" 
-                :style="{ width: '500px' }" 
-                modal>
-            <div class="flex flex-col gap-4">
-                <div class="flex items-start gap-3">
-                    <i class="pi pi-exclamation-triangle text-3xl text-orange-500 mt-1"></i>
-                    <div class="flex-1">
-                        <div class="font-semibold text-lg mb-2">Invoice Date Override Enabled</div>
-                        <div class="text-surface-600 dark:text-surface-400 mb-3">
-                            You have enabled invoice date override. This will change how your documents are generated:
-                        </div>
-                        <ul class="list-disc list-inside space-y-1 text-sm text-surface-700 dark:text-surface-300 mb-3">
-                            <li>PDF invoices will display the override date instead of the original invoice date</li>
-                            <li>Due dates will be calculated from the override date</li>
-                            <li>Files will be named using the override month/year</li>
-                            <li>Merge history will record the override date</li>
-                        </ul>
-                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-                            <div class="font-medium text-blue-800 dark:text-blue-200 mb-1">Selected Override Date:</div>
-                            <div class="text-blue-700 dark:text-blue-300">{{ formatOverrideDateForDisplay() }}</div>
-                            <div class="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                                Files will be named: <strong>{{ getOverrideDatePrefix() }}_[Template]_Invoice.pdf</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <Button label="Cancel" 
-                            icon="pi pi-times" 
-                            text 
-                            @click="cancelOverrideConfirmation" />
-                    <Button label="Confirm & Generate" 
-                            icon="pi pi-check" 
-                            @click="confirmOverrideAndProceed" 
-                            severity="success" />
-                </div>
-            </template>
-        </Dialog>
-    </div>
+    <!-- Merge Details Modal -->
+    <MergeDetailsModal
+        :visible="showMergeDetailsModal"
+        :mergeDetails="selectedMergeDetails"
+        :isLoading="isLoadingMergeDetails"
+        :error="mergeDetailsError"
+        :formatDate="formatDate"
+        :formatCurrency="formatCurrency"
+        :getFileIcon="getFileIcon"
+        @update:visible="showMergeDetailsModal = $event"
+        @retry="onMergeDetailsRetry"
+        @download-all-files="onDownloadAllMergeFiles"
+        @re-merge="onReMergeFromDetails"
+        @preview-document="onPreviewMergeDocument"
+        @download-document="onDownloadMergeDocument"
+        @download-all-documents="onDownloadAllMergeDocuments"
+    />
+
+
 </template>
 
 <style scoped>
