@@ -41,152 +41,162 @@
           :value="visitsStore.overallStats?.total || 0"
           icon="pi pi-calendar"
           color="primary"
-          :trend="visitsStore.statTrends?.total || 0"
+          :trend="visitsStore.visitTrends?.total || 0"
         />
         <StatsCard
           title="Completion Rate"
           :value="`${visitsStore.overallStats?.completionRate || 0}%`"
           icon="pi pi-check-circle"
           color="success"
-          :trend="visitsStore.statTrends?.completionRate || 0"
+          :trend="visitsStore.visitTrends?.completionRate || 0"
         />
         <StatsCard
           title="Avg Quality Score"
           :value="visitsStore.overallStats?.avgQualityScore || 0"
           icon="pi pi-star"
           color="warning"
-          :trend="visitsStore.statTrends?.avgQualityScore || 0"
+          :trend="visitsStore.visitTrends?.avgQualityScore || 0"
         />
         <StatsCard
           title="Total Revenue"
           :value="`$${(visitsStore.overallStats?.totalRevenue || 0).toLocaleString()}`"
           icon="pi pi-dollar"
           color="info"
-          :trend="visitsStore.statTrends?.totalRevenue || 0"
+          :trend="visitsStore.visitTrends?.totalRevenue || 0"
         />
       </div>
     </div>
 
     <!-- Advanced Filters Panel -->
-    <div class="bg-white dark:bg-surface-900 rounded-lg shadow-sm border border-surface-200 dark:border-surface-700 p-6 mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-surface-900 dark:text-surface-0">
-          Filters & Search
-        </h2>
-        <Button 
-          icon="pi pi-filter-slash" 
-          label="Clear All" 
-          @click="clearAllFilters"
-          class="p-button-text p-button-sm"
-        />
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Smart Search -->
-        <div class="col-span-full">
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Smart Search
-          </label>
-          <div class="p-input-icon-left">
-            <i class="pi pi-search"></i>
-            <InputText 
-              v-model="searchQuery"
-              placeholder="Search visits, customers, technicians..."
-              class="w-full"
-              @input="handleSearch"
-            />
-          </div>
-        </div>
+    <div class="bg-white dark:bg-surface-900 rounded-lg shadow-sm border border-surface-200 dark:border-surface-700 mb-6">
+      <Accordion v-model:value="filtersAccordionValue" class="filters-accordion">
+        <AccordionPanel value="filters">
+          <AccordionHeader>
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-filter text-primary-600"></i>
+                <span class="text-lg font-semibold">Filters & Search</span>
+              </div>
+              <Button 
+                icon="pi pi-filter-slash" 
+                label="Clear All" 
+                @click.stop="clearAllFilters"
+                class="p-button-text p-button-sm"
+              />
+            </div>
+          </AccordionHeader>
+          <AccordionContent>
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Smart Search -->
+                <div class="col-span-full">
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    Smart Search
+                  </label>
+                  <div class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <InputText 
+                      v-model="searchQuery"
+                      placeholder="Search visits, customers, technicians..."
+                      class="w-full"
+                      @input="handleSearch"
+                    />
+                  </div>
+                </div>
 
-        <!-- Date Range Filter -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Date Range
-          </label>
-          <DatePicker 
-            v-model="selectedDateRange"
-            selection-mode="range"
-            :show-icon="true"
-            placeholder="Select date range"
-            class="w-full"
-            @date-select="applyFilters"
-          />
-        </div>
+                <!-- Date Range Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    Date Range
+                  </label>
+                  <DatePicker 
+                    v-model="selectedDateRange"
+                    selection-mode="range"
+                    :show-icon="true"
+                    placeholder="Select date range"
+                    class="w-full"
+                    @date-select="applyFilters"
+                  />
+                </div>
 
-        <!-- Status Filter -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Status
-          </label>
-          <MultiSelect 
-            v-model="selectedStatuses"
-            :options="statusOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="All Statuses"
-            class="w-full"
-            display="chip"
-            @change="applyFilters"
-          />
-        </div>
+                <!-- Status Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    Status
+                  </label>
+                  <MultiSelect 
+                    v-model="selectedStatuses"
+                    :options="statusOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="All Statuses"
+                    class="w-full"
+                    display="chip"
+                    @change="applyFilters"
+                  />
+                </div>
 
-        <!-- Customer Filter -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Customers
-          </label>
-          <MultiSelect 
-            v-model="selectedCustomers"
-            :options="customerOptions"
-            option-label="name"
-            option-value="id"
-            placeholder="All Customers"
-            class="w-full"
-            display="chip"
-            :loading="customerStore.loading"
-            @change="applyFilters"
-          />
-        </div>
+                <!-- Customer Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    Customers
+                  </label>
+                  <MultiSelect 
+                    v-model="selectedCustomers"
+                    :options="customerOptions"
+                    option-label="name"
+                    option-value="id"
+                    placeholder="All Customers"
+                    class="w-full"
+                    display="chip"
+                    :loading="customerStore.loading"
+                    @change="applyFilters"
+                  />
+                </div>
 
-        <!-- Visit Type Filter -->
-        <div>
-          <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Visit Type
-          </label>
-          <Select 
-            v-model="selectedVisitType"
-            :options="visitTypeOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="All Types"
-            class="w-full"
-            show-clear
-            @change="applyFilters"
-          />
-        </div>
-      </div>
+                <!-- Visit Type Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    Visit Type
+                  </label>
+                  <Select 
+                    v-model="selectedVisitType"
+                    :options="visitTypeOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="All Types"
+                    class="w-full"
+                    show-clear
+                    @change="applyFilters"
+                  />
+                </div>
+              </div>
 
-      <!-- Quick Filter Chips -->
-      <div class="flex flex-wrap gap-2 mt-4">
-        <Chip 
-          v-for="quickFilter in quickFilters"
-          :key="quickFilter.id"
-          :label="quickFilter.label"
-          :class="{ 'p-chip-outlined': !quickFilter.active }"
-          @click="toggleQuickFilter(quickFilter)"
-          removable
-          class="cursor-pointer"
-        />
-      </div>
-      
-      <!-- Debug Info -->
-      <div class="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded text-sm border border-yellow-300">
-        <strong>🐛 Debug Info:</strong><br>
-        Store visits: {{ visits?.length || 0 }} | 
-        Filtered visits: {{ filteredVisits?.length || 0 }} | 
-        Loading: {{ loading }} | 
-        Date range: {{ selectedDateRange?.[0]?.toISOString()?.split('T')[0] }} to {{ selectedDateRange?.[1]?.toISOString()?.split('T')[0] }}
-      </div>
+              <!-- Quick Filter Chips -->
+              <div class="flex flex-wrap gap-2 mt-4">
+                <Chip 
+                  v-for="quickFilter in quickFilters"
+                  :key="quickFilter.id"
+                  :label="quickFilter.label"
+                  :class="{ 'p-chip-outlined': !quickFilter.active }"
+                  @click="toggleQuickFilter(quickFilter)"
+                  removable
+                  class="cursor-pointer"
+                />
+              </div>
+              
+              <!-- Debug Info -->
+              <div class="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded text-sm border border-yellow-300">
+                <strong>🐛 Debug Info:</strong><br>
+                Store visits: {{ visits?.length || 0 }} | 
+                Filtered visits: {{ filteredVisits?.length || 0 }} | 
+                Loading: {{ loading }} | 
+                Date range: {{ selectedDateRange?.[0]?.toISOString()?.split('T')[0] }} to {{ selectedDateRange?.[1]?.toISOString()?.split('T')[0] }}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionPanel>
+      </Accordion>
     </div>
 
     <!-- Main Content Tabs -->
@@ -544,6 +554,10 @@
 import { ref, computed, onMounted, watch, useId } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
+import Accordion from 'primevue/accordion';
+import AccordionPanel from 'primevue/accordionpanel';
+import AccordionHeader from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
 import { useVisitsStore } from '@/stores/visitsStore';
 import { useCustomerStore } from '@/stores/customerStore';
 import StatsCard from '@/components/field-services/StatsCard.vue';
@@ -592,6 +606,9 @@ const selectedVisitsForBatch = ref([]);
 const showVisitDetail = ref(false);
 const showCreateVisitDialog = ref(false);
 const selectedVisitForDetail = ref(null);
+
+// Accordion state (null means closed by default)
+const filtersAccordionValue = ref(null);
 
 // Get trend data from store
 const visitStatsTrend = computed(() => visitsStore.visitTrends || {});
@@ -878,5 +895,16 @@ watch(error, (newError) => {
 
 .p-rating .p-rating-icon {
   color: var(--yellow-500);
+}
+
+.filters-accordion .p-accordion-header {
+  border: none;
+  background: transparent;
+}
+
+.filters-accordion .p-accordion-content {
+  border: none;
+  background: transparent;
+  padding: 0;
 }
 </style> 
