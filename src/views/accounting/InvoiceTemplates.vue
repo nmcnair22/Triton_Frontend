@@ -7,6 +7,15 @@ import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/
 import { useToast } from 'primevue/usetoast';
 import { InvoiceService } from '@/service/ApiService';
 import ExcelPreview from '@/components/ExcelPreview.vue';
+import CustomerSelectionSection from '@/components/accounting/CustomerSelectionSection.vue';
+import InvoiceDataTableSection from '@/components/accounting/InvoiceDataTableSection.vue';
+import TemplateSelectionSection from '@/components/accounting/TemplateSelectionSection.vue';
+import DocumentLibrarySection from '@/components/accounting/DocumentLibrarySection.vue';
+import FilePreviewDialog from '@/components/accounting/FilePreviewDialog.vue';
+import InvoiceDetailDrawer from '@/components/accounting/InvoiceDetailDrawer.vue';
+import MergeHistoryDialog from '@/components/accounting/MergeHistoryDialog.vue';
+import DuplicateConfirmationDialog from '@/components/accounting/DuplicateConfirmationDialog.vue';
+import MergeDetailsModal from '@/components/accounting/MergeDetailsModal.vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
@@ -121,6 +130,13 @@ const customerListType = ref(true);
 
 // Template state
 const selectedTemplate = ref(null);
+
+// Invoice Date Override state
+const useInvoiceDateOverride = ref(false);
+const invoiceDateOverride = ref(null);
+const overrideDateError = ref('');
+const showOverrideConfirmation = ref(false);
+const pendingOverrideAction = ref(null);
 const availableTemplates = computed(() => invoiceStore.availableTemplates || []);
 const isLoadingTemplates = computed(() => invoiceStore.loadingTemplates);
 const templatesError = computed(() => invoiceStore.templatesError);
@@ -162,10 +178,23 @@ const showMergeHistory = ref(false);
 const mergeHistoryData = ref([]);
 const isLoadingMergeHistory = ref(false);
 
+// Merge details modal state
+const showMergeDetailsModal = ref(false);
+const selectedMergeDetails = ref(null);
+const isLoadingMergeDetails = ref(false);
+const mergeDetailsError = ref(null);
+
 // Duplicate merge detection
 const showDuplicateConfirmation = ref(false);
 const duplicateDetails = ref(null);
 const pendingMergeRequest = ref(null);
+
+// Merge group detection for selected invoices
+const existingMergeGroups = ref([]);
+const isCheckingMergeGroups = ref(false);
+const showMergePreview = ref(false);
+
+
 
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
@@ -215,6 +244,10 @@ async function loadCustomers() {
     // Clear documents when customer list changes
     invoiceStore.resetTemplateState();
     console.log('📄 After clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
+    
+    // Auto-select Paradies if available
+    await autoSelectParadies();
+    
   } catch (err) {
     toast.add({ 
       severity: 'error', 
@@ -222,6 +255,36 @@ async function loadCustomers() {
       detail: 'Failed to load customers', 
       life: 3000 
     });
+  }
+}
+
+// Function to automatically select Paradies customer if available
+async function autoSelectParadies() {
+  if (!customers.value || customers.value.length === 0) {
+    console.log('👥 No customers available for auto-selection');
+    return;
+  }
+  
+  // Look for Paradies customer (case-insensitive search)
+  const paradiesCustomer = customers.value.find(customer => 
+    customer.name && customer.name.toLowerCase().includes('paradies')
+  );
+  
+  if (paradiesCustomer) {
+    console.log('🎯 Auto-selecting Paradies customer:', paradiesCustomer.name);
+    selectedCustomer.value = paradiesCustomer;
+    
+    // Trigger the customer change logic to load invoices and documents
+    await onCustomerChange();
+    
+    toast.add({ 
+      severity: 'info', 
+      summary: 'Auto-Selected', 
+      detail: `Automatically selected ${paradiesCustomer.name}`, 
+      life: 3000 
+    });
+  } else {
+    console.log('👥 Paradies customer not found in the list');
   }
 }
 
@@ -300,10 +363,10 @@ function clearFilter() {
 }
 
 // Handle customer invoice selection change
-async function onCustomerInvoiceSelect() {
-  console.log('🧾 onCustomerInvoiceSelect called');
+async function onCustomerInvoiceSelect(event) {
+  console.log('🧾 onCustomerInvoiceSelect called', event);
   
-  if (selectedCustomerInvoice.value) {
+  if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
     console.log('📋 Selected invoice:', selectedCustomerInvoice.value.number);
     
     // Clear previous documents immediately to prevent showing old data
@@ -318,7 +381,7 @@ async function onCustomerInvoiceSelect() {
     console.log('📂 After loading generated files:', generatedFiles.value.length);
     
     // If there's a customer ID, refine the template list
-    if (selectedCustomer.value && selectedCustomerInvoice.value.number) {
+    if (selectedCustomer.value && selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
       await loadAvailableTemplates(selectedCustomer.value.id, selectedCustomerInvoice.value.number);
     }
   } else {
@@ -1004,42 +1067,26 @@ async function generateTemplateDocument() {
     return;
   }
   
-  try {
-    const result = await invoiceStore.generateTemplate(
-      selectedCustomerInvoice.value.number, 
-      selectedTemplate.value.id
-    );
-    
-    if (result) {
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Template Generated', 
-        detail: 'Template document has been generated successfully', 
-        life: 3000 
-      });
-      
-      // Refresh the file list
-      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
-      
-      // Switch to the invoice documents tab
-      activeDocumentTab.value = 'invoice';
-    } else {
+  // Validate invoice date override if enabled
+  if (useInvoiceDateOverride.value) {
+    validateCurrentOverrideDate();
+    if (overrideDateError.value) {
       toast.add({ 
         severity: 'error', 
-        summary: 'Error', 
-        detail: generateTemplateError.value || 'Failed to generate template document', 
-        life: 3000 
+        summary: 'Invalid Override Date', 
+        detail: overrideDateError.value, 
+        life: 4000 
       });
+      return;
     }
-  } catch (err) {
-    console.error('Error generating template:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to generate template document', 
-      life: 3000 
-    });
+    
+    // Show confirmation dialog for override
+    showConfirmationDialog('generate');
+    return;
   }
+  
+  // If no override, proceed directly
+  await executeGenerateTemplate();
 }
 
 // Function to download a generated file
@@ -1117,6 +1164,9 @@ async function downloadFile(file) {
     });
   }
 }
+
+// Alias for downloadFile to match template expectations
+const downloadGeneratedFile = downloadFile;
 
 // Function to preview a file
 function previewFile(file) {
@@ -1389,7 +1439,14 @@ watch(isMergeMode, (newValue) => {
 function toggleMergeMode() {
   // The isMergeMode.value has already been updated by the v-model when this function is called
   if (isMergeMode.value) {
-    // Entering merge mode
+    // Entering merge mode - switch to merge history tab
+    activeDocumentTab.value = 'merged';
+    // Clear any existing selections
+    selectedInvoicesForMerge.value = [];
+    tableSelection.value = [];
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
     toast.add({ 
       severity: 'success', 
       summary: 'Merge Mode Enabled', 
@@ -1397,7 +1454,14 @@ function toggleMergeMode() {
       life: 4000 
     });
   } else {
-    // Exiting merge mode
+    // Exiting merge mode - switch back to appropriate tab
+    activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+    // Clear merge selections
+    selectedInvoicesForMerge.value = [];
+    tableSelection.value = [];
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
     toast.add({ 
       severity: 'info', 
       summary: 'Merge Mode Disabled', 
@@ -1438,128 +1502,36 @@ async function mergeSelectedInvoices() {
   const validationErrors = validateMergeSelection();
   if (validationErrors.length > 0) {
     validationErrors.forEach(error => {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Validation Error', 
-        detail: error, 
-        life: 4000 
+      toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: error,
+        life: 4000
       });
     });
     return;
   }
   
-  // Define mergeRequest outside try block so it's accessible in catch block
-  const invoiceNumbers = selectedInvoicesForMerge.value.map(invoice => invoice.number);
-  
-  // Determine template override based on invoice types or user selection
-  let templateOverride = null;
-  if (selectedTemplate.value.type) {
-    templateOverride = selectedTemplate.value.type.toLowerCase();
-  }
-  
-  const mergeRequest = {
-    invoice_numbers: invoiceNumbers,
-    template_id: selectedTemplate.value.id,
-    template_override: templateOverride,
-    options: {
-      format: 'both' // Generate both PDF and Excel
-    }
-  };
-  
-  try {
-    isMergingInvoices.value = true;
-    mergeError.value = null;
-    
-    // Debug: Log the initial merge request
-    console.log('Initial merge request:', mergeRequest);
-    
-    const result = await invoiceStore.mergeInvoices(mergeRequest);
-    
-    if (result && result.success) {
-      mergeResult.value = result;
-      
+  // Validate invoice date override if enabled
+  if (useInvoiceDateOverride.value) {
+    validateCurrentOverrideDate();
+    if (overrideDateError.value) {
       toast.add({ 
-        severity: 'success', 
-        summary: 'Merge Successful', 
-        detail: `Created merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`, 
-        life: 5000 
+        severity: 'error', 
+        summary: 'Invalid Override Date', 
+        detail: overrideDateError.value, 
+        life: 4000 
       });
-      
-      // Reset selections
-      selectedInvoicesForMerge.value = [];
-      
-      // Refresh the invoice list to show the new merged invoice
-      await loadCustomerInvoices();
-      
-      // Switch to invoice documents tab to show the generated files
-      activeDocumentTab.value = 'invoice';
-      
-      // Load the generated files for the merged invoice if we have the invoice number
-      if (result.data && result.data.merged_invoice_number) {
-        try {
-          await loadGeneratedFiles(result.data.merged_invoice_number);
-        } catch (fileError) {
-          console.warn('Could not load generated files:', fileError);
-          // Don't fail the whole operation if file loading fails
-        }
-      }
-      
-    } else {
-      throw new Error(result?.message || 'Merge operation failed');
+      return;
     }
     
-  } catch (err) {
-    console.error('Error merging invoices:', err);
-    mergeError.value = err.message;
-    
-    // Debug: Log the full error object to see what we're getting
-    console.log('Full error object:', err);
-    console.log('Error response:', err.response);
-    console.log('Error response status:', err.response?.status);
-    console.log('Error response data:', err.response?.data);
-    
-    // Check if this is a duplicate merge error (HTTP 409)
-    if (err.response && err.response.status === 409) {
-      const errorData = err.response.data;
-      console.log('409 error detected, checking errorData:', errorData);
-      console.log('error_type:', errorData?.error_type);
-      console.log('requires_confirmation:', errorData?.requires_confirmation);
-      
-      if (errorData.error_type === 'duplicate_merge' && errorData.requires_confirmation) {
-        // Store the pending request and show confirmation dialog
-        pendingMergeRequest.value = {
-          ...mergeRequest,
-          force_overwrite: true // Add the overwrite flag for retry
-        };
-        
-        // Debug: Log the pending merge request creation
-        console.log('Created pendingMergeRequest with force_overwrite:', pendingMergeRequest.value);
-        
-        duplicateDetails.value = errorData;
-        showDuplicateConfirmation.value = true;
-        
-        toast.add({ 
-          severity: 'warn', 
-          summary: 'Duplicate Merge Detected', 
-          detail: 'A merge already exists for these invoices. Please choose how to proceed.', 
-          life: 5000 
-        });
-        return; // Don't show error toast, let user decide
-      } else {
-        console.log('409 error but not duplicate_merge format. ErrorData structure:', JSON.stringify(errorData, null, 2));
-      }
-    }
-    
-    // Show error toast for other types of errors
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Merge Failed', 
-      detail: err.message || 'Failed to merge invoices', 
-      life: 5000 
-    });
-  } finally {
-    isMergingInvoices.value = false;
+    // Show confirmation dialog for override
+    showConfirmationDialog('merge');
+    return;
   }
+  
+  // If no override, proceed directly with merge
+  await executeMergeInvoices();
 }
 
 // Function to handle duplicate confirmation
@@ -1594,10 +1566,16 @@ async function handleDuplicateConfirmation(overwrite) {
     isMergingInvoices.value = true;
     mergeError.value = null;
     
-    // Debug: Log the pending merge request to see what's being sent
-    console.log('Sending merge request with force_overwrite:', pendingMergeRequest.value);
+    // Add force_overwrite flag to the pending merge request
+    const mergeRequestWithOverwrite = {
+      ...pendingMergeRequest.value,
+      force_overwrite: true
+    };
     
-    const result = await invoiceStore.mergeInvoices(pendingMergeRequest.value);
+    // Debug: Log the merge request to see what's being sent
+    console.log('Sending merge request with force_overwrite:', mergeRequestWithOverwrite);
+    
+    const result = await invoiceStore.mergeInvoices(mergeRequestWithOverwrite);
     
     if (result && result.success) {
       mergeResult.value = result;
@@ -1646,7 +1624,7 @@ async function handleDuplicateConfirmation(overwrite) {
   }
 }
 
-async function loadMergeHistory() {
+async function loadMergeHistory(showModal = false) {
   if (!selectedCustomer.value) {
     toast.add({ 
       severity: 'warn', 
@@ -1659,17 +1637,72 @@ async function loadMergeHistory() {
   
   try {
     isLoadingMergeHistory.value = true;
+    
+    console.log('🔍 Loading merge history for customer:', selectedCustomer.value.number);
+    
     const history = await invoiceStore.getCustomerMergeHistory(selectedCustomer.value.number);
+    
+    console.log('🔍 Raw merge history response:', history);
+    console.log('🔍 Merge history data:', history.data);
+    
+    // Check if the response indicates an error (like backend unavailable)
+    if (!history.success && history.error) {
+      mergeHistoryData.value = [];
+      
+      // Show appropriate toast based on error type
+      if (history.error.type === 'backend_unavailable') {
+        toast.add({ 
+          severity: 'warn', 
+          summary: 'Backend Issue', 
+          detail: history.error.message, 
+          life: 5000 
+        });
+      } else {
+        toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: history.error.message || 'Failed to load merge history', 
+          life: 3000 
+        });
+      }
+      return;
+    }
+    
     mergeHistoryData.value = history.data || [];
-    showMergeHistory.value = true;
+    
+    console.log('🔍 Final mergeHistoryData:', mergeHistoryData.value);
+    
+    // Only show the modal if explicitly requested
+    if (showModal) {
+      showMergeHistory.value = true;
+    }
   } catch (err) {
-    console.error('Error loading merge history:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load merge history', 
-      life: 3000 
+    console.error('❌ Error loading merge history:', err);
+    console.error('❌ Error details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
     });
+    
+    // Clear any existing data on error
+    mergeHistoryData.value = [];
+    
+    // Show different messages based on error type
+    if (err.response?.status === 500) {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'Backend Issue', 
+        detail: 'Merge history endpoint is not available. This feature may not be implemented yet.', 
+        life: 5000 
+      });
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'Failed to load merge history', 
+        life: 3000 
+      });
+    }
   } finally {
     isLoadingMergeHistory.value = false;
   }
@@ -1718,13 +1751,61 @@ const mergeSelectionSummary = computed(() => {
 });
 
 // Function to view merge details
-function viewMergeDetails(mergeData) {
-  toast.add({ 
-    severity: 'info', 
-    summary: 'Merge Details', 
-    detail: `Original invoices: ${mergeData.original_invoices.join(', ')}`, 
-    life: 5000 
-  });
+async function viewMergeDetails(mergeData) {
+  console.log('📊 Viewing merge details:', mergeData);
+  
+  try {
+    isLoadingMergeDetails.value = true;
+    mergeDetailsError.value = null;
+    showMergeDetailsModal.value = true;
+    
+    // If we already have detailed data, use it
+    if (mergeData.documents && mergeData.original_invoices) {
+      selectedMergeDetails.value = mergeData;
+      return;
+    }
+    
+    // Extract the group identifier from the merge data
+    // The group_identifier is the merged_invoice_number without the "+" suffix
+    let groupIdentifier = mergeData.group_identifier;
+    
+    if (!groupIdentifier && mergeData.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeData.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('📊 Using group identifier:', groupIdentifier);
+    
+    // Otherwise, fetch detailed merge group data from backend
+    const response = await invoiceStore.getMergeGroupDetails(groupIdentifier);
+    
+    if (response && response.data) {
+      selectedMergeDetails.value = response.data;
+    } else {
+      // Fallback to the provided data if backend call fails
+      selectedMergeDetails.value = mergeData;
+    }
+    
+  } catch (err) {
+    console.error('Error loading merge details:', err);
+    mergeDetailsError.value = err.message || 'Failed to load merge details';
+    
+    // Still show the modal with available data
+    selectedMergeDetails.value = mergeData;
+    
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Partial Data', 
+      detail: 'Some merge details could not be loaded, showing available information', 
+      life: 4000 
+    });
+  } finally {
+    isLoadingMergeDetails.value = false;
+  }
 }
 
 // Function to download merged files
@@ -1754,6 +1835,129 @@ async function downloadMergedFiles(mergeData) {
       life: 3000 
     });
   }
+}
+
+// Merge details modal event handlers
+function onMergeDetailsRetry() {
+  if (selectedMergeDetails.value) {
+    viewMergeDetails(selectedMergeDetails.value);
+  }
+}
+
+async function onDownloadAllMergeFiles(mergeDetails) {
+  try {
+    // Download all files for this merge
+    if (mergeDetails.documents && mergeDetails.documents.length > 0) {
+      for (const document of mergeDetails.documents) {
+        await downloadGeneratedFile(document);
+      }
+      
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Download Started', 
+        detail: `Downloading ${mergeDetails.documents.length} files from merge ${mergeDetails.merged_invoice_number}`, 
+        life: 3000 
+      });
+    } else {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'No Files', 
+        detail: 'No documents found for this merge', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error downloading merge files:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Download Failed', 
+      detail: 'Failed to download merge files', 
+      life: 3000 
+    });
+  }
+}
+
+function onReMergeFromDetails(mergeDetails) {
+  // Close the details modal
+  showMergeDetailsModal.value = false;
+  
+  // Call the existing re-merge function
+  reMergeGroup(mergeDetails);
+}
+
+function onPreviewMergeDocument(document) {
+  console.log('🔍 Preview merge document:', document);
+  console.log('🔍 Document structure:', {
+    id: document.id,
+    job_id: document.job_id,
+    document_type: document.document_type,
+    document_subtype: document.document_subtype,
+    file_name: document.file_name,
+    filename: document.filename,
+    fileType: document.fileType,
+    file_type: document.file_type,
+    type: document.type,
+    preview_url: document.preview_url
+  });
+  
+  // Transform merge document to match expected structure
+  const transformedDocument = {
+    // Use job_id as the main ID for preview (like regular documents)
+    id: document.job_id || document.id,
+    // Map the merge document fields to expected fields
+    filename: document.file_name || document.filename,
+    fileType: document.document_type || document.fileType,
+    fileCategory: document.document_subtype || document.fileCategory,
+    // Keep original data for fallback
+    originalData: {
+      ...document,
+      type: document.document_type,
+      subtype: document.document_subtype
+    }
+  };
+  
+  console.log('🔍 Transformed document for preview:', transformedDocument);
+  
+  // Use the existing preview function with transformed document
+  previewFile(transformedDocument);
+}
+
+function onDownloadMergeDocument(document) {
+  console.log('🔍 Download merge document:', document);
+  
+  // Transform merge document to match expected structure
+  const transformedDocument = {
+    // Use job_id as the main ID for download (like regular documents)
+    id: document.job_id || document.id,
+    // Map the merge document fields to expected fields
+    filename: document.file_name || document.filename,
+    fileType: document.document_type || document.fileType,
+    fileCategory: document.document_subtype || document.fileCategory,
+    // Keep original data for fallback
+    originalData: {
+      ...document,
+      type: document.document_type,
+      subtype: document.document_subtype
+    }
+  };
+  
+  console.log('🔍 Transformed document for download:', transformedDocument);
+  
+  // Use the existing download function with transformed document
+  downloadGeneratedFile(transformedDocument);
+}
+
+function onDownloadAllMergeDocuments(documents) {
+  documents.forEach(document => {
+    downloadGeneratedFile(document);
+  });
+  
+  toast.add({ 
+    severity: 'success', 
+    summary: 'Download Started', 
+    detail: `Downloading ${documents.length} documents`, 
+    life: 3000 
+  });
 }
 
 // Computed property for DataTable selection model
@@ -1955,7 +2159,7 @@ function refreshDocuments() {
   if (selectedCustomer.value) {
     loadCustomerDocuments(selectedCustomer.value.number);
   }
-  if (selectedCustomerInvoice.value) {
+  if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
     loadGeneratedFiles(selectedCustomerInvoice.value.number);
   }
   if (activeDocumentTab.value === 'merged') {
@@ -2067,19 +2271,493 @@ function viewSourceInvoices(mergeData) {
   console.log('Viewing source invoices for merge:', mergeData);
 }
 
-function getCompactFileHeaderClass(file) {
-  const fileType = file.fileType || file.originalData?.type || '';
-  if (fileType === 'excel' || file.filename?.toLowerCase().includes('.xlsx') || file.filename?.toLowerCase().includes('.xls')) {
-    return 'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800 text-green-700 dark:text-green-300';
+// Invoice Date Override Functions
+function validateOverrideDate(date) {
+  if (!date) {
+    return 'Override date is required when enabled';
   }
-  if (fileType === 'pdf' || file.filename?.toLowerCase().includes('.pdf')) {
-    return 'bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800 text-red-700 dark:text-red-300';
+  
+  const selectedDate = new Date(date);
+  
+  // Check if date is valid
+  if (isNaN(selectedDate.getTime())) {
+    return 'Invalid date format. Please use YYYY-MM-DD format';
   }
-  if (fileType === 'word' || file.filename?.toLowerCase().includes('.docx') || file.filename?.toLowerCase().includes('.doc')) {
-    return 'bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300';
+  
+  // Check date range
+  const minDate = new Date('2020-01-01');
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  
+  if (selectedDate < minDate) {
+    return 'Override date must be after 2020-01-01';
   }
-  return 'bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300';
+  
+  if (selectedDate > maxDate) {
+    return `Override date must be before ${maxDate.getFullYear()}-12-31`;
+  }
+  
+  return '';
 }
+
+function formatDateForAPI(date) {
+  if (!date) return null;
+  
+  // If it's already a string in YYYY-MM-DD format, return it
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+  
+  // If it's a Date object, format it
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return null;
+  
+  return dateObj.toISOString().split('T')[0]; // YYYY-MM-DD format
+}
+
+function onOverrideToggle() {
+  if (!useInvoiceDateOverride.value) {
+    // Clear override data when disabled
+    invoiceDateOverride.value = null;
+    overrideDateError.value = '';
+  } else {
+    // Set default to current date when enabled
+    invoiceDateOverride.value = new Date();
+    validateCurrentOverrideDate();
+  }
+}
+
+function onOverrideDateSelect(date) {
+  invoiceDateOverride.value = date;
+  validateCurrentOverrideDate();
+}
+
+function validateCurrentOverrideDate() {
+  if (useInvoiceDateOverride.value) {
+    overrideDateError.value = validateOverrideDate(invoiceDateOverride.value);
+  } else {
+    overrideDateError.value = '';
+  }
+}
+
+function buildRequestOptions() {
+  const options = {};
+  
+  if (useInvoiceDateOverride.value && invoiceDateOverride.value) {
+    const formattedDate = formatDateForAPI(invoiceDateOverride.value);
+    if (formattedDate) {
+      options.invoice_date_override = formattedDate;
+    }
+  }
+  
+  return options;
+}
+
+function formatOverrideDateForDisplay() {
+  if (!invoiceDateOverride.value) return '';
+  
+  const date = new Date(invoiceDateOverride.value);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+}
+
+function getOverrideDatePrefix() {
+  if (!invoiceDateOverride.value) return '';
+  
+  const date = new Date(invoiceDateOverride.value);
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  
+  return `${months[date.getMonth()]}_${date.getFullYear()}`;
+}
+
+function showConfirmationDialog(action) {
+  pendingOverrideAction.value = action;
+  showOverrideConfirmation.value = true;
+}
+
+function cancelOverrideConfirmation() {
+  showOverrideConfirmation.value = false;
+  pendingOverrideAction.value = null;
+}
+
+async function confirmOverrideAndProceed() {
+  showOverrideConfirmation.value = false;
+  
+  if (pendingOverrideAction.value === 'generate') {
+    await executeGenerateTemplate();
+  } else if (pendingOverrideAction.value === 'merge') {
+    await executeMergeInvoices();
+  }
+  
+  pendingOverrideAction.value = null;
+}
+
+async function executeGenerateTemplate() {
+  try {
+    // Build request options
+    const options = buildRequestOptions();
+    
+    // Debug logging
+    console.log('executeGenerateTemplate - Override settings:', {
+      useInvoiceDateOverride: useInvoiceDateOverride.value,
+      invoiceDateOverride: invoiceDateOverride.value,
+      options: options
+    });
+    
+    const result = await invoiceStore.generateTemplate(
+      selectedCustomerInvoice.value.number, 
+      selectedTemplate.value.id,
+      options
+    );
+    
+    if (result) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Template Generated', 
+        detail: useInvoiceDateOverride.value 
+          ? `Template generated with override date: ${formatOverrideDateForDisplay()}`
+          : 'Template document has been generated successfully', 
+        life: 4000 
+      });
+      
+      // Refresh the file list
+      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
+      
+      // Switch to the invoice documents tab
+      activeDocumentTab.value = 'invoice';
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: generateTemplateError.value || 'Failed to generate template document', 
+        life: 3000 
+      });
+    }
+  } catch (err) {
+    console.error('Error generating template:', err);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: err.message || 'Failed to generate template document', 
+      life: 3000 
+    });
+  }
+}
+
+async function executeMergeInvoices() {
+  // This will contain the actual merge logic from mergeSelectedInvoices
+  // We'll move the core logic here and call this from both places
+  const validationErrors = validateMergeSelection();
+  if (validationErrors.length > 0) {
+    validationErrors.forEach(error => {
+      toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: error,
+        life: 4000
+      });
+    });
+    return;
+  }
+
+  // Build merge request
+  const invoiceNumbers = selectedInvoicesForMerge.value.map(invoice => invoice.number);
+  let templateOverride = null;
+  if (selectedTemplate.value.type) {
+    templateOverride = selectedTemplate.value.type.toLowerCase();
+  }
+
+  // Build base options
+  const baseOptions = {
+    format: 'both' // Generate both PDF and Excel
+  };
+  
+  // Add invoice date override if enabled
+  const overrideOptions = buildRequestOptions();
+  const options = { ...baseOptions, ...overrideOptions };
+  
+  const mergeRequest = {
+    invoice_numbers: invoiceNumbers,
+    template_id: selectedTemplate.value.id,
+    template_override: templateOverride,
+    options: options
+  };
+
+  console.log('🔄 Sending merge request:', mergeRequest);
+
+  try {
+    isMergingInvoices.value = true;
+    mergeError.value = null;
+
+    // Send request to backend
+    const result = await invoiceStore.mergeInvoices(mergeRequest);
+
+    if (result && result.success) {
+      mergeResult.value = result;
+      toast.add({
+        severity: 'success',
+        summary: 'Merge Successful',
+        detail: useInvoiceDateOverride.value 
+          ? `Created merged invoice ${result.data.merged_invoice_number} with override date: ${formatOverrideDateForDisplay()}`
+          : `Created merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`,
+        life: 5000
+      });
+
+      // Reset selections and refresh view
+      selectedInvoicesForMerge.value = [];
+      await loadCustomerInvoices();
+      activeDocumentTab.value = 'invoice';
+
+      if (result.data && result.data.merged_invoice_number) {
+        try {
+          await loadGeneratedFiles(result.data.merged_invoice_number);
+        } catch (fileError) {
+          console.warn('Could not load generated files:', fileError);
+        }
+      }
+    } else {
+      throw new Error(result?.message || 'Merge operation failed');
+    }
+  } catch (err) {
+    console.error('Error merging invoices:', err);
+    console.log('Error response status:', err.response?.status);
+    console.log('Error response data:', err.response?.data);
+    mergeError.value = err.message;
+    
+    // Check for duplicate detection (409 error or specific error types)
+    if (err.response?.status === 409 || 
+        err.response?.data?.error_type === 'duplicate_merge' || 
+        err.response?.data?.requires_confirmation) {
+      console.log('Duplicate merge detected, showing confirmation dialog');
+      console.log('Duplicate details:', err.response.data);
+      duplicateDetails.value = err.response.data;
+      pendingMergeRequest.value = mergeRequest;
+      showDuplicateConfirmation.value = true;
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Merge Failed',
+        detail: err.message || 'Failed to merge invoices',
+        life: 4000
+      });
+    }
+  } finally {
+    isMergingInvoices.value = false;
+  }
+}
+
+// Function to check for existing merge groups containing selected invoices
+async function checkForExistingMergeGroups(selectedInvoices) {
+  if (!selectedInvoices || selectedInvoices.length < 2) {
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    return;
+  }
+
+  try {
+    isCheckingMergeGroups.value = true;
+    
+    // Get invoice numbers from selected invoices
+    const invoiceNumbers = selectedInvoices.map(invoice => invoice.number);
+    
+    // Get customer number for the API call
+    const customerNumber = selectedCustomer.value?.number || selectedCustomer.value?.customer_number;
+    
+    if (!customerNumber) {
+      console.error('No customer selected for merge group lookup');
+      existingMergeGroups.value = [];
+      showMergePreview.value = false;
+      return;
+    }
+    
+    // Call backend to check for conflicts (existing merge groups)
+    const response = await invoiceStore.findMergeGroupsForInvoices(invoiceNumbers, customerNumber);
+    
+    if (response && response.data) {
+      // Backend returns conflicts array when has_conflicts is true
+      if (response.data.has_conflicts && response.data.conflicts) {
+        existingMergeGroups.value = response.data.conflicts.map(conflict => ({
+          id: conflict.merge_group_id,
+          merged_invoice_number: conflict.merged_invoice_number,
+          group_identifier: conflict.group_identifier,
+          created_date: conflict.created_at,
+          original_invoices: conflict.existing_invoices,
+          template_used: conflict.template_used,
+          template_override: conflict.template_override,
+          document_count: conflict.document_count,
+          total_amount: conflict.total_amount,
+          conflicting_invoices: conflict.conflicting_invoices
+        }));
+        showMergePreview.value = true;
+        
+        // Switch to merge preview tab
+        activeDocumentTab.value = 'merge-preview';
+        
+        console.log('📊 Found existing merge groups:', existingMergeGroups.value);
+      } else {
+        existingMergeGroups.value = [];
+        showMergePreview.value = false;
+      }
+    } else {
+      existingMergeGroups.value = [];
+      showMergePreview.value = false;
+    }
+  } catch (err) {
+    console.error('Error checking for existing merge groups:', err);
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+  } finally {
+    isCheckingMergeGroups.value = false;
+  }
+}
+
+// Watch for changes in selected invoices for merge
+watch(selectedInvoicesForMerge, async (newSelection) => {
+  if (isMergeMode.value && newSelection.length >= 2) {
+    await checkForExistingMergeGroups(newSelection);
+  } else {
+    existingMergeGroups.value = [];
+    showMergePreview.value = false;
+    
+    // Switch back to appropriate tab
+    if (activeDocumentTab.value === 'merge-preview') {
+      activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+    }
+  }
+}, { deep: true });
+
+// Watch for tab changes to load merge history when needed
+watch(activeDocumentTab, async (newTab) => {
+  if (newTab === 'merged' && selectedCustomer.value && mergeHistoryData.value.length === 0) {
+    await loadMergeHistory();
+  }
+});
+
+// Handle viewing merge group documents
+async function viewMergeDocuments(mergeGroup) {
+  console.log('📄 Viewing documents for merge group:', mergeGroup.merged_invoice_number);
+  
+  try {
+    // Extract the group identifier from the merge data
+    let groupIdentifier = mergeGroup.group_identifier;
+    
+    if (!groupIdentifier && mergeGroup.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('📄 Using group identifier for documents:', groupIdentifier);
+    
+    // Get detailed merge group data with documents
+    const response = await invoiceStore.getMergeGroupById(groupIdentifier);
+    
+    if (response && response.data) {
+      // Switch to customer documents tab and show merge group documents
+      activeDocumentTab.value = 'customer';
+      
+      // You could filter customer documents to show only merge group documents
+      // For now, we'll show a toast with the document count
+      const documentCount = response.data.documents ? response.data.documents.length : 0;
+      
+      toast.add({
+        severity: 'info',
+        summary: 'Merge Documents',
+        detail: `Found ${documentCount} documents for merge group ${mergeGroup.merged_invoice_number}`,
+        life: 3000
+      });
+    }
+  } catch (err) {
+    console.error('Error loading merge group documents:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to load merge group documents',
+      life: 3000
+    });
+  }
+}
+
+// Handle re-merging a group
+async function reMergeGroup(mergeGroup) {
+  console.log('🔄 Re-merging group:', mergeGroup.merged_invoice_number);
+  
+  try {
+    // Extract the group identifier from the merge data
+    let groupIdentifier = mergeGroup.group_identifier;
+    
+    if (!groupIdentifier && mergeGroup.merged_invoice_number) {
+      // Remove the "+" suffix if present to get the group identifier
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+    }
+    
+    if (!groupIdentifier) {
+      throw new Error('No group identifier found in merge data');
+    }
+    
+    console.log('🔄 Using group identifier for re-merge:', groupIdentifier);
+    
+    // Prepare the merge group for re-merge on the backend
+    await invoiceStore.prepareMergeGroupForRemerge(groupIdentifier);
+    
+    // Set up the merge with the original invoices
+    const originalInvoices = mergeGroup.original_invoices.map(invoiceNumber => {
+      // Find the invoice object from our data
+      return customerInvoices.value.find(inv => inv.number === invoiceNumber) || { number: invoiceNumber };
+    });
+    
+    selectedInvoicesForMerge.value = originalInvoices;
+    isMergeMode.value = true;
+    
+    // Show confirmation dialog asking if they want to overwrite
+    showDuplicateConfirmation.value = true;
+    duplicateDetails.value = {
+      existing_merge: {
+        merged_invoice_number: mergeGroup.merged_invoice_number,
+        created_date: mergeGroup.created_date,
+        original_invoices: mergeGroup.original_invoices,
+        template_used: mergeGroup.template_used
+      },
+      invoice_numbers: mergeGroup.original_invoices
+    };
+    
+    // Set up the pending merge request
+    pendingMergeRequest.value = {
+      invoice_numbers: mergeGroup.original_invoices,
+      template_id: mergeGroup.template_used,
+      template_override: mergeGroup.template_override,
+      force_overwrite: true, // Since this is a re-merge, we want to overwrite
+      options: {
+        format: selectedFormat.value,
+        invoice_date_override: invoiceDateOverride.value
+      }
+    };
+    
+    toast.add({
+      severity: 'warn',
+      summary: 'Re-merge Confirmation',
+      detail: `Confirm re-merging ${mergeGroup.original_invoices.length} invoices`,
+      life: 5000
+    });
+  } catch (err) {
+    console.error('Error preparing re-merge:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Re-merge Error',
+      detail: 'Failed to prepare merge group for re-merge',
+      life: 3000
+    });
+  }
+}
+
+
 </script>
 
 <template>
@@ -2089,1456 +2767,183 @@ function getCompactFileHeaderClass(file) {
             <div class="card">
                 <h5>Invoice Templates</h5>
                 
-                <div class="mb-4 p-2" style="display: flex; align-items: center;">
-                    <!-- Select taking exactly 35% width -->
-                    <div style="width: 35%;">
-                        <Select 
-                            v-model="selectedCustomer" 
-                            :options="customerStore.customers" 
-                            optionLabel="name" 
-                            placeholder="Select Customer"
-                            filter
-                            :disabled="isLoadingCustomers"
-                            @change="onCustomerChange"
-                            class="w-full" />
-                    </div>
-                    
-                    <!-- Fixed spacing between Select and toggle -->
-                    <div style="margin-left: 2rem; display: flex; align-items: center;">
-                        <label style="margin-right: 0.5rem;">Full list / Only active customers</label>
-                        <ToggleSwitch v-model="customerListType" @change="onCustomerListTypeChange" />
-                    </div>
-                </div>
+                <!-- Customer Selection Section -->
+                <CustomerSelectionSection
+                    v-model:selectedCustomer="selectedCustomer"
+                    v-model:customerListType="customerListType"
+                    :customers="customerStore.customers"
+                    :isLoadingCustomers="isLoadingCustomers"
+                    @customer-change="onCustomerChange"
+                    @customer-list-type-change="onCustomerListTypeChange"
+                />
                 
-                <!-- Invoice Table -->
-                <div class="card p-4 mb-4">
-                    <DataTable v-model:selection="tableSelection" 
-                             :value="customerInvoices || []" dataKey="id"
-                             :loading="isLoadingCustomerInvoices" :rowHover="true" stripedRows
-                             :metaKeySelection="false" 
-                             :selectionMode="isMergeMode ? 'multiple' : 'single'"
-                             filterDisplay="menu" v-model:filters="filters"
-                             :globalFilterFields="['number', 'customerName', 'dueDate', 'total', 'remainingAmount', 'status']"
-                             @row-select="isMergeMode ? null : onCustomerInvoiceSelect" 
-                             @row-unselect="isMergeMode ? null : onCustomerInvoiceSelect"
-                             @sort="onSort"
-                             :rowClass="getRowClass"
-                             tableStyle="min-width: 50rem"
-                             :scrollable="true" 
-                             scrollHeight="500px"
-                             :virtualScrollerOptions="customerInvoices?.length > 20 ? { itemSize: 65, lazy: false } : null"
-                             responsiveLayout="scroll"
-                             showGridlines
-                             :resizableColumns="true"
-                             columnResizeMode="fit"
-                             stateStorage="session"
-                             stateKey="invoice-templates-table-state">
-                        <template #header>
-                            <div class="flex flex-col gap-3 p-2">
-                                <!-- Top row with controls -->
-                                <div class="flex flex-col sm:flex-row justify-between gap-3">
-                                    <div class="flex gap-2">
-                                        <Button type="button" icon="pi pi-filter-slash" label="Clear" outlined @click="clearFilter()" size="small" />
-                                        <Button type="button" icon="pi pi-refresh" label="Refresh" outlined @click="loadCustomerInvoices()" size="small" :loading="isLoadingCustomerInvoices" />
-                                        <Button type="button" icon="pi pi-history" label="Merge History" outlined @click="loadMergeHistory()" size="small" :disabled="!selectedCustomer" />
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <IconField>
-                                            <InputIcon>
-                                                <i class="pi pi-search" />
-                                            </InputIcon>
-                                            <InputText v-model="filters['global'].value" placeholder="Search invoices..." class="w-full sm:w-auto" />
-                                        </IconField>
-                                    </div>
-                                </div>
-                                
-                                <!-- Merge Mode Toggle -->
-                                <div class="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex items-center gap-2">
-                                            <i class="pi pi-objects-column text-lg" :class="isMergeMode ? 'text-primary-500' : 'text-surface-400'"></i>
-                                            <span class="font-semibold text-surface-900 dark:text-surface-0">Merge Mode</span>
-                                        </div>
-                                        <ToggleSwitch v-model="isMergeMode" @update:modelValue="toggleMergeMode" />
-                                        <div v-if="isMergeMode" class="flex items-center gap-2">
-                                            <Tag :value="`${selectedInvoicesForMerge.length} selected`" 
-                                                 :severity="selectedInvoicesForMerge.length >= 2 ? 'success' : 'secondary'" />
-                                            <span v-if="mergeSelectionSummary" class="text-sm text-surface-600 dark:text-surface-400">
-                                                {{ mergeSelectionSummary }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div v-if="isMergeMode" class="text-sm text-surface-600 dark:text-surface-400">
-                                        Select 2-50 invoices to merge
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <template #empty>
-                            <div class="flex flex-column align-items-center p-6">
-                                <i class="pi pi-file text-6xl text-surface-400 mb-4"></i>
-                                <span v-if="!selectedCustomer" class="text-lg text-surface-600 dark:text-surface-400">Please select a customer above to view invoices</span>
-                                <span v-else class="text-lg text-surface-600 dark:text-surface-400">No invoices found for the selected customer</span>
-                                <span v-if="selectedCustomer" class="text-sm text-surface-500 dark:text-surface-500 mt-2">
-                                    Try adjusting your search criteria or filters
-                                </span>
-                            </div>
-                        </template>
-                        <template #loading>
-                            <div class="flex items-center justify-center p-6">
-                                <ProgressSpinner style="width: 40px; height: 40px" />
-                                <span class="ml-3 text-surface-600 dark:text-surface-400">Loading invoices...</span>
-                            </div>
-                        </template>
-                        
-                        <Column field="customerName" header="Customer" style="min-width: 12rem" sortable frozen>
-                            <template #body="slotProps">
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-user text-surface-500 text-sm"></i>
-                                    <span class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.customerName }}</span>
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="number" header="Invoice #" style="min-width: 10rem" sortable>
-                            <template #body="slotProps">
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-file text-blue-500 text-sm"></i>
-                                    <span class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.number }}</span>
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by number" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="dueDate" header="Due Date" style="min-width: 10rem" sortable>
-                            <template #body="slotProps">
-                                <div class="flex flex-col">
-                                    <span class="font-medium text-surface-900 dark:text-surface-0">
-                                        {{ getDueDateInfo(slotProps.data.dueDate, slotProps.data.status).date }}
-                                    </span>
-                                    <span class="text-xs" :class="getDueDateInfo(slotProps.data.dueDate, slotProps.data.status).contextClass">
-                                        {{ getDueDateInfo(slotProps.data.dueDate, slotProps.data.status).context }}
-                                    </span>
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <DatePicker v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="mm/dd/yyyy" />
-                            </template>
-                        </Column>
-                        <Column field="total" header="Invoice Total" dataType="numeric" style="min-width: 10rem" sortable
-                               :showFilterMatchModes="true" 
-                               :filterMatchModeOptions="[
-                                 {label: 'Equals', value: FilterMatchMode.EQUALS},
-                                 {label: 'Less Than', value: FilterMatchMode.LESS_THAN},
-                                 {label: 'Greater Than', value: FilterMatchMode.GREATER_THAN},
-                                 {label: 'Less Than or Equal To', value: FilterMatchMode.LESS_THAN_OR_EQUAL_TO},
-                                 {label: 'Greater Than or Equal To', value: FilterMatchMode.GREATER_THAN_OR_EQUAL_TO}
-                               ]">
-                            <template #body="slotProps">
-                                <div class="text-right">
-                                    <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(slotProps.data.total) }}</span>
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" placeholder="Search by amount" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="remainingAmount" header="Amount Due" dataType="numeric" style="min-width: 10rem" sortable
-                               :showFilterMatchModes="true" 
-                               :filterMatchModeOptions="[
-                                 {label: 'Equals', value: FilterMatchMode.EQUALS},
-                                 {label: 'Less Than', value: FilterMatchMode.LESS_THAN},
-                                 {label: 'Greater Than', value: FilterMatchMode.GREATER_THAN},
-                                 {label: 'Less Than or Equal To', value: FilterMatchMode.LESS_THAN_OR_EQUAL_TO},
-                                 {label: 'Greater Than or Equal To', value: FilterMatchMode.GREATER_THAN_OR_EQUAL_TO}
-                               ]">
-                            <template #body="slotProps">
-                                <div class="text-right">
-                                    <span :class="getRemainingAmountClass(slotProps.data.remainingAmount)">
-                                        {{ formatCurrency(slotProps.data.remainingAmount) }}
-                                    </span>
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" placeholder="Search by amount" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        <Column field="status" header="Status" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <Tag :value="slotProps.data.status" 
-                                     :severity="slotProps.data.status === 'open' ? 'info' : (slotProps.data.status === 'paid' ? 'success' : 'warning')"
-                                     class="font-medium" />
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <Select v-model="filterModel.value" :options="['open', 'unpaid', 'paid']" placeholder="Select Status" class="p-column-filter" showClear>
-                                    <template #option="slotProps">
-                                        <Tag :value="slotProps.option" 
-                                             :severity="slotProps.option === 'open' ? 'info' : (slotProps.option === 'paid' ? 'success' : 'warning')" />
-                                    </template>
-                                </Select>
-                            </template>
-                        </Column>
-                        <Column headerStyle="width: 4rem" bodyStyle="text-align: center" frozen alignFrozen="right">
-                            <template #body="slotProps">
-                                <Button icon="pi pi-eye" 
-                                        size="small" 
-                                        text 
-                                        rounded 
-                                        severity="secondary"
-                                        v-tooltip.top="'View Invoice Details'"
-                                        @click="openInvoiceDrawer(slotProps.data)" />
-                            </template>
-                        </Column>
-                        
-                        <template #footer>
-                            <div class="flex justify-between items-center p-2 bg-surface-50 dark:bg-surface-800 border-t border-surface-200 dark:border-surface-700">
-                                <div class="flex items-center gap-4">
-                                    <span class="text-sm font-medium text-surface-700 dark:text-surface-300">
-                                        {{ customerInvoices?.length || 0 }} invoices
-                                    </span>
-                                    <span v-if="selectedCustomer" class="text-xs text-surface-500 dark:text-surface-400">
-                                        for {{ selectedCustomer.name }}
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <Button icon="pi pi-download" text size="small" v-tooltip.top="'Export Data'" severity="secondary" />
-                                    <Button icon="pi pi-refresh" text size="small" @click="loadCustomerInvoices()" v-tooltip.top="'Refresh'" severity="secondary" :loading="isLoadingCustomerInvoices" />
-                                </div>
-                            </div>
-                        </template>
-                    </DataTable>
-                </div>
+                <!-- Invoice DataTable Section -->
+                <InvoiceDataTableSection
+                    :tableSelection="tableSelection"
+                    :customerInvoices="customerInvoices"
+                    :isLoadingCustomerInvoices="isLoadingCustomerInvoices"
+                    :isMergeMode="isMergeMode"
+                    :filters="filters"
+                    :selectedCustomer="selectedCustomer"
+                    :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                    :mergeSelectionSummary="mergeSelectionSummary"
+                    :getDueDateInfo="getDueDateInfo"
+                    :getRemainingAmountClass="getRemainingAmountClass"
+                    :getRowClass="getRowClass"
+                    :formatCurrency="formatCurrency"
+                    :FilterMatchMode="FilterMatchMode"
+                    @update:tableSelection="tableSelection = $event"
+                    @update:filters="filters = $event"
+                    @update:isMergeMode="isMergeMode = $event; toggleMergeMode()"
+                    @row-select="onCustomerInvoiceSelect"
+                    @row-unselect="onCustomerInvoiceSelect"
+                    @sort="onSort"
+                    @clear-filter="clearFilter"
+                    @refresh-invoices="loadCustomerInvoices"
+                    @load-merge-history="loadMergeHistory(true)"
+                    @open-invoice-drawer="openInvoiceDrawer"
+                />
                 
                 <!-- Template and Files Section -->
                 <div class="grid grid-cols-12 gap-4">
-                    <!-- Available Templates Section -->
+                    <!-- Template Selection Section -->
                     <div class="col-span-12 md:col-span-5 xl:col-span-4">
-                        <div class="card">
-                            <div class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Available Templates</div>
-                            
-                            <!-- Loading templates message -->
-                            <div v-if="isLoadingTemplates" class="flex justify-center items-center p-4">
-                                <ProgressSpinner style="width: 50px; height: 50px" />
-                                <span class="ml-3">Loading templates...</span>
-                            </div>
-                            
-                            <!-- Error loading templates -->
-                            <div v-else-if="templatesError" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-                                <div class="text-lg text-yellow-500">{{ templatesError }}</div>
-                            </div>
-                            
-                            <!-- No templates available message -->
-                            <div v-else-if="!selectedCustomer" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-users text-4xl text-primary mb-3"></i>
-                                <div class="text-lg">Select a customer to see available templates</div>
-                            </div>
-                            
-                            <!-- No templates for selected customer -->
-                            <div v-else-if="availableTemplates.length === 0" class="p-4 flex flex-col items-center justify-center">
-                                <i class="pi pi-info-circle text-4xl text-primary mb-3"></i>
-                                <div class="text-lg">No templates available for this customer</div>
-                                <div v-if="selectedCustomerInvoice" class="text-sm text-surface-600 dark:text-surface-400 mt-2">
-                                    Try selecting a different invoice or customer
-                                </div>
-                            </div>
-                            
-                            <!-- Templates list -->
-                            <div v-else>
-                                <ul class="list-none p-0 m-0">
-                                    <li v-for="template in availableTemplates" :key="template.id" 
-                                        class="p-3 mb-2 flex items-center justify-between cursor-pointer border border-surface-200 dark:border-surface-700 rounded-lg shadow-sm transition-all hover:shadow hover:bg-surface-50 dark:hover:bg-surface-800"
-                                        :class="{ 'bg-surface-50 dark:bg-surface-800 border-primary-300 dark:border-primary-700': selectedTemplate?.id === template.id }"
-                                        @click="selectedTemplate = template">
-                                        <div class="flex items-center">
-                                            <i class="pi pi-file-pdf text-2xl mr-3 text-primary-500" v-if="template.output_format === 'pdf'"></i>
-                                            <i class="pi pi-file-excel text-2xl mr-3 text-green-500" v-else-if="template.output_format === 'excel'"></i>
-                                            <i class="pi pi-file text-2xl mr-3 text-blue-500" v-else></i>
-                                            <div>
-                                                <div class="text-surface-900 dark:text-surface-0 font-medium">{{ template.name }}</div>
-                                                <div class="text-surface-600 dark:text-surface-400 text-sm">{{ template.description || 'No description' }}</div>
-                                            </div>
-                                        </div>
-                                        <Tag v-if="template.type" :severity="getTemplateTypeBadge(template.type).severity">
-                                            {{ getTemplateTypeBadge(template.type).label }}
-                                        </Tag>
-                                    </li>
-                                </ul>
-                                
-                                <!-- Generate template button -->
-                                <div class="mt-4">
-                                    <Button v-if="!isMergeMode"
-                                        label="Generate Template" 
-                                        icon="pi pi-file-export" 
-                                        class="w-full" 
-                                        :disabled="!selectedTemplate || !selectedCustomerInvoice || isGeneratingTemplate" 
-                                        :loading="isGeneratingTemplate"
-                                        @click="generateTemplateDocument" />
-                                    
-                                    <Button v-else
-                                        :label="mergeButtonLabel" 
-                                        icon="pi pi-objects-column" 
-                                        class="w-full" 
-                                        :disabled="!canMerge" 
-                                        :loading="isMergingInvoices"
-                                        severity="success"
-                                        @click="mergeSelectedInvoices" />
-                                </div>
-                                
-                                <!-- Merge validation messages -->
-                                <div v-if="isMergeMode" class="mt-3">
-                                    <div v-if="selectedInvoicesForMerge.length === 0" class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
-                                        <i class="pi pi-info-circle"></i>
-                                        <span>Select invoices from the table above to merge</span>
-                                    </div>
-                                    <div v-else-if="selectedInvoicesForMerge.length === 1" class="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
-                                        <i class="pi pi-exclamation-triangle"></i>
-                                        <span>Select at least one more invoice to merge</span>
-                                    </div>
-                                    <div v-else-if="selectedInvoicesForMerge.length > 50" class="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                                        <i class="pi pi-times-circle"></i>
-                                        <span>Maximum 50 invoices allowed for merge</span>
-                                    </div>
-                                    <div v-else-if="!selectedTemplate" class="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
-                                        <i class="pi pi-exclamation-triangle"></i>
-                                        <span>Select a template to proceed with merge</span>
-                                    </div>
-                                    <div v-else class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                                        <i class="pi pi-check-circle"></i>
-                                        <span>Ready to merge {{ selectedInvoicesForMerge.length }} invoices</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <TemplateSelectionSection
+                            :isLoadingTemplates="isLoadingTemplates"
+                            :templatesError="templatesError"
+                            :selectedCustomer="selectedCustomer"
+                            :availableTemplates="availableTemplates"
+                            :selectedTemplate="selectedTemplate"
+                            :selectedCustomerInvoice="selectedCustomerInvoice"
+                            :isMergeMode="isMergeMode"
+                            :isGeneratingTemplate="isGeneratingTemplate"
+                            :mergeButtonLabel="mergeButtonLabel"
+                            :canMerge="canMerge"
+                            :isMergingInvoices="isMergingInvoices"
+                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                            :getTemplateTypeBadge="getTemplateTypeBadge"
+                            v-model:useInvoiceDateOverride="useInvoiceDateOverride"
+                            v-model:invoiceDateOverride="invoiceDateOverride"
+                            :overrideDateError="overrideDateError"
+                            @template-select="selectedTemplate = $event"
+                            @generate-template="generateTemplateDocument"
+                            @merge-invoices="mergeSelectedInvoices"
+                            @override-toggle="onOverrideToggle"
+                            @date-select="onOverrideDateSelect"
+                        />
                     </div>
                     
-                    <!-- Generated Files Section -->
+                    <!-- Document Library Section -->
                     <div class="col-span-12 md:col-span-7 xl:col-span-8">
-                        <div class="card">
-                            <!-- Document Center Header with Generation Tools -->
-                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <i class="pi pi-folder text-white text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <h2 class="text-xl font-semibold text-surface-900 dark:text-surface-0 m-0">Document Center</h2>
-                                        <p class="text-sm text-surface-600 dark:text-surface-400 m-0">Generate, manage, and organize invoice documents</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Template Generation Toolbar -->
-                                <div class="flex flex-col sm:flex-row gap-3">
-                                    <!-- Template Selection -->
-                                    <div class="flex items-center gap-2">
-                                        <Select 
-                                            v-model="selectedTemplate" 
-                                            :options="availableTemplates" 
-                                            optionLabel="name" 
-                                            placeholder="Select Template"
-                                            class="w-48"
-                                            :disabled="!selectedCustomer || (!selectedCustomerInvoice && !isMergeMode)"
-                                            :loading="isLoadingTemplates">
-                                            <template #option="slotProps">
-                                                <div class="flex items-center gap-2">
-                                                    <i class="pi pi-file-pdf text-red-500" v-if="slotProps.option.output_format === 'pdf'"></i>
-                                                    <i class="pi pi-file-excel text-green-500" v-else-if="slotProps.option.output_format === 'excel'"></i>
-                                                    <i class="pi pi-file text-blue-500" v-else></i>
-                                                    <div>
-                                                        <div class="font-medium">{{ slotProps.option.name }}</div>
-                                                        <div class="text-xs text-surface-500">{{ slotProps.option.description || 'No description' }}</div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </Select>
-                                    </div>
-                                    
-                                    <!-- Generation Actions -->
-                                    <div class="flex gap-2">
-                                        <!-- Single Invoice Generation -->
-                                        <Button v-if="!isMergeMode"
-                                            label="Generate" 
-                                            icon="pi pi-file-export" 
-                                            size="small"
-                                            :disabled="!selectedTemplate || !selectedCustomerInvoice || isGeneratingTemplate" 
-                                            :loading="isGeneratingTemplate"
-                                            @click="generateTemplateDocument" />
-                                        
-                                        <!-- Merge Generation -->
-                                        <Button v-else
-                                            :label="mergeButtonLabel" 
-                                            icon="pi pi-objects-column" 
-                                            size="small"
-                                            :disabled="!canMerge" 
-                                            :loading="isMergingInvoices"
-                                            severity="success"
-                                            @click="mergeSelectedInvoices" />
-                                        
-                                        <!-- Toggle Merge Mode -->
-                                        <Button 
-                                            :label="isMergeMode ? 'Exit Merge' : 'Merge Mode'"
-                                            :icon="isMergeMode ? 'pi pi-times' : 'pi pi-objects-column'"
-                                            size="small"
-                                            :severity="isMergeMode ? 'secondary' : 'info'"
-                                            outlined
-                                            @click="toggleMergeMode" />
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Merge Status Banner -->
-                            <div v-if="isMergeMode" class="mb-4 p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/20">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <i class="pi pi-info-circle text-orange-600"></i>
-                                        <span class="font-medium text-orange-800 dark:text-orange-200">Merge Mode Active</span>
-                                    </div>
-                                    <div class="text-sm text-orange-700 dark:text-orange-300">
-                                        {{ mergeSelectionSummary || 'Select invoices from the table to merge' }}
-                                    </div>
-                                </div>
-                                
-                                <!-- Merge validation messages -->
-                                <div v-if="selectedInvoicesForMerge.length > 0" class="mt-2 text-sm">
-                                    <div v-if="selectedInvoicesForMerge.length === 1" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                                        <i class="pi pi-exclamation-triangle"></i>
-                                        <span>Select at least one more invoice to merge</span>
-                                    </div>
-                                    <div v-else-if="selectedInvoicesForMerge.length > 50" class="flex items-center gap-2 text-red-600 dark:text-red-400">
-                                        <i class="pi pi-times-circle"></i>
-                                        <span>Maximum 50 invoices allowed for merge</span>
-                                    </div>
-                                    <div v-else-if="!selectedTemplate" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                                        <i class="pi pi-exclamation-triangle"></i>
-                                        <span>Select a template to proceed with merge</span>
-                                    </div>
-                                    <div v-else class="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                        <i class="pi pi-check-circle"></i>
-                                        <span>Ready to merge {{ selectedInvoicesForMerge.length }} invoices</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Document Management Actions -->
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <!-- Document Type Tabs -->
-                                <div class="flex border-b border-surface-200 dark:border-surface-700">
-                                    <button class="pb-3 px-4 font-medium border-b-2 transition-colors duration-200 text-sm"
-                                            :class="[
-                                                activeDocumentTab === 'customer' 
-                                                    ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400 text-surface-600 dark:text-surface-400'
-                                            ]"
-                                            @click="switchDocumentTab('customer')">
-                                        Customer Documents
-                                        <span v-if="filteredCustomerDocuments.length > 0" 
-                                              class="ml-2 px-2 py-1 text-xs rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
-                                            {{ filteredCustomerDocuments.length }}
-                                        </span>
-                                    </button>
-                                    <button class="pb-3 px-4 font-medium border-b-2 transition-colors duration-200 text-sm"
-                                            :class="[
-                                                activeDocumentTab === 'invoice' 
-                                                    ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400',
-                                                !selectedCustomerInvoice && !isMergeMode ? 'text-surface-400 cursor-not-allowed' : 'cursor-pointer text-surface-600 dark:text-surface-400'
-                                            ]"
-                                            @click="(selectedCustomerInvoice || isMergeMode) && switchDocumentTab('invoice')">
-                                        Invoice Documents
-                                        <span v-if="filteredInvoiceDocuments.length > 0" 
-                                              class="ml-2 px-2 py-1 text-xs rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
-                                            {{ filteredInvoiceDocuments.length }}
-                                        </span>
-                                    </button>
-                                    <button class="pb-3 px-4 font-medium border-b-2 transition-colors duration-200 text-sm"
-                                            :class="[
-                                                activeDocumentTab === 'merged' 
-                                                    ? 'border-primary-500 text-primary-500' : 'border-transparent hover:text-primary-400 text-surface-600 dark:text-surface-400'
-                                            ]"
-                                            @click="switchDocumentTab('merged')">
-                                        Merged Invoices
-                                        <span v-if="filteredMergedDocuments.length > 0" 
-                                              class="ml-2 px-2 py-1 text-xs rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
-                                            {{ filteredMergedDocuments.length }}
-                                        </span>
-                                    </button>
-                                </div>
-                                
-                                <!-- Document Actions Toolbar -->
-                                <div class="flex items-center gap-2">
-                                    <!-- Search -->
-                                    <div class="relative">
-                                        <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-surface-400 text-sm"></i>
-                                        <InputText v-model="documentSearchTerm" 
-                                                   placeholder="Search documents..." 
-                                                   class="pl-10 text-sm w-48" 
-                                                   size="small" />
-                                    </div>
-                                    
-                                    <!-- Filter -->
-                                    <Select v-model="documentTypeFilter" 
-                                            :options="documentTypeOptions" 
-                                            optionLabel="label" 
-                                            optionValue="value"
-                                            placeholder="Filter"
-                                            class="w-32"
-                                            size="small" />
-                                    
-                                    <!-- Sort -->
-                                    <Select v-model="documentSortBy" 
-                                            :options="documentSortOptions" 
-                                            optionLabel="label" 
-                                            optionValue="value"
-                                            placeholder="Sort"
-                                            class="w-36"
-                                            size="small" />
-                                    
-                                    <!-- Bulk Actions -->
-                                    <div class="flex gap-1">
-                                        <Button v-if="selectedDocuments.length > 0"
-                                                icon="pi pi-download" 
-                                                size="small"
-                                                severity="success"
-                                                outlined
-                                                v-tooltip.top="'Download Selected'"
-                                                @click="downloadSelectedFiles" />
-                                        
-                                        <Button v-if="activeDocumentTab === 'customer'"
-                                                icon="pi pi-download" 
-                                                size="small"
-                                                outlined
-                                                v-tooltip.top="'Download All Customer Documents'"
-                                                @click="downloadAllCustomerDocuments" />
-                                        
-                                        <Button v-if="activeDocumentTab === 'invoice'"
-                                                icon="pi pi-download" 
-                                                size="small"
-                                                outlined
-                                                v-tooltip.top="'Download All Invoice Documents'"
-                                                @click="downloadAllInvoiceDocuments" />
-                                        
-                                        <Button icon="pi pi-refresh" 
-                                                size="small"
-                                                outlined
-                                                v-tooltip.top="'Refresh Documents'"
-                                                @click="refreshDocuments" />
-                                        
-                                        <Button v-if="selectedDocuments.length > 0"
-                                                icon="pi pi-times" 
-                                                size="small"
-                                                severity="secondary"
-                                                outlined
-                                                v-tooltip.top="'Clear Selection'"
-                                                @click="clearDocumentSelection" />
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Loading State -->
-                            <div v-if="isLoadingGeneratedFiles || isLoadingCustomerDocuments" 
-                                 class="flex justify-center items-center p-12">
-                                <div class="text-center">
-                                    <ProgressSpinner class="w-12 h-12 mb-4" />
-                                    <div class="font-medium text-surface-600 dark:text-surface-400">Loading documents...</div>
-                                    <div class="text-sm text-surface-500 dark:text-surface-500 mt-1">Please wait while we fetch your files</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Error State -->
-                            <div v-else-if="generatedFilesError || customerDocumentsError" 
-                                 class="flex flex-col items-center justify-center p-12">
-                                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-                                    <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
-                                </div>
-                                <div class="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error Loading Documents</div>
-                                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                                    {{ generatedFilesError || customerDocumentsError }}
-                                </div>
-                                <Button label="Try Again" 
-                                        icon="pi pi-refresh" 
-                                        class="mt-4" 
-                                        size="small" 
-                                        @click="refreshDocuments" />
-                            </div>
-                            
-                            <!-- No Customer Selected -->
-                            <div v-else-if="!selectedCustomer" 
-                                 class="flex flex-col items-center justify-center p-12">
-                                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
-                                    <i class="pi pi-users text-blue-500 text-2xl"></i>
-                                </div>
-                                <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select a Customer</div>
-                                <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                                    Choose a customer from the dropdown above to view their documents and generate new templates
-                                </div>
-                            </div>
-                            
-                            <!-- Document Content Views -->
-                            <div v-else>
-                                <!-- Customer Documents View -->
-                                <div v-if="activeDocumentTab === 'customer'">
-                                    <div v-if="filteredCustomerDocuments.length === 0" 
-                                         class="flex flex-col items-center justify-center p-12">
-                                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
-                                            <i class="pi pi-folder-open text-surface-400 text-2xl"></i>
-                                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Customer Documents</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                            {{ selectedCustomer.name }} doesn't have any documents yet. Generate templates from invoices to create documents.
-                        </div>
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Customer Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-user text-blue-600 dark:text-blue-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">{{ selectedCustomer.name }}</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredCustomerDocuments.length }} documents</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Button v-if="filteredCustomerDocuments.length > 0" 
-                                        icon="pi pi-download" 
-                                        label="Download All"
-                                        size="small" 
-                                        outlined
-                                        @click="downloadAllCustomerDocuments" />
-                            </div>
-                        </div>
-                        
-                        <!-- Customer Documents Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="(file, index) in filteredCustomerDocuments" 
-                                 :key="file?.id || index" 
-                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600"
-                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
-                                
-                                <!-- Document Selection Checkbox -->
-                                <div class="absolute top-2 right-2 z-10">
-                                    <Checkbox v-model="selectedDocuments" 
-                                              :value="file.id" 
-                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
-                                </div>
-                                
-                                <!-- Compact File Header with Icon and Invoice Number -->
-                                <div class="py-2 px-3 flex items-center gap-2"
-                                     :class="getCompactFileHeaderClass(file)">
-                                    <i :class="[getFileIcon(file), 'text-lg']"></i>
-                                    <span class="font-medium truncate flex-1 text-sm">
-                                        {{ file.invoice_number ? `Invoice #${file.invoice_number}` : 'No Invoice Number' }}
-                                    </span>
-                                </div>
-                                
-                                <!-- Compact Document Info -->
-                                <div class="p-3 space-y-2">
-                                    <!-- Filename (Bold and Prominent) -->
-                                    <div class="font-semibold text-surface-900 dark:text-surface-0 text-sm truncate" 
-                                         :title="file.filename || 'Unnamed file'">
-                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                    </div>
-                                    
-                                    <!-- Date and Type -->
-                                    <div class="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
-                                        <span>{{ formatFileDate(file.created_at) }}</span>
-                                        <span class="font-medium">{{ getFileTypeLabel(file) }}</span>
-                                    </div>
-                                    
-                                    <!-- Template Name -->
-                                    <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
-                                        <i class="pi pi-tag text-orange-500"></i>
-                                        <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
-                                    </div>
-                                    
-                                    <!-- Document Actions -->
-                                    <div class="flex gap-1 pt-2 border-t border-surface-200 dark:border-surface-700">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Preview'"
-                                                @click="previewFile(file)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Download'"
-                                                @click="downloadFile(file)" />
-                                        <Button icon="pi pi-share-alt" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Share'"
-                                                @click="shareFile(file)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Invoice Documents View -->
-                <div v-else-if="activeDocumentTab === 'invoice'">
-                    <div v-if="!selectedCustomerInvoice" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-file-invoice text-orange-500 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">Select an Invoice</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md">
-                            Choose an invoice from the table above to view its generated documents
-                        </div>
-                    </div>
-                    
-                    <div v-else-if="filteredInvoiceDocuments.length === 0" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-file-plus text-surface-400 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Documents Generated</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md mb-4">
-                            No documents have been generated for invoice #{{ selectedCustomerInvoice.number }}. Select a template and click "Generate Template" to create documents.
-                        </div>
-                        <Button label="Generate Template" 
-                                icon="pi pi-plus" 
-                                @click="generateTemplate" 
-                                :disabled="!selectedTemplate" />
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Invoice Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-file-invoice text-green-600 dark:text-green-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Invoice #{{ selectedCustomerInvoice.number }}</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredInvoiceDocuments.length }} documents</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Button v-if="filteredInvoiceDocuments.length > 0" 
-                                        icon="pi pi-download" 
-                                        label="Download All"
-                                        size="small" 
-                                        outlined
-                                        @click="downloadAllInvoiceDocuments" />
-                            </div>
-                        </div>
-                        
-                        <!-- Invoice Documents Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="(file, index) in filteredInvoiceDocuments" 
-                                 :key="file?.id || index" 
-                                 class="group relative border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600"
-                                 :class="{ 'ring-2 ring-primary-500': selectedDocuments.includes(file.id) }">
-                                
-                                <!-- Document Selection Checkbox -->
-                                <div class="absolute top-2 right-2 z-10">
-                                    <Checkbox v-model="selectedDocuments" 
-                                              :value="file.id" 
-                                              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                              :class="{ 'opacity-100': selectedDocuments.includes(file.id) }" />
-                                </div>
-                                
-                                <!-- Compact File Header with Icon and Invoice Number -->
-                                <div class="py-2 px-3 flex items-center gap-2"
-                                     :class="getCompactFileHeaderClass(file)">
-                                    <i :class="[getFileIcon(file), 'text-lg']"></i>
-                                    <span class="font-medium truncate flex-1 text-sm">
-                                        {{ file.invoice_number ? `Invoice #${file.invoice_number}` : 'No Invoice Number' }}
-                                    </span>
-                                </div>
-                                
-                                <!-- Compact Document Info -->
-                                <div class="p-3 space-y-2">
-                                    <!-- Filename (Bold and Prominent) -->
-                                    <div class="font-semibold text-surface-900 dark:text-surface-0 text-sm truncate" 
-                                         :title="file.filename || 'Unnamed file'">
-                                        {{ file.filename || file.fullPath?.split('/').pop() || 'Unnamed file' }}
-                                    </div>
-                                    
-                                    <!-- Date and Type -->
-                                    <div class="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
-                                        <span>{{ formatFileDate(file.created_at) }}</span>
-                                        <span class="font-medium">{{ getFileTypeLabel(file) }}</span>
-                                    </div>
-                                    
-                                    <!-- Template Name -->
-                                    <div v-if="file.template_name" class="flex items-center gap-2 text-xs">
-                                        <i class="pi pi-tag text-orange-500"></i>
-                                        <span class="text-surface-600 dark:text-surface-400 truncate">{{ file.template_name }}</span>
-                                    </div>
-                                    
-                                    <!-- Document Actions -->
-                                    <div class="flex gap-1 pt-2 border-t border-surface-200 dark:border-surface-700">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Preview'"
-                                                @click="previewFile(file)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Download'"
-                                                @click="downloadFile(file)" />
-                                        <Button icon="pi pi-share-alt" 
-                                                size="small" 
-                                                text 
-                                                class="flex-1"
-                                                v-tooltip.top="'Share'"
-                                                @click="shareFile(file)" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Merged Invoices View -->
-                <div v-else-if="activeDocumentTab === 'merged'">
-                    <div v-if="filteredMergedDocuments.length === 0" 
-                         class="flex flex-col items-center justify-center p-12">
-                        <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mb-4">
-                            <i class="pi pi-objects-column text-purple-500 text-2xl"></i>
-                        </div>
-                        <div class="text-lg font-medium text-surface-900 dark:text-surface-0 mb-2">No Merged Invoices</div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 text-center max-w-md mb-4">
-                            {{ selectedCustomer?.name || 'This customer' }} hasn't created any merged invoices yet. Use the merge mode to combine multiple invoices.
-                        </div>
-                        <Button label="Enable Merge Mode" 
-                                icon="pi pi-objects-column" 
-                                @click="isMergeMode = true" 
-                                outlined />
-                    </div>
-                    
-                    <div v-else>
-                        <!-- Merged Documents Header -->
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                                    <i class="pi pi-objects-column text-purple-600 dark:text-purple-400"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-surface-900 dark:text-surface-0">Merged Invoices</h3>
-                                    <p class="text-sm text-surface-600 dark:text-surface-400">{{ filteredMergedDocuments.length }} merged documents</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Merged Documents Table -->
-                        <DataTable :value="filteredMergedDocuments" 
-                                   responsiveLayout="scroll" 
-                                   :paginator="true" 
-                                   :rows="10"
-                                   class="modern-table">
-                            <Column field="merged_invoice" header="Merged Invoice" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                                            <i class="pi pi-objects-column text-purple-600 dark:text-purple-400 text-sm"></i>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.merged_invoice }}</div>
-                                            <div class="text-xs text-surface-500 dark:text-surface-400">Merged Invoice</div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column field="original_count" header="Source Invoices" sortable>
-                                <template #body="slotProps">
-                                    <Tag :value="`${slotProps.data.original_count} invoices`" severity="info" />
-                                </template>
-                            </Column>
-                            <Column field="total_amount" header="Total Amount" sortable>
-                                <template #body="slotProps">
-                                    <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(slotProps.data.total_amount) }}</span>
-                                </template>
-                            </Column>
-                            <Column field="merge_date" header="Created" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex flex-col">
-                                        <span class="text-sm font-medium text-surface-900 dark:text-surface-0">{{ formatDate(slotProps.data.merge_date) }}</span>
-                                        <span class="text-xs text-surface-500 dark:text-surface-400">{{ formatTimeAgo(slotProps.data.merge_date) }}</span>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column field="template_used" header="Template" sortable>
-                                <template #body="slotProps">
-                                    <div class="flex flex-col">
-                                        <span class="font-medium text-surface-900 dark:text-surface-0">{{ slotProps.data.template_used }}</span>
-                                        <span v-if="slotProps.data.template_override" class="text-xs text-orange-600 dark:text-orange-400 uppercase">
-                                            {{ slotProps.data.template_override }}
-                                        </span>
-                                    </div>
-                                </template>
-                            </Column>
-                            <Column header="Actions" style="width: 12rem">
-                                <template #body="slotProps">
-                                    <div class="flex gap-1">
-                                        <Button icon="pi pi-eye" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'View Details'"
-                                                @click="viewMergeDetails(slotProps.data)" />
-                                        <Button icon="pi pi-download" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'Download Files'"
-                                                @click="downloadMergedFiles(slotProps.data)" />
-                                        <Button icon="pi pi-history" 
-                                                size="small" 
-                                                text 
-                                                rounded 
-                                                v-tooltip.top="'View Source Invoices'"
-                                                @click="viewSourceInvoices(slotProps.data)" />
-                                    </div>
-                                </template>
-                            </Column>
-                        </DataTable>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
-</div>
-</div>
-
-
-<!-- File Preview Dialog -->
-<Dialog v-model:visible="showFilePreview" :style="{ width: '90vw', height: '80vh' }" modal header="File Preview" :closable="true">
-    <div v-if="selectedFile" class="w-full h-full flex flex-col">
-        <div class="flex justify-between items-center mb-3">
-            <div class="font-medium text-lg flex items-center">
-                <i :class="[getFileIcon(selectedFile), 'mr-2']"></i>
-                {{ selectedFile.filename || selectedFile.fullPath?.split('/').pop() || 'Unnamed file' }}
-                <span class="ml-3 text-sm text-400">{{ formatDate(selectedFile.created_at) }}</span>
-            </div>
-            <Button icon="pi pi-download" text @click="downloadFile(selectedFile)" />
-        </div>
-        
-        <!-- Error display if preview fails -->
-        <Message v-if="previewError" severity="error" :closable="false" class="mb-4 w-full">
-            <div class="flex flex-col">
-                <span class="font-bold">Failed to load preview</span>
-                <span>{{ previewErrorMessage }}</span>
-                <div class="mt-2">
-                    <Button label="Try downloading instead" icon="pi pi-download" 
-                            @click="downloadFile(selectedFile)" class="p-button-sm" />
-                </div>
-            </div>
-        </Message>
-        
-        <div class="flex-1 overflow-hidden">
-            <!-- PDF Preview iframe - only for PDFs -->
-            <div v-if="selectedFile && (selectedFile.fileType === 'pdf' || selectedFile.originalData?.type === 'pdf')" 
-                 class="w-full h-full relative" style="height: calc(70vh - 6rem);">
-                <div v-if="!previewError" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800 z-0">
-                    <ProgressSpinner class="w-12 h-12" />
-                    <span class="ml-2">Loading preview...</span>
-                </div>
-                
-                <iframe 
-                    v-if="!previewError"
-                    :src="previewUrl" 
-                    class="w-full h-full border-0 relative z-10"
-                    title="PDF Preview"
-                    @load="onIframeLoad"
-                    @error="onIframeError"
-                    ref="previewIframe"
-                    style="height: calc(70vh - 6rem) !important; min-height: 400px !important;"
-                ></iframe>
-                
-                <!-- Fallback if preview fails -->
-                <div v-if="previewError" class="flex flex-col items-center justify-center h-full">
-                    <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
-                    <p class="text-xl mb-4">Preview failed to load</p>
-                    <p class="text-sm text-surface-600 dark:text-surface-400 mb-4 max-w-lg text-center">
-                        The server returned an error while trying to preview this file. 
-                        You can try downloading it instead.
-                    </p>
-                    <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
-                </div>
-            </div>
-            
-            <!-- Excel Preview - only for Excel files -->
-            <div v-else-if="selectedFile && (selectedFile.fileType === 'excel' || selectedFile.originalData?.type === 'excel')"
-                 class="w-full h-full">
-                <ExcelPreview :file="selectedFile" :fileUrl="previewUrl" />
-            </div>
-            
-            <!-- For other file types, show a download prompt -->
-            <div v-else class="flex flex-col items-center justify-center h-full">
-                <i :class="[getFileIcon(selectedFile), 'text-7xl mb-4']"></i>
-                <p class="text-xl mb-4">This file type cannot be previewed directly</p>
-                <Button label="Download File" icon="pi pi-download" @click="downloadFile(selectedFile)" />
-            </div>
-        </div>
-    </div>
-</Dialog>
-
-<!-- Invoice Detail Drawer -->
-<Drawer v-model:visible="showInvoiceDrawer" header="Invoice Details" position="right" class="!w-full md:!w-[90vw] lg:!w-[80vw] xl:!w-[75vw]">
-    <div v-if="drawerSelectedInvoice" class="h-full overflow-auto bg-surface-50 dark:bg-surface-900">
-        <!-- Compact Professional Header -->
-        <div class="bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 shadow-sm">
-            <div class="px-4 py-3">
-                <!-- Top Row: Company Info & Invoice Number -->
-                <div class="flex items-start justify-between mb-3">
-                    <!-- Company Branding - Compact -->
-                    <div class="flex items-center gap-3">
-                        <div class="bg-gradient-to-r from-blue-900 to-blue-800 rounded-lg p-3" style="background: linear-gradient(135deg, #082944 0%, #1a3a5c 100%);">
-                            <img src="/layout/images/cis-logo-tagline-white.png" alt="CIS Logo" width="120" height="30" class="opacity-95" />
-                        </div>
-                        <div class="text-xs text-surface-600 dark:text-surface-400 leading-tight">
-                            <div>1023 Calle Sombra Unit B, San Clemente, CA 92673</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Invoice Number & Status -->
-                    <div class="text-right">
-                        <div class="text-xs text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-1">Invoice</div>
-                        <div class="text-xl font-bold text-surface-900 dark:text-surface-0">{{ drawerSelectedInvoice?.number || drawerSelectedInvoice?.id || '' }}</div>
-                        <Tag :value="drawerSelectedInvoice?.status?.toUpperCase() || 'UNKNOWN'" 
-                             :severity="drawerSelectedInvoice?.status === 'paid' ? 'success' : drawerSelectedInvoice?.status === 'open' ? 'info' : 'warning'"
-                             class="text-xs mt-1" />
-                    </div>
-                </div>
-                
-                <!-- Bottom Row: Controls & Key Info -->
-                <div class="flex items-center justify-between">
-                    <!-- Interactive Toggle -->
-                    <ToggleButton 
-                        v-model="drawerIsInteractive" 
-                        onLabel="Interactive" 
-                        offLabel="Standard" 
-                        onIcon="pi pi-cog" 
-                        offIcon="pi pi-eye" 
-                        :class="drawerIsInteractive ? 'p-button-success' : 'p-button-secondary'"
-                        class="text-xs"
-                        size="small"
-                        @change="onDrawerInteractiveToggle"
-                    />
-                    
-                    <!-- Key Invoice Info - Compact -->
-                    <div class="flex items-center gap-4 text-xs">
-                        <div class="text-center">
-                            <div class="text-surface-500 dark:text-surface-400">Issue Date</div>
-                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ formatDate(drawerSelectedInvoice?.date) || 'N/A' }}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-surface-500 dark:text-surface-400">Due Date</div>
-                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ formatDate(drawerSelectedInvoice?.dueDate) || 'N/A' }}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-surface-500 dark:text-surface-400">Amount</div>
-                            <div class="font-bold text-lg" style="color: #FF9400;">{{ formatCurrency(drawerSelectedInvoice?.total) }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Main Content Area -->
-        <div class="p-4 space-y-4">
-            <!-- Bill To & Invoice Details - Side by Side -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- Bill To Section - Compact -->
-                <div class="bg-white dark:bg-surface-800 rounded-lg p-4 border border-surface-200 dark:border-surface-700">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="pi pi-user text-primary-600 dark:text-primary-400 text-sm"></i>
-                        <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-0">Bill To</h3>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="font-bold text-surface-900 dark:text-surface-0">
-                            {{ drawerSelectedInvoice?.customer?.company || drawerSelectedInvoice?.customer?.name || 'N/A' }}
-                        </div>
-                        <div class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed" 
-                             v-html="drawerSelectedInvoice?.customer?.address?.replace(/\n/g, '<br />') || 'No address provided'">
-                        </div>
-                        <div v-if="drawerSelectedInvoice?.customer?.id" class="inline-flex items-center gap-1 px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded text-xs">
-                            <i class="pi pi-id-card text-xs text-surface-500"></i>
-                            <span class="text-surface-700 dark:text-surface-300">ID: {{ drawerSelectedInvoice.customer.id }}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Invoice Details - Compact -->
-                <div class="bg-white dark:bg-surface-800 rounded-lg p-4 border border-surface-200 dark:border-surface-700">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
-                        <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-0">Invoice Information</h3>
-                    </div>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-surface-600 dark:text-surface-400">Customer ID</span>
-                            <span class="font-medium text-surface-900 dark:text-surface-0">{{ drawerSelectedInvoice?.customer?.id || 'N/A' }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-surface-600 dark:text-surface-400">Payment Status</span>
-                            <Tag :value="drawerSelectedInvoice?.status?.toUpperCase() || 'UNKNOWN'" 
-                                 :severity="drawerSelectedInvoice?.status === 'paid' ? 'success' : drawerSelectedInvoice?.status === 'open' ? 'info' : 'warning'"
-                                 class="text-xs" />
-                        </div>
-                        <div v-if="drawerSelectedInvoice?.terms" class="flex justify-between">
-                            <span class="text-surface-600 dark:text-surface-400">Payment Terms</span>
-                            <span class="font-medium text-surface-900 dark:text-surface-0">{{ drawerSelectedInvoice.terms }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Interactive Tools Panel - Compact -->
-            <div v-if="drawerIsInteractive" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <i class="pi pi-cog text-blue-600 dark:text-blue-400"></i>
-                        <span class="text-sm font-medium text-surface-900 dark:text-surface-0">Interactive Analysis</span>
-                    </div>
-                    <div class="w-48">
-                        <Select 
-                            v-model="drawerSelectedGroupBy" 
-                            :options="groupByOptions" 
-                            optionLabel="name" 
-                            placeholder="Group By"
-                            class="w-full text-xs"
-                            size="small"
+                        <DocumentLibrarySection
+                            :activeDocumentTab="activeDocumentTab"
+                            :selectedCustomerInvoice="selectedCustomerInvoice"
+                            :isLoadingGeneratedFiles="isLoadingGeneratedFiles"
+                            :isLoadingCustomerDocuments="isLoadingCustomerDocuments"
+                            :generatedFilesError="generatedFilesError"
+                            :customerDocumentsError="customerDocumentsError"
+                            :selectedCustomer="selectedCustomer"
+                            :generatedFiles="generatedFiles"
+                            :customerDocuments="customerDocuments"
+                            :getFileIcon="getFileIcon"
+                            :formatDate="formatDate"
+                            :isMergeMode="isMergeMode"
+                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
+                            :existingMergeGroups="existingMergeGroups"
+                            :isCheckingMergeGroups="isCheckingMergeGroups"
+                            :showMergePreview="showMergePreview"
+                            :mergeHistoryData="mergeHistoryData"
+                            :isLoadingMergeHistory="isLoadingMergeHistory"
+                            @tab-change="activeDocumentTab = $event"
+                            @preview-file="previewFile"
+                            @download-file="downloadGeneratedFile"
+                            @view-merge-documents="viewMergeDocuments"
+                            @re-merge-group="reMergeGroup"
+                            @view-merge-details="viewMergeDetails"
+                            @download-merge-files="downloadMergedFiles"
                         />
                     </div>
                 </div>
             </div>
-            
-            <!-- Invoice Items Section - Compact -->
-            <div class="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
-                <div class="bg-surface-50 dark:bg-surface-700 px-4 py-3 border-b border-surface-200 dark:border-surface-600">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-list text-green-600 dark:text-green-400 text-sm"></i>
-                            <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-0">Line Items</h3>
-                        </div>
-                        <div v-if="drawerProducts.length > 0">
-                            <Tag :value="`${drawerProducts.length} items`" severity="info" class="text-xs" />
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="p-4">
-                    <!-- Regrouping loading state -->
-                    <div v-if="drawerIsRegrouping" class="flex justify-center items-center py-8">
-                        <div class="text-center">
-                            <ProgressSpinner class="w-8 h-8" />
-                            <div class="mt-2 text-sm text-surface-600 dark:text-surface-400">Analyzing items...</div>
-                        </div>
-                    </div>
-
-                    <!-- Standard non-grouped display -->
-                    <DataTable v-else-if="!drawerIsInteractive || drawerSelectedGroupBy.value === 'none'" 
-                             :value="drawerProducts" 
-                             tableStyle="min-width: 50rem"
-                             :rowHover="true"
-                             stripedRows
-                             responsiveLayout="scroll"
-                             class="compact-invoice-table"
-                             size="small">
-                        <Column field="description" header="Description" class="font-medium">
-                            <template #body="slotProps">
-                                <div class="py-1">
-                                    <div class="font-medium text-surface-900 dark:text-surface-0 text-sm">{{ slotProps.data.description }}</div>
-                                </div>
-                            </template>
-                        </Column>
-                        <Column field="quantity" header="Qty" class="text-center" style="width: 80px">
-                            <template #body="slotProps">
-                                <div class="text-center">
-                                    <span class="inline-flex items-center justify-center w-10 h-6 bg-surface-100 dark:bg-surface-700 rounded text-xs font-medium">
-                                        {{ slotProps.data.quantity }}
-                                    </span>
-                                </div>
-                            </template>
-                        </Column>
-                        <Column field="price" header="Unit Price" class="text-right" style="width: 100px">
-                            <template #body="slotProps">
-                                <div class="text-right font-medium text-surface-700 dark:text-surface-300 text-sm">{{ slotProps.data.price }}</div>
-                            </template>
-                        </Column>
-                        <Column field="total" header="Amount" class="text-right" style="width: 100px">
-                            <template #body="slotProps">
-                                <div class="text-right font-bold text-surface-900 dark:text-surface-0 text-sm">{{ slotProps.data.total }}</div>
-                            </template>
-                        </Column>
-                    </DataTable>
-
-                    <!-- Grouped display -->
-                    <div v-else-if="drawerGroupedProducts.length > 0" class="space-y-4">
-                        <div v-for="(group, index) in drawerGroupedProducts" :key="index" class="border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden">
-                            <!-- Group Header - Compact -->
-                            <div class="bg-primary-50 dark:bg-primary-900/30 px-4 py-2 border-b border-primary-200 dark:border-primary-700">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <i class="pi pi-tag text-primary-600 dark:text-primary-400 text-sm"></i>
-                                        <div>
-                                            <h4 class="font-bold text-primary-900 dark:text-primary-100 text-sm">{{ group.name }}</h4>
-                                            <p class="text-xs text-primary-700 dark:text-primary-300">{{ group.groupType }} • {{ group.items.length }} items</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-bold text-primary-900 dark:text-primary-100">{{ formatCurrency(group.total) }}</div>
-                                        <div class="text-xs text-primary-700 dark:text-primary-300">Group Total</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Group Items DataTable -->
-                            <div class="bg-white dark:bg-surface-800">
-                                <DataTable :value="group.items.map(item => ({
-                                    description: item.description,
-                                    quantity: item.quantity.toString(),
-                                    price: formatCurrency(item.unitPrice),
-                                    total: formatCurrency(item.amountIncludingTax)
-                                }))" 
-                                tableStyle="min-width: 50rem"
-                                :rowHover="true"
-                                class="compact-invoice-table group-table"
-                                size="small">
-                                    <Column field="description" header="Description" class="font-medium">
-                                        <template #body="slotProps">
-                                            <div class="py-1">
-                                                <div class="font-medium text-surface-900 dark:text-surface-0 text-sm">{{ slotProps.data.description }}</div>
-                                            </div>
-                                        </template>
-                                    </Column>
-                                    <Column field="quantity" header="Qty" class="text-center" style="width: 80px">
-                                        <template #body="slotProps">
-                                            <div class="text-center">
-                                                <span class="inline-flex items-center justify-center w-10 h-6 bg-surface-100 dark:bg-surface-700 rounded text-xs font-medium">
-                                                    {{ slotProps.data.quantity }}
-                                                </span>
-                                            </div>
-                                        </template>
-                                    </Column>
-                                    <Column field="price" header="Unit Price" class="text-right" style="width: 100px">
-                                        <template #body="slotProps">
-                                            <div class="text-right font-medium text-surface-700 dark:text-surface-300 text-sm">{{ slotProps.data.price }}</div>
-                                        </template>
-                                    </Column>
-                                    <Column field="total" header="Amount" class="text-right" style="width: 100px">
-                                        <template #body="slotProps">
-                                            <div class="text-right font-bold text-surface-900 dark:text-surface-0 text-sm">{{ slotProps.data.total }}</div>
-                                        </template>
-                                    </Column>
-                                </DataTable>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- No items message -->
-                    <div v-else class="text-center py-8">
-                        <div class="w-12 h-12 bg-surface-100 dark:bg-surface-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="pi pi-inbox text-lg text-surface-400"></i>
-                        </div>
-                        <div class="font-medium text-surface-600 dark:text-surface-400 mb-1">No items found</div>
-                        <div class="text-sm text-surface-500 dark:text-surface-500">This invoice doesn't contain any line items</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Invoice Totals Section - Compact -->
-            <div class="bg-white dark:bg-surface-800 rounded-lg p-4 border border-surface-200 dark:border-surface-700">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <!-- Invoice Metadata - Compact -->
-                    <div>
-                        <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-0 mb-3 flex items-center gap-2">
-                            <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
-                            Invoice Details
-                        </h3>
-                        <div class="space-y-2 text-xs text-surface-600 dark:text-surface-400">
-                            <div class="flex items-center justify-between">
-                                <span>Invoice Date:</span>
-                                <span class="font-medium text-surface-900 dark:text-surface-0">{{ formatDate(drawerSelectedInvoice?.date) || 'N/A' }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span>Due Date:</span>
-                                <span class="font-medium text-surface-900 dark:text-surface-0">{{ formatDate(drawerSelectedInvoice?.dueDate) || 'N/A' }}</span>
-                            </div>
-                            <div v-if="drawerSelectedInvoice?.poNumber" class="flex items-center justify-between">
-                                <span>PO Number:</span>
-                                <span class="font-medium text-surface-900 dark:text-surface-0">{{ drawerSelectedInvoice.poNumber }}</span>
-                            </div>
-                            <div v-if="drawerSelectedInvoice?.terms" class="flex items-center justify-between">
-                                <span>Terms:</span>
-                                <span class="font-medium text-surface-900 dark:text-surface-0">{{ drawerSelectedInvoice.terms }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Financial Summary - Compact -->
-                    <div>
-                        <h3 class="text-sm font-semibold text-surface-900 dark:text-surface-0 mb-3">Invoice Summary</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center py-1 border-b border-surface-100 dark:border-surface-700">
-                                <span class="text-sm text-surface-600 dark:text-surface-400">Subtotal</span>
-                                <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(drawerSelectedInvoice?.subtotal) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center py-1 border-b border-surface-100 dark:border-surface-700">
-                                <span class="text-sm text-surface-600 dark:text-surface-400">Tax ({{ drawerSelectedInvoice?.vatRate || 0 }}%)</span>
-                                <span class="font-semibold text-surface-900 dark:text-surface-0">{{ formatCurrency(drawerSelectedInvoice?.vat) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg px-3 border border-primary-200 dark:border-primary-800">
-                                <span class="font-bold text-primary-900 dark:text-primary-100">Total Amount</span>
-                                <span class="text-xl font-bold" style="color: #FF9400;">{{ formatCurrency(drawerSelectedInvoice?.total) }}</span>
-                            </div>
-                            <div v-if="drawerSelectedInvoice?.remainingAmount > 0" class="flex justify-between items-center py-2 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 border border-red-200 dark:border-red-800">
-                                <span class="font-bold text-red-900 dark:text-red-100 flex items-center gap-1">
-                                    <i class="pi pi-exclamation-triangle text-xs"></i>
-                                    Amount Due
-                                </span>
-                                <span class="text-xl font-bold text-red-900 dark:text-red-100">{{ formatCurrency(drawerSelectedInvoice?.remainingAmount) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
     
-    <!-- Loading state -->
-    <div v-else class="flex justify-center items-center p-8 h-full">
-        <div class="text-center">
-            <ProgressSpinner class="w-12 h-12" />
-            <div class="mt-4 font-medium text-surface-600 dark:text-surface-400">Loading invoice details...</div>
-            <div class="mt-1 text-sm text-surface-500 dark:text-surface-500">Please wait while we fetch the invoice information</div>
-        </div>
-    </div>
-</Drawer>
+    <!-- File Preview Dialog -->
+    <FilePreviewDialog
+        :showFilePreview="showFilePreview"
+        :selectedFile="selectedFile"
+        :previewError="previewError"
+        :previewErrorMessage="previewErrorMessage"
+        :previewUrl="previewUrl"
+        :getFileIcon="getFileIcon"
+        :formatDate="formatDate"
+        @update:showFilePreview="showFilePreview = $event"
+        @download-file="downloadFile"
+        @iframe-load="onIframeLoad"
+        @iframe-error="onIframeError"
+    />
 
-<!-- Merge History Dialog -->
-<Dialog v-model:visible="showMergeHistory" header="Merge History" :style="{ width: '80vw', maxWidth: '1000px' }" modal>
-    <div v-if="isLoadingMergeHistory" class="flex justify-center items-center p-6">
-        <ProgressSpinner />
-        <span class="ml-3">Loading merge history...</span>
-    </div>
+    <!-- Invoice Detail Drawer -->
+    <InvoiceDetailDrawer
+        :showInvoiceDrawer="showInvoiceDrawer"
+        :drawerSelectedInvoice="drawerSelectedInvoice"
+        :drawerIsInteractive="drawerIsInteractive"
+        :drawerSelectedGroupBy="drawerSelectedGroupBy"
+        :groupByOptions="groupByOptions"
+        :drawerProducts="drawerProducts"
+        :drawerIsRegrouping="drawerIsRegrouping"
+        :drawerGroupedProducts="drawerGroupedProducts"
+        :formatDate="formatDate"
+        :formatCurrency="formatCurrency"
+        @update:showInvoiceDrawer="showInvoiceDrawer = $event"
+        @update:drawerIsInteractive="drawerIsInteractive = $event"
+        @update:drawerSelectedGroupBy="drawerSelectedGroupBy = $event"
+        @drawer-interactive-toggle="onDrawerInteractiveToggle"
+    />
     
-    <div v-else-if="mergeHistoryData.length === 0" class="text-center p-6">
-        <i class="pi pi-info-circle text-4xl text-surface-400 mb-3"></i>
-        <div class="text-lg text-surface-600 dark:text-surface-400">No merge history found</div>
-        <div class="text-sm text-surface-500 dark:text-surface-500 mt-2">
-            {{ selectedCustomer?.name || 'This customer' }} has not performed any invoice merges yet
-        </div>
-    </div>
+    <!-- Merge History Dialog -->
+    <MergeHistoryDialog
+        :showMergeHistory="showMergeHistory"
+        :isLoadingMergeHistory="isLoadingMergeHistory"
+        :mergeHistoryData="mergeHistoryData"
+        :selectedCustomer="selectedCustomer"
+        :formatCurrency="formatCurrency"
+        :formatDate="formatDate"
+        @update:showMergeHistory="showMergeHistory = $event"
+        @view-merge-details="viewMergeDetails"
+        @download-merged-files="downloadMergedFiles"
+    />
     
-    <div v-else>
-        <DataTable :value="mergeHistoryData" responsiveLayout="scroll" :paginator="true" :rows="10">
-            <Column field="merged_invoice" header="Merged Invoice" sortable>
-                <template #body="slotProps">
-                    <div class="flex items-center gap-2">
-                        <i class="pi pi-objects-column text-primary-500"></i>
-                        <span class="font-medium">{{ slotProps.data.merged_invoice }}</span>
-                    </div>
-                </template>
-            </Column>
-            <Column field="original_count" header="Invoices Merged" sortable>
-                <template #body="slotProps">
-                    <Tag :value="`${slotProps.data.original_count} invoices`" severity="info" />
-                </template>
-            </Column>
-            <Column field="total_amount" header="Total Amount" sortable>
-                <template #body="slotProps">
-                    <span class="font-semibold">{{ formatCurrency(slotProps.data.total_amount) }}</span>
-                </template>
-            </Column>
-            <Column field="merge_date" header="Merge Date" sortable>
-                <template #body="slotProps">
-                    {{ formatDate(slotProps.data.merge_date) }}
-                </template>
-            </Column>
-            <Column field="template_used" header="Template" sortable>
-                <template #body="slotProps">
-                    <div class="flex flex-col">
-                        <span class="font-medium">{{ slotProps.data.template_used }}</span>
-                        <span v-if="slotProps.data.template_override" class="text-xs text-surface-500 uppercase">
-                            {{ slotProps.data.template_override }}
-                        </span>
-                    </div>
-                </template>
-            </Column>
-            <Column header="Actions" style="width: 8rem">
-                <template #body="slotProps">
-                    <div class="flex gap-1">
-                        <Button icon="pi pi-eye" size="small" text rounded 
-                                v-tooltip.top="'View Original Invoices'"
-                                @click="viewMergeDetails(slotProps.data)" />
-                        <Button icon="pi pi-download" size="small" text rounded 
-                                v-tooltip.top="'Download Merged Files'"
-                                @click="downloadMergedFiles(slotProps.data)" />
-                    </div>
-                </template>
-            </Column>
-        </DataTable>
-    </div>
-</Dialog>
+    <!-- Duplicate Merge Confirmation Dialog -->
+    <DuplicateConfirmationDialog
+        :showDuplicateConfirmation="showDuplicateConfirmation"
+        :duplicateDetails="duplicateDetails"
+        :selectedInvoicesForMerge="selectedInvoicesForMerge"
+        @update:showDuplicateConfirmation="showDuplicateConfirmation = $event"
+        @handle-duplicate-confirmation="handleDuplicateConfirmation"
+    />
 
-<!-- Duplicate Merge Confirmation Dialog -->
-<Dialog v-model:visible="showDuplicateConfirmation" header="Merge Already Exists" :style="{ width: '600px' }" modal>
-    <div v-if="duplicateDetails" class="space-y-4">
-        <div class="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <i class="pi pi-exclamation-triangle text-amber-600 dark:text-amber-400 text-xl mt-1"></i>
-            <div class="flex-1">
-                <div class="font-semibold text-amber-800 dark:text-amber-200 mb-2">
-                    Duplicate Merge Detected
-                </div>
-                <div class="text-amber-700 dark:text-amber-300 text-sm">
-                    A merged invoice already exists for the selected invoices. You can either keep the existing merge or regenerate it with new settings.
-                </div>
-            </div>
-        </div>
-        
-        <div class="space-y-3">
-            <div class="font-medium text-surface-900 dark:text-surface-0">
-                Selected Invoices for Merge:
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <span v-for="invoice in selectedInvoicesForMerge" :key="invoice.id" 
-                      class="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 rounded-full text-sm">
-                    {{ invoice.number }}
-                </span>
-            </div>
-            
-            <div class="mt-4 p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
-                <div class="font-medium text-surface-900 dark:text-surface-0 mb-2">
-                    What would you like to do?
-                </div>
-                <div class="text-sm text-surface-600 dark:text-surface-400">
-                    • <strong>Keep Existing:</strong> Cancel this merge and use the existing merged invoice<br>
-                    • <strong>Regenerate:</strong> Create a new merged invoice, replacing the existing one
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <template #footer>
-        <div class="flex justify-end gap-2">
-            <Button label="Keep Existing" icon="pi pi-check" 
-                    @click="handleDuplicateConfirmation(false)" 
-                    class="p-button-secondary" />
-            <Button label="Regenerate" icon="pi pi-refresh" 
-                    @click="handleDuplicateConfirmation(true)" 
-                    class="p-button-warning" />
-        </div>
-    </template>
-</Dialog>
+    <!-- Merge Details Modal -->
+    <MergeDetailsModal
+        :visible="showMergeDetailsModal"
+        :mergeDetails="selectedMergeDetails"
+        :isLoading="isLoadingMergeDetails"
+        :error="mergeDetailsError"
+        :formatDate="formatDate"
+        :formatCurrency="formatCurrency"
+        :getFileIcon="getFileIcon"
+        @update:visible="showMergeDetailsModal = $event"
+        @retry="onMergeDetailsRetry"
+        @download-all-files="onDownloadAllMergeFiles"
+        @re-merge="onReMergeFromDetails"
+        @preview-document="onPreviewMergeDocument"
+        @download-document="onDownloadMergeDocument"
+        @download-all-documents="onDownloadAllMergeDocuments"
+    />
+
+
 </template>
+
 <style scoped>
 /* Fix for PDF preview to take up full modal height */
 :deep(.p-dialog-content) {
@@ -3637,10 +3042,9 @@ iframe {
 
 /* Modern document management styling */
 .document-card {
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   border: 1px solid var(--surface-200);
   background: var(--surface-0);
-  border-radius: 0.5rem;
 }
 
 .dark .document-card {
@@ -3649,39 +3053,36 @@ iframe {
 }
 
 .document-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-300);
 }
 
 .dark .document-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   border-color: var(--primary-600);
 }
 
 .document-card.selected {
   border-color: var(--primary-500);
-  box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--primary-500), 0.2);
 }
 
-/* Compact file header styling */
-.compact-file-header {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-bottom: 1px solid var(--surface-200);
+/* File type header gradients */
+.file-header-pdf {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
-.dark .compact-file-header {
-  border-bottom: 1px solid var(--surface-700);
+.file-header-excel {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
-/* Remove the old chunky file type headers */
-.file-header-pdf,
-.file-header-excel,
-.file-header-word,
+.file-header-word {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
 .file-header-default {
-  display: none;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
 }
 
 /* Enhanced tab navigation */
@@ -3743,28 +3144,26 @@ iframe {
   border: 1px solid var(--surface-700);
 }
 
-/* Document grid improvements - more compact */
+/* Document grid improvements */
 .document-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
 @media (max-width: 768px) {
   .document-grid {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
   }
 }
 
-/* Document metadata styling - more compact */
+/* Document metadata styling */
 .document-metadata {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
   font-size: 0.75rem;
   color: var(--surface-600);
-  line-height: 1.3;
 }
 
 .dark .document-metadata {
@@ -3772,63 +3171,33 @@ iframe {
 }
 
 .document-metadata i {
-  width: 0.875rem;
+  width: 1rem;
   text-align: center;
-  flex-shrink: 0;
 }
 
-/* Action buttons styling - more compact */
+/* Action buttons styling */
 .document-actions {
   display: flex;
-  gap: 0.125rem;
-  margin-top: 0.5rem;
+  gap: 0.25rem;
 }
 
 .document-actions .p-button {
   flex: 1;
   justify-content: center;
   font-size: 0.75rem;
-  padding: 0.375rem 0.5rem;
-  min-height: auto;
-}
-
-/* Compact spacing */
-.compact-spacing {
-  padding: 0.75rem;
-}
-
-.compact-spacing > * + * {
-  margin-top: 0.5rem;
-}
-
-/* Better visual hierarchy for compact design */
-.compact-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: 0.25rem;
-}
-
-.compact-subtitle {
-  font-size: 0.75rem;
-  color: var(--surface-500);
-  line-height: 1.3;
-}
-
-.dark .compact-subtitle {
-  color: var(--surface-400);
+  padding: 0.5rem;
 }
 
 /* Empty state styling */
 .empty-state {
   text-align: center;
-  padding: 2rem 1rem;
+  padding: 3rem 1rem;
 }
 
 .empty-state-icon {
-  width: 3rem;
-  height: 3rem;
-  margin: 0 auto 0.75rem;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3836,9 +3205,9 @@ iframe {
 }
 
 .empty-state-title {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 0.375rem;
+  margin-bottom: 0.5rem;
   color: var(--surface-900);
 }
 
@@ -3849,9 +3218,8 @@ iframe {
 .empty-state-description {
   font-size: 0.875rem;
   color: var(--surface-600);
-  max-width: 20rem;
+  max-width: 24rem;
   margin: 0 auto;
-  line-height: 1.4;
 }
 
 .dark .empty-state-description {
@@ -3874,7 +3242,7 @@ iframe {
   border-bottom: 1px solid var(--surface-200);
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.75rem;
+  padding: 1rem;
 }
 
 :deep(.dark .modern-table .p-datatable-thead > tr > th) {
@@ -3883,9 +3251,8 @@ iframe {
 }
 
 :deep(.modern-table .p-datatable-tbody > tr > td) {
-  padding: 0.75rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--surface-100);
-  font-size: 0.875rem;
 }
 
 :deep(.dark .modern-table .p-datatable-tbody > tr > td) {
@@ -3906,7 +3273,7 @@ iframe {
 }
 
 :deep(.p-checkbox:hover) {
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
 /* Loading spinner improvements */
@@ -3924,22 +3291,17 @@ iframe {
   .document-library-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
+    gap: 1rem;
   }
   
   .document-actions-toolbar {
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   
   .search-filter-bar {
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  
-  .compact-spacing {
-    padding: 0.5rem;
+    gap: 0.75rem;
   }
 }
 </style>
