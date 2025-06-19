@@ -365,6 +365,91 @@ export const calculateAgeInDays = (date) => {
 };
 
 /**
+ * Format ticket age with human-readable text
+ * @param {string|Date} createdDate - The date the ticket was created
+ * @returns {string} Formatted age string (e.g., "5 days", "2 weeks", "3 months")
+ */
+export const formatTicketAge = (createdDate) => {
+  if (!createdDate) return 'Unknown';
+  
+  try {
+    const now = new Date();
+    const created = new Date(createdDate);
+    if (isNaN(created)) return 'Unknown';
+    
+    const diffTime = now - created;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+    
+    if (diffDays === 0) {
+      if (diffHours === 0) {
+        return diffMinutes <= 1 ? '1 minute' : `${diffMinutes} minutes`;
+      }
+      return diffHours === 1 ? '1 hour' : `${diffHours} hours`;
+    } else if (diffDays < 7) {
+      return diffDays === 1 ? '1 day' : `${diffDays} days`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return weeks === 1 ? '1 week' : `${weeks} weeks`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return months === 1 ? '1 month' : `${months} months`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return years === 1 ? '1 year' : `${years} years`;
+    }
+  } catch (e) {
+    console.error('Error formatting ticket age:', e);
+    return 'Unknown';
+  }
+};
+
+/**
+ * Format time since last update with human-readable text
+ * @param {string|Date} updatedDate - The date the ticket was last updated
+ * @returns {string} Formatted time string (e.g., "2 hours ago", "3 days ago")
+ */
+export const formatTimeSinceUpdate = (updatedDate) => {
+  if (!updatedDate) return 'Never updated';
+  
+  try {
+    const now = new Date();
+    const updated = new Date(updatedDate);
+    if (isNaN(updated)) return 'Unknown';
+    
+    const diffTime = now - updated;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+    
+    if (diffDays === 0) {
+      if (diffHours === 0) {
+        if (diffMinutes <= 1) {
+          return 'Just now';
+        }
+        return `${diffMinutes} minutes ago`;
+      }
+      return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    } else if (diffDays < 7) {
+      return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return months === 1 ? '1 month ago' : `${months} months ago`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return years === 1 ? '1 year ago' : `${years} years ago`;
+    }
+  } catch (e) {
+    console.error('Error formatting time since update:', e);
+    return 'Unknown';
+  }
+};
+
+/**
  * Format a due date message based on its status
  * @param {string|Date} dueDate - The due date
  * @param {string} status - The invoice status
