@@ -4,6 +4,23 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
+        label: 'Dashboards',
+        icon: 'pi pi-th-large',
+        items: [
+            {
+                label: 'Marketing Dashboard',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/dashboard-marketing'
+            },
+            {
+                label: 'Banking Dashboard',
+                icon: 'pi pi-fw pi-building-columns',
+                to: '/dashboard-banking'
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'Field Services',
         icon: 'pi pi-home',
         items: [
@@ -48,6 +65,28 @@ const model = ref([
                 label: 'Bill Transfer Tracker',
                 icon: 'pi pi-fw pi-sync',
                 to: '/streamline/bill-transfer-tracker'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Engineering',
+        icon: 'pi pi-cog',
+        items: [
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/engineering/dashboard'
+            },
+            {
+                label: 'Tickets',
+                icon: 'pi pi-fw pi-ticket',
+                to: '/engineering/tickets'
+            },
+            {
+                label: 'Calendar',
+                icon: 'pi pi-fw pi-calendar',
+                to: '/engineering/calendar'
             }
         ]
     },
@@ -107,6 +146,18 @@ const model = ref([
                 label: 'Alerts Management',
                 icon: 'pi pi-fw pi-bell',
                 to: '/finance/alerts'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Reporting',
+        icon: 'pi pi-chart-bar',
+        items: [
+            {
+                label: 'Report Manager',
+                icon: 'pi pi-fw pi-file-export',
+                to: '/reporting/report-manager'
             }
         ]
     },
