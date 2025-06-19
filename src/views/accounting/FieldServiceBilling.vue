@@ -1,5 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+// Add the useBreakpoints composable for responsive design
+import { useBreakpoints } from '@vueuse/core';
 import { useBillingStore } from '@/stores/billingStore';
 import { useCustomerStore } from '@/stores/customerStore';
 import { useDispatchStore } from '@/stores/dispatchStore';
@@ -46,6 +48,28 @@ const customerStore = useCustomerStore();
 const dispatchStore = useDispatchStore();
 const confirm = useConfirm();
 const toast = useToast();
+
+// Responsive Logic - Set up reactive breakpoints that match Tailwind's defaults
+const breakpoints = useBreakpoints({
+    tablet: 768,    // md
+    laptop: 1024,   // lg
+    desktop: 1280,  // xl
+});
+
+// Create computed refs to use with v-if in the template for showing/hiding elements
+const isMobile = breakpoints.smaller('tablet');
+const isTabletAndUp = breakpoints.greaterOrEqual('tablet');
+const isLaptopAndUp = breakpoints.greaterOrEqual('laptop');
+const isDesktopAndUp = breakpoints.greaterOrEqual('desktop');
+
+// Dynamically calculate the footer's colspan based on visible columns
+const accountingTableFooterColspan = computed(() => {
+    let count = 2; // Always visible: Ticket ID, Category
+    if (isTabletAndUp.value) count++; // Subject
+    if (isLaptopAndUp.value) count++; // Product Code
+    if (isDesktopAndUp.value) count++; // Vendor
+    return count;
+});
 
 // Form state
 const ticketInput = ref('');
@@ -637,25 +661,25 @@ function closePurchaseDetailModal() {
 </script>
 
 <template>
-    <div class="field-service-billing">
-        <h1 class="text-3xl font-bold mb-4">Field Service Billing Analysis</h1>
-        <p class="text-gray-600 mb-8">Enter a ticket number or search for turnup tickets to retrieve and analyze billing data</p>
+    <div class="field-service-billing p-2 md:p-4 lg:p-6">
+        <h1 class="text-2xl md:text-3xl font-bold mb-2 md:mb-4">Field Service Billing Analysis</h1>
+        <p class="text-gray-600 mb-6 md:mb-8">Enter a ticket number or search for turnup tickets to retrieve and analyze billing data</p>
 
         <!-- Search Panel with Accordion -->
-        <Card class="mb-8">
+        <Card class="mb-6 md:mb-8">
             <template #content>
                 <!-- Direct Ticket ID Entry -->
-                <div class="flex flex-col gap-2 mb-6">
-                    <label for="ticketInput" class="font-medium">Enter Ticket ID:</label>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <InputGroup class="flex-grow">
+                <div class="mb-6">
+                    <label for="ticketInput" class="font-medium block mb-2">Enter Ticket ID:</label>
+                    <div class="flex flex-wrap gap-2">
+                        <InputGroup class="flex-1 min-w-[250px]">
                             <InputGroupAddon>
                                 <i class="pi pi-search"></i>
                             </InputGroupAddon>
                             <InputText 
                                 id="ticketInput" 
                                 v-model="ticketInput" 
-                                placeholder="Enter ticket number..." 
+                                placeholder="Enter ticket number(s)..." 
                                 class="w-full" 
                                 @keyup.enter="searchTicket" />
                         </InputGroup>
@@ -663,20 +687,21 @@ function closePurchaseDetailModal() {
                             label="Search" 
                             icon="pi pi-search" 
                             @click="searchTicket" 
-                            :loading="isSearching" 
-                            class="min-w-20" />
+                            :loading="isSearching" />
                     </div>
-                    <small class="text-gray-500">
-                        Enter one or more ticket IDs separated by commas to analyze multiple tickets at once.
+                    <small class="text-gray-500 mt-2 block">
+                        Enter one or more comma-separated ticket IDs.
                     </small>
                 </div>
 
                 <!-- Accordion for Advanced Search -->
-                <Accordion>
+                <Accordion :lazy="true">
                     <AccordionPanel value="0">
                         <AccordionHeader>
-                            <i class="pi pi-search-plus mr-2"></i>
-                            Find Ticket ID
+                            <div class="flex items-center">
+                                <i class="pi pi-search-plus mr-2"></i>
+                                <span>Find Ticket by Criteria</span>
+                            </div>
                         </AccordionHeader>
                         <AccordionContent>
                             <!-- Row 1: Customer and Date Range -->
@@ -719,41 +744,39 @@ function closePurchaseDetailModal() {
                             </div>
 
                             <!-- Row 2: Location with Checkbox -->
-                            <div class="mb-4">
-                                <label for="locationSelect" class="font-medium mb-2 block">Location (Optional):</label>
-                                <div class="flex gap-4 items-start">
-                                    <!-- Location Selector -->
-                                    <div class="flex-1">
-                                        <Select
-                                            id="locationSelect"
-                                            v-model="selectedLocation"
-                                            :options="customerLocations"
-                                            optionLabel="location_name"
-                                            placeholder="Select Location"
-                                            filter
-                                            :disabled="!useLocationFilter || !selectedCustomer || isLoadingLocations"
-                                            class="w-full"
-                                            :loading="isLoadingLocations">
-                                            <template #option="slotProps">
-                                                <div class="flex flex-col">
-                                                    <div class="font-medium">{{ slotProps.option.location_name }}</div>
-                                                    <div class="text-sm text-gray-500">{{ slotProps.option.full_address }}</div>
-                                                </div>
-                                            </template>
-                                        </Select>
-                                        <small class="text-gray-500 block mt-1">
-                                            {{ useLocationFilter ? 'Select a location to filter results' : 'Check the box to enable location filtering' }}
-                                        </small>
-                                    </div>
-                                    
-                                    <!-- Checkbox to the right -->
-                                    <div class="flex items-center gap-2 mt-1">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start mb-4">
+                                <div class="flex flex-col gap-2">
+                                    <label for="locationSelect" class="font-medium">Location (Optional):</label>
+                                    <Select
+                                        id="locationSelect"
+                                        v-model="selectedLocation"
+                                        :options="customerLocations"
+                                        optionLabel="location_name"
+                                        placeholder="Select Location"
+                                        filter
+                                        :disabled="!useLocationFilter || !selectedCustomer || isLoadingLocations"
+                                        class="w-full"
+                                        :loading="isLoadingLocations">
+                                        <template #option="slotProps">
+                                            <div class="flex flex-col">
+                                                <div class="font-medium">{{ slotProps.option.location_name }}</div>
+                                                <div class="text-sm text-gray-500">{{ slotProps.option.full_address }}</div>
+                                            </div>
+                                        </template>
+                                    </Select>
+                                    <small class="text-gray-500">
+                                        {{ useLocationFilter ? 'Select a location to filter results' : 'Check the box to enable location filtering' }}
+                                    </small>
+                                </div>
+                                
+                                <div class="flex items-center h-full mt-2 md:mt-0">
+                                    <div class="flex items-center mt-5">
                                         <Checkbox 
                                             id="useLocationFilter" 
                                             v-model="useLocationFilter" 
                                             :binary="true" />
-                                        <label for="useLocationFilter" class="text-sm cursor-pointer whitespace-nowrap">
-                                            Filter by specific location
+                                        <label for="useLocationFilter" class="ml-2 text-sm cursor-pointer">
+                                            Filter by location
                                         </label>
                                     </div>
                                 </div>
@@ -795,19 +818,19 @@ function closePurchaseDetailModal() {
                             </Message>
 
                             <!-- Turnups DataTable -->
-                            <div v-if="turnups.length > 0">
-                                <h6 class="text-lg font-semibold mb-3">Turnup Tickets</h6>
+                            <div v-if="turnups.length > 0" class="mt-6">
+                                <h6 class="text-lg font-semibold mb-3">Turnup Tickets Found</h6>
                                 <DataTable
                                     :value="turnups"
-                                    :paginator="turnups.length > 10"
-                                    :rows="10"
+                                    :paginator="turnups.length > 5"
+                                    :rows="5"
                                     dataKey="id"
                                     class="p-datatable-sm"
                                     responsiveLayout="scroll"
                                     selectionMode="single"
                                     @row-click="selectTurnupTicket($event.data)">
                                     
-                                    <Column field="id" header="Ticket ID" :sortable="true">
+                                    <Column field="id" header="ID" :sortable="true" style="min-width: 100px">
                                         <template #body="slotProps">
                                             <Button
                                                 :label="slotProps.data.id.toString()"
@@ -817,21 +840,21 @@ function closePurchaseDetailModal() {
                                         </template>
                                     </Column>
                                     
-                                    <Column field="subject" header="Subject" :sortable="true">
+                                    <Column field="subject" header="Subject" :sortable="true" style="min-width: 200px">
                                         <template #body="slotProps">
-                                            <div class="max-w-xs truncate" :title="slotProps.data.subject">
+                                            <div class="truncate" :title="slotProps.data.subject">
                                                 {{ slotProps.data.subject }}
                                             </div>
                                         </template>
                                     </Column>
                                     
-                                    <Column field="service_date" header="Service Date" :sortable="true">
+                                    <Column v-if="isTabletAndUp" field="service_date" header="Service Date" :sortable="true" style="min-width: 120px">
                                         <template #body="slotProps">
                                             {{ formatDate(slotProps.data.service_date) }}
                                         </template>
                                     </Column>
                                     
-                                    <Column field="status" header="Status" :sortable="true">
+                                    <Column v-if="isLaptopAndUp" field="status" header="Status" :sortable="true" style="min-width: 100px">
                                         <template #body="slotProps">
                                             <Tag 
                                                 :value="slotProps.data.status" 
@@ -839,7 +862,7 @@ function closePurchaseDetailModal() {
                                         </template>
                                     </Column>
                                     
-                                    <Column field="location.name" header="Location" :sortable="true">
+                                    <Column v-if="isDesktopAndUp" field="location.name" header="Location" :sortable="true" style="min-width: 150px">
                                         <template #body="slotProps">
                                             <div v-if="slotProps.data.location">
                                                 <div class="font-medium">{{ slotProps.data.location.name }}</div>
@@ -848,7 +871,7 @@ function closePurchaseDetailModal() {
                                         </template>
                                     </Column>
                                     
-                                    <Column field="technician" header="Technician" :sortable="true">
+                                    <Column v-if="isDesktopAndUp" field="technician" header="Technician" :sortable="true" style="min-width: 120px">
                                         <template #body="slotProps">
                                             {{ slotProps.data.technician || 'Not assigned' }}
                                         </template>
@@ -862,65 +885,59 @@ function closePurchaseDetailModal() {
         </Card>
 
         <!-- Results Panel -->
-        <Card v-if="billingStore.hasData" class="mb-8">
+        <Card v-if="billingStore.hasData" class="mb-6 md:mb-8">
             <template #title>
-                <div class="flex justify-between items-center">
-                    <span>Financial Summary</span>
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <span class="text-xl font-semibold">Financial Summary</span>
                     <Button icon="pi pi-file-export" label="Export" severity="secondary" text raised @click="exportData" />
                 </div>
             </template>
             <template #content>
-                <div class="grid grid-cols-12 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 md:mb-8">
                     <!-- Financial Summary Cards -->
-                    <div class="col-span-4">
-                        <div class="p-4 bg-green-50 rounded-lg border border-green-100">
-                            <div class="text-sm text-green-700 mb-1">Total Receivables</div>
-                            <div class="text-xl font-semibold text-green-900">
-                                {{ formatCurrency(totalReceivables) }}
-                            </div>
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div class="text-sm text-green-700 mb-1">Total Receivables</div>
+                        <div class="text-2xl font-bold text-green-900">
+                            {{ formatCurrency(totalReceivables) }}
                         </div>
                     </div>
-                    <div class="col-span-4">
-                        <div class="p-4 bg-red-50 rounded-lg border border-red-100">
-                            <div class="text-sm text-red-700 mb-1">Total Payables</div>
-                            <div class="text-xl font-semibold text-red-900">
-                                {{ formatCurrency(totalPayables) }}
-                            </div>
+                    <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                        <div class="text-sm text-red-700 mb-1">Total Payables</div>
+                        <div class="text-2xl font-bold text-red-900">
+                            {{ formatCurrency(totalPayables) }}
                         </div>
                     </div>
-                    <div class="col-span-4">
-                        <div class="p-4 rounded-lg border" 
-                             :class="originalNetProfitLoss >= 0 
-                                     ? 'border-2 border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30' 
-                                     : 'border-2 border-red-400 dark:border-red-700 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/30'">
-                            <div class="flex items-center gap-2 mb-1">
-                                <i class="pi text-sm"
-                                   :class="originalNetProfitLoss >= 0 
-                                           ? 'pi-trending-up text-emerald-700 dark:text-emerald-400' 
-                                           : 'pi-trending-down text-red-700 dark:text-red-400'"></i>
-                                <div class="text-sm font-medium"
-                                     :class="originalNetProfitLoss >= 0 
-                                             ? 'text-emerald-700 dark:text-emerald-300' 
-                                             : 'text-red-700 dark:text-red-300'">Net Profit/Loss</div>
-                            </div>
-                            <div class="text-xl font-bold" 
+                    <div class="p-4 rounded-lg border md:col-span-2 lg:col-span-1" 
+                         :class="originalNetProfitLoss >= 0 
+                                 ? 'bg-emerald-50 border-emerald-300' 
+                                 : 'bg-red-50 border-red-300'">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="pi text-sm"
+                               :class="originalNetProfitLoss >= 0 
+                                       ? 'pi-trending-up text-emerald-700' 
+                                       : 'pi-trending-down text-red-700'"></i>
+                            <div class="text-sm font-medium"
                                  :class="originalNetProfitLoss >= 0 
-                                         ? 'text-emerald-900 dark:text-emerald-400' 
-                                         : 'text-red-900 dark:text-red-400'">
-                                {{ formatCurrency(originalNetProfitLoss) }}
-                            </div>
+                                         ? 'text-emerald-800' 
+                                         : 'text-red-800'">Net Profit/Loss</div>
+                        </div>
+                        <div class="text-2xl font-bold" 
+                             :class="originalNetProfitLoss >= 0 
+                                     ? 'text-emerald-900' 
+                                     : 'text-red-900'">
+                            {{ formatCurrency(originalNetProfitLoss) }}
                         </div>
                     </div>
                 </div>
 
                 <!-- All Accounting Records Table -->
                 <div>
-                    <h3 class="text-lg font-semibold mb-3">All Accounting Records</h3>
-                    <p class="text-sm text-gray-500 mb-4">Click on any row to view detailed information</p>
+                    <h3 class="text-lg font-semibold mb-2">All Accounting Records</h3>
+                    <p class="text-sm text-gray-500 mb-4">Key columns are visible on all screen sizes. More details appear on larger screens. Scroll horizontally if needed.</p>
                     <DataTable :value="combinedAccountingRecords" 
-                              class="p-datatable-xs text-sm" 
+                              class="p-datatable-sm" 
                               responsiveLayout="scroll"
-                              :paginator="combinedAccountingRecords.length > 15"
+                              :paginator="true"
                               :rows="15"
                               sortMode="multiple"
                               removableSort
@@ -928,9 +945,9 @@ function closePurchaseDetailModal() {
                               filterDisplay="menu"
                               showGridlines>
                         
-                        <Column field="ticket_id" header="Ticket ID" :sortable="true" frozen style="min-width: 100px">
+                        <Column field="ticket_id" header="Ticket ID" :sortable="true" frozen style="min-width: 110px">
                             <template #body="slotProps">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline font-medium" 
+                                <a href="#" class="text-blue-600 hover:underline font-medium" 
                                    @click="openExternalTicket(slotProps.data.ticket_id, $event)">
                                     {{ slotProps.data.ticket_id }}
                                 </a>
@@ -952,10 +969,10 @@ function closePurchaseDetailModal() {
                                        :showClear="true" />
                             </template>
                         </Column>
-                        
-                        <Column field="subject" header="Subject" :sortable="true" style="min-width: 200px">
+
+                        <Column v-if="isTabletAndUp" field="subject" header="Subject" :sortable="true" style="min-width: 250px">
                             <template #body="slotProps">
-                                <div class="max-w-xs truncate" :title="slotProps.data.subject">
+                                <div class="truncate" :title="slotProps.data.subject">
                                     {{ slotProps.data.subject }}
                                 </div>
                             </template>
@@ -966,7 +983,7 @@ function closePurchaseDetailModal() {
                             </template>
                         </Column>
                         
-                        <Column field="product_code" header="Product Code" :sortable="true" style="min-width: 120px">
+                        <Column v-if="isLaptopAndUp" field="product_code" header="Product Code" :sortable="true" style="min-width: 140px">
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText v-model="filterModel.value" 
                                           @input="filterCallback()" 
@@ -974,69 +991,52 @@ function closePurchaseDetailModal() {
                             </template>
                         </Column>
                         
-                        <Column field="vendor_name" header="Vendor" :sortable="true" style="min-width: 150px">
+                        <Column v-if="isDesktopAndUp" field="vendor_name" header="Vendor" :sortable="true" style="min-width: 180px">
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText v-model="filterModel.value" 
                                           @input="filterCallback()" 
                                           placeholder="Search vendor" />
                             </template>
                         </Column>
-                        
-                        <Column field="receivables" header="Receivables" :sortable="true" style="min-width: 120px">
+
+                        <Column field="amount" header="Amount" :sortable="true" style="min-width: 130px">
                             <template #body="slotProps">
                                 <span v-if="slotProps.data.category === 'Receivable'" class="font-semibold text-green-600">
                                     {{ formatCurrency(slotProps.data.amount) }}
                                 </span>
-                                <span v-else class="text-gray-400">—</span>
-                            </template>
-                        </Column>
-                        
-                        <Column field="payables" header="Payables" :sortable="true" style="min-width: 120px">
-                            <template #body="slotProps">
-                                <span v-if="slotProps.data.category === 'Payable'" class="font-semibold text-red-600">
+                                <span v-else-if="slotProps.data.category === 'Payable'" class="font-semibold text-red-600">
                                     {{ formatCurrency(slotProps.data.amount) }}
                                 </span>
                                 <span v-else class="text-gray-400">—</span>
                             </template>
                         </Column>
                         
-                        <Column field="service_date" header="Service Date" :sortable="true" style="min-width: 120px">
+                        <Column v-if="isDesktopAndUp" field="service_date" header="Service Date" :sortable="true" style="min-width: 120px">
                             <template #body="slotProps">
                                 {{ safeDate(slotProps.data.service_date) }}
                             </template>
                         </Column>
                         
-                        <Column field="status" header="Status" :sortable="true" style="min-width: 100px">
-                            <template #body="{data}">
-                                <Badge :value="data.status" 
-                                       :severity="data.status === 'Closed' ? 'success' : (data.status === 'Paid' ? 'info' : 'warning')" />
-                            </template>
-                        </Column>
-                        
-                        <Column headerStyle="width: 4rem" :exportable="false">
+                        <Column headerStyle="width: 5rem" :exportable="false" header="Details" alignFrozen="right" frozen>
                             <template #body="slotProps">
-                                <Button icon="pi pi-eye" text rounded size="small" 
+                                <Button icon="pi pi-eye" text rounded 
                                         @click="debugAndOpenDynamicsModal(slotProps.data)" 
                                         aria-label="View Dynamics data"
-                                        v-tooltip="'View Dynamics 365 data'" />
+                                        v-tooltip.left="'View Dynamics 365 data'" />
                             </template>
                         </Column>
 
                         <!-- Footer with totals -->
                         <ColumnGroup type="footer">
                             <Row>
-                                <Column footer="Totals:" :colspan="5" footerStyle="text-align:right; font-weight: bold;" />
-                                <Column footerStyle="text-align:left; font-weight: bold; color: #16a34a;">
+                                <Column footer="Totals:" :colspan="accountingTableFooterColspan" footerStyle="text-align:right; font-weight: bold;" />
+                                <Column footerStyle="font-weight: bold;">
                                     <template #footer>
-                                        {{ formatCurrency(totalReceivables) }}
+                                        <div class="text-green-600">{{ formatCurrency(totalReceivables) }}</div>
+                                        <div class="text-red-600">{{ formatCurrency(totalPayables) }}</div>
                                     </template>
                                 </Column>
-                                <Column footerStyle="text-align:left; font-weight: bold; color: #dc2626;">
-                                    <template #footer>
-                                        {{ formatCurrency(totalPayables) }}
-                                    </template>
-                                </Column>
-                                <Column footer="" :colspan="3" />
+                                <Column :colspan="isDesktopAndUp ? 2 : 1" />
                             </Row>
                         </ColumnGroup>
                     </DataTable>
@@ -1619,9 +1619,7 @@ function closePurchaseDetailModal() {
 </template>
 
 <style scoped>
-.field-service-billing {
-    padding: 1rem;
-}
+/* Responsive grid adjustments are now handled by Tailwind utilities in the template */
 
 .p-datatable .p-datatable-tbody > tr.bg-blue-50 {
     background-color: #eff6ff !important;
@@ -1637,52 +1635,8 @@ function closePurchaseDetailModal() {
     white-space: nowrap;
 }
 
-.max-w-xs {
-    max-width: 20rem;
-}
-
 /* Accordion styling for better visual hierarchy */
 .p-accordion .p-accordion-header {
-    border-radius: 6px;
     margin-bottom: 0.5rem;
-}
-
-.p-accordion .p-accordion-content {
-    border-radius: 0 0 6px 6px;
-    border-top: none;
-}
-
-/* Custom styling for the search sections */
-.search-section {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.search-section h6 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: #374151;
-    font-weight: 600;
-}
-
-/* Responsive grid adjustments */
-@media (max-width: 768px) {
-    .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (min-width: 768px) {
-    .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 1024px) {
-    .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
-        grid-template-columns: repeat(3, 1fr);
-    }
 }
 </style> 
