@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthService } from './AuthService';
+import { AuthService } from '../auth/AuthService';
 
 // Create axios instance with base URL
 const apiClient = axios.create({
