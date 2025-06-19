@@ -44,27 +44,39 @@ const model = ref([
             {
                 label: 'Bill Management',
                 icon: 'pi pi-fw pi-money-bill',
-                to: '/streamline/bill-management'
+                items: [
+                    {
+                        label: 'Bill Management',
+                        icon: 'pi pi-fw pi-money-bill',
+                        to: '/streamline/bill-management'
+                    },
+                    {
+                        label: 'Bill Import',
+                        icon: 'pi pi-fw pi-file-import',
+                        to: '/streamline/bill-import'
+                    },
+                    {
+                        label: 'Bill Transfer Tracker',
+                        icon: 'pi pi-fw pi-sync',
+                        to: '/streamline/bill-transfer-tracker'
+                    }
+                ]
             },
             {
-                label: 'Bill Import',
-                icon: 'pi pi-fw pi-file-import',
-                to: '/streamline/bill-import'
-            },
-            {
-                label: 'Tem Accounts',
+                label: 'Account Management',
                 icon: 'pi pi-fw pi-users',
-                to: '/streamline/tem-accounts'
-            },
-            {
-                label: 'Vendors & Contracts',
-                icon: 'pi pi-fw pi-building',
-                to: '/streamline/vendors-contracts'
-            },
-            {
-                label: 'Bill Transfer Tracker',
-                icon: 'pi pi-fw pi-sync',
-                to: '/streamline/bill-transfer-tracker'
+                items: [
+                    {
+                        label: 'Tem Accounts',
+                        icon: 'pi pi-fw pi-users',
+                        to: '/streamline/tem-accounts'
+                    },
+                    {
+                        label: 'Vendors & Contracts',
+                        icon: 'pi pi-fw pi-building',
+                        to: '/streamline/vendors-contracts'
+                    }
+                ]
             }
         ]
     },
@@ -123,44 +135,62 @@ const model = ref([
                 to: '/finance/dashboard'
             },
             {
-                label: 'Invoicing',
+                label: 'Core Finance',
                 icon: 'pi pi-fw pi-file-edit',
-                to: '/finance/invoicing'
+                items: [
+                    {
+                        label: 'Invoicing',
+                        icon: 'pi pi-fw pi-file-edit',
+                        to: '/finance/invoicing'
+                    },
+                    {
+                        label: 'Receivables',
+                        icon: 'pi pi-fw pi-dollar',
+                        to: '/finance/receivables'
+                    },
+                    {
+                        label: 'Payables',
+                        icon: 'pi pi-fw pi-credit-card',
+                        to: '/finance/payables'
+                    }
+                ]
             },
             {
-                label: 'Receivables',
-                icon: 'pi pi-fw pi-dollar',
-                to: '/finance/receivables'
+                label: 'Legacy Accounts',
+                icon: 'pi pi-fw pi-database',
+                items: [
+                    {
+                        label: 'Accounts Receivable',
+                        icon: 'pi pi-fw pi-dollar',
+                        to: '/finance/accounts-receivable'
+                    },
+                    {
+                        label: 'Accounts Payable',
+                        icon: 'pi pi-fw pi-credit-card',
+                        to: '/finance/accounts-payable'
+                    }
+                ]
             },
             {
-                label: 'Payables',
-                icon: 'pi pi-fw pi-credit-card',
-                to: '/finance/payables'
-            },
-            {
-                label: 'Accounts Receivable',
-                icon: 'pi pi-fw pi-dollar',
-                to: '/finance/accounts-receivable'
-            },
-            {
-                label: 'Accounts Payable',
-                icon: 'pi pi-fw pi-credit-card',
-                to: '/finance/accounts-payable'
-            },
-            {
-                label: 'Financial Analysis',
+                label: 'Analytics & Reports',
                 icon: 'pi pi-fw pi-chart-line',
-                to: '/finance/analysis'
-            },
-            {
-                label: 'Product Performance',
-                icon: 'pi pi-fw pi-box',
-                to: '/finance/product-performance'
-            },
-            {
-                label: 'Alerts Management',
-                icon: 'pi pi-fw pi-bell',
-                to: '/finance/alerts'
+                items: [
+                    {
+                        label: 'Financial Analysis',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/finance/analysis'
+                    },
+                    {
+                        label: 'Product Performance',
+                        icon: 'pi pi-fw pi-box',
+                        to: '/finance/product-performance'
+                    },
+                    {
+                        label: 'Alerts Management',
+                        icon: 'pi pi-fw pi-bell',
+                        to: '/finance/alerts'
+                    }
+                ]
             }
         ]
     },
