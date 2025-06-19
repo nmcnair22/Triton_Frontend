@@ -342,6 +342,29 @@ export const formatNumber = (number, decimals = 2, locale = 'en-US') => {
 };
 
 /**
+ * Calculate age in days from a given date to now
+ * @param {string|Date} date - The date to calculate age from
+ * @returns {number} Age in days (0 if date is invalid)
+ */
+export const calculateAgeInDays = (date) => {
+  if (!date) return 0;
+  
+  try {
+    const now = new Date();
+    const targetDate = new Date(date);
+    if (isNaN(targetDate)) return 0;
+    
+    const diffTime = now - targetDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, diffDays); // Don't return negative values
+  } catch (e) {
+    console.error('Error calculating age in days:', e);
+    return 0;
+  }
+};
+
+/**
  * Format a due date message based on its status
  * @param {string|Date} dueDate - The due date
  * @param {string} status - The invoice status

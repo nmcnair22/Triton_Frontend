@@ -32,6 +32,15 @@ export default {
                         transform: 'rotate(1deg)'
                     }
                 }
+            },
+            // Add proper spacing scale that aligns with PrimeVue
+            spacing: {
+                '18': '4.5rem',
+                '88': '22rem',
+            },
+            // Ensure consistent border radius
+            borderRadius: {
+                'border': 'var(--p-border-radius)',
             }
         },
         screens: {

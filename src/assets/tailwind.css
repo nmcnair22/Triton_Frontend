@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer components {
     .landing-container{
         @apply px-6 w-full max-w-[62rem] mx-auto;

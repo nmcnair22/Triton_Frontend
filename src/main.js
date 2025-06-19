@@ -4,8 +4,8 @@ import router from './router';
 import { createPinia } from 'pinia';
 import axios from 'axios';
 
-// Import Laravel Echo configuration
-import './echo';
+// Import Laravel Echo configuration - temporarily disabled
+// import './echo';
 
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
@@ -13,6 +13,10 @@ import Material from '@primeuix/themes/material';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
+
+// Syncfusion components
+import { SchedulePlugin } from '@syncfusion/ej2-vue-schedule';
+import { registerLicense } from '@syncfusion/ej2-base';
 
 // RBAC components
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';
@@ -82,6 +86,10 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(ConfirmationService);
+// Register Syncfusion license
+registerLicense('Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCeUx3TXxbf1x1ZFxMYVhbRnBPIiBoS35Rc0VlWHdccnZUR2RYVUNyVEBU');
+
+app.use(SchedulePlugin);
 
 // Register global components
 app.component('BlockViewer', BlockViewer);

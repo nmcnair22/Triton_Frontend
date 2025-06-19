@@ -61,6 +61,65 @@ const routes = [
                 component: () => import('@/views/field-services/VisitDetailPage.vue')
             },
 
+            // Engineering Module Routes
+            {
+                path: '/engineering',
+                redirect: '/engineering/dashboard'
+            },
+            {
+                path: '/engineering/dashboard',
+                name: 'engineering-dashboard',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Engineering', path: '/engineering' },
+                        { label: 'Dashboard', path: '/engineering/dashboard' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/engineering/DashboardView.vue')
+            },
+            {
+                path: '/engineering/tickets',
+                name: 'engineering-tickets',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Engineering', path: '/engineering' },
+                        { label: 'Tickets', path: '/engineering/tickets' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/engineering/TicketsView.vue')
+            },
+            {
+                path: '/engineering/tickets/:id',
+                name: 'engineering-ticket-detail',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Engineering', path: '/engineering' },
+                        { label: 'Tickets', path: '/engineering/tickets' },
+                        { label: 'Ticket Detail', path: '/engineering/tickets/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/engineering/TicketDetailView.vue')
+            },
+            {
+                path: '/engineering/calendar',
+                name: 'engineering-calendar',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Engineering', path: '/engineering' },
+                        { label: 'Calendar', path: '/engineering/calendar' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/engineering/CalendarView.vue')
+            },
+
             {
                 path: '/streamline/dashboard',
                 name: 'streamline-dashboard',

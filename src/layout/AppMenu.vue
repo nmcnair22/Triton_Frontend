@@ -53,6 +53,28 @@ const model = ref([
     },
     { separator: true },
     {
+        label: 'Engineering',
+        icon: 'pi pi-cog',
+        items: [
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/engineering/dashboard'
+            },
+            {
+                label: 'Tickets',
+                icon: 'pi pi-fw pi-ticket',
+                to: '/engineering/tickets'
+            },
+            {
+                label: 'Calendar',
+                icon: 'pi pi-fw pi-calendar',
+                to: '/engineering/calendar'
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'Accounting',
         icon: 'pi pi-calculator',
         items: [
