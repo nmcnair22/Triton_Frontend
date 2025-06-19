@@ -222,7 +222,7 @@
                                             </div>
                                             <div class="flex justify-between">
                                                 <span class="text-surface-600 dark:text-surface-400">Creator:</span>
-                                                <span class="font-medium">{{ slotProps.data.creator || 'N/A' }}</span>
+                                                <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -268,8 +268,6 @@
                                 <!-- Action Buttons -->
                                 <div class="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 flex gap-2">
                                     <Button icon="pi pi-eye" label="View Details" size="small" @click="viewTicketDetails(slotProps.data)" />
-                                    <Button icon="pi pi-pencil" label="Edit" size="small" severity="secondary" @click="editTicket(slotProps.data)" />
-                                    <Button icon="pi pi-comments" label="Add Comment" size="small" outlined @click="addComment(slotProps.data)" />
                                 </div>
                             </div>
                         </template>
@@ -530,29 +528,33 @@ function clearAllFilters() {
   });
 }
 
+// Add a helper function to format creator name
+function formatCreatorName(creator) {
+  if (!creator) return 'N/A';
+  
+  // If it's already a string, return it
+  if (typeof creator === 'string') {
+    // Check if it's JSON string
+    try {
+      const parsed = JSON.parse(creator);
+      return parsed.name || parsed.email || 'N/A';
+    } catch (e) {
+      // If not JSON, return as is
+      return creator;
+    }
+  }
+  
+  // If it's an object, extract name or email
+  if (typeof creator === 'object') {
+    return creator.name || creator.email || 'N/A';
+  }
+  
+  return 'N/A';
+}
+
 // Action handlers for expansion row buttons
 function viewTicketDetails(ticket) {
   router.push(`/engineering/tickets/${ticket.ticket_id}`);
-}
-
-function editTicket(ticket) {
-  // TODO: Implement edit functionality
-  toast.add({
-    severity: 'info',
-    summary: 'Edit Ticket',
-    detail: `Edit functionality for ticket #${ticket.ticket_id} will be implemented soon`,
-    life: 3000
-  });
-}
-
-function addComment(ticket) {
-  // TODO: Implement add comment functionality
-  toast.add({
-    severity: 'info',
-    summary: 'Add Comment',
-    detail: `Comment functionality for ticket #${ticket.ticket_id} will be implemented soon`,
-    life: 3000
-  });
 }
 </script>
 
