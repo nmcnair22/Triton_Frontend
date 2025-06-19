@@ -110,16 +110,18 @@ export const useDispatchStore = defineStore('dispatch', () => {
       const response = await ApiService.get('/dispatch/turnups', filters);
       
       if (response.data && response.data.success) {
-        turnups.value = response.data.data.turnups || [];
-        totalRecords.value = response.data.data.total_count || turnups.value.length;
+        turnups.value = response.data.data || [];
+        totalRecords.value = response.data.count || turnups.value.length;
         
         console.log('✅ Turnups loaded:', turnups.value.length);
         return { turnups: turnups.value, total: totalRecords.value };
       } else {
-        console.warn('⚠️ Unexpected turnups response:', response.data);
+        // Handle backend error response
+        const backendError = response.data?.error || 'Unknown backend error';
+        console.error('❌ Backend error for turnups:', backendError);
         turnups.value = [];
         totalRecords.value = 0;
-        return { turnups: [], total: 0 };
+        throw new Error(backendError);
       }
     } catch (err) {
       console.error('❌ Turnups fetch error:', err);
@@ -139,8 +141,14 @@ export const useDispatchStore = defineStore('dispatch', () => {
     try {
       console.log('🔄 Fetching customer locations with filters:', filters);
       
-      // Note: The API expects customer_id to be the customer number, not the UUID id
-      const response = await ApiService.get('/customers/locations', filters);
+      // Extract customer_id from filters and build the new API URL format
+      const { customer_id, ...queryParams } = filters;
+      
+      if (!customer_id) {
+        throw new Error('customer_id is required');
+      }
+      
+      const response = await ApiService.get(`/cisdb/customers/${customer_id}/locations`, queryParams);
       
       if (response.data && response.data.success) {
         customerLocations.value = response.data.data || [];
@@ -148,9 +156,11 @@ export const useDispatchStore = defineStore('dispatch', () => {
         console.log('✅ Customer locations loaded:', customerLocations.value.length);
         return customerLocations.value;
       } else {
-        console.warn('⚠️ Unexpected locations response:', response.data);
+        // Handle backend error response
+        const backendError = response.data?.error || 'Unknown backend error';
+        console.error('❌ Backend error for customer locations:', backendError);
         customerLocations.value = [];
-        return [];
+        throw new Error(backendError);
       }
     } catch (err) {
       console.error('❌ Customer locations fetch error:', err);
@@ -175,8 +185,10 @@ export const useDispatchStore = defineStore('dispatch', () => {
         console.log('✅ Turnup loaded:', response.data.data);
         return response.data.data;
       } else {
-        console.warn('⚠️ Unexpected turnup response:', response.data);
-        return null;
+        // Handle backend error response
+        const backendError = response.data?.error || 'Unknown backend error';
+        console.error('❌ Backend error for turnup by ID:', backendError);
+        throw new Error(backendError);
       }
     } catch (err) {
       console.error('❌ Turnup fetch error:', err);

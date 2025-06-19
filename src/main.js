@@ -5,7 +5,7 @@ import { createPinia } from 'pinia';
 import axios from 'axios';
 
 // Import Laravel Echo configuration
-import './echo';
+// import './echo'; // Temporarily disabled - WebSocket backend not ready
 
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';

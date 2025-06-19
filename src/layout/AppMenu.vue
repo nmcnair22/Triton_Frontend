@@ -114,13 +114,28 @@ const model = ref([
     },
     { separator: true },
     {
-        label: 'Financial',
+        label: 'Finance',
         icon: 'pi pi-chart-bar',
         items: [
             {
-                label: 'Finance Dashboard',
+                label: 'Dashboard',
                 icon: 'pi pi-fw pi-money-bill',
                 to: '/finance/dashboard'
+            },
+            {
+                label: 'Invoicing',
+                icon: 'pi pi-fw pi-file-edit',
+                to: '/finance/invoicing'
+            },
+            {
+                label: 'Receivables',
+                icon: 'pi pi-fw pi-dollar',
+                to: '/finance/receivables'
+            },
+            {
+                label: 'Payables',
+                icon: 'pi pi-fw pi-credit-card',
+                to: '/finance/payables'
             },
             {
                 label: 'Accounts Receivable',

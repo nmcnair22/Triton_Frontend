@@ -107,10 +107,10 @@ const comparisonMode = ref('single'); // 'single' or 'group'
 
 // Computed properties for comparison data
 const singleTicketDynamicsData = computed(() => {
-    if (!selectedTicketForDynamics.value || !billingStore.dynamicsData.length) return null;
+    if (!selectedTicketForDynamics.value || !billingStore.dynamicsData?.length) return null;
     
     // Find Dynamics records that match the selected ticket ID
-    const matchingTicket = billingStore.dynamicsData.find(ticket => 
+    const matchingTicket = billingStore.dynamicsData?.find(ticket => 
         ticket.ticket_id === selectedTicketForDynamics.value.ticket_id ||
         ticket.cis_id === selectedTicketForDynamics.value.ticket_id ||
         ticket.cisid === selectedTicketForDynamics.value.ticket_id
@@ -162,16 +162,16 @@ const dynamicsDataSummary = computed(() => {
         };
     } else {
         // Group data - all Dynamics records
-        const totalReceivables = billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_receivables_amount || 0), 0);
-        const totalPayables = billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_payables_amount || 0), 0);
+        const totalReceivables = billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_receivables_amount || 0), 0) : 0;
+        const totalPayables = billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_payables_amount || 0), 0) : 0;
         
         return {
             total_receivables: totalReceivables,
             total_payables: totalPayables,
             net_profit: totalReceivables - totalPayables,
-            ticket_count: billingStore.dynamicsData.length,
-            receivables_count: billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.receivables_count || 0), 0),
-            payables_count: billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.payables_count || 0), 0)
+            ticket_count: billingStore.dynamicsData?.length || 0,
+            receivables_count: billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.receivables_count || 0), 0) : 0,
+            payables_count: billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.payables_count || 0), 0) : 0
         };
     }
 });
@@ -203,16 +203,21 @@ const varianceAnalysis = computed(() => {
 // Computed properties
 const customers = computed(() => customerStore.customers);
 const customerLocations = computed(() => dispatchStore.customerLocations);
-const turnups = computed(() => dispatchStore.turnups);
 const dateRangeOptions = computed(() => dispatchStore.dateRangeOptions);
+
+// Local reactive reference for turnups to break reactive chain that causes recursive updates
+const turnups = ref([]);
 
 // Combined accounting records for the new unified table
 const combinedAccountingRecords = computed(() => {
     if (!billingStore.hasData || !billingStore.billingData.length) return [];
     
+    console.log('combinedAccountingRecords - billingData:', billingStore.billingData);
+    
     const records = [];
     
     billingStore.billingData.forEach(ticket => {
+        console.log('Processing ticket:', ticket);
         // Add receivable record if there's invoiced amount
         if (ticket.billing_details?.invoiced_amount && ticket.billing_details.invoiced_amount > 0) {
             records.push({
@@ -260,11 +265,11 @@ const totalPayables = computed(() => {
 
 // Computed properties for Dynamics data (for the conditional styling)
 const dynamicsTotalReceivables = computed(() => {
-    return billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_receivables_amount || 0), 0);
+    return billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_receivables_amount || 0), 0) : 0;
 });
 
 const dynamicsTotalPayables = computed(() => {
-    return billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_payables_amount || 0), 0);
+    return billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.summary?.total_payables_amount || 0), 0) : 0;
 });
 
 const netProfitLoss = computed(() => {
@@ -433,11 +438,14 @@ async function searchTurnups() {
 
         const result = await dispatchStore.fetchTurnups(filters);
         
-        if (result.turnups.length > 0) {
+        // Update local turnups to break reactive chain and freeze objects for performance
+        turnups.value = (result.turnups || []).map(turnup => Object.freeze(turnup));
+        
+        if (turnups.value.length > 0) {
             toast.add({
                 severity: 'success',
                 summary: 'Turnups Found',
-                detail: `Found ${result.turnups.length} turnup tickets`,
+                detail: `Found ${turnups.value.length} turnup tickets`,
                 life: 3000
             });
         } else {
@@ -464,8 +472,8 @@ async function searchTurnups() {
 
 // Handle turnup ticket selection
 function selectTurnupTicket(turnup) {
-    ticketInput.value = turnup.ticket_id.toString();
-    performTicketSearch(turnup.ticket_id.toString());
+    ticketInput.value = turnup.id.toString();
+    performTicketSearch(turnup.id.toString());
 }
 
 // Handle export
@@ -497,6 +505,29 @@ function openExternalTicket(ticketId, event) {
     window.open(getTicketUrl(ticketId), '_blank');
 }
 
+// Debug function to see what data is being passed to the modal
+function debugAndOpenDynamicsModal(ticket) {
+    console.log('=== DYNAMICS MODAL DEBUG ===');
+    console.log('Full ticket data object:', ticket);
+    console.log('ticket.ticket_id:', ticket.ticket_id);
+    console.log('ticket.id:', ticket.id);
+    console.log('ticket.billing_details:', ticket.billing_details);
+    console.log('ticket.category:', ticket.category);
+    console.log('ticket.record_type:', ticket.record_type);
+    console.log('All ticket properties:', Object.keys(ticket));
+    
+    console.log('=== BILLING STORE STATE ===');
+    console.log('billingStore.hasData:', billingStore.hasData);
+    console.log('billingStore.billingData length:', billingStore.billingData.length);
+    console.log('billingStore.currentTicket:', billingStore.currentTicket);
+    console.log('billingStore.billingData:', billingStore.billingData);
+    console.log('combinedAccountingRecords length:', combinedAccountingRecords.value.length);
+    console.log('=== END DEBUG ===');
+    
+    // Call the original function
+    openDynamicsModal(ticket);
+}
+
 // New function to open Dynamics modal
 async function openDynamicsModal(ticket) {
     selectedTicketForDynamics.value = ticket;
@@ -513,7 +544,7 @@ async function openDynamicsModal(ticket) {
                 detail: billingStore.dynamicsError,
                 life: 5000
             });
-        } else if (billingStore.dynamicsData.length === 0) {
+        } else if (billingStore.dynamicsData?.length === 0) {
             toast.add({
                 severity: 'info',
                 summary: 'No Dynamics Data',
@@ -770,15 +801,16 @@ function closePurchaseDetailModal() {
                                     :value="turnups"
                                     :paginator="turnups.length > 10"
                                     :rows="10"
+                                    dataKey="id"
                                     class="p-datatable-sm"
                                     responsiveLayout="scroll"
                                     selectionMode="single"
                                     @row-click="selectTurnupTicket($event.data)">
                                     
-                                    <Column field="ticket_id" header="Ticket ID" :sortable="true">
+                                    <Column field="id" header="Ticket ID" :sortable="true">
                                         <template #body="slotProps">
                                             <Button
-                                                :label="slotProps.data.ticket_id.toString()"
+                                                :label="slotProps.data.id.toString()"
                                                 link
                                                 class="p-0 text-blue-600 hover:text-blue-800"
                                                 @click="selectTurnupTicket(slotProps.data)" />
@@ -984,7 +1016,7 @@ function closePurchaseDetailModal() {
                         <Column headerStyle="width: 4rem" :exportable="false">
                             <template #body="slotProps">
                                 <Button icon="pi pi-eye" text rounded size="small" 
-                                        @click="openDynamicsModal(slotProps.data)" 
+                                        @click="debugAndOpenDynamicsModal(slotProps.data)" 
                                         aria-label="View Dynamics data"
                                         v-tooltip="'View Dynamics 365 data'" />
                             </template>
@@ -1057,13 +1089,13 @@ function closePurchaseDetailModal() {
                 <p class="text-surface-600 dark:text-surface-400">{{ billingStore.dynamicsError }}</p>
             </div>
 
-            <div v-else-if="billingStore.dynamicsData.length === 0" class="text-center py-8">
+            <div v-else-if="billingStore.dynamicsData && billingStore.dynamicsData.length === 0" class="text-center py-8">
                 <i class="pi pi-info-circle text-4xl text-blue-500 mb-4"></i>
                 <h4 class="text-lg font-semibold mb-2">No Records Found</h4>
                 <p class="text-surface-600 dark:text-surface-400">No accounting records found in Dynamics 365 for this ticket.</p>
             </div>
 
-            <div v-else>
+            <div v-else-if="billingStore.dynamicsData && billingStore.dynamicsData.length > 0">
                 <!-- Consolidated Summary Dashboard -->
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-4">
@@ -1146,10 +1178,10 @@ function closePurchaseDetailModal() {
                                         <span class="text-surface-500 dark:text-surface-400 font-medium text-sm">Tickets Processed</span>
                                     </div>
                                     <div class="text-blue-600 font-bold text-2xl mb-1">
-                                        {{ billingStore.dynamicsData.length }}
+                                        {{ billingStore.dynamicsData?.length || 0 }}
                                     </div>
                                     <div class="text-xs text-surface-500 dark:text-surface-400">
-                                        {{ new Set(billingStore.dynamicsData.map(t => `${t.city}, ${t.state}`)).size }} unique location(s)
+                                        {{ billingStore.dynamicsData ? new Set(billingStore.dynamicsData.map(t => `${t.city}, ${t.state}`)).size : 0 }} unique location(s)
                                     </div>
                                 </div>
                             </template>
@@ -1162,11 +1194,11 @@ function closePurchaseDetailModal() {
                     <TabList>
                         <Tab value="0">
                             <i class="pi pi-arrow-up mr-2"></i>
-                            Receivables ({{ billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.receivables?.length || 0), 0) }})
+                            Receivables ({{ billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.receivables?.length || 0), 0) : 0 }})
                         </Tab>
                         <Tab value="1">
                             <i class="pi pi-arrow-down mr-2"></i>
-                            Payables ({{ billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.payables?.length || 0), 0) }})
+                            Payables ({{ billingStore.dynamicsData ? billingStore.dynamicsData.reduce((sum, ticket) => sum + (ticket.payables?.length || 0), 0) : 0 }})
                         </Tab>
                         <Tab value="2">
                             <i class="pi pi-chart-bar mr-2"></i>
@@ -1189,7 +1221,7 @@ function closePurchaseDetailModal() {
                                 </div>
                                 
                                 <DataTable 
-                                    :value="billingStore.dynamicsData.flatMap(ticket => (ticket.receivables || []).map(r => ({ ...r, ticket_id: ticket.ticket_id, ticket_location: `${ticket.city}, ${ticket.state}` })))" 
+                                    :value="billingStore.dynamicsData ? billingStore.dynamicsData.flatMap(ticket => (ticket.receivables || []).map(r => ({ ...r, ticket_id: ticket.ticket_id, ticket_location: `${ticket.city}, ${ticket.state}` }))) : []" 
                                     class="p-datatable-sm" 
                                     responsiveLayout="scroll"
                                     :paginator="true" 
@@ -1267,7 +1299,7 @@ function closePurchaseDetailModal() {
                                 </div>
                                 
                                 <DataTable 
-                                    :value="billingStore.dynamicsData.flatMap(ticket => (ticket.payables || []).map(p => ({ ...p, ticket_id: ticket.ticket_id, ticket_location: `${ticket.city}, ${ticket.state}` })))" 
+                                    :value="billingStore.dynamicsData ? billingStore.dynamicsData.flatMap(ticket => (ticket.payables || []).map(p => ({ ...p, ticket_id: ticket.ticket_id, ticket_location: `${ticket.city}, ${ticket.state}` }))) : []" 
                                     class="p-datatable-sm" 
                                     responsiveLayout="scroll"
                                     :paginator="true" 
