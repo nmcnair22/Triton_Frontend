@@ -362,27 +362,50 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
   
   // Generate a document from a template for an invoice
-  async function generateTemplate(invoiceNumber, templateId, options = {}) {
+  async function generateTemplate(invoiceNumber, templateId) {
     if (!invoiceNumber || !templateId) {
       generateTemplateError.value = 'Invoice number and template ID are required';
       return null;
     }
     
+    console.log('Store: generateTemplate called with:', { invoiceNumber, templateId });
     generatingTemplate.value = true;
     generateTemplateError.value = null;
     
     try {
-      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId, options);
+      console.log('Store: Calling InvoiceService.generateTemplate...');
+      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
+      
+      console.log('Store: Raw response from generateTemplate:', response);
+      console.log('Store: Response structure:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        success: response.data?.success,
+        message: response.data?.message,
+        dataType: response.data?.data ? typeof response.data.data : 'null'
+      });
       
       if (response.data && response.data.success && response.data.data) {
+        console.log('Store: Template generation success, data:', response.data.data);
         // After successful generation, refresh the list of generated files
         await fetchGeneratedFiles(invoiceNumber);
         return response.data.data;
       } else {
-        generateTemplateError.value = 'Failed to generate template';
+        console.warn('Store: Template generation failed or unexpected response format:', response.data);
+        generateTemplateError.value = response.data?.message || 'Failed to generate template';
         return null;
       }
     } catch (err) {
+      console.error('Store: Error in generateTemplate:', err);
+      console.log('Store: Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        response: err.response?.data
+      });
       generateTemplateError.value = err.message || 'Failed to generate template';
       return null;
     } finally {
@@ -584,174 +607,15 @@ export const useInvoiceStore = defineStore('invoice', () => {
     }
   }
   
-  // Merge functionality
-  async function mergeInvoices(mergeRequest) {
-    try {
-      const response = await InvoiceService.mergeInvoices(mergeRequest);
-      return response.data;
-    } catch (err) {
-      // Preserve the original error response for proper error handling
-      throw err;
-    }
-  }
-
-  async function getCustomerMergeHistory(customerNumber, limit = 25) {
-    try {
-      console.log('🔍 Store: Getting merge history for customer:', customerNumber);
-      console.log('🔍 Store: Request parameters:', { customerNumber, limit });
-      
-      // Use the new merge groups endpoint instead of the old merge history
-      const response = await InvoiceService.getMergeGroupsForCustomer(customerNumber, { 
-        status: 'active', 
-        limit: limit 
-      });
-      
-      console.log('🔍 Store: Raw API response:', response);
-      
-      // Handle the new backend response structure
-      if (response.data && response.data.success && response.data.data) {
-        const result = {
-          data: response.data.data,
-          success: true
-        };
-        console.log('🔍 Store: Returning processed data:', result);
-        return result;
-      }
-      
-      console.log('🔍 Store: Returning raw response:', response);
-      return response;
-    } catch (err) {
-      console.error('❌ Store: Error in getCustomerMergeHistory:', err);
-      console.error('❌ Store: Error details:', {
-        message: err.message,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        config: {
-          url: err.config?.url,
-          method: err.config?.method,
-          params: err.config?.params
-        }
-      });
-      
-      // If it's a 500 error, return empty data with error info
-      if (err.response?.status === 500) {
-        console.warn('⚠️ Store: Backend returned 500 error, returning empty merge history');
-        return {
-          data: [],
-          success: false,
-          error: {
-            type: 'backend_unavailable',
-            status: 500,
-            message: 'Merge history endpoint is not available. This feature may not be implemented yet.'
-          }
-        };
-      }
-      
-      // For other errors, preserve the original error response for proper error handling
-      throw err;
-    }
-  }
-
-  // OLD METHODS REMOVED - Use new merge groups methods instead
-
-  async function findMergeGroupsForInvoices(invoiceNumbers, customerNumber) {
-    try {
-      if (!customerNumber) {
-        throw new Error('Customer number is required for merge group lookup');
-      }
-
-      // Make the API call with the correct data structure
-      const requestData = {
-        invoice_numbers: invoiceNumbers,
-        customer_number: customerNumber
-      };
-      
-      const response = await InvoiceService.checkMergeConflicts(requestData);
-      
-      // Handle the new backend response structure
-      if (response.data && response.data.success) {
-        return {
-          data: {
-            has_conflicts: response.data.has_conflicts,
-            conflicts: response.data.conflicts || []
-          },
-          success: true
-        };
-      }
-      
-      return response;
-    } catch (err) {
-      // Preserve the original error response for proper error handling
-      throw err;
-    }
-  }
-
-  async function getMergeGroupsForCustomer(customerNumber, options = {}) {
-    try {
-      const response = await InvoiceService.getMergeGroupsForCustomer(customerNumber, options);
-      
-      // Handle the new backend response structure
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          data: response.data.data,
-          success: true
-        };
-      }
-      
-      return response;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async function getMergeGroupById(groupIdentifier) {
-    try {
-      const response = await InvoiceService.getMergeGroupById(groupIdentifier);
-      
-      // Handle the new backend response structure
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          data: response.data.data,
-          success: true
-        };
-      }
-      
-      return response;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async function getMergeGroupDetails(groupIdentifier) {
-    try {
-      // Try to get detailed merge group data with documents
-      const response = await InvoiceService.getMergeGroupDetails(groupIdentifier);
-      
-      // The new backend endpoint returns data in response.data.data format
-      if (response.data && response.data.success && response.data.data) {
-        return {
-          data: response.data.data,
-          success: true
-        };
-      }
-      
-      return response;
-    } catch (err) {
-      console.error('Error fetching merge group details:', err);
-      // Fallback to basic merge group data
-      return await getMergeGroupById(groupIdentifier);
-    }
-  }
-
+  // Reset template state
   function resetTemplateState() {
     availableTemplates.value = [];
-    generatedFiles.value = [];
-    customerDocuments.value = [];
     templatesError.value = null;
+    generatedFiles.value = [];
     generatedFilesError.value = null;
-    customerDocumentsError.value = null;
     generateTemplateError.value = null;
+    customerDocuments.value = [];
+    customerDocumentsError.value = null;
   }
 
   return {
@@ -801,14 +665,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
     fetchGeneratedFiles,
     fetchCustomerDocuments,
     downloadGeneratedFile,
-    resetTemplateState,
-    
-    // Merge functionality
-    mergeInvoices,
-    getCustomerMergeHistory,
-    findMergeGroupsForInvoices,
-    getMergeGroupsForCustomer,
-    getMergeGroupById,
-    getMergeGroupDetails
+    resetTemplateState
   };
 }); 

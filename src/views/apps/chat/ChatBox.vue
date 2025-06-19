@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, useTemplateRef } from 'vue';
 
-defineProps({
+// Vue 3.5 Reactive Props Destructure
+const { user } = defineProps({
     user: {
         type: Object,
         required: true
@@ -10,7 +11,9 @@ defineProps({
 
 const defaultUserId = ref(123);
 const emit = defineEmits(['send:message']);
-const op = ref(null);
+
+// Vue 3.5 useTemplateRef() - More explicit and type-safe than ref(null)
+const op = useTemplateRef('op');
 const textContent = ref('');
 
 const emojis = [

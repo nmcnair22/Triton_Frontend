@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthService } from '../auth/AuthService';
+import { AuthService } from './AuthService';
 
 // Create axios instance with base URL
 const apiClient = axios.create({
@@ -32,28 +32,176 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Debug log to see the base URL configuration
+console.log('API Service BaseURL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api');
+
 export const ApiService = {
   // Generic API methods
   get(resource, params) {
-    return apiClient.get(resource, { params });
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.get - Full URL:', fullUrl, { params: JSON.parse(JSON.stringify(params || {})) });
+    
+    return apiClient.get(resource, { params })
+      .then(response => {
+        // Log the successful response
+        console.log(`ApiService.get - Response for ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`ApiService.get - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   post(resource, data) {
-    return apiClient.post(resource, data);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.post - Full URL:', fullUrl, { data: JSON.parse(JSON.stringify(data || {})) });
+    
+    return apiClient.post(resource, data)
+      .then(response => {
+        // Log the successful response
+        console.log(`ApiService.post - Response for ${resource}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data
+        });
+        return response;
+      })
+      .catch(error => {
+        console.error(`ApiService.post - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   put(resource, data) {
-    return apiClient.put(resource, data);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.put - Full URL:', fullUrl, { data });
+    
+    return apiClient.put(resource, data)
+      .catch(error => {
+        console.error(`ApiService.put - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
   
   delete(resource) {
-    return apiClient.delete(resource);
+    // Add logging to debug URL construction
+    const fullUrl = `${apiClient.defaults.baseURL}/${resource}`;
+    console.log('ApiService.delete - Full URL:', fullUrl);
+    
+    return apiClient.delete(resource)
+      .catch(error => {
+        console.error(`ApiService.delete - Error for ${resource}:`, error);
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      });
   },
-  
-
   
   // Custom methods
   // Add specific API methods related to your domain
+};
+
+// Visit-specific API services
+export const VisitService = {
+  // Get all visits with optional filtering
+  getVisits(params) {
+    return ApiService.get('/visits', params);
+  },
+  
+  // Get a specific visit by ID
+  getVisit(id) {
+    return ApiService.get(`/visits/${id}`);
+  },
+  
+  // Get visit timeline
+  getVisitTimeline(id) {
+    return ApiService.get(`/visits/${id}/timeline`);
+  },
+  
+  // Add timeline event
+  addTimelineEvent(id, event) {
+    return ApiService.post(`/visits/${id}/timeline`, event);
+  },
+  
+  // Get visit analytics
+  getVisitAnalytics(id) {
+    return ApiService.get(`/visits/${id}/analytics`);
+  },
+  
+  // Get visit statistics
+  getVisitStats(params = {}) {
+    return ApiService.get('/visits/stats/overview', params);
+  },
+  
+  // Get visit trends
+  getVisitTrends(params = {}) {
+    return ApiService.get('/visits/stats/trends', params);
+  },
+  
+  // Update visit status
+  updateVisitStatus(id, status, notes = '') {
+    return ApiService.patch(`/visits/${id}`, { status, notes });
+  },
+  
+  // Assign technician to visit
+  assignTechnician(id, technicianId) {
+    return ApiService.patch(`/visits/${id}/assign-technician`, { technician_id: technicianId });
+  },
+  
+  // Create a new visit
+  createVisit(visit) {
+    return ApiService.post('/visits', visit);
+  },
+  
+  // Update an existing visit
+  updateVisit(visit) {
+    return ApiService.put(`/visits/${visit.id}`, visit);
+  },
+  
+  // Delete a visit
+  deleteVisit(id) {
+    return ApiService.delete(`/visits/${id}`);
+  },
+  
+  // Batch operations
+  batchUpdateStatus(visitIds, status) {
+    return ApiService.patch('/visits/batch/update-status', { visit_ids: visitIds, status });
+  },
+  
+  // Export visits
+  exportVisits(params = {}) {
+    return ApiService.post('/visits/export/bulk', params);
+  }
 };
 
 // Invoice-specific API services
@@ -134,21 +282,49 @@ export const InvoiceService = {
   },
   
   // Generate a document from a template for an invoice
-  generateTemplate(invoiceNumber, templateId, options = {}) {
-    const payload = {
+  generateTemplate(invoiceNumber, templateId) {
+    console.log('ApiService: generateTemplate called with:', { invoiceNumber, templateId });
+    console.log('ApiService: POST URL:', `${apiClient.defaults.baseURL}/invoice-templates/generate`);
+    console.log('ApiService: POST data:', { invoice_number: invoiceNumber, template_id: templateId });
+    
+    return ApiService.post('/invoice-templates/generate', {
       invoice_number: invoiceNumber,
       template_id: templateId
-    };
-    
-    // Add options if provided
-    if (options && Object.keys(options).length > 0) {
-      payload.options = options;
-    }
-    
-    // Debug logging
-    console.log('ApiService.generateTemplate - Sending payload:', payload);
-    
-    return ApiService.post('/invoice-templates/generate', payload);
+    })
+    .then(response => {
+      console.log('ApiService: generateTemplate raw response:', response);
+      console.log('ApiService: Response structure:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        dataType: typeof response.data,
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+      
+      // If the response is a successful queue job instead of immediate results
+      if (response.data && response.status === 202) {
+        console.log('ApiService: Template generation queued successfully:', response.data);
+        // Modify the response to maintain compatibility with existing code
+        if (!response.data.success) {
+          response.data.success = true;
+        }
+        if (!response.data.data) {
+          response.data.data = { queued: true, job_id: response.data.job_id || 'unknown' };
+        }
+      }
+      
+      return response;
+    })
+    .catch(error => {
+      console.error('ApiService: Error in generateTemplate:', error);
+      console.error('ApiService: Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    });
   },
   
   // Get generated files for an invoice
@@ -202,35 +378,15 @@ export const InvoiceService = {
   getFilePreviewUrl(fileId, fileType = 'pdf', subtype = null) {
     // Get the current authentication token
     const token = AuthService.getToken();
+    // Remove 'Bearer ' prefix if present
+    const tokenValue = token ? token.replace('Bearer ', '') : '';
+    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
     
-    // Fallback: if AuthService doesn't return a token, try localStorage directly
-    const fallbackToken = token || localStorage.getItem('auth_token');
-    
-    // Enhanced debug logging for production troubleshooting
-    console.log('🔍 getFilePreviewUrl Debug:', {
+    console.log('Creating preview URL with token param:', {
       fileId,
       fileType,
       subtype,
-      rawToken: token,
-      fallbackToken: fallbackToken,
-      tokenLength: token ? token.length : 0,
-      fallbackTokenLength: fallbackToken ? fallbackToken.length : 0,
-      tokenType: typeof token,
-      localStorage_token: localStorage.getItem('auth_token'),
-      localStorage_token_length: localStorage.getItem('auth_token') ? localStorage.getItem('auth_token').length : 0,
-      environment: import.meta.env.MODE,
-      isAuthenticated: AuthService.isAuthenticated(),
-      baseURL: apiClient.defaults.baseURL
-    });
-    
-    // Remove 'Bearer ' prefix if present
-    const tokenValue = fallbackToken ? fallbackToken.replace('Bearer ', '') : '';
-    const tokenParam = tokenValue ? `?token=${tokenValue}` : '';
-    
-    console.log('🔍 Token processing:', {
-      tokenValue: tokenValue ? `${tokenValue.substring(0, 10)}...` : 'null',
-      tokenParam: tokenParam,
-      hasTokenParam: !!tokenParam
+      hasToken: !!tokenValue
     });
     
     let url = '';
@@ -258,23 +414,13 @@ export const InvoiceService = {
         }
       }
       else {
-        // For composite IDs without enough parts, include the file type
-        if (fileType) {
-          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}/${fileType}${tokenParam}`;
-        } else {
-          // Fallback to original behavior for compatibility (though this may not work)
-          url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
-        }
+        // Fallback to original behavior for compatibility
+        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
       }
     }
     else {
-      // For simple numeric IDs or non-composite IDs, include the file type
-      if (fileType) {
-        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}/${fileType}${tokenParam}`;
-      } else {
-        // Fallback to original behavior for compatibility (though this may not work)
-        url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
-      }
+      // Fallback to original behavior for compatibility
+      url = `${apiClient.defaults.baseURL}/invoice-templates/preview/${fileId}${tokenParam}`;
     }
     
     console.log('Preview URL constructed:', url);
@@ -289,61 +435,5 @@ export const InvoiceService = {
   // Get all documents for a specific invoice
   getInvoiceDocuments(invoiceNumber) {
     return ApiService.get(`/invoice-templates/invoice-documents?invoice_number=${invoiceNumber}`);
-  },
-  
-  // Merge functionality
-  mergeInvoices(mergeRequest) {
-    return ApiService.post('/invoice-templates/generate-merged', mergeRequest);
-  },
-
-  // OLD METHODS - REMOVED TO PREVENT CONFUSION
-  // These have been replaced by the new merge groups endpoints below
-
-  checkMergeConflicts(requestData) {
-    return ApiService.post('/merge-groups/check-conflicts', requestData);
-  },
-
-  getMergeGroupsForCustomer(customerNumber, options = {}) {
-    const params = new URLSearchParams({
-      customer_number: customerNumber,
-      status: options.status || 'active',
-      limit: options.limit || 50
-    });
-    
-    const url = `/merge-groups?${params}`;
-    console.log('🔍 API: getMergeGroupsForCustomer request:', {
-      customerNumber,
-      options,
-      url,
-      fullUrl: `${apiClient.defaults.baseURL}${url}`
-    });
-    
-    return ApiService.get(url)
-      .then(response => {
-        console.log('✅ API: getMergeGroupsForCustomer success:', response);
-        return response;
-      })
-      .catch(error => {
-        console.error('❌ API: getMergeGroupsForCustomer error:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          url: error.config?.url
-        });
-        throw error;
-      });
-  },
-
-  getMergeGroupById(groupIdentifier) {
-    return ApiService.get(`/merge-groups/${groupIdentifier}`);
-  },
-
-  getMergeGroupDetails(groupIdentifier) {
-    return ApiService.get(`/merge-groups/${groupIdentifier}/details`);
-  },
-
-  prepareMergeGroupForRemerge(groupIdentifier) {
-    return ApiService.post(`/merge-groups/${groupIdentifier}/prepare-remerge`);
   }
 }; 

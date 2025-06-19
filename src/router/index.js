@@ -3,6 +3,7 @@ import AuthLayout from '@/layout/AuthLayout.vue';
 import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
+import { useUserStore } from '@/stores/user';
 
 // Explicitly set development mode variable
 const isDevelopmentMode = import.meta.env.DEV;
@@ -14,6 +15,10 @@ const routes = [
         children: [
             {
                 path: '/',
+                redirect: '/field-services/visit-management'
+            },
+            {
+                path: '/dashboard-marketing',
                 name: 'dashboard-marketing',
                 meta: {
                     breadcrumb: ['Marketing Dashboard']
@@ -26,7 +31,51 @@ const routes = [
                 meta: {
                     breadcrumb: ['Streamline Dashboard']
                 },
-                component: () => import('@/views/dashboard/BankingView.vue')
+                component: () => import('@/views/apps/StreamlineDashboard.vue')
+            },
+            {
+                path: '/field-services/visit-management',
+                name: 'visit-management',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Visit Management', path: '/field-services/visit-management' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/field-services/VisitDetails.vue')
+            },
+            {
+                path: '/field-services/visit/:id',
+                name: 'visit-detail',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Visit Management', path: '/field-services/visit-management' },
+                        { label: 'Visit Detail', path: '/field-services/visit/:id' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/field-services/VisitDetailPage.vue')
+            },
+
+            {
+                path: '/streamline/dashboard',
+                name: 'streamline-dashboard',
+                meta: {
+                    breadcrumb: ['Streamline', 'Dashboard']
+                },
+                component: () => import('@/views/apps/StreamlineDashboard.vue')
+            },
+            {
+                path: '/streamline/bill-management',
+                name: 'streamline-bill-management',
+                meta: {
+                    breadcrumb: ['Streamline', 'Bill Management']
+                },
+                component: () => import('@/views/apps/StreamlineBillManagement.vue')
             },
             {
                 path: '/streamline/bill-import',
@@ -35,6 +84,30 @@ const routes = [
                     breadcrumb: ['Streamline', 'Bill Import']
                 },
                 component: () => import('@/views/apps/BillImport.vue')
+            },
+            {
+                path: '/streamline/tem-accounts',
+                name: 'tem-accounts',
+                meta: {
+                    breadcrumb: ['Streamline', 'Tem Accounts']
+                },
+                component: () => import('@/views/apps/TemAccounts.vue')
+            },
+            {
+                path: '/streamline/vendors-contracts',
+                name: 'vendors-contracts',
+                meta: {
+                    breadcrumb: ['Streamline', 'Vendors & Contracts']
+                },
+                component: () => import('@/views/apps/VendorsContracts.vue')
+            },
+            {
+                path: '/streamline/bill-transfer-tracker',
+                name: 'bill-transfer-tracker',
+                meta: {
+                    breadcrumb: ['Streamline', 'Bill Transfer Tracker']
+                },
+                component: () => import('@/views/apps/BillTransferTracker.vue')
             },
             {
                 path: '/apps/blog/list',
@@ -389,20 +462,68 @@ const routes = [
                 component: () => import('@/views/accounting/InvoiceTemplates.vue')
             },
             {
-                path: '/accounting/field-service-billing',
-                name: 'accounting-field-service-billing',
+                path: '/finance/dashboard',
+                name: 'finance-dashboard',
                 meta: {
-                    breadcrumb: ['Accounting', 'Field Service Billing']
+                    breadcrumb: ['Financial', 'Finance Dashboard']
                 },
-                component: () => import('@/views/accounting/FieldServiceBilling.vue')
+                component: () => import('@/views/finance/FinanceDashboard.vue')
             },
             {
-                path: '/reporting/report-manager',
-                name: 'reporting-report-manager',
+                path: '/finance/accounts-receivable',
+                name: 'accounts-receivable',
                 meta: {
-                    breadcrumb: ['Reporting', 'Report Manager']
+                    breadcrumb: ['Financial', 'Accounts Receivable']
                 },
-                component: () => import('@/views/reporting/ReportManager.vue')
+                component: () => import('@/views/finance/AccountsReceivable.vue')
+            },
+            {
+                path: '/finance/accounts-payable',
+                name: 'accounts-payable',
+                meta: {
+                    breadcrumb: ['Financial', 'Accounts Payable']
+                },
+                component: () => import('@/views/finance/AccountsPayable.vue')
+            },
+            {
+                path: '/finance/customer/:id',
+                name: 'customer-profile',
+                meta: {
+                    breadcrumb: ['Financial', 'Customer Profile']
+                },
+                component: () => import('@/views/finance/CustomerProfile.vue')
+            },
+            {
+                path: '/finance/vendor/:id',
+                name: 'vendor-profile',
+                meta: {
+                    breadcrumb: ['Financial', 'Vendor Profile']
+                },
+                component: () => import('@/views/finance/VendorProfile.vue')
+            },
+            {
+                path: '/finance/analysis',
+                name: 'financial-analysis',
+                meta: {
+                    breadcrumb: ['Financial', 'Financial Analysis']
+                },
+                component: () => import('@/views/finance/FinancialAnalysis.vue')
+            },
+            {
+                path: '/finance/product-performance',
+                name: 'product-performance',
+                meta: {
+                    breadcrumb: ['Financial', 'Product Performance']
+                },
+                component: () => import('@/views/finance/ProductPerformance.vue')
+            },
+            {
+                path: '/finance/alerts',
+                name: 'alerts-management',
+                meta: {
+                    breadcrumb: ['Financial', 'Alerts Management']
+                },
+                component: () => import('@/views/finance/AlertsManagement.vue')
             },
             {
                 path: '/todo',
@@ -612,49 +733,70 @@ const router = createRouter({
 });
 
 // Navigation guard for authentication
-router.beforeEach((to, from, next) => {
-    const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-    const requiredPermissions = to.meta.permissions || [];
-    const requiredRoles = to.meta.roles || [];
-    const isAuthenticated = AuthService.isAuthenticated();
+router.beforeEach(async (to, from, next) => {
+    // Skip auth check for public routes (login, callback, etc.)
+    const publicPages = ['/auth/login', '/auth/microsoft-callback', '/auth/register', '/auth/forgot-password', '/auth/verification', '/auth/new-password'];
+    const authRequired = !publicPages.includes(to.path);
     
-    // Not authenticated but route requires auth
-    if (requiresAuth && !isAuthenticated) {
-        // Store the intended destination for redirect after login
+    // Get stored auth token
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    
+    // Store the attempted URL for redirect after login
+    if (authRequired && !token) {
         localStorage.setItem('auth_redirect', to.fullPath);
-        return next({ name: 'login' });
+        return next('/auth/login');
     }
     
-    // Already authenticated but trying to access login page
-    if (to.name === 'login' && isAuthenticated) {
-        return next({ name: 'dashboard-marketing' });
-    }
-    
-    // Authenticated and route has permission requirements
-    if (isAuthenticated && (requiredPermissions.length > 0 || requiredRoles.length > 0)) {
-        // Check required permissions
-        const hasRequiredPermissions = requiredPermissions.length === 0 || 
-            requiredPermissions.some(permission => AuthService.hasPermission(permission));
+    if (token) {
+        try {
+            // If we're on the callback page, let it handle its own logic
+            if (to.path === '/auth/microsoft-callback') {
+                return next();
+            }
             
-        // Check required roles
-        const hasRequiredRoles = requiredRoles.length === 0 || 
-            requiredRoles.some(role => AuthService.hasRole(role));
+            // Check for permission requirements on the route
+            if (to.meta.permissions && to.meta.permissions.length > 0) {
+                // Get the user store
+                const userStore = useUserStore();
+                
+                // Check if user store is already initialized with permissions
+                if (!userStore.permissions || userStore.permissions.length === 0) {
+                    // Fetch current user to get fresh permissions
+                    await userStore.fetchCurrentUser();
+                }
+                
+                // Check if user has at least one of the required permissions
+                const hasPermission = to.meta.permissions.some(permission => 
+                    userStore.hasPermission(permission)
+                );
+                
+                if (!hasPermission) {
+                    console.warn(`Access denied to ${to.path} - missing required permissions:`, to.meta.permissions);
+                    return next({
+                        path: '/auth/access',
+                        query: { from: to.fullPath }
+                    });
+                }
+            }
             
-        // Redirect to access denied if missing permissions/roles
-        if (!hasRequiredPermissions || !hasRequiredRoles) {
-            console.warn('Access denied: Missing required permissions or roles');
-            return next({ name: 'access', query: { from: to.fullPath } });
+            // User is authenticated and has permission, proceed
+            return next();
+        } catch (error) {
+            console.error("Error checking permissions:", error);
+            // If there's an error checking permissions, proceed anyway
+            // The server will handle access control as a fallback
+            return next();
         }
     }
     
-    // Proceed to the route
-    next();
+    // If no auth required or we've handled all cases above, proceed
+    return next();
 });
 
 // Check for auth redirect after login
 router.afterEach((to) => {
     // If we've just logged in, check for a stored redirect
-    if (to.name === 'dashboard-marketing' && AuthService.isAuthenticated()) {
+    if (to.name === 'visit-management' && AuthService.isAuthenticated()) {
         const redirectPath = localStorage.getItem('auth_redirect');
         if (redirectPath) {
             localStorage.removeItem('auth_redirect');

@@ -1,0 +1,2913 @@
+{
+    "job": {
+        "job_id": "449987f6d4da4e8d3ba7249e1a1ebb6c",
+        "customer": "Flynn",
+        "location": "21589 Great Mills Rd, Lexington Park, MD (Site 3864)",
+        "status": "Completed",
+        "completion_percentage": 50,
+        "total_visits": 8,
+        "primary_service_type": "Network Installation",
+        "work_summary": "Network service with 4 completed visits and 4 attempted visits",
+        "project_id": "1204",
+        "project_name": "NETWORK RE-CABLING - WENDYS",
+        "first_date": "2025-03-10",
+        "last_date": "2025-05-08",
+        "duration_days": 59,
+        "all_dates": [
+            "2025-03-14",
+            "2025-03-10",
+            "2025-03-10",
+            "2025-03-14",
+            "2025-03-12",
+            "2025-03-12",
+            "2025-03-14",
+            "2025-03-14",
+            "2025-03-14",
+            "2025-04-30",
+            "2025-03-16",
+            "2025-03-16",
+            "2025-04-30",
+            "2025-04-30",
+            "2025-04-30",
+            "2025-05-01",
+            "2025-05-01",
+            "2025-05-01",
+            "2025-05-08",
+            "2025-05-08",
+            "2025-05-08",
+            "2025-05-02",
+            "2025-05-02",
+            "2025-05-02"
+        ],
+        "visits": [
+            {
+                "visit_id": "VG1",
+                "chronological_rank": 1,
+                "date": "2025-03-10",
+                "status": "Failed - Unable to make it to site",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "Site Survey",
+                "dispatch_ticket_id": "2382281",
+                "turnup_ticket_id": "2399123",
+                "match_reason": "attempted_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-06",
+                "last_date": "2025-03-14",
+                "duration_days": 36,
+                "all_dates": [
+                    "2025-02-06",
+                    "2025-03-10",
+                    "2025-03-14"
+                ],
+                "time_in": ":00:00",
+                "time_out": ":00:00",
+                "time_on_site": ":00:00",
+                "work_summary": ":00:00",
+                "work_detail": ":00:00",
+                "tasks_performed": [],
+                "issues_encountered": [
+                    {
+                        "description": "Unable to make it to site",
+                        "status": "Unresolved",
+                        "mitigation": "Reschedule requested",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": [
+                            {
+                                "attempt_description": "FST asking for re-schedule on Wednesday",
+                                "outcome": "Pending"
+                            }
+                        ]
+                    }
+                ],
+                "is_revisit": false,
+                "related_visit_id": "",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382281",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_Site Survey",
+                            "project_id": "3912",
+                            "service_date": "2025-03-14",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-06",
+                            "closed_date": "2025-04-14",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-03-14",
+                                "time": "08:00:00",
+                                "requester": ""
+                            },
+                            "reschedules": [],
+                            "confirmations": []
+                        },
+                        "communications": {
+                            "timeline": [],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382281",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-03-14",
+                            "TechnicianName": "David",
+                            "DispatchNotes": "Site Survey",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "Site Survey"
+                        },
+                        "ticket_id": "2382281"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2399123",
+                        "phase_name": "Site Survey",
+                        "ticket_ids": [],
+                        "date": "2025-03-10",
+                        "status": "Failed",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": ":00:00",
+                        "time_out": ":00:00",
+                        "time_on_site": ":00:00",
+                        "tasks_performed": [],
+                        "issues_encountered": [
+                            {
+                                "description": "Unable to make it to site",
+                                "status": "Unresolved",
+                                "mitigation": "Reschedule requested",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": [
+                                    {
+                                        "attempt_description": "FST asking for re-schedule on Wednesday",
+                                        "outcome": "Pending"
+                                    }
+                                ]
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-03-10 09:00:05",
+                                "event": "Scheduled site survey"
+                            },
+                            {
+                                "timestamp": "2025-03-10 11:31:25",
+                                "event": "FST requested reschedule"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": ":00:00",
+                            "detailed_narrative": ":00:00"
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "Called for check-in, no answer. Left VM.",
+                                "impact": "No site access"
+                            }
+                        ],
+                        "outcome": "Failed - Unable to make it to site",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [
+                    {
+                        "header": {
+                            "id": "92560",
+                            "visit_id": "2382281",
+                            "created_at": "2025-04-14 14:29:09",
+                            "updated_at": "2025-04-14 15:45:17"
+                        },
+                        "financials": {
+                            "Total_Payable": 100,
+                            "jobUnitPrice": 0,
+                            "Total_Receivable": 0
+                        },
+                        "details": {
+                            "id_purchase": "6260d21c-8219-f011-9346-7c1e52ec639d",
+                            "id_item": "FST LABOR HOURLY",
+                            "billing_desc": "Exempt Labor",
+                            "jobLineType": ""
+                        },
+                        "notes": {
+                            "postFirst": "Flynn Bulk\r\r\rFlynn_FW003864_Lexington Park_MD_Site Survey\rSite ID: 3864\r\r\rDate: 2\/12\/2025\r\r\rSCOPE OF WORK:\rSite Survey\r\rLexington Park\r21589 Great Mills Rd \rLexington Park\rMD\r20653\r\r\rProject Details: \rFlat Rate",
+                            "postLast": "A bill was created under this ticket: 2382281<br\/>Total Bill to Customer : $0.00<br\/>Total Bill to CISSDM  : $100.00\n\n",
+                            "postFirstDetails": "Josh Bosen - 02\/06\/2025 03:04 PM",
+                            "postLastDetails": "Kayla Gonzalez - 04\/14\/2025 03:45 PM"
+                        },
+                        "id": "92560",
+                        "visit_id": "2382281"
+                    }
+                ],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "attempted_visit",
+                        "rationale": "The turnup card 2399123 failed due to site access issues and is linked to dispatch 2382281 for a site survey.",
+                        "anomalies": [
+                            "Site Access Issue"
+                        ],
+                        "is_revisit": false,
+                        "related_visit_id": "",
+                        "visit_status": "Failed - Unable to make it to site"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-03-14",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "Site Survey",
+                        "service_date": "2025-03-10",
+                        "outcome": "Failed - Unable to make it to site",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [],
+                        "time_on_site": ":00:00"
+                    },
+                    "billing_data": {
+                        "amount": null,
+                        "purchase_order": null,
+                        "invoice_number": null,
+                        "billing_date": null
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG2",
+                "chronological_rank": 2,
+                "date": "2025-03-12",
+                "status": "Failed - No check-in response",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "Site Survey",
+                "dispatch_ticket_id": "2382281",
+                "turnup_ticket_id": "2399758",
+                "match_reason": "attempted_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-06",
+                "last_date": "2025-03-14",
+                "duration_days": 36,
+                "all_dates": [
+                    "2025-02-06",
+                    "2025-03-12",
+                    "2025-03-14"
+                ],
+                "time_in": ":00:00",
+                "time_out": ":00:00",
+                "time_on_site": ":00:00",
+                "work_summary": ":00:00",
+                "work_detail": ":00:00",
+                "tasks_performed": [],
+                "issues_encountered": [
+                    {
+                        "description": "Failed - No check-in response",
+                        "status": "Unresolved",
+                        "mitigation": "Left VM, standing by for call back.",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": [
+                            {
+                                "attempt_description": "Called for check-in, no answer.",
+                                "outcome": "Unresolved"
+                            }
+                        ]
+                    }
+                ],
+                "is_revisit": true,
+                "related_visit_id": "VG1",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382281",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_Site Survey",
+                            "project_id": "3912",
+                            "service_date": "2025-03-14",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-06",
+                            "closed_date": "2025-04-14",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-03-14",
+                                "time": "08:00:00",
+                                "requester": ""
+                            },
+                            "reschedules": [],
+                            "confirmations": []
+                        },
+                        "communications": {
+                            "timeline": [],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382281",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-03-14",
+                            "TechnicianName": "David",
+                            "DispatchNotes": "Site Survey",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "Site Survey"
+                        },
+                        "ticket_id": "2382281"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2399758",
+                        "phase_name": "Site Survey",
+                        "ticket_ids": [],
+                        "date": "2025-03-12",
+                        "status": "Failed",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": ":00:00",
+                        "time_out": ":00:00",
+                        "time_on_site": ":00:00",
+                        "tasks_performed": [],
+                        "issues_encountered": [
+                            {
+                                "description": "Failed - No check-in response",
+                                "status": "Unresolved",
+                                "mitigation": "Left VM, standing by for call back.",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": [
+                                    {
+                                        "attempt_description": "Called for check-in, no answer.",
+                                        "outcome": "Unresolved"
+                                    }
+                                ]
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-03-12 06:36:35",
+                                "event": "FST would like to return on Friday at 11 AM"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": ":00:00",
+                            "detailed_narrative": ":00:00"
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "Called for check-in, no answer.",
+                                "impact": "No response, visit failed"
+                            }
+                        ],
+                        "outcome": "Failed - No check-in response",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "attempted_visit",
+                        "rationale": "The turnup card 2399758 failed due to no check-in response and is a revisit of VG1, linked to the same dispatch 2382281.",
+                        "anomalies": [
+                            "Site Access Issue"
+                        ],
+                        "is_revisit": true,
+                        "related_visit_id": "VG1",
+                        "visit_status": "Failed - No check-in response"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-03-14",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "Site Survey",
+                        "service_date": "2025-03-12",
+                        "outcome": "Failed - No check-in response",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [],
+                        "time_on_site": ":00:00"
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG3",
+                "chronological_rank": 3,
+                "date": "2025-03-14",
+                "status": "Completed Successfully",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "Site Survey",
+                "dispatch_ticket_id": "2382281",
+                "turnup_ticket_id": "2402477",
+                "match_reason": "actual_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-06",
+                "last_date": "2025-03-14",
+                "duration_days": 36,
+                "all_dates": [
+                    "2025-02-06",
+                    "2025-03-14"
+                ],
+                "time_in": "10:33:00",
+                "time_out": "12:27:00",
+                "time_on_site": "01:54:00",
+                "work_summary": "Site survey completed",
+                "work_detail": "Tech arrived onsite, checked in with Krista, completed a site survey, and was approved for release by Ben.",
+                "tasks_performed": [
+                    "Site Survey"
+                ],
+                "issues_encountered": [],
+                "is_revisit": true,
+                "related_visit_id": "VG2",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382281",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_Site Survey",
+                            "project_id": "3912",
+                            "service_date": "2025-03-14",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-06",
+                            "closed_date": "2025-04-14",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-03-14",
+                                "time": "08:00:00",
+                                "requester": ""
+                            },
+                            "reschedules": [],
+                            "confirmations": []
+                        },
+                        "communications": {
+                            "timeline": [],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382281",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-03-14",
+                            "TechnicianName": "David",
+                            "DispatchNotes": "Site Survey",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "Site Survey"
+                        },
+                        "ticket_id": "2382281"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2402477",
+                        "phase_name": "Site Survey",
+                        "ticket_ids": [],
+                        "date": "2025-03-14",
+                        "status": "Completed",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": "10:33:00",
+                        "time_out": "12:27:00",
+                        "time_on_site": "01:54:00",
+                        "tasks_performed": [
+                            "Site Survey"
+                        ],
+                        "issues_encountered": [],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-03-14 09:30:12",
+                                "event": "Scope - Objective: Site Survey"
+                            },
+                            {
+                                "timestamp": "2025-03-14 11:51:00",
+                                "event": "Tech called about survey confusion"
+                            },
+                            {
+                                "timestamp": "2025-03-14 12:32:03",
+                                "event": "Tech completed site survey"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": "Site survey completed",
+                            "detailed_narrative": "Tech arrived onsite, checked in with Krista, completed a site survey, and was approved for release by Ben."
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Check-in",
+                                "details": "Tech checked in with Krista",
+                                "impact": "Successful coordination"
+                            },
+                            {
+                                "interaction_type": "Approval",
+                                "details": "Tech approved for release by Ben",
+                                "impact": "Completion confirmed"
+                            }
+                        ],
+                        "outcome": "Completed Successfully",
+                        "revisit_needed": "No"
+                    }
+                ],
+                "billing_cards": [],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "actual_visit",
+                        "rationale": "The turnup card 2402477 completed successfully and is a revisit of VG2, linked to the same dispatch 2382281.",
+                        "anomalies": [],
+                        "is_revisit": true,
+                        "related_visit_id": "VG2",
+                        "visit_status": "Completed Successfully"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-03-14",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "Site Survey",
+                        "service_date": "2025-03-14",
+                        "outcome": "Completed Successfully",
+                        "revisit_indicated": "No",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [
+                            "Site Survey"
+                        ],
+                        "time_on_site": "01:54:00"
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG4",
+                "chronological_rank": 4,
+                "date": "2025-03-16",
+                "status": "Failed - FST crew removed",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "Phase 1",
+                "dispatch_ticket_id": "2382353",
+                "turnup_ticket_id": "2402607",
+                "match_reason": "attempted_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-07",
+                "last_date": "2025-04-30",
+                "duration_days": 82,
+                "all_dates": [
+                    "2025-02-07",
+                    "2025-03-16",
+                    "2025-04-30"
+                ],
+                "time_in": "18:30:00",
+                "time_out": "18:30:00",
+                "time_on_site": null,
+                "work_summary": {
+                    "summary": null,
+                    "detailed_narrative": null
+                },
+                "work_detail": null,
+                "tasks_performed": [],
+                "issues_encountered": [
+                    {
+                        "description": "FST crew was removed from the site.",
+                        "status": "Unresolved",
+                        "mitigation": "Rescheduling with a new crew.",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": [
+                            {
+                                "attempt_description": "Tried to call the FST and got VM.",
+                                "outcome": "Unsuccessful"
+                            },
+                            {
+                                "attempt_description": "Called the site and they didn\u2019t see them.",
+                                "outcome": "Unsuccessful"
+                            }
+                        ]
+                    }
+                ],
+                "is_revisit": false,
+                "related_visit_id": "",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382353",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_P1",
+                            "project_id": "3912",
+                            "service_date": "2025-04-30",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-07",
+                            "closed_date": "2025-05-06",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-04-30",
+                                "time": "18:30:00",
+                                "requester": "Mike K"
+                            },
+                            "reschedules": [],
+                            "confirmations": [
+                                {
+                                    "date": "2025-04-30",
+                                    "method": "Phone call",
+                                    "contact": "Mike K 434-989-0830",
+                                    "valid_flags": "Yes"
+                                }
+                            ]
+                        },
+                        "communications": {
+                            "timeline": [
+                                {
+                                    "timestamp": "2025-04-30 21:30:00",
+                                    "event": "Alyssa: Schedule confirmed"
+                                }
+                            ],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382353",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-04-30",
+                            "TechnicianName": "Mike K",
+                            "DispatchNotes": "Phase 1",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "Phase 1"
+                        },
+                        "ticket_id": "2382353"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2402607",
+                        "phase_name": "Phase 1",
+                        "ticket_ids": [],
+                        "date": "2025-03-16",
+                        "status": "Failed",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": null,
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": "18:30:00",
+                        "time_out": "18:30:00",
+                        "time_on_site": null,
+                        "tasks_performed": [],
+                        "issues_encountered": [
+                            {
+                                "description": "FST crew was removed from the site.",
+                                "status": "Unresolved",
+                                "mitigation": "Rescheduling with a new crew.",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": [
+                                    {
+                                        "attempt_description": "Tried to call the FST and got VM.",
+                                        "outcome": "Unsuccessful"
+                                    },
+                                    {
+                                        "attempt_description": "Called the site and they didn\u2019t see them.",
+                                        "outcome": "Unsuccessful"
+                                    }
+                                ]
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-03-16 19:30:43",
+                                "event": "Attempted contact with FST"
+                            },
+                            {
+                                "timestamp": "2025-03-16 19:30:43",
+                                "event": "Called site, FST not seen"
+                            },
+                            {
+                                "timestamp": "2025-03-16 19:30:43",
+                                "event": "Informed logistics"
+                            },
+                            {
+                                "timestamp": "2025-03-16 19:30:43",
+                                "event": "Rescheduling with new crew"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": null,
+                            "detailed_narrative": null
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "Called FST and got VM.",
+                                "impact": "No contact made"
+                            },
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "Called site, FST not seen.",
+                                "impact": "Confirmed FST absence"
+                            }
+                        ],
+                        "outcome": "Failed - FST crew removed",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "attempted_visit",
+                        "rationale": "The turnup card 2402607 failed due to crew removal and is linked to dispatch 2382353 for Phase 1.",
+                        "anomalies": [
+                            "Site Access Issue"
+                        ],
+                        "is_revisit": false,
+                        "related_visit_id": "",
+                        "visit_status": "Failed - FST crew removed"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-04-30",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "Phase 1",
+                        "service_date": "2025-03-16",
+                        "outcome": "Failed - FST crew removed",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "David",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": null,
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [],
+                        "time_on_site": null
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG5",
+                "chronological_rank": 5,
+                "date": "2025-04-30",
+                "status": "Completed with Issues",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "Phase 1",
+                "dispatch_ticket_id": "2382353",
+                "turnup_ticket_id": "2426957",
+                "match_reason": "actual_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-07",
+                "last_date": "2025-04-30",
+                "duration_days": 82,
+                "all_dates": [
+                    "2025-02-07",
+                    "2025-04-30"
+                ],
+                "time_in": "18:30:00",
+                "time_out": "07:15:00",
+                "time_on_site": ":00:00",
+                "work_summary": "Completed roughing in cable and device validation",
+                "work_detail": "FST confirmed rack placement, began labeling cables, roughing in cable, validated devices with RST, gathered requested photos.",
+                "tasks_performed": [
+                    "Confirmed Rack placement",
+                    "Labeling cables device side",
+                    "Roughing in cable",
+                    "Validated devices with RST",
+                    "Gathered requested photos"
+                ],
+                "issues_encountered": [
+                    {
+                        "description": "Jhooks were not hung due to no room until abatement",
+                        "status": "Unresolved",
+                        "mitigation": "Will return with proper anchors",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    },
+                    {
+                        "description": "Service Loop was not made due to abatement",
+                        "status": "Unresolved",
+                        "mitigation": "To be completed after abatement",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    },
+                    {
+                        "description": "AP was not placed due to no room waiting for abatement",
+                        "status": "Unresolved",
+                        "mitigation": "To be installed during P2",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    }
+                ],
+                "is_revisit": true,
+                "related_visit_id": "VG4",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382353",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_P1",
+                            "project_id": "3912",
+                            "service_date": "2025-04-30",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-07",
+                            "closed_date": "2025-05-06",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-04-30",
+                                "time": "18:30:00",
+                                "requester": "Mike K"
+                            },
+                            "reschedules": [],
+                            "confirmations": [
+                                {
+                                    "date": "2025-04-30",
+                                    "method": "Phone call",
+                                    "contact": "Mike K 434-989-0830",
+                                    "valid_flags": "Yes"
+                                }
+                            ]
+                        },
+                        "communications": {
+                            "timeline": [
+                                {
+                                    "timestamp": "2025-04-30 21:30:00",
+                                    "event": "Alyssa: Schedule confirmed"
+                                }
+                            ],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382353",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-04-30",
+                            "TechnicianName": "Mike K",
+                            "DispatchNotes": "Phase 1",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "Phase 1"
+                        },
+                        "ticket_id": "2382353"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2426957",
+                        "phase_name": "Phase 1",
+                        "ticket_ids": [],
+                        "date": "2025-04-30",
+                        "status": "Completed",
+                        "technicians": [
+                            {
+                                "name": "Mike K",
+                                "contact_info": "439-989-0830",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": "18:30:00",
+                        "time_out": "07:15:00",
+                        "time_on_site": ":00:00",
+                        "tasks_performed": [
+                            "Confirmed Rack placement",
+                            "Labeling cables device side",
+                            "Roughing in cable",
+                            "Validated devices with RST",
+                            "Gathered requested photos"
+                        ],
+                        "issues_encountered": [
+                            {
+                                "description": "Jhooks were not hung due to no room until abatement",
+                                "status": "Unresolved",
+                                "mitigation": "Will return with proper anchors",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            },
+                            {
+                                "description": "Service Loop was not made due to abatement",
+                                "status": "Unresolved",
+                                "mitigation": "To be completed after abatement",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            },
+                            {
+                                "description": "AP was not placed due to no room waiting for abatement",
+                                "status": "Unresolved",
+                                "mitigation": "To be installed during P2",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-05-01 08:01:27",
+                                "event": "FST confirmed onsite"
+                            },
+                            {
+                                "timestamp": "2025-05-01 08:01:27",
+                                "event": "Store took an hour to close"
+                            },
+                            {
+                                "timestamp": "2025-05-01 08:01:27",
+                                "event": "FST began labeling cables"
+                            },
+                            {
+                                "timestamp": "2025-05-01 08:01:27",
+                                "event": "FST roughing in cable"
+                            },
+                            {
+                                "timestamp": "2025-05-01 08:01:27",
+                                "event": "FST validated devices"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": "Completed roughing in cable and device validation",
+                            "detailed_narrative": "FST confirmed rack placement, began labeling cables, roughing in cable, validated devices with RST, gathered requested photos."
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "CIS reached out to Ilaria Mitchell to contact store manager",
+                                "impact": "Improved coordination"
+                            }
+                        ],
+                        "outcome": "Completed with Issues",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "actual_visit",
+                        "rationale": "The turnup card 2426957 completed with issues and is a revisit of VG4, linked to the same dispatch 2382353.",
+                        "anomalies": [
+                            "Work Incomplete"
+                        ],
+                        "is_revisit": true,
+                        "related_visit_id": "VG4",
+                        "visit_status": "Completed with Issues"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-04-30",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "Phase 1",
+                        "service_date": "2025-04-30",
+                        "outcome": "Completed with Issues",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "Mike K",
+                                "contact_info": "439-989-0830",
+                                "hours_worked": ":00:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [
+                            "Confirmed Rack placement",
+                            "Labeling cables device side",
+                            "Roughing in cable",
+                            "Validated devices with RST",
+                            "Gathered requested photos"
+                        ],
+                        "time_on_site": ":00:00"
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG6",
+                "chronological_rank": 6,
+                "date": "2025-05-01",
+                "status": "Completed Successfully",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site 3864",
+                "service_type": "P2",
+                "dispatch_ticket_id": "2382401",
+                "turnup_ticket_id": "2402585",
+                "match_reason": "actual_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-02-07",
+                "last_date": "2025-05-01",
+                "duration_days": 83,
+                "all_dates": [
+                    "2025-02-07",
+                    "2025-05-01"
+                ],
+                "time_in": "18:30:00",
+                "time_out": "08:30:00",
+                "time_on_site": ":00:00",
+                "work_summary": "Completed installation and validation",
+                "work_detail": "All validation steps were completed, ARP table verified, cabling terminations completed, legacy equipment installed, and cable abatement completed. Photos were taken and attached to the Smartsheet.",
+                "tasks_performed": [
+                    "Validation steps completed",
+                    "ARP table verified",
+                    "Cabling terminations completed",
+                    "Legacy equipment installed",
+                    "Cable abatement completed",
+                    "Photos taken and attached"
+                ],
+                "issues_encountered": [
+                    {
+                        "description": "MX did not come online after migration",
+                        "status": "Resolved",
+                        "mitigation": "Escalated to Meraki support, software update pushed",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": false,
+                        "resolution_attempts": [
+                            {
+                                "attempt_description": "Meraki support pushed an update",
+                                "outcome": "MX connection restored"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "POS2 power cable cut",
+                        "status": "Unresolved",
+                        "mitigation": "Flynn HD to order replacement",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    },
+                    {
+                        "description": "Software issue with POS4",
+                        "status": "Unresolved",
+                        "mitigation": "Flynn HD to resolve separately",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    }
+                ],
+                "is_revisit": false,
+                "related_visit_id": "",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2382401",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_P2",
+                            "project_id": "3912",
+                            "service_date": "2025-05-01",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "3864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-02-07",
+                            "closed_date": "2025-05-06",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-05-01",
+                                "time": "00:00:00",
+                                "requester": ""
+                            },
+                            "reschedules": [],
+                            "confirmations": [
+                                {
+                                    "date": "2025-04-30",
+                                    "method": "Phone call",
+                                    "contact": "Mike K 434-989-0830",
+                                    "valid_flags": "Yes"
+                                }
+                            ]
+                        },
+                        "communications": {
+                            "timeline": [
+                                {
+                                    "timestamp": "2025-04-30 00:00:00",
+                                    "event": "Alyssa: Schedule confirmed"
+                                }
+                            ],
+                            "technician_inquiry": []
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2382401",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-05-01",
+                            "TechnicianName": "",
+                            "DispatchNotes": "P2",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "P2"
+                        },
+                        "ticket_id": "2382401"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2402585",
+                        "phase_name": "P2",
+                        "ticket_ids": [],
+                        "date": "2025-05-01",
+                        "status": "Completed",
+                        "technicians": [
+                            {
+                                "name": "Mike K",
+                                "contact_info": "434-989-0830",
+                                "hours_worked": ":00:00",
+                                "roles": []
+                            },
+                            {
+                                "name": "Jessica Steepleton",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": []
+                            }
+                        ],
+                        "time_in": "18:30:00",
+                        "time_out": "08:30:00",
+                        "time_on_site": ":00:00",
+                        "tasks_performed": [
+                            "Validation steps completed",
+                            "ARP table verified",
+                            "Cabling terminations completed",
+                            "Legacy equipment installed",
+                            "Cable abatement completed",
+                            "Photos taken and attached"
+                        ],
+                        "issues_encountered": [
+                            {
+                                "description": "MX did not come online after migration",
+                                "status": "Resolved",
+                                "mitigation": "Escalated to Meraki support, software update pushed",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": false,
+                                "resolution_attempts": [
+                                    {
+                                        "attempt_description": "Meraki support pushed an update",
+                                        "outcome": "MX connection restored"
+                                    }
+                                ]
+                            },
+                            {
+                                "description": "POS2 power cable cut",
+                                "status": "Unresolved",
+                                "mitigation": "Flynn HD to order replacement",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            },
+                            {
+                                "description": "Software issue with POS4",
+                                "status": "Unresolved",
+                                "mitigation": "Flynn HD to resolve separately",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-05-01 18:30:00",
+                                "event": "Check-in"
+                            },
+                            {
+                                "timestamp": "2025-05-01 19:00:00",
+                                "event": "Cable termination in progress"
+                            },
+                            {
+                                "timestamp": "2025-05-01 21:00:00",
+                                "event": "Cable testing in progress"
+                            },
+                            {
+                                "timestamp": "2025-05-02 07:45:00",
+                                "event": "Site back online"
+                            },
+                            {
+                                "timestamp": "2025-05-02 08:30:00",
+                                "event": "Check-out"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": "Completed installation and validation",
+                            "detailed_narrative": "All validation steps were completed, ARP table verified, cabling terminations completed, legacy equipment installed, and cable abatement completed. Photos were taken and attached to the Smartsheet."
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Phone Call",
+                                "details": "Called Meraki support for MX issue",
+                                "impact": "Resolved MX connection issue"
+                            },
+                            {
+                                "interaction_type": "On-site Interaction",
+                                "details": "Checked in with MOD",
+                                "impact": "Confirmed site readiness"
+                            }
+                        ],
+                        "outcome": "Completed Successfully",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [
+                    {
+                        "header": {
+                            "id": "95502",
+                            "visit_id": "2382401",
+                            "created_at": "2025-05-06 10:08:31",
+                            "updated_at": "2025-05-06 10:09:01"
+                        },
+                        "financials": {
+                            "Total_Payable": 4000,
+                            "jobUnitPrice": 0,
+                            "Total_Receivable": 0
+                        },
+                        "details": {
+                            "id_purchase": "f36f08ce-9c2a-f011-9346-7c1e52dc97d8",
+                            "id_item": "FST LABOR HOURLY",
+                            "billing_desc": "Exempt Labor",
+                            "jobLineType": ""
+                        },
+                        "notes": {
+                            "postFirst": "Flynn - Bulk Build\r\rFlynn_FW003864_Lexington Park_MD_P2\rSite ID: 3864\r\rDate: 2\/19\/2025\r\r\rSCOPE OF WORK:\rP2\r\r\rLexington Park\r21589 Great Mills Rd \rLexington Park\rMD\r20653\r\r\rBilling Details: \rFlat Rate\r",
+                            "postLast": "A bill was created under this ticket: 2382401<br\/>Total Bill to Customer : $0.00<br\/>Total Bill to CISSDM  : $4,000.00\n\n",
+                            "postFirstDetails": "Josh Bosen - 02\/06\/2025 04:20 PM",
+                            "postLastDetails": "Dana Tompkins - 05\/06\/2025 10:09 AM"
+                        },
+                        "id": "95502",
+                        "visit_id": "2382401"
+                    }
+                ],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "actual_visit",
+                        "rationale": "The turnup card 2402585 completed successfully and is linked to dispatch 2382401 for Phase 2.",
+                        "anomalies": [
+                            "Parts\/Material Issue"
+                        ],
+                        "is_revisit": false,
+                        "related_visit_id": "",
+                        "visit_status": "Completed Successfully"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-05-01",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "P2",
+                        "service_date": "2025-05-01",
+                        "outcome": "Completed Successfully",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "Mike K",
+                                "contact_info": "434-989-0830",
+                                "hours_worked": ":00:00",
+                                "roles": []
+                            },
+                            {
+                                "name": "Jessica Steepleton",
+                                "contact_info": "410-499-6293",
+                                "hours_worked": ":00:00",
+                                "roles": []
+                            }
+                        ],
+                        "tasks_performed": [
+                            "Validation steps completed",
+                            "ARP table verified",
+                            "Cabling terminations completed",
+                            "Legacy equipment installed",
+                            "Cable abatement completed",
+                            "Photos taken and attached"
+                        ],
+                        "time_on_site": ":00:00"
+                    },
+                    "billing_data": {
+                        "amount": null,
+                        "purchase_order": null,
+                        "invoice_number": null,
+                        "billing_date": null
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG7",
+                "chronological_rank": 7,
+                "date": "2025-05-08",
+                "status": "Completed with Issues",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site FW003864",
+                "service_type": "P3",
+                "dispatch_ticket_id": "2400120",
+                "turnup_ticket_id": "2427607",
+                "match_reason": "actual_visit",
+                "billing_summary": {
+                    "total": 0,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-03-11",
+                "last_date": "2025-05-08",
+                "duration_days": 58,
+                "all_dates": [
+                    "2025-03-11",
+                    "2025-05-08"
+                ],
+                "time_in": "20:45:00",
+                "time_out": "08:10:00",
+                "time_on_site": "11:25:00",
+                "work_summary": "Completed network setup and validation",
+                "work_detail": "All validation steps completed, ARP table verified, network port mapping completed, new data racks installed, rough-in cabling started, cabling terminations started, photos taken and attached. Remaining issues with WiFi\/Internet access and missing OCD cable.",
+                "tasks_performed": [
+                    "Validation steps completed",
+                    "ARP table verified",
+                    "Network port mapping completed",
+                    "New data racks installed",
+                    "Rough-in cabling started",
+                    "Cabling terminations started (device-end)",
+                    "Cabling terminations started (rack-end)",
+                    "Photos taken and attached"
+                ],
+                "issues_encountered": [
+                    {
+                        "description": "WiFi\/Internet access for Guest WiFi\/MWS and Ops tablet, missing OCD cable, DT02 printer",
+                        "status": "Unresolved",
+                        "mitigation": "Called Flynn Group to report issue",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": [
+                            {
+                                "attempt_description": "Called Flynn Group to report issue with internet access on MWS, Ops tablet and guest WiFi",
+                                "outcome": "Unresolved"
+                            },
+                            {
+                                "attempt_description": "Calling Flynn for HME leaderboard asking for password",
+                                "outcome": "Unresolved"
+                            }
+                        ]
+                    }
+                ],
+                "is_revisit": false,
+                "related_visit_id": "",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2400120",
+                            "subject": "Flynn_FW003864_Lexington Park_MD_P3",
+                            "project_id": "3912",
+                            "service_date": "2025-05-08",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "FW003864",
+                            "creator_name": "Josh Bosen",
+                            "creator_email": "josh.bosen@cisvpn.com",
+                            "created_date": "2025-03-11",
+                            "closed_date": "2025-03-21",
+                            "project_name": "NETWORK RE-CABLING - WENDYS"
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-05-08",
+                                "time": "20:30:00",
+                                "requester": "Gregory Yeamans"
+                            },
+                            "reschedules": [],
+                            "confirmations": []
+                        },
+                        "communications": {
+                            "timeline": [
+                                {
+                                    "timestamp": "2025-03-11 11:36:03",
+                                    "event": "Josh: Scheduled 03\/24\/2025"
+                                }
+                            ],
+                            "technician_inquiry": [
+                                {
+                                    "timestamp": "2025-05-11 10:07:03",
+                                    "author": "Gregory Yeamans",
+                                    "snippet": "Marked work order as complete."
+                                }
+                            ]
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2400120",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-05-08",
+                            "TechnicianName": "Gregory Yeamans",
+                            "DispatchNotes": "P3",
+                            "ProjectID": "1204",
+                            "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                            "scope_of_work": "P3"
+                        },
+                        "ticket_id": "2400120"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2427607",
+                        "phase_name": "P3",
+                        "ticket_ids": [],
+                        "date": "2025-05-08",
+                        "status": "Completed",
+                        "technicians": [
+                            {
+                                "name": "Gregory Yeamans",
+                                "contact_info": "+15402201192",
+                                "hours_worked": "11:41:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "time_in": "20:45:00",
+                        "time_out": "08:10:00",
+                        "time_on_site": "11:25:00",
+                        "tasks_performed": [
+                            "Validation steps completed",
+                            "ARP table verified",
+                            "Network port mapping completed",
+                            "New data racks installed",
+                            "Rough-in cabling started",
+                            "Cabling terminations started (device-end)",
+                            "Cabling terminations started (rack-end)",
+                            "Photos taken and attached"
+                        ],
+                        "issues_encountered": [
+                            {
+                                "description": "WiFi\/Internet access for Guest WiFi\/MWS and Ops tablet, missing OCD cable, DT02 printer",
+                                "status": "Unresolved",
+                                "mitigation": "Called Flynn Group to report issue",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": [
+                                    {
+                                        "attempt_description": "Called Flynn Group to report issue with internet access on MWS, Ops tablet and guest WiFi",
+                                        "outcome": "Unresolved"
+                                    },
+                                    {
+                                        "attempt_description": "Calling Flynn for HME leaderboard asking for password",
+                                        "outcome": "Unresolved"
+                                    }
+                                ]
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "FST checked in"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Generated ARP table"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Installed new equipment"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Troubleshot POSs and Pinpads not online"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Called Flynn Group for internet issue"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Called Flynn for HME leaderboard password"
+                            },
+                            {
+                                "timestamp": "2025-05-09 09:35:35",
+                                "event": "Ran closing ARP table"
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": "Completed network setup and validation",
+                            "detailed_narrative": "All validation steps completed, ARP table verified, network port mapping completed, new data racks installed, rough-in cabling started, cabling terminations started, photos taken and attached. Remaining issues with WiFi\/Internet access and missing OCD cable."
+                        },
+                        "materials_used": [],
+                        "key_interactions": [
+                            {
+                                "interaction_type": "Check-in",
+                                "details": "Checked in with MOD, Jason",
+                                "impact": "Confirmed site readiness"
+                            },
+                            {
+                                "interaction_type": "Call",
+                                "details": "Called Flynn Group for internet issue",
+                                "impact": "Issue reported, unresolved"
+                            },
+                            {
+                                "interaction_type": "Call",
+                                "details": "Called Flynn for HME leaderboard password",
+                                "impact": "Issue reported, unresolved"
+                            }
+                        ],
+                        "outcome": "Completed with Issues",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [
+                    {
+                        "header": {
+                            "id": "96243",
+                            "visit_id": "2400120",
+                            "created_at": ""
+                        },
+                        "financials": {
+                            "Total_Payable": 961.6,
+                            "jobUnitPrice": 0,
+                            "Total_Receivable": 0
+                        },
+                        "details": {
+                            "id_purchase": "e30b74e7-0331-f011-9346-7c1e5292f694",
+                            "id_item": "FST LABOR HOURLY",
+                            "billing_desc": "Hourly Labor",
+                            "jobLineType": ""
+                        },
+                        "notes": {
+                            "postFirst": "Flynn - Bulk Build\r\r\rFlynn_FW003864_Lexington Park_MD_P3\rSite ID: FW003864\r\rDate: 3\/24\/2025\r\rSCOPE OF WORK:\rP3\r\rWendys\r21589 Great Mills Rd \rLexington Park\rMD\r20653\r\r\rCost to Customer Type: \rFlat Rate\r",
+                            "postLast": "A bill was created under this ticket: 2400120<br\/>Total Bill to Customer : $0.00<br\/>Total Bill to CISSDM  : $970.60\n\n",
+                            "postFirstDetails": "Josh Bosen - 03\/11\/2025 11:36 AM",
+                            "postLastDetails": "Kayla Gonzalez - 05\/14\/2025 01:42 PM"
+                        },
+                        "id": "96243",
+                        "visit_id": "2400120"
+                    },
+                    {
+                        "header": {
+                            "id": "96244",
+                            "visit_id": "2400120",
+                            "created_at": ""
+                        },
+                        "financials": {
+                            "Total_Payable": 9,
+                            "jobUnitPrice": 0,
+                            "Total_Receivable": 0
+                        },
+                        "details": {
+                            "id_purchase": "e40b74e7-0331-f011-9346-7c1e5292f694",
+                            "id_item": "JOB MATERIALS COST",
+                            "billing_desc": "Tolls",
+                            "jobLineType": ""
+                        },
+                        "notes": {
+                            "postFirst": "Flynn - Bulk Build\r\r\rFlynn_FW003864_Lexington Park_MD_P3\rSite ID: FW003864\r\rDate: 3\/24\/2025\r\rSCOPE OF WORK:\rP3\r\rWendys\r21589 Great Mills Rd \rLexington Park\rMD\r20653\r\r\rCost to Customer Type: \rFlat Rate\r",
+                            "postLast": "A bill was created under this ticket: 2400120<br\/>Total Bill to Customer : $0.00<br\/>Total Bill to CISSDM  : $970.60\n\n",
+                            "postFirstDetails": "Josh Bosen - 03\/11\/2025 11:36 AM",
+                            "postLastDetails": "Kayla Gonzalez - 05\/14\/2025 01:42 PM"
+                        },
+                        "id": "96244",
+                        "visit_id": "2400120"
+                    }
+                ],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "actual_visit",
+                        "rationale": "The turnup card 2427607 completed with issues and is linked to dispatch 2400120 for Phase 3.",
+                        "anomalies": [
+                            "Parts\/Material Issue"
+                        ],
+                        "is_revisit": false,
+                        "related_visit_id": "",
+                        "visit_status": "Completed with Issues"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-05-08",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": "P3",
+                        "service_date": "2025-05-08",
+                        "outcome": "Completed with Issues",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "Gregory Yeamans",
+                                "contact_info": "+15402201192",
+                                "hours_worked": "11:41:00",
+                                "roles": [
+                                    "Contractor"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [
+                            "Validation steps completed",
+                            "ARP table verified",
+                            "Network port mapping completed",
+                            "New data racks installed",
+                            "Rough-in cabling started",
+                            "Cabling terminations started (device-end)",
+                            "Cabling terminations started (rack-end)",
+                            "Photos taken and attached"
+                        ],
+                        "time_on_site": "11:25:00"
+                    },
+                    "billing_data": {
+                        "amount": null,
+                        "purchase_order": null,
+                        "invoice_number": null,
+                        "billing_date": null
+                    },
+                    "group_classification": "visit"
+                }
+            },
+            {
+                "visit_id": "VG8",
+                "chronological_rank": 8,
+                "date": "2025-05-02",
+                "status": "Failed - FST was cancelled",
+                "customer": null,
+                "location": "21589 Great Mills Rd, Lexington Park, MD, Site Wendys FW003864",
+                "service_type": "Replace Meraki and additional tasks",
+                "dispatch_ticket_id": "2432371",
+                "turnup_ticket_id": "2432376",
+                "match_reason": "attempted_visit",
+                "billing_summary": {
+                    "total": 360,
+                    "invoice_count": 0,
+                    "invoices": []
+                },
+                "first_date": "2025-05-02",
+                "last_date": "2025-05-02",
+                "duration_days": 0,
+                "all_dates": [
+                    "2025-05-02"
+                ],
+                "time_in": ".",
+                "time_out": ".",
+                "time_on_site": ".",
+                "work_summary": ".",
+                "work_detail": ". ",
+                "tasks_performed": [],
+                "issues_encountered": [
+                    {
+                        "description": "FST was cancelled.",
+                        "status": "Unresolved",
+                        "mitigation": ".",
+                        "related_to_previous_visit": false,
+                        "needs_future_attention": true,
+                        "resolution_attempts": []
+                    }
+                ],
+                "is_revisit": false,
+                "related_visit_id": "",
+                "dispatch_cards": [
+                    {
+                        "header": {
+                            "ticketid": "2432371",
+                            "subject": "Flynn_Wendys FW003864_Lexington Park_MD_Dispatch",
+                            "project_id": "",
+                            "service_date": "2025-05-02",
+                            "city": "Lexington Park",
+                            "state": "MD",
+                            "street": "21589 Great Mills Rd",
+                            "site_number": "Wendys FW003864",
+                            "creator_name": "Lillian Johnston via Triton",
+                            "creator_email": "no.reply@cisvpn.com",
+                            "created_date": "2025-05-02",
+                            "closed_date": "2025-05-06",
+                            "project_name": ""
+                        },
+                        "scheduling": {
+                            "original_schedule": {
+                                "date": "2025-05-02",
+                                "time": "08:00:00",
+                                "requester": "Lillian Johnston"
+                            },
+                            "reschedules": [],
+                            "confirmations": []
+                        },
+                        "communications": {
+                            "timeline": [
+                                {
+                                    "timestamp": "2025-05-02 06:17:04",
+                                    "event": "Lillian: Emergency dispatch requested"
+                                }
+                            ],
+                            "technician_inquiry": [
+                                {
+                                    "timestamp": "2025-05-03 17:27:32",
+                                    "author": "Patrick Ebuwei",
+                                    "snippet": "Site aborted, no signature. Flynn PM turned away."
+                                }
+                            ]
+                        },
+                        "dispatch_details": {
+                            "TicketID": "2432371",
+                            "Status": "Closed",
+                            "ServiceDate": "2025-05-02",
+                            "TechnicianName": "Patrick Ebuwei",
+                            "DispatchNotes": "can we please get a same day emergency dispatch for an ASAP time with a field nation tech to work along side Flynn FT to replace a Meraki and perform whatever else tasks are needed once replaced\u0000",
+                            "ProjectID": "",
+                            "ProjectName": "",
+                            "scope_of_work": "Replace Meraki and additional tasks"
+                        },
+                        "ticket_id": "2432371"
+                    }
+                ],
+                "turnup_cards": [
+                    {
+                        "visit_id": "2432376",
+                        "phase_name": ".",
+                        "ticket_ids": [],
+                        "date": "2025-05-02",
+                        "status": "Failed",
+                        "technicians": [
+                            {
+                                "name": "Patrick Ebuwei",
+                                "contact_info": "+12024860202",
+                                "hours_worked": ".",
+                                "roles": [
+                                    "HelpDesk"
+                                ]
+                            }
+                        ],
+                        "time_in": ".",
+                        "time_out": ".",
+                        "time_on_site": ".",
+                        "tasks_performed": [],
+                        "issues_encountered": [
+                            {
+                                "description": "FST was cancelled.",
+                                "status": "Unresolved",
+                                "mitigation": ".",
+                                "related_to_previous_visit": false,
+                                "needs_future_attention": true,
+                                "resolution_attempts": []
+                            }
+                        ],
+                        "timeline": [
+                            {
+                                "timestamp": "2025-05-02 08:30:31",
+                                "event": "Closing as failed."
+                            }
+                        ],
+                        "work_performed": {
+                            "summary": ".",
+                            "detailed_narrative": ". "
+                        },
+                        "materials_used": [],
+                        "key_interactions": [],
+                        "outcome": "Failed - FST was cancelled.",
+                        "revisit_needed": "Yes"
+                    }
+                ],
+                "billing_cards": [
+                    {
+                        "header": {
+                            "id": "95482",
+                            "visit_id": "2432371",
+                            "created_at": ""
+                        },
+                        "financials": {
+                            "Total_Payable": 160,
+                            "jobUnitPrice": 180,
+                            "Total_Receivable": 360
+                        },
+                        "details": {
+                            "id_purchase": "67cdd1dd-972a-f011-9346-7c1e5292f694",
+                            "id_item": "FST MINIMUM LABOR",
+                            "billing_desc": "Minimum Labor Rate",
+                            "jobLineType": "BILLABLE"
+                        },
+                        "notes": {
+                            "postFirst": "can we please get a same day emergency dispatch for an ASAP time with a field nation tech to work along side Flynn FT to replace a Meraki and perform whatever else tasks are needed once replaced\u00a0",
+                            "postLast": "A bill was created under this ticket: 2432371<br\/>Total Bill to Customer : $360.00<br\/>Total Bill to CISSDM  : $160.00\n\n",
+                            "postFirstDetails": "Lillian Johnston via Triton - 05\/02\/2025 06:17 AM",
+                            "postLastDetails": "Dana Tompkins - 05\/06\/2025 09:33 AM"
+                        },
+                        "id": "95482",
+                        "visit_id": "2432371"
+                    }
+                ],
+                "metadata": {
+                    "ai_analysis": {
+                        "group_type": "attempted_visit",
+                        "rationale": "The turnup card 2432376 failed due to cancellation and is linked to dispatch 2432371.",
+                        "anomalies": [
+                            "Site Access Issue"
+                        ],
+                        "is_revisit": false,
+                        "related_visit_id": "",
+                        "visit_status": "Failed - FST was cancelled"
+                    },
+                    "dispatch_data": {
+                        "scope_of_work": null,
+                        "service_date": "2025-05-02",
+                        "status": null,
+                        "customer": null,
+                        "location": null
+                    },
+                    "turnup_data": {
+                        "phase_name": ".",
+                        "service_date": "2025-05-02",
+                        "outcome": "Failed - FST was cancelled.",
+                        "revisit_indicated": "Yes",
+                        "technicians": [
+                            {
+                                "name": "Patrick Ebuwei",
+                                "contact_info": "+12024860202",
+                                "hours_worked": ".",
+                                "roles": [
+                                    "HelpDesk"
+                                ]
+                            }
+                        ],
+                        "tasks_performed": [],
+                        "time_on_site": "."
+                    },
+                    "billing_data": {
+                        "amount": null,
+                        "purchase_order": null,
+                        "invoice_number": null,
+                        "billing_date": null
+                    },
+                    "group_classification": "visit"
+                }
+            }
+        ],
+        "billing_records": [
+            {
+                "summary": {
+                    "group_id": "VG9",
+                    "group_type": "billing",
+                    "status": "Billing Update",
+                    "primary_dispatch_id": "2401857",
+                    "date": null,
+                    "has_billing_data": true,
+                    "dispatch_count": 1,
+                    "billing_count": 1,
+                    "classification": "billing"
+                },
+                "detail": {
+                    "visit_id": "VG9",
+                    "chronological_rank": 9,
+                    "status": "Billing Update",
+                    "dispatch_cards": [
+                        {
+                            "header": {
+                                "ticketid": "2401857",
+                                "subject": "Flynn_FW003864_Lexington Park_MD_50 PERCENT BILLING",
+                                "project_id": "3912",
+                                "service_date": "",
+                                "city": "Lexington Park",
+                                "state": "MD",
+                                "street": "21589 Great Mills Rd",
+                                "site_number": "FW003864",
+                                "creator_name": "David Fisher",
+                                "creator_email": "david.fisher@cisvpn.com",
+                                "created_date": "2025-03-13",
+                                "closed_date": "2025-05-08",
+                                "project_name": "NETWORK RE-CABLING - WENDYS"
+                            },
+                            "scheduling": {
+                                "original_schedule": {
+                                    "date": "2025-03-16",
+                                    "time": "",
+                                    "requester": ""
+                                },
+                                "reschedules": [],
+                                "confirmations": []
+                            },
+                            "communications": {
+                                "timeline": [],
+                                "technician_inquiry": []
+                            },
+                            "dispatch_details": {
+                                "TicketID": "2401857",
+                                "Status": "Closed",
+                                "ServiceDate": "",
+                                "TechnicianName": "",
+                                "DispatchNotes": "All Work",
+                                "ProjectID": "1204",
+                                "ProjectName": "NETWORK RE-CABLING - WENDYS",
+                                "scope_of_work": "Flynn_FW003864_Lexington Park_MD_50 PERCENT BILLING"
+                            },
+                            "ticket_id": "2401857"
+                        }
+                    ],
+                    "turnup_cards": [],
+                    "billing_cards": [
+                        {
+                            "header": {
+                                "id": "94879",
+                                "visit_id": "2401857",
+                                "created_at": "2025-05-01 15:37:29",
+                                "updated_at": "2025-05-01 15:37:32"
+                            },
+                            "financials": {
+                                "Total_Payable": 0,
+                                "jobUnitPrice": 2808,
+                                "Total_Receivable": 2808
+                            },
+                            "details": {
+                                "id_purchase": "",
+                                "id_item": "FST LABOR QUOTED",
+                                "billing_desc": "Flat Rate Labor",
+                                "jobLineType": "BILLABLE"
+                            },
+                            "notes": {
+                                "postFirst": "Please invoice customer via Coupa for the amount listed in the edit tab using the PO listed. Thanks\r\rPO: 232798\rType of billing: 50 PERCENT BILLING\rAmount: 2808",
+                                "postLast": "\"Full cabling sites - 3 night model ($5016+$460)\t$2,508.00 \n$460 for P3 (50%)\t$230 \nSite survey \t$75 \nEngineering\/PM\t$25 \nRemote turn up services \t$200 \nTotal \t$3,038.00 \"\n\n\n",
+                                "postFirstDetails": "David Fisher - 03\/13\/2025 03:34 PM",
+                                "postLastDetails": "David Fisher - 05\/08\/2025 11:02 AM"
+                            },
+                            "id": "94879",
+                            "visit_id": "2401857"
+                        }
+                    ],
+                    "metadata": {
+                        "ai_analysis": {
+                            "group_type": "unknown",
+                            "rationale": "Billing dispatch 2401857 is for 50 percent billing and linked to billing card 94879.",
+                            "anomalies": [],
+                            "is_revisit": false,
+                            "related_visit_id": "",
+                            "visit_status": "Billing Update"
+                        },
+                        "dispatch_data": {
+                            "scope_of_work": null,
+                            "service_date": "",
+                            "status": null,
+                            "customer": null,
+                            "location": null
+                        },
+                        "billing_data": {
+                            "amount": null,
+                            "purchase_order": null,
+                            "invoice_number": null,
+                            "billing_date": null
+                        },
+                        "group_classification": "billing"
+                    },
+                    "primary_dispatch_id": "2401857",
+                    "primary_turnup_id": "",
+                    "date": null,
+                    "first_date": "2025-03-13",
+                    "last_date": "2025-03-13",
+                    "all_dates": [
+                        "2025-03-13"
+                    ],
+                    "duration_days": 0
+                }
+            }
+        ],
+        "other_records": [
+            {
+                "summary": {
+                    "group_id": "VG10",
+                    "group_type": "other",
+                    "status": "Unbooked Dispatch",
+                    "primary_dispatch_id": "2376854",
+                    "date": "2025-02-19",
+                    "has_billing_data": false,
+                    "dispatch_count": 1,
+                    "billing_count": 0,
+                    "classification": "other"
+                },
+                "detail": {
+                    "visit_id": "VG10",
+                    "chronological_rank": 10,
+                    "status": "Unbooked Dispatch",
+                    "dispatch_cards": [
+                        {
+                            "header": {
+                                "ticketid": "2376854",
+                                "subject": "Flynn_FW003864_Lexington Park_MD_Turnup Assist Ticket",
+                                "project_id": "",
+                                "service_date": "2025-02-19",
+                                "city": "Lexington Park",
+                                "state": "MD",
+                                "street": "21589 Great Mills Rd",
+                                "site_number": "FW003864",
+                                "creator_name": "Amber Hodgson",
+                                "creator_email": "amber.hodgson@cisvpn.com",
+                                "created_date": "2025-01-28",
+                                "closed_date": "2025-02-06",
+                                "project_name": ""
+                            },
+                            "scheduling": {
+                                "original_schedule": {
+                                    "date": "2025-02-19",
+                                    "time": "21:30:00",
+                                    "requester": ""
+                                },
+                                "reschedules": [],
+                                "confirmations": []
+                            },
+                            "communications": {
+                                "timeline": [],
+                                "technician_inquiry": []
+                            },
+                            "dispatch_details": {
+                                "TicketID": "2376854",
+                                "Status": "Closed",
+                                "ServiceDate": "2025-02-19",
+                                "TechnicianName": "",
+                                "DispatchNotes": "",
+                                "ProjectID": "",
+                                "ProjectName": "",
+                                "scope_of_work": "Flynn_FW003864_Lexington Park_MD_Turnup Assist Ticket"
+                            },
+                            "ticket_id": "2376854"
+                        }
+                    ],
+                    "turnup_cards": [],
+                    "billing_cards": [],
+                    "metadata": {
+                        "ai_analysis": {
+                            "group_type": "unknown",
+                            "rationale": "Dispatch 2376854 is unbooked with no linked turnup.",
+                            "anomalies": [],
+                            "is_revisit": false,
+                            "related_visit_id": "",
+                            "visit_status": "Unbooked Dispatch"
+                        },
+                        "dispatch_data": {
+                            "scope_of_work": null,
+                            "service_date": "2025-02-19",
+                            "status": null,
+                            "customer": null,
+                            "location": null
+                        },
+                        "group_classification": "other"
+                    },
+                    "primary_dispatch_id": "2376854",
+                    "primary_turnup_id": "",
+                    "date": "2025-02-19",
+                    "first_date": "2025-01-28",
+                    "last_date": "2025-02-19",
+                    "all_dates": [
+                        "2025-01-28",
+                        "2025-02-19"
+                    ],
+                    "duration_days": 22
+                }
+            }
+        ],
+        "timeline": {
+            "milestones": [
+                {
+                    "date": "2025-03-14",
+                    "event": "Dispatch scheduled for 2025-03-14",
+                    "visit_id": "VG1",
+                    "ticket_ids": [
+                        "2382281"
+                    ]
+                },
+                {
+                    "date": "2025-03-10",
+                    "event": "Turnup scheduled for 2025-03-10",
+                    "visit_id": "VG1",
+                    "ticket_ids": [
+                        "2399123"
+                    ]
+                },
+                {
+                    "date": "2025-03-10",
+                    "event": "Technician arrived at site (:00:00)",
+                    "visit_id": "VG1",
+                    "ticket_ids": [
+                        "2399123"
+                    ]
+                },
+                {
+                    "date": "2025-03-10",
+                    "event": "Technician departed site (:00:00)",
+                    "visit_id": "VG1",
+                    "ticket_ids": [
+                        "2399123"
+                    ]
+                },
+                {
+                    "date": "2025-03-12",
+                    "event": "Turnup scheduled for 2025-03-12",
+                    "visit_id": "VG2",
+                    "ticket_ids": [
+                        "2399758"
+                    ]
+                },
+                {
+                    "date": "2025-03-12",
+                    "event": "Technician arrived at site (:00:00)",
+                    "visit_id": "VG2",
+                    "ticket_ids": [
+                        "2399758"
+                    ]
+                },
+                {
+                    "date": "2025-03-12",
+                    "event": "Technician departed site (:00:00)",
+                    "visit_id": "VG2",
+                    "ticket_ids": [
+                        "2399758"
+                    ]
+                },
+                {
+                    "date": "2025-03-14",
+                    "event": "Dispatch scheduled for 2025-03-14",
+                    "visit_id": "VG3",
+                    "ticket_ids": [
+                        "2382281"
+                    ]
+                },
+                {
+                    "date": "2025-03-14",
+                    "event": "Turnup scheduled for 2025-03-14",
+                    "visit_id": "VG3",
+                    "ticket_ids": [
+                        "2402477"
+                    ]
+                },
+                {
+                    "date": "2025-03-14",
+                    "event": "Technician arrived at site (10:33:00)",
+                    "visit_id": "VG3",
+                    "ticket_ids": [
+                        "2402477"
+                    ]
+                },
+                {
+                    "date": "2025-03-14",
+                    "event": "Technician departed site (12:27:00)",
+                    "visit_id": "VG3",
+                    "ticket_ids": [
+                        "2402477"
+                    ]
+                },
+                {
+                    "date": "2025-04-30",
+                    "event": "Dispatch scheduled for 2025-04-30",
+                    "visit_id": "VG4",
+                    "ticket_ids": [
+                        "2382353"
+                    ]
+                },
+                {
+                    "date": "2025-03-16",
+                    "event": "Turnup scheduled for 2025-03-16",
+                    "visit_id": "VG4",
+                    "ticket_ids": [
+                        "2402607"
+                    ]
+                },
+                {
+                    "date": "2025-03-16",
+                    "event": "Technician arrived at site (18:30:00)",
+                    "visit_id": "VG4",
+                    "ticket_ids": [
+                        "2402607"
+                    ]
+                },
+                {
+                    "date": "2025-03-16",
+                    "event": "Technician departed site (18:30:00)",
+                    "visit_id": "VG4",
+                    "ticket_ids": [
+                        "2402607"
+                    ]
+                },
+                {
+                    "date": "2025-04-30",
+                    "event": "Dispatch scheduled for 2025-04-30",
+                    "visit_id": "VG5",
+                    "ticket_ids": [
+                        "2382353"
+                    ]
+                },
+                {
+                    "date": "2025-04-30",
+                    "event": "Turnup scheduled for 2025-04-30",
+                    "visit_id": "VG5",
+                    "ticket_ids": [
+                        "2426957"
+                    ]
+                },
+                {
+                    "date": "2025-04-30",
+                    "event": "Technician arrived at site (18:30:00)",
+                    "visit_id": "VG5",
+                    "ticket_ids": [
+                        "2426957"
+                    ]
+                },
+                {
+                    "date": "2025-04-30",
+                    "event": "Technician departed site (07:15:00)",
+                    "visit_id": "VG5",
+                    "ticket_ids": [
+                        "2426957"
+                    ]
+                },
+                {
+                    "date": "2025-05-01",
+                    "event": "Dispatch scheduled for 2025-05-01",
+                    "visit_id": "VG6",
+                    "ticket_ids": [
+                        "2382401"
+                    ]
+                },
+                {
+                    "date": "2025-05-01",
+                    "event": "Turnup scheduled for 2025-05-01",
+                    "visit_id": "VG6",
+                    "ticket_ids": [
+                        "2402585"
+                    ]
+                },
+                {
+                    "date": "2025-05-01",
+                    "event": "Technician arrived at site (18:30:00)",
+                    "visit_id": "VG6",
+                    "ticket_ids": [
+                        "2402585"
+                    ]
+                },
+                {
+                    "date": "2025-05-01",
+                    "event": "Technician departed site (08:30:00)",
+                    "visit_id": "VG6",
+                    "ticket_ids": [
+                        "2402585"
+                    ]
+                },
+                {
+                    "date": "2025-05-08",
+                    "event": "Dispatch scheduled for 2025-05-08",
+                    "visit_id": "VG7",
+                    "ticket_ids": [
+                        "2400120"
+                    ]
+                },
+                {
+                    "date": "2025-05-08",
+                    "event": "Turnup scheduled for 2025-05-08",
+                    "visit_id": "VG7",
+                    "ticket_ids": [
+                        "2427607"
+                    ]
+                },
+                {
+                    "date": "2025-05-08",
+                    "event": "Technician arrived at site (20:45:00)",
+                    "visit_id": "VG7",
+                    "ticket_ids": [
+                        "2427607"
+                    ]
+                },
+                {
+                    "date": "2025-05-08",
+                    "event": "Technician departed site (08:10:00)",
+                    "visit_id": "VG7",
+                    "ticket_ids": [
+                        "2427607"
+                    ]
+                },
+                {
+                    "date": "2025-05-02",
+                    "event": "Dispatch scheduled for 2025-05-02",
+                    "visit_id": "VG8",
+                    "ticket_ids": [
+                        "2432371"
+                    ]
+                },
+                {
+                    "date": "2025-05-02",
+                    "event": "Turnup scheduled for 2025-05-02",
+                    "visit_id": "VG8",
+                    "ticket_ids": [
+                        "2432376"
+                    ]
+                },
+                {
+                    "date": "2025-05-02",
+                    "event": "Technician arrived at site (.)",
+                    "visit_id": "VG8",
+                    "ticket_ids": [
+                        "2432376"
+                    ]
+                },
+                {
+                    "date": "2025-05-02",
+                    "event": "Technician departed site (.)",
+                    "visit_id": "VG8",
+                    "ticket_ids": [
+                        "2432376"
+                    ]
+                }
+            ],
+            "delays": [
+                {
+                    "start_date": "2025-03-10",
+                    "description": "Visit failed: Unable to make it to site",
+                    "impact": "Visit could not be completed.",
+                    "visit_id": "VG1",
+                    "ticket_ids": [
+                        "2399123"
+                    ]
+                },
+                {
+                    "start_date": "2025-03-12",
+                    "description": "Visit failed: No check-in response",
+                    "impact": "Visit could not be completed.",
+                    "visit_id": "VG2",
+                    "ticket_ids": [
+                        "2399758"
+                    ]
+                },
+                {
+                    "start_date": "2025-03-16",
+                    "description": "Visit failed: FST crew removed",
+                    "impact": "Visit could not be completed.",
+                    "visit_id": "VG4",
+                    "ticket_ids": [
+                        "2402607"
+                    ]
+                },
+                {
+                    "start_date": "2025-05-02",
+                    "description": "Visit failed: FST was cancelled.",
+                    "impact": "Visit could not be completed.",
+                    "visit_id": "VG8",
+                    "ticket_ids": [
+                        "2432376"
+                    ]
+                }
+            ]
+        },
+        "key_issues": {
+            "issues": {
+                "issues": [
+                    {
+                        "issue": "Site Access Issue",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG1",
+                            "VG2",
+                            "VG4",
+                            "VG8"
+                        ]
+                    },
+                    {
+                        "issue": "Unable to make it to site",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG1"
+                        ]
+                    },
+                    {
+                        "issue": "Failed - No check-in response",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG2"
+                        ]
+                    },
+                    {
+                        "issue": "FST crew was removed from the site",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG4"
+                        ]
+                    },
+                    {
+                        "issue": "Work Incomplete due to abatement",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "issue": "Parts\/Material Issue",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG6",
+                            "VG7"
+                        ]
+                    },
+                    {
+                        "issue": "MX did not come online after migration",
+                        "status": "resolved",
+                        "resolution_details": "Meraki support pushed an update, MX connection restored",
+                        "resolved_in_visit": "VG6",
+                        "visits_affected": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "issue": "POS2 power cable cut",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "issue": "Software issue with POS4",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "issue": "WiFi\/Internet access for Guest WiFi\/MWS and Ops tablet",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG7"
+                        ]
+                    },
+                    {
+                        "issue": "FST was cancelled",
+                        "status": "open",
+                        "visits_affected": [
+                            "VG8"
+                        ]
+                    }
+                ]
+            }
+        },
+        "outstanding_items": {
+            "outstanding_items": {
+                "outstanding_items": [
+                    {
+                        "description": "Revisit needed for VG1",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG1"
+                        ]
+                    },
+                    {
+                        "description": "Unable to make it to site for VG1",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG1"
+                        ]
+                    },
+                    {
+                        "description": "Failed outcome due to inability to reach site for VG1",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG1"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG2",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG2"
+                        ]
+                    },
+                    {
+                        "description": "Failed - No check-in response for VG2",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG2"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG4",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG4"
+                        ]
+                    },
+                    {
+                        "description": "FST crew removed from site for VG4",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG4"
+                        ]
+                    },
+                    {
+                        "description": "Failed outcome due to crew removal for VG4",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG4"
+                        ]
+                    },
+                    {
+                        "description": "Work Incomplete for VG5",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG5",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "description": "Jhooks not hung due to no room for VG5",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "description": "Service Loop not made due to abatement for VG5",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "description": "AP not placed due to no room, waiting for abatement for VG5",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG5"
+                        ]
+                    },
+                    {
+                        "description": "Parts\/Material Issue for VG6",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG6",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "description": "POS2 power cable cut for VG6",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "description": "Software issue with POS4 for VG6",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG6"
+                        ]
+                    },
+                    {
+                        "description": "Parts\/Material Issue for VG7",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG7"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG7",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG7"
+                        ]
+                    },
+                    {
+                        "description": "WiFi\/Internet access issue, missing OCD cable, DT02 printer for VG7",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG7"
+                        ]
+                    },
+                    {
+                        "description": "Revisit needed for VG8",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG8"
+                        ]
+                    },
+                    {
+                        "description": "FST was cancelled for VG8",
+                        "current_status": "Unresolved",
+                        "visits_related": [
+                            "VG8"
+                        ]
+                    },
+                    {
+                        "description": "Failed outcome due to cancellation for VG8",
+                        "current_status": "pending",
+                        "visits_related": [
+                            "VG8"
+                        ]
+                    }
+                ]
+            }
+        },
+        "recommended_actions": {
+            "recommended_actions": [
+                {
+                    "action": "Coordinate with site management to resolve the site access issue affecting VG1, VG2, VG4, and VG8.",
+                    "priority": "high",
+                    "reason": "This is impacting multiple visits and blocking progress."
+                },
+                {
+                    "action": "Schedule a revisit for VG1, ensuring transportation and access are secured beforehand.",
+                    "priority": "high",
+                    "reason": "Previous attempts failed due to inaccessibility; resolving this will unblock VG1 tasks."
+                },
+                {
+                    "action": "Establish remote check-in processes for VG2 to avoid future no-response issues.",
+                    "priority": "medium",
+                    "reason": "Ensures verification of work completion without physical presence if necessary."
+                },
+                {
+                    "action": "Investigate and resolve the issue that led to the FST crew's removal from VG4.",
+                    "priority": "high",
+                    "reason": "It directly affects work progress and site relationships."
+                },
+                {
+                    "action": "Complete the unfinished work for VG5 post-abatement clearance.",
+                    "priority": "medium",
+                    "reason": "Pending issues are dependent on abatement clearance."
+                },
+                {
+                    "action": "Expedite sourcing of required parts for VG6 and VG7 to resolve material issues.",
+                    "priority": "high",
+                    "reason": "Parts shortage is delaying work completion."
+                },
+                {
+                    "action": "Repair or replace the cut POS2 power cable at VG6 to restore functionality.",
+                    "priority": "high",
+                    "reason": "Critical to restoring operations at VG6."
+                },
+                {
+                    "action": "Address the software issue with POS4 at VG6 through troubleshooting or updates.",
+                    "priority": "medium",
+                    "reason": "Ensures complete functionality of POS systems."
+                },
+                {
+                    "action": "Investigate and rectify internet and Wi-Fi access issues for VG7.",
+                    "priority": "high",
+                    "reason": "Internet access is essential for operational capabilities."
+                },
+                {
+                    "action": "Reschedule the cancelled FST for VG8 and ensure all prerequisites are met.",
+                    "priority": "medium",
+                    "reason": "Previous cancellations need addressing to maintain schedule integrity."
+                }
+            ]
+        },
+        "closeout_summary": {
+            "unresolved_issues": [],
+            "delay_causes": [
+                {
+                    "description": "Unable to make it to site, leading to incomplete visit.",
+                    "ticket_ids": [
+                        "2399123"
+                    ]
+                },
+                {
+                    "description": "No check-in response, leading to incomplete visit.",
+                    "ticket_ids": [
+                        "2399758"
+                    ]
+                },
+                {
+                    "description": "FST crew removed, leading to incomplete visit.",
+                    "ticket_ids": [
+                        "2402607"
+                    ]
+                },
+                {
+                    "description": "FST was cancelled, leading to incomplete visit.",
+                    "ticket_ids": [
+                        "2432376"
+                    ]
+                }
+            ],
+            "schedule_constraints": [],
+            "client_feedback": ""
+        },
+        "financials": {
+            "total_receivable": 3168,
+            "line_items": [
+                {
+                    "amount": 0,
+                    "description": "Exempt Labor",
+                    "invoice_number": "",
+                    "purchase_order": "6260d21c-8219-f011-9346-7c1e52ec639d",
+                    "date": ""
+                },
+                {
+                    "amount": 0,
+                    "description": "Exempt Labor",
+                    "invoice_number": "",
+                    "purchase_order": "f36f08ce-9c2a-f011-9346-7c1e52dc97d8",
+                    "date": ""
+                },
+                {
+                    "amount": 0,
+                    "description": "Hourly Labor",
+                    "invoice_number": "",
+                    "purchase_order": "e30b74e7-0331-f011-9346-7c1e5292f694",
+                    "date": ""
+                },
+                {
+                    "amount": 0,
+                    "description": "Tolls",
+                    "invoice_number": "",
+                    "purchase_order": "e40b74e7-0331-f011-9346-7c1e5292f694",
+                    "date": ""
+                },
+                {
+                    "amount": 360,
+                    "description": "Minimum Labor Rate",
+                    "invoice_number": "",
+                    "purchase_order": "67cdd1dd-972a-f011-9346-7c1e5292f694",
+                    "date": ""
+                },
+                {
+                    "amount": 2808,
+                    "description": "Flat Rate Labor",
+                    "invoice_number": "",
+                    "purchase_order": "",
+                    "date": "",
+                    "from_billing_group": true
+                }
+            ],
+            "invoice_count": 0,
+            "invoices": [],
+            "purchase_orders": [
+                "6260d21c-8219-f011-9346-7c1e52ec639d",
+                "f36f08ce-9c2a-f011-9346-7c1e52dc97d8",
+                "e30b74e7-0331-f011-9346-7c1e5292f694",
+                "e40b74e7-0331-f011-9346-7c1e5292f694",
+                "67cdd1dd-972a-f011-9346-7c1e5292f694"
+            ]
+        },
+        "_metadata": {
+            "analysis_id": "449987f6d4da4e8d3ba7249e1a1ebb6c",
+            "generated_at": "2025-05-15T23:44:27Z",
+            "ticket_count": 21,
+            "visits_count": 8,
+            "dispatch_count": 0,
+            "turnup_count": 0,
+            "billing_count": 0,
+            "phases_completed": 3,
+            "model_used": "gpt-4o",
+            "processing_time": "57.29s",
+            "version": "1.0",
+            "group_counts": {
+                "true_visits": 8,
+                "billing_groups": 1,
+                "other_groups": 1,
+                "total_groups": 10
+            }
+        },
+        "_analysis_integrity": {
+            "complete": true,
+            "failed_components": [],
+            "has_error_data": false
+        }
+    },
+    "_storage_metadata": {
+        "stored_at": "2025-05-15T23:44:27+00:00",
+        "ticket_id": "2400120",
+        "filename": "enhanced_analysis_2400120_20250515_234427.json",
+        "database": {
+            "connection": "sqlite",
+            "driver": "sqlite"
+        }
+    }
+}

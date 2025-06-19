@@ -13,7 +13,7 @@ export default defineConfig({
     },
     optimizeDeps: {
         noDiscovery: true,
-        include: ['quill', '@primevue/forms' ]
+        include: ['quill', '@primevue/forms', 'pusher-js', 'laravel-echo']
     },
     plugins: [
         vue({

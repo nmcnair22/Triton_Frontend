@@ -124,6 +124,16 @@ function getSeverity(status) {
             :globalFilterFields="['name', 'email', 'role']"
             v-model:filters="filterTable"
             @page="onPageChange"
+            :pt="{
+                root: { class: 'shadow-sm rounded-lg overflow-hidden' },
+                header: { class: 'bg-surface-50 dark:bg-surface-800 py-3' },
+                thead: { class: 'bg-surface-50 dark:bg-surface-800' },
+                headerRow: { class: 'border-b border-surface-200 dark:border-surface-700' },
+                headerCell: { class: 'text-surface-700 dark:text-surface-300 font-semibold py-3 px-3' },
+                bodyRow: { class: 'border-b border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors duration-200' },
+                bodyCell: { class: 'py-3 px-3' },
+                pagination: { class: 'bg-surface-50 dark:bg-surface-800 py-3' }
+            }"
         >
             <template #header>
                 <div class="flex flex-wrap gap-2 items-center justify-between">

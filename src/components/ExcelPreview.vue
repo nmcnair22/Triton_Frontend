@@ -6,11 +6,22 @@ import Select from 'primevue/select';
 import ProgressSpinner from 'primevue/progressspinner';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Tooltip from 'primevue/tooltip';
+import Message from 'primevue/message';
+import { useToast } from 'primevue/usetoast';
 
 const props = defineProps({
-  file: Object,
-  fileUrl: String
+  file: {
+    type: Object,
+    required: true
+  },
+  fileUrl: {
+    type: String,
+    required: true
+  }
 });
+
+const toast = useToast();
 
 const isLoading = ref(true);
 const error = ref(null);
@@ -142,67 +153,168 @@ watch(() => props.file, () => {
 watch(() => props.fileUrl, () => {
   processExcelFile();
 });
+
+// Excel data
+const sheetData = ref([]);
+const sheetNames = ref([]);
+const isLoadingExcel = ref(true);
+const hasErrorExcel = ref(false);
+const errorMessageExcel = ref('');
+
+// Load Excel data when component is mounted
+onMounted(() => {
+  loadExcelData();
+});
+
+// Watch for file URL changes
+watch(() => props.fileUrl, () => {
+  loadExcelData();
+});
+
+// Load Excel data from the provided URL
+async function loadExcelData() {
+  if (!props.fileUrl) {
+    hasErrorExcel.value = true;
+    errorMessageExcel.value = 'No file URL provided';
+    isLoadingExcel.value = false;
+    return;
+  }
+  
+  isLoadingExcel.value = true;
+  hasErrorExcel.value = false;
+  
+  try {
+    // Add a timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const url = `${props.fileUrl}${props.fileUrl.includes('?') ? '&' : '?'}t=${timestamp}`;
+    
+    // Fetch the Excel file
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Excel file: ${response.statusText}`);
+    }
+    
+    // Parse the Excel data (using a placeholder implementation)
+    // In a real implementation, you would use a library like SheetJS/xlsx
+    parseExcelData(await response.json());
+    
+  } catch (error) {
+    console.error('Error loading Excel data:', error);
+    hasErrorExcel.value = true;
+    errorMessageExcel.value = error.message || 'Failed to load Excel data';
+    sheetData.value = [];
+    sheetNames.value = [];
+    selectedSheet.value = null;
+  } finally {
+    isLoadingExcel.value = false;
+  }
+}
+
+// Parse Excel data (placeholder implementation)
+function parseExcelData(data) {
+  // This is a placeholder function - in a real implementation,
+  // you would parse the Excel data and extract sheet names and content
+  
+  if (!data || !data.sheets) {
+    throw new Error('Invalid Excel data format');
+  }
+  
+  // Extract sheet names
+  sheetNames.value = Object.keys(data.sheets).map(name => ({
+    name,
+    value: name
+  }));
+  
+  if (sheetNames.value.length > 0) {
+    // Select the first sheet by default
+    selectedSheet.value = sheetNames.value[0].value;
+    
+    // Load the selected sheet data
+    loadSheetData(selectedSheet.value, data);
+  } else {
+    sheetData.value = [];
+  }
+}
+
+// Load data for a specific sheet
+function loadSheetData(sheetName, data) {
+  if (!data || !data.sheets || !data.sheets[sheetName]) {
+    sheetData.value = [];
+    return;
+  }
+  
+  // Extract sheet data
+  sheetData.value = data.sheets[sheetName];
+}
+
+// Handle sheet change
+function onSheetChange() {
+  loadSheetData(selectedSheet.value, props.file.data);
+}
+
+// Download the Excel file
+function downloadFile() {
+  if (props.file) {
+    // Emit download event
+    toast.add({
+      severity: 'info',
+      summary: 'Download Started',
+      detail: 'Your file is being downloaded',
+      life: 3000
+    });
+  }
+}
 </script>
 
 <template>
-  <div class="excel-preview w-full h-full flex flex-col">
+  <div class="excel-preview">
     <!-- Loading state -->
-    <div v-if="isLoading" class="flex-1 flex justify-center items-center">
-      <ProgressSpinner style="width: 50px; height: 50px" />
-      <span class="ml-3">Loading Excel data...</span>
+    <div v-if="isLoading" class="flex flex-column align-items-center p-4">
+      <ProgressSpinner />
+      <p class="mt-3">Loading Excel file...</p>
     </div>
     
     <!-- Error state -->
-    <div v-else-if="error" class="flex-1 flex flex-col justify-center items-center">
-      <i class="pi pi-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-      <p class="text-xl mb-2">Failed to load Excel file</p>
-      <p class="text-sm text-surface-600 dark:text-surface-400 mb-4 max-w-lg text-center">
-        {{ error }}
-      </p>
-      <Button label="Try downloading instead" icon="pi pi-download" />
+    <div v-else-if="error" class="p-4">
+      <Message severity="error" :closable="false">
+        <div class="flex flex-column">
+          <span class="font-bold">Failed to load Excel file</span>
+          <p>{{ error }}</p>
+        </div>
+      </Message>
     </div>
     
-    <!-- Excel preview -->
-    <div v-else-if="sheets.length > 0" class="flex-1 flex flex-col overflow-hidden">
+    <!-- Excel data display -->
+    <div v-else class="excel-content">
       <!-- Sheet selector -->
-      <div class="flex items-center mb-3 gap-3">
-        <label class="font-medium">Sheet:</label>
-        <Select 
-          v-model="selectedSheet" 
-          :options="sheets" 
-          optionLabel="label" 
-          placeholder="Select Sheet" 
-          class="w-48" />
+      <div class="flex justify-content-between align-items-center p-3 border-bottom-1 surface-border mb-3">
+        <div class="flex align-items-center">
+          <label for="sheet-selector" class="mr-2 font-medium">Sheet:</label>
+          <Select v-model="selectedSheet" :options="sheets" optionLabel="label" 
+                 class="w-12rem" inputId="sheet-selector" />
+        </div>
+        <div>
+          <Button v-tooltip.top="'Download Excel File'" icon="pi pi-download" text />
+        </div>
       </div>
       
-      <!-- Data table -->
-      <div class="flex-1 overflow-auto">
-        <DataTable 
-          :value="currentData" 
-          :resizableColumns="true" 
-          columnResizeMode="expand"
-          class="excel-table w-full" 
-          stripedRows
-          scrollable
-          scrollHeight="100%">
-          <Column 
-            v-for="col in headers" 
-            :key="col.field" 
-            :field="col.field" 
-            :header="col.header"
-            style="min-width: 150px"
-            class="excel-cell p-2" />
+      <!-- Excel Data Table -->
+      <div class="excel-table-container p-3">
+        <DataTable v-if="headers.length > 0" 
+                  :value="currentData" 
+                  showGridlines
+                  stripedRows
+                  responsiveLayout="scroll"
+                  class="p-datatable-sm excel-data-table">
+          <Column v-for="col in headers" :key="col.field" :field="col.field" :header="col.header" />
         </DataTable>
+        
+        <div v-else class="flex flex-column align-items-center justify-content-center p-5">
+          <i class="pi pi-file-excel text-4xl text-primary mb-3"></i>
+          <p>No data available in this sheet</p>
+        </div>
       </div>
-    </div>
-    
-    <!-- No data state -->
-    <div v-else class="flex-1 flex flex-col justify-center items-center">
-      <i class="pi pi-file-excel text-4xl text-green-500 mb-3"></i>
-      <p class="text-xl mb-2">No data found</p>
-      <p class="text-sm text-surface-600 dark:text-surface-400 mb-4">
-        The Excel file appears to be empty or contains no valid sheets.
-      </p>
     </div>
   </div>
 </template>
@@ -210,26 +322,41 @@ watch(() => props.fileUrl, () => {
 <style scoped>
 .excel-preview {
   height: 100%;
-  min-height: 400px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.excel-table :deep(th.p-frozen-column) {
-  font-weight: bold;
-  background-color: var(--surface-200);
+.excel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.excel-table-container {
+  flex: 1;
+  overflow: auto;
+}
+
+.excel-data-table {
+  width: 100%;
+}
+
+:deep(.p-datatable-wrapper) {
+  overflow-x: auto;
+}
+
+:deep(.p-datatable-thead) th {
   position: sticky;
-  left: 0;
+  top: 0;
   z-index: 1;
 }
 
-.excel-table :deep(tr:nth-child(even)) {
-  background-color: var(--surface-100);
-}
-
-.excel-table :deep(tr:hover) {
-  background-color: var(--surface-200);
-}
-
-.excel-table :deep(.p-datatable-wrapper) {
-  height: 100%;
+:deep(.p-datatable-tbody) td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
 }
 </style> 

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/stores/user';
 import { UserService } from '@/service/UserService.js';
 import { z } from 'zod';
 import Select from 'primevue/select';

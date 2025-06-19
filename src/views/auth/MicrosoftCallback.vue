@@ -10,6 +10,35 @@ const error = ref('');
 const loading = ref(true);
 const debugInfo = ref({});
 
+// Find the best route to redirect to based on permissions
+function findAccessibleRoute(permissions) {
+  // First check for stored redirect path
+  const storedRedirect = localStorage.getItem('auth_redirect');
+  if (storedRedirect) {
+    localStorage.removeItem('auth_redirect');
+    return storedRedirect;
+  }
+  
+  // Define fallback routes in order of preference (these should not require permissions)
+  const fallbackRoutes = [
+    '/dashboard',
+    '/profile',
+    '/'
+  ];
+  
+  // Check if user has specific permissions and return appropriate route
+  if (permissions.includes('dispatch:read')) {
+    return '/dispatch/dashboard';
+  }
+  
+  if (permissions.includes('inventory.view')) {
+    return '/dashboard';
+  }
+  
+  // Return the first fallback route if no matching permissions
+  return fallbackRoutes[0];
+}
+
 onMounted(async () => {
   console.log('Microsoft callback page loaded');
   
@@ -45,17 +74,17 @@ onMounted(async () => {
         console.error('Error fetching current user:', userErr);
       }
       
-      // Redirect to dashboard after a short delay
+      // Get user permissions for routing
+      const userPermissions = AuthService.getPermissions();
+      
+      // Find an appropriate route based on permissions and stored redirect
+      const redirectTo = findAccessibleRoute(userPermissions);
+      
+      // Redirect after a short delay (allows console logs to display)
       setTimeout(() => {
-        // Check for redirect path in localStorage
-        const redirectPath = localStorage.getItem('auth_redirect');
-        if (redirectPath) {
-          localStorage.removeItem('auth_redirect');
-          router.push(redirectPath);
-        } else {
-          router.push({ name: 'dashboard-marketing' });
-        }
-      }, 2000); // Increased delay to see logs
+        router.push(redirectTo);
+      }, 500);
+      
       return;
     }
     

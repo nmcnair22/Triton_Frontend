@@ -2,7 +2,7 @@
  * Utility to set up test permissions for RBAC development
  * This file is for development purposes only and should not be included in production
  */
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '@/stores/user';
 import { AuthService } from '@/auth/AuthService';
 
 /**

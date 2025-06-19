@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import MultiSelect from 'primevue/multiselect';
+import { UserService } from '@/service/UserService';
 
 const router = useRouter();
 const route = useRoute();
@@ -59,63 +60,46 @@ onMounted(async () => {
 // Fetch user data
 async function fetchUserData() {
     try {
-        const userData = await userManagementStore.fetchUser(userId);
+        const userData = await UserService.getUser(userId);
+        roles.value = await UserService.getRoles();
         
-        // Debug user data from API
-        console.log('=== DEBUG USER DATA ===');
-        console.log('User data from API:', userData);
-        console.log('Available roles:', roles.value);
-        
-        // Prepare roles array
+        // Process user roles based on data structure
         let userRoles = [];
         
-        // If user has roles array
-        if (userData.roles && Array.isArray(userData.roles) && userData.roles.length > 0) {
-            console.log('User has roles array:', userData.roles);
-            
-            // Map user roles to the equivalent roles in the roles.value array
-            // This ensures proper matching with the dropdown options
-            userRoles = userData.roles.map(userRole => {
-                // Find the matching role from the available roles array
-                const matchingRole = roles.value.find(r => r.id === userRole.id || r.name === userRole.name);
-                if (matchingRole) {
-                    return matchingRole;
+        if (userData.roles && Array.isArray(userData.roles)) {
+            // User has roles as array of objects or strings
+            userRoles = userData.roles.map(role => {
+                if (typeof role === 'object' && role.id) {
+                    return role;
+                } else if (typeof role === 'string') {
+                    // Find matching role object from available roles
+                    const matchingRole = roles.value.find(r => r.name === role);
+                    return matchingRole || { id: null, name: role };
                 }
-                return userRole;
+                return role;
             });
-        } 
-        // If user has a single role string
-        else if (userData.role) {
-            console.log('User has single role string:', userData.role);
-            // Find the role object that matches the role name
-            const roleObj = roles.value.find(r => r.name === userData.role);
-            if (roleObj) {
-                userRoles = [roleObj];
+        } else if (userData.role && typeof userData.role === 'string') {
+            // User has a single role as string
+            const matchingRole = roles.value.find(r => r.name === userData.role);
+            
+            if (matchingRole) {
+                userRoles = [matchingRole];
             } else {
-                // If role not found in available roles, create a temporary object
-                console.log('Creating temporary role object for:', userData.role);
-                userRoles = [{ name: userData.role, id: 0 }];
+                // Create a temporary role object if no match found
+                userRoles = [{ id: null, name: userData.role }];
             }
         }
         
-        console.log('Final userRoles:', userRoles);
-        
-        // Populate form data from user data
+        // Populate form data
         formData.value = {
-            name: userData.name || '',
-            email: userData.email || '',
-            password: '', // Don't include password in edit form
-            password_confirmation: '',
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
             roles: userRoles,
-            city: userData.city || '',
-            state: userData.state || '',
-            bio: userData.bio || '',
-            website: userData.website || '',
-            status: userData.status || 'active',
-            avatar: null // Don't include avatar file in edit form
+            status: userData.status || 'active'
         };
         
-        console.log('Form data after population:', formData.value);
+        isLoading.value = false;
     } catch (error) {
         console.error('Error fetching user data:', error);
         toast.add({

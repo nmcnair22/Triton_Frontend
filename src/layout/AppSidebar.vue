@@ -33,8 +33,9 @@ function onAnchorToggle() {
 <template>
     <div class="layout-sidebar" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
         <div class="sidebar-header">
-            <router-link :to="{ name: 'dashboard-marketing' }" class="logo">
-                <img class="logo-image" :src="'/layout/images/cis-logo-tagline-white.png'" alt="CIS Logo" style="width: auto; height: 3rem; max-width: 100%; object-fit: contain; margin-left: -2rem;" />
+            <router-link :to="{ name: 'visit-management' }" class="logo">
+                <img class="logo-image" :src="layoutConfig.menuTheme === 'light' ? '/layout/images/logo-dark.svg' : '/layout/images/logo-white.svg'" alt="diamond-layout" />
+                <span class="app-name title-h7">TRITON V3</span>
             </router-link>
             <button class="layout-sidebar-anchor" type="button" @click="onAnchorToggle" />
         </div>

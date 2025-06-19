@@ -4,13 +4,13 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
-        label: 'Dashboards',
+        label: 'Field Services',
         icon: 'pi pi-home',
         items: [
             {
-                label: 'Marketing',
-                icon: 'pi pi-fw pi-gauge',
-                to: '/dashboard-marketing'
+                label: 'Visit Details',
+                icon: 'pi pi-fw pi-calendar-plus',
+                to: '/field-services/visit-management'
             }
         ]
     },
@@ -22,12 +22,32 @@ const model = ref([
             {
                 label: 'Dashboard',
                 icon: 'pi pi-fw pi-building-columns',
-                to: '/dashboard-banking'
+                to: '/streamline/dashboard'
+            },
+            {
+                label: 'Bill Management',
+                icon: 'pi pi-fw pi-money-bill',
+                to: '/streamline/bill-management'
             },
             {
                 label: 'Bill Import',
                 icon: 'pi pi-fw pi-file-import',
                 to: '/streamline/bill-import'
+            },
+            {
+                label: 'Tem Accounts',
+                icon: 'pi pi-fw pi-users',
+                to: '/streamline/tem-accounts'
+            },
+            {
+                label: 'Vendors & Contracts',
+                icon: 'pi pi-fw pi-building',
+                to: '/streamline/vendors-contracts'
+            },
+            {
+                label: 'Bill Transfer Tracker',
+                icon: 'pi pi-fw pi-sync',
+                to: '/streamline/bill-transfer-tracker'
             }
         ]
     },
@@ -55,13 +75,38 @@ const model = ref([
     },
     { separator: true },
     {
-        label: 'Reporting',
+        label: 'Financial',
         icon: 'pi pi-chart-bar',
         items: [
             {
-                label: 'Report Manager',
-                icon: 'pi pi-fw pi-table',
-                to: '/reporting/report-manager'
+                label: 'Finance Dashboard',
+                icon: 'pi pi-fw pi-money-bill',
+                to: '/finance/dashboard'
+            },
+            {
+                label: 'Accounts Receivable',
+                icon: 'pi pi-fw pi-dollar',
+                to: '/finance/accounts-receivable'
+            },
+            {
+                label: 'Accounts Payable',
+                icon: 'pi pi-fw pi-credit-card',
+                to: '/finance/accounts-payable'
+            },
+            {
+                label: 'Financial Analysis',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/finance/analysis'
+            },
+            {
+                label: 'Product Performance',
+                icon: 'pi pi-fw pi-box',
+                to: '/finance/product-performance'
+            },
+            {
+                label: 'Alerts Management',
+                icon: 'pi pi-fw pi-bell',
+                to: '/finance/alerts'
             }
         ]
     },

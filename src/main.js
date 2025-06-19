@@ -4,9 +4,12 @@ import router from './router';
 import { createPinia } from 'pinia';
 import axios from 'axios';
 
+// Import Laravel Echo configuration
+import './echo';
+
 import BlockViewer from '@/components/BlockViewer.vue';
 import { definePreset, palette } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
+import Material from '@primeuix/themes/material';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
@@ -14,7 +17,7 @@ import ToastService from 'primevue/toastservice';
 // RBAC components
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';
 
-// Import auth service
+// Import auth service from the correct path
 import { AuthService } from './auth/AuthService';
 
 import '@/assets/styles.scss';
@@ -28,14 +31,18 @@ if (csrfToken) {
   axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.content;
 }
 
-// Get token from local storage on app start
-// AuthService.setupInterceptors(); // Commented out - causing env var issues
+// Set token in axios headers if present
+const token = localStorage.getItem('token') || localStorage.getItem('auth_token'); 
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
 
 const app = createApp(App);
 const pinia = createPinia();
 
-app.use(router);
+// Mount pinia before router to ensure store is available for navigation guards
 app.use(pinia);
+app.use(router);
 
 // Generate palettes for CIS colors
 const cisNavyPalette = palette('#0B2244');
@@ -44,7 +51,7 @@ const cisYellowPalette = palette('#FFB400');
 const cisGrayPalette = palette('#595959');
 const cisRedPalette = palette('#F60D03');
 
-const MyPreset = definePreset(Aura, {
+const MyPreset = definePreset(Material, {
     colors: {
         'cis-navy': cisNavyPalette,
         'cis-blue': cisBluePalette,
@@ -57,10 +64,15 @@ const MyPreset = definePreset(Aura, {
         info: cisBluePalette,
         warning: cisYellowPalette,
         danger: cisRedPalette
-        }
+    }
 });
 
 app.use(PrimeVue, {
+    pt: {
+        chart: {
+            root: { class: 'w-full' }
+        }
+    },
     theme: {
         preset: MyPreset,
         options: {
@@ -74,5 +86,29 @@ app.use(ConfirmationService);
 // Register global components
 app.component('BlockViewer', BlockViewer);
 app.component('PermissionGuard', PermissionGuard);
+
+/* Import Font Awesome */
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { 
+    faArrowTrendUp,
+    faArrowTrendDown,
+    faTruck,
+    faMoneyBill,
+    faChartLine,
+    faCheckCircle
+} from '@fortawesome/free-solid-svg-icons';
+
+// Add icons to the library
+library.add(
+    faArrowTrendUp,
+    faArrowTrendDown,
+    faTruck,
+    faMoneyBill,
+    faChartLine,
+    faCheckCircle
+);
+
+app.component('font-awesome-icon', FontAwesomeIcon);
 
 app.mount('#app');
