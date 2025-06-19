@@ -5,7 +5,9 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
-import TabMenu from 'primevue/tabmenu';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 

@@ -2,14 +2,16 @@
 import { ref, computed, onMounted } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import TabMenu from 'primevue/tabmenu';
+import Tabs from 'primevue/tabs';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
 import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import Drawer from 'primevue/drawer';
-import TabView from 'primevue/tabview';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 
 // Tabs

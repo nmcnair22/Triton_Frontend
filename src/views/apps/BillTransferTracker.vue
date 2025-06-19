@@ -295,7 +295,7 @@ function handleMarkCompleteClick() {
             <div class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Customer</label>
-                    <Dropdown 
+                    <Select 
                         v-model="selectedCustomer"
                         :options="customers"
                         optionLabel="name" 
@@ -309,7 +309,7 @@ function handleMarkCompleteClick() {
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Location</label>
-                    <Dropdown 
+                    <Select 
                         v-model="selectedLocation"
                         :options="locations"
                         optionLabel="name" 
@@ -323,11 +323,11 @@ function handleMarkCompleteClick() {
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Provider</label>
-                    <Dropdown placeholder="Select provider" class="w-full" />
+                    <Select placeholder="Select provider" class="w-full" />
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block mb-2">Account</label>
-                    <Dropdown 
+                    <Select 
                         v-model="selectedAccount"
                         :options="accounts"
                         optionLabel="accountNumber" 

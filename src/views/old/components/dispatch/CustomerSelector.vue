@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import MultiSelect from 'primevue/multiselect';
 import { useCustomerStore } from '@/stores/customerStore';
 
@@ -135,7 +135,7 @@ loadCustomers();
       </template>
     </MultiSelect>
     
-    <Dropdown
+            <Select
       v-else
       v-model="selectedValue"
       :options="customers"
@@ -169,6 +169,6 @@ loadCustomers();
           <span>{{ slotProps.option.name }}</span>
         </div>
       </template>
-    </Dropdown>
+            </Select>
   </div>
 </template> 
