@@ -14,6 +14,10 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 
+// Syncfusion components
+import { SchedulePlugin } from '@syncfusion/ej2-vue-schedule';
+import { registerLicense } from '@syncfusion/ej2-base';
+
 // RBAC components
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';
 
@@ -82,6 +86,11 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(ConfirmationService);
+
+// Register Syncfusion license
+registerLicense('Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCeUx3TXxbf1x1ZFxMYVhbRnBPIiBoS35Rc0VlWHdccnZUR2RYVUNyVEBU');
+
+app.use(SchedulePlugin);
 
 // Register global components
 app.component('BlockViewer', BlockViewer);
