@@ -462,6 +462,22 @@ const routes = [
                 component: () => import('@/views/accounting/InvoiceTemplates.vue')
             },
             {
+                path: '/accounting/field-service-billing',
+                name: 'accounting-field-service-billing',
+                meta: {
+                    breadcrumb: ['Accounting', 'Field Service Billing']
+                },
+                component: () => import('@/views/accounting/FieldServiceBilling.vue')
+            },
+            {
+                path: '/reporting/report-manager',
+                name: 'reporting-report-manager',
+                meta: {
+                    breadcrumb: ['Reporting', 'Report Manager']
+                },
+                component: () => import('@/views/reporting/ReportManager.vue')
+            },
+            {
                 path: '/finance/dashboard',
                 name: 'finance-dashboard',
                 meta: {
