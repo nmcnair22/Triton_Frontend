@@ -4,6 +4,11 @@ import { ApiService } from './ApiService';
 export const EngineeringService = {
   // === COMPREHENSIVE DASHBOARD ENDPOINTS ===
   
+  // 🚀 NEW: Super-Fast Consolidated Dashboard - Replaces 15+ API calls with 1
+  getConsolidatedDashboard(params = {}) {
+    return ApiService.get('/engineering/dashboard/consolidated', params);
+  },
+  
   // Complete Dashboard Data - Single endpoint for full dashboard
   getCompleteDashboard(params = {}) {
     return ApiService.get('/engineering/dashboard', params);
@@ -195,5 +200,42 @@ export const EngineeringService = {
   // Get calendar statistics and analytics
   getCalendarStatistics() {
     return ApiService.get('/engineering/calendar/statistics');
+  },
+
+  // === QUEUE ANALYTICS ENDPOINTS ===
+  
+  // Current queue snapshot with health metrics
+  getQueueCurrent(params = {}) {
+    return ApiService.get('/engineering/queue/current', params);
+  },
+
+  // Queue health trends over time
+  getQueueHealth(params = { days: 7 }) {
+    return ApiService.get('/engineering/queue/health', params);
+  },
+
+  // Detailed queue analytics and breakdowns
+  getQueueAnalytics(params = {}) {
+    return ApiService.get('/engineering/queue/analytics', params);
+  },
+
+  // Historical queue snapshots with pagination
+  getQueueHistory(params = { page: 1, per_page: 20 }) {
+    return ApiService.get('/engineering/queue/history', params);
+  },
+
+  // Queue trends over specified time period
+  getQueueTrends(params = { period: '24h', limit: 100 }) {
+    return ApiService.get('/engineering/queue/trends', params);
+  },
+
+  // Workload distribution analytics
+  getQueueWorkload(params = {}) {
+    return ApiService.get('/engineering/queue/workload', params);
+  },
+
+  // Performance metrics and throughput
+  getQueuePerformance(params = { days: 30 }) {
+    return ApiService.get('/engineering/queue/performance', params);
   }
 }; 
