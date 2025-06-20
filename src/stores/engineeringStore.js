@@ -132,6 +132,10 @@ export const useEngineeringStore = defineStore('engineering', () => {
   const calendarEngineers = ref([]);
   const calendarTickets = ref([]);
   const calendarStatistics = ref({});
+  const currentViewStart = ref(null);
+  const currentViewEnd = ref(null);
+  const selectedEngineer = ref('all');
+  const selectedEventType = ref(null);
   
   // Loading states
   const loading = ref(false);
@@ -1244,14 +1248,53 @@ export const useEngineeringStore = defineStore('engineering', () => {
 
   // === CALENDAR METHODS ===
   
-  async function fetchCalendarEvents(params = {}) {
+  async function fetchCalendarEvents(startDate = null, endDate = null, refresh = false) {
     calendarLoading.value = true;
     error.value = null;
     
     try {
-      const response = await EngineeringService.getCalendarEvents(params);
-      calendarEvents.value = response.data.events || [];
-      return calendarEvents.value;
+      // If no dates provided, use current month
+      if (!startDate || !endDate) {
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      }
+
+      // Store the current view range for future reference
+      currentViewStart.value = startDate;
+      currentViewEnd.value = endDate;
+
+      const response = await EngineeringService.getCalendarEvents(
+        startDate,
+        endDate,
+        selectedEngineer.value || 'all',
+        selectedEventType.value || null
+      );
+
+      // DEBUG: Log the exact response structure
+      console.log('Calendar Events Response Structure:', response);
+      console.log('Response.data:', response.data);
+      console.log('Response.data.data:', response.data?.data);
+      console.log('Response.data.events:', response.data?.events);
+
+      // Parse the events from the response - try multiple possible structures
+      let events = [];
+      if (response.data?.data?.events) {
+        events = response.data.data.events;
+      } else if (response.data?.events) {
+        events = response.data.events;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        events = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        events = response.data;
+      }
+
+      console.log('Parsed Events:', events);
+      console.log('Events Count:', events.length);
+
+      // Store ONLY the events array, not the entire response object
+      calendarEvents.value = events;
+      return { data: calendarEvents.value };
     } catch (err) {
       console.error('Error fetching calendar events:', err);
       error.value = 'Failed to fetch calendar events';
@@ -1268,8 +1311,10 @@ export const useEngineeringStore = defineStore('engineering', () => {
     
     try {
       const response = await EngineeringService.createCalendarEvent(eventData);
-      // Refresh events after creation
-      await fetchCalendarEvents();
+      
+      // CRITICAL: Refresh the calendar with expanded date range to include new event
+      await refreshCalendarWithNewEvent(eventData.start_time);
+      
       return response.data;
     } catch (err) {
       console.error('Error creating calendar event:', err);
@@ -1280,6 +1325,30 @@ export const useEngineeringStore = defineStore('engineering', () => {
     }
   }
 
+  // NEW: Method to refresh calendar ensuring new event is visible
+  async function refreshCalendarWithNewEvent(eventDate) {
+    const eventDateObj = new Date(eventDate);
+    const currentStart = new Date(currentViewStart.value);
+    const currentEnd = new Date(currentViewEnd.value);
+
+    // Expand date range if new event is outside current view
+    let newStart = currentStart;
+    let newEnd = currentEnd;
+
+    if (eventDateObj < currentStart) {
+      newStart = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), 1);
+    }
+    if (eventDateObj > currentEnd) {
+      newEnd = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth() + 1, 0);
+    }
+
+    await fetchCalendarEvents(
+      newStart.toISOString().split('T')[0],
+      newEnd.toISOString().split('T')[0],
+      true
+    );
+  }
+
   async function updateCalendarEvent(eventId, eventData) {
     calendarLoading.value = true;
     error.value = null;
@@ -1287,7 +1356,7 @@ export const useEngineeringStore = defineStore('engineering', () => {
     try {
       const response = await EngineeringService.updateCalendarEvent(eventId, eventData);
       // Refresh events after update
-      await fetchCalendarEvents();
+      await fetchCalendarEvents(currentViewStart.value, currentViewEnd.value, true);
       return response.data;
     } catch (err) {
       console.error('Error updating calendar event:', err);
@@ -1305,7 +1374,7 @@ export const useEngineeringStore = defineStore('engineering', () => {
     try {
       await EngineeringService.deleteCalendarEvent(eventId);
       // Refresh events after deletion
-      await fetchCalendarEvents();
+      await fetchCalendarEvents(currentViewStart.value, currentViewEnd.value, true);
     } catch (err) {
       console.error('Error deleting calendar event:', err);
       error.value = 'Failed to delete calendar event';
@@ -1343,7 +1412,10 @@ export const useEngineeringStore = defineStore('engineering', () => {
 
   async function fetchCalendarStatistics() {
     try {
-      const response = await EngineeringService.getCalendarStatistics();
+      const response = await EngineeringService.getCalendarStatistics(
+        currentViewStart.value,
+        currentViewEnd.value
+      );
       calendarStatistics.value = response.data || {};
       return calendarStatistics.value;
     } catch (err) {
@@ -1460,6 +1532,10 @@ export const useEngineeringStore = defineStore('engineering', () => {
     calendarEngineers,
     calendarTickets,
     calendarStatistics,
+    currentViewStart,
+    currentViewEnd,
+    selectedEngineer,
+    selectedEventType,
     loading,
     dashboardLoading,
     ticketLoading,
@@ -1537,6 +1613,7 @@ export const useEngineeringStore = defineStore('engineering', () => {
     createCalendarEvent,
     updateCalendarEvent,
     deleteCalendarEvent,
+    refreshCalendarWithNewEvent,
     fetchCalendarEngineers,
     fetchCalendarTickets,
     fetchCalendarStatistics,
