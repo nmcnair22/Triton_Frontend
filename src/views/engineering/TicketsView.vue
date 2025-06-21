@@ -2,71 +2,75 @@
     <Toast position="bottom-center" />
     <div class="grid">
         <div class="col-12">
-            <div class="card">
-                <h5>Engineering Tickets</h5>
-                
-                <!-- Filters Section -->
-                <div class="mb-4 p-2" style="display: flex; align-items: center; gap: 2rem;">
-                    <!-- Status Filter -->
-                    <div style="width: 25%;">
-                        <Select 
-                            v-model="selectedStatus" 
-                            :options="statusOptions" 
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Filter by Status"
-                            showClear
-                            @change="onStatusFilterChange"
-                            class="w-full" 
-                        />
-                    </div>
-                    
-                    <!-- Priority Filter -->
-                    <div style="width: 25%;">
-                        <Select 
-                            v-model="selectedPriority" 
-                            :options="priorityOptions" 
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Filter by Priority"
-                            showClear
-                            @change="onPriorityFilterChange"
-                            class="w-full" 
-                        />
-                    </div>
-                    
-                    <!-- Owner Filter -->
-                    <div style="width: 25%;">
-                        <Select 
-                            v-model="selectedOwner" 
-                            :options="ownerOptions" 
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Filter by Owner"
-                            showClear
-                            @change="onOwnerFilterChange"
-                            class="w-full" 
-                        />
-                    </div>
-                    
-                    <!-- Search -->
-                    <div style="width: 25%;">
-                        <IconField>
-                            <InputIcon>
-                                <i class="pi pi-search" />
-                            </InputIcon>
-                            <InputText 
-                                v-model="searchTerm" 
-                                placeholder="Search tickets..." 
-                                @input="onSearchChange"
+            <div class="space-y-6">
+                <!-- Modern Filters Section -->
+                <div class="mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Status Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Status</label>
+                            <Select 
+                                v-model="selectedStatus" 
+                                :options="statusOptions" 
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="All Statuses"
+                                showClear
+                                @change="onStatusFilterChange"
                                 class="w-full" 
                             />
-                        </IconField>
+                        </div>
+                        
+                        <!-- Priority Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Priority</label>
+                            <Select 
+                                v-model="selectedPriority" 
+                                :options="priorityOptions" 
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="All Priorities"
+                                showClear
+                                @change="onPriorityFilterChange"
+                                class="w-full" 
+                            />
+                        </div>
+                        
+                        <!-- Owner Filter -->
+                        <div class="flex flex-col">
+                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Owner</label>
+                            <Select 
+                                v-model="selectedOwner" 
+                                :options="ownerOptions" 
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="All Owners"
+                                showClear
+                                @change="onOwnerFilterChange"
+                                class="w-full" 
+                            />
+                        </div>
+                        
+                        <!-- Search -->
+                        <div class="flex flex-col">
+                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Search</label>
+                            <IconField>
+                                <InputIcon>
+                                    <i class="pi pi-search" />
+                                </InputIcon>
+                                <InputText 
+                                    v-model="searchTerm" 
+                                    placeholder="Search tickets..." 
+                                    @input="onSearchChange"
+                                    class="w-full" 
+                                />
+                            </IconField>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Engineering Tickets Table -->
-                <div class="card p-4 mb-4">
+                <!-- Clean Engineering Tickets Table -->
+                <div class="card">
                     <DataTable 
                         v-model:expandedRows="expandedRows"
                         :value="filteredTickets" 
@@ -79,29 +83,34 @@
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tickets"
                         :rowClass="getRowClass"
                         dataKey="id"
-                        stripedRows
                         :rowHover="true"
                         :metaKeySelection="false"
                         @row-expand="onRowExpand"
                         @row-collapse="onRowCollapse"
-                        tableStyle="min-width: 50rem">
+                        tableStyle="min-width: 50rem"
+                        responsiveLayout="scroll">
                         
                         <template #header>
-                            <div class="flex justify-between">
-                                <Button type="button" icon="pi pi-filter-slash" label="Clear" outlined @click="clearAllFilters" />
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <i class="pi pi-ticket text-lg text-surface-500"></i>
+                                    <span class="font-semibold text-surface-900 dark:text-surface-0">Engineering Tickets</span>
+                                    <span class="text-sm text-surface-500 ml-2">({{ filteredTickets.length }} total)</span>
+                                </div>
                                 <div class="flex gap-2">
-                                    <Button icon="pi pi-plus" label="Expand All" text @click="expandAll" />
-                                    <Button icon="pi pi-minus" label="Collapse All" text @click="collapseAll" />
-                                    <Button icon="pi pi-refresh" @click="refreshData" :loading="isLoading" />
+                                    <Button icon="pi pi-filter-slash" label="Clear Filters" size="small" text @click="clearAllFilters" />
+                                    <Button icon="pi pi-plus" size="small" text @click="expandAll" v-tooltip="'Expand All'" />
+                                    <Button icon="pi pi-minus" size="small" text @click="collapseAll" v-tooltip="'Collapse All'" />
+                                    <Button icon="pi pi-refresh" size="small" @click="refreshData" :loading="isLoading" v-tooltip="'Refresh Data'" />
                                 </div>
                             </div>
                         </template>
                         
                         <template #empty>
-                            <div class="flex flex-column align-items-center p-5">
-                                <i class="pi pi-inbox text-5xl text-primary mb-3"></i>
-                                <span class="text-lg">No tickets found</span>
-                                <span class="text-sm text-surface-600 dark:text-surface-400 mt-2">
+                            <div class="flex flex-column align-items-center p-8">
+                                <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
+                                <span class="text-lg font-medium text-gray-700">No tickets found</span>
+                                <span class="text-sm text-gray-500 mt-2">
                                     Try adjusting your filters or refresh the data
                                 </span>
                             </div>
@@ -117,7 +126,7 @@
                         <!-- Ticket ID Column -->
                         <Column field="ticket_id" header="Ticket ID" style="min-width: 8rem" sortable>
                             <template #body="slotProps">
-                                <span class="font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:text-primary-700 dark:hover:text-primary-300 hover:underline"
+                                <span class="ticket-id cursor-pointer hover:text-blue-600"
                                       @click="viewTicketDetails(slotProps.data)">
                                     #{{ slotProps.data.ticket_id }}
                                 </span>
@@ -127,7 +136,7 @@
                         <!-- Subject Column -->
                         <Column field="subject" header="Subject" style="min-width: 20rem" sortable>
                             <template #body="slotProps">
-                                <div class="max-w-xs truncate" :title="slotProps.data.subject">
+                                <div class="subject-text max-w-xs truncate" :title="slotProps.data.subject">
                                     {{ slotProps.data.subject }}
                                 </div>
                             </template>
@@ -136,10 +145,10 @@
                         <!-- Customer Column -->
                         <Column field="customer_name" header="Customer" style="min-width: 12rem" sortable>
                             <template #body="slotProps">
-                                <span v-if="slotProps.data.customer_name && slotProps.data.customer_name !== 'Unassigned'">
+                                <span v-if="slotProps.data.customer_name && slotProps.data.customer_name !== 'Unassigned'" class="customer-name">
                                     {{ slotProps.data.customer_name }}
                                 </span>
-                                <span v-else class="text-yellow-600 font-medium">Unassigned</span>
+                                <span v-else class="text-amber-600 font-medium">Unassigned</span>
                             </template>
                         </Column>
                         
@@ -158,7 +167,8 @@
                             <template #body="slotProps">
                                 <Tag 
                                     :value="slotProps.data.priority" 
-                                    :severity="getPrioritySeverity(slotProps.data.priority)" 
+                                    :severity="getPrioritySeverity(slotProps.data.priority)"
+                                    :class="getPriorityClass(slotProps.data.priority)"
                                 />
                             </template>
                         </Column>
@@ -166,7 +176,7 @@
                         <!-- Owner Column -->
                         <Column field="owner" header="Owner" style="min-width: 10rem" sortable>
                             <template #body="slotProps">
-                                <span :class="{'text-surface-400 dark:text-surface-500': !slotProps.data.owner}">
+                                <span class="owner-text" :class="{'text-gray-400': !slotProps.data.owner}">
                                     {{ slotProps.data.owner || 'Unassigned' }}
                                 </span>
                             </template>
@@ -178,7 +188,7 @@
                                 <span v-if="slotProps.data.dates?.due_date" :class="formatDueDate(slotProps.data.dates.due_date, slotProps.data.status).class">
                                     {{ formatDueDate(slotProps.data.dates.due_date, slotProps.data.status).message }}
                                 </span>
-                                <span v-else class="text-surface-400 dark:text-surface-500">No due date</span>
+                                <span v-else class="text-gray-400">No due date</span>
                             </template>
                         </Column>
                         
@@ -476,6 +486,17 @@ function getPrioritySeverity(priority) {
   return severityMap[priority?.toLowerCase()] || 'info';
 }
 
+// Priority class mapping for custom styling
+function getPriorityClass(priority) {
+  const classMap = {
+    'low': 'priority-low',
+    'medium': 'priority-medium',
+    'high': 'priority-high',
+    'critical': 'priority-critical'
+  };
+  return classMap[priority?.toLowerCase()] || '';
+}
+
 // Expansion functionality
 function expandAll() {
   const expanded = {};
@@ -559,125 +580,337 @@ function viewTicketDetails(ticket) {
 </script>
 
 <style scoped>
-/* Clean, minimal styling for professional appearance */
+/* ========================================
+   ULTRA-CLEAN TABLE DESIGN
+   Matching the reference table style
+   ======================================== */
+
+/* Main table container - ultra clean */
 :deep(.p-datatable) {
-  border: 1px solid var(--surface-border);
-  border-radius: 6px;
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Remove all table header background and styling */
 :deep(.p-datatable .p-datatable-header) {
-  background: var(--surface-50);
-  border-bottom: 1px solid var(--surface-border);
-  padding: 1rem;
+  background: transparent;
+  border: none;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: none;
 }
 
+/* Ultra-clean table headers */
 :deep(.p-datatable .p-datatable-thead > tr > th) {
-  background: var(--surface-50);
-  color: var(--text-color);
+  background: transparent;
+  color: #4b5563;
   font-weight: 600;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--surface-border);
+  font-size: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: none;
+  letter-spacing: 0.025em;
 }
 
+/* Clean, spacious rows */
 :deep(.p-datatable .p-datatable-tbody > tr) {
-  background: var(--surface-0);
-  transition: background-color 0.2s;
+  background: #ffffff;
+  border: none;
+  transition: background-color 0.1s ease;
 }
 
 :deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: var(--surface-50);
+  background: #f3f4f6;
+  transform: none;
+  box-shadow: none;
 }
 
 :deep(.p-datatable .p-datatable-tbody > tr > td) {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--surface-border);
+  padding: 1rem 1.5rem;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #1f2937;
+  vertical-align: middle;
+  font-weight: 500;
 }
 
-/* Row highlighting for different states */
-:deep(.p-datatable .p-datatable-tbody > tr.overdue-row) {
-  background: #fef2f2;
-  border-left: 3px solid #ef4444;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr.overdue-row:hover) {
-  background: #fecaca;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row) {
-  background: #fef3c7;
-  border-left: 3px solid #f59e0b;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row:hover) {
-  background: #fde68a;
-}
-
+/* Remove all row state indicators for ultra-clean look */
+:deep(.p-datatable .p-datatable-tbody > tr.overdue-row),
+:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row),
 :deep(.p-datatable .p-datatable-tbody > tr.unassigned-customer-row) {
-  background: #f3f4f6;
-  border-left: 3px solid #6b7280;
+  background: #ffffff;
+  border-left: none;
 }
 
+:deep(.p-datatable .p-datatable-tbody > tr.overdue-row:hover),
+:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row:hover),
 :deep(.p-datatable .p-datatable-tbody > tr.unassigned-customer-row:hover) {
-  background: #e5e7eb;
+  background: #f9fafb;
+  border-left: none;
 }
 
-/* Dark theme adjustments */
-:deep(.p-datatable.p-component.p-datatable-dark .p-datatable-tbody > tr.overdue-row) {
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid #ef4444;
-}
-
-:deep(.p-datatable.p-component.p-datatable-dark .p-datatable-tbody > tr.high-priority-row) {
-  background: rgba(245, 158, 11, 0.1);
-  border-left: 3px solid #f59e0b;
-}
-
-:deep(.p-datatable.p-component.p-datatable-dark .p-datatable-tbody > tr.unassigned-customer-row) {
-  background: rgba(107, 114, 128, 0.1);
-  border-left: 3px solid #6b7280;
-}
-
-/* Expansion panel styling */
+/* Clean expansion panel */
 :deep(.p-datatable .p-datatable-row-expansion) {
-  background: var(--surface-50);
-  border-top: 1px solid var(--surface-border);
+  background: #f9fafb;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  padding: 1.5rem;
 }
 
-/* Clean tag styling */
+/* Minimal tag styling like reference */
 :deep(.p-tag) {
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  text-transform: capitalize;
+  border: none;
 }
 
-/* Age indicators */
+/* Status-specific tag colors with distinct variations */
+:deep(.p-tag.p-tag-info) {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+  border: 1px solid #93c5fd;
+}
+
+:deep(.p-tag.p-tag-primary) {
+  background: #c7d2fe;
+  color: #4338ca;
+  font-weight: 600;
+  border: 1px solid #a5b4fc;
+}
+
+:deep(.p-tag.p-tag-warning) {
+  background: #fed7aa;
+  color: #ea580c;
+  font-weight: 600;
+  border: 1px solid #fdba74;
+}
+
+:deep(.p-tag.p-tag-success) {
+  background: #bbf7d0;
+  color: #047857;
+  font-weight: 600;
+  border: 1px solid #86efac;
+}
+
+:deep(.p-tag.p-tag-secondary) {
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+}
+
+:deep(.p-tag.p-tag-danger) {
+  background: #fecaca;
+  color: #dc2626;
+  font-weight: 600;
+  border: 1px solid #fca5a5;
+}
+
+/* Priority-specific tag colors for more variation */
+:deep(.p-tag.priority-low) {
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 600;
+  border: 1px solid #bbf7d0;
+}
+
+:deep(.p-tag.priority-medium) {
+  background: #fef7cd;
+  color: #a16207;
+  font-weight: 600;
+  border: 1px solid #fde68a;
+}
+
+:deep(.p-tag.priority-high) {
+  background: #ffedd5;
+  color: #c2410c;
+  font-weight: 600;
+  border: 1px solid #fed7aa;
+}
+
+:deep(.p-tag.priority-critical) {
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+  animation: pulse-critical 2s infinite;
+}
+
+@keyframes pulse-critical {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.1);
+  }
+}
+
+/* Clean pagination */
+:deep(.p-paginator) {
+  background: transparent;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+:deep(.p-paginator .p-paginator-pages .p-paginator-page) {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 6px;
+  border: none;
+  margin: 0 0.125rem;
+  font-size: 0.875rem;
+}
+
+/* Ultra-clean expander */
+:deep(.p-datatable .p-row-toggler) {
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 1.75rem;
+  height: 1.75rem;
+  transition: all 0.1s ease;
+}
+
+:deep(.p-datatable .p-row-toggler:hover) {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Remove last row border */
+:deep(.p-datatable .p-datatable-tbody > tr:last-child > td) {
+  border-bottom: none;
+}
+
+/* Clean filter section */
+.card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Minimal button styling */
+:deep(.p-button.p-button-outlined) {
+  border: 1px solid #e5e7eb;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+:deep(.p-button.p-button-outlined:hover) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+:deep(.p-button.p-button-text) {
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+:deep(.p-button.p-button-text:hover) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Age indicators - better contrast */
 .age-new {
-  color: #10b981;
-  font-weight: 500;
+  color: #059669;
+  font-weight: 600;
 }
 
 .age-moderate {
-  color: #f59e0b;
-  font-weight: 500;
+  color: #d97706;
+  font-weight: 600;
 }
 
 .age-old {
-  color: #ef4444;
-  font-weight: 500;
+  color: #dc2626;
+  font-weight: 600;
 }
 
-/* Due date styling */
+/* Due date styling - clean */
 .due-overdue {
-  color: #ef4444;
+  color: #dc2626;
   font-weight: 600;
 }
 
 .due-soon {
-  color: #f59e0b;
-  font-weight: 500;
+  color: #d97706;
+  font-weight: 600;
 }
 
 .due-normal {
-  color: var(--text-color);
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* Ticket ID styling like reference */
+:deep(.p-datatable .p-datatable-tbody .ticket-id) {
+  color: #1f2937;
+  font-weight: 700;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+  font-size: 0.875rem;
+}
+
+/* Customer name styling */
+:deep(.p-datatable .p-datatable-tbody .customer-name) {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+/* Subject styling */
+:deep(.p-datatable .p-datatable-tbody .subject-text) {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+/* Owner styling */
+:deep(.p-datatable .p-datatable-tbody .owner-text) {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  :deep(.p-datatable) {
+    background: #1f2937;
+  }
+  
+  :deep(.p-datatable .p-datatable-tbody > tr) {
+    background: #1f2937;
+  }
+  
+  :deep(.p-datatable .p-datatable-tbody > tr:hover) {
+    background: #374151;
+  }
+  
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    color: #e5e7eb;
+    border-bottom: 1px solid #374151;
+  }
+  
+  :deep(.p-datatable .p-datatable-thead > tr > th) {
+    color: #9ca3af;
+    border-bottom: 1px solid #374151;
+  }
 }
 </style> 
