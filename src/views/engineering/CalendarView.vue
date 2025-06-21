@@ -7,7 +7,7 @@
           🗓️ Engineering Calendar
         </h1>
         <p class="text-surface-600 dark:text-surface-300">
-          Track ticket deadlines, engineer assignments, and task schedules
+          Track ticket deadlines, engineer assignments, and activity schedules
         </p>
       </div>
       
@@ -53,9 +53,9 @@
         
         <!-- Add Event Button -->
         <Button 
-          label="Add Task" 
+          label="Add Activity" 
           icon="pi pi-plus"
-          @click="showAddTaskDialog = true"
+          @click="showAddActivityDialog = true"
           severity="primary"
         />
       </div>
@@ -144,19 +144,19 @@
       </div>
     </div>
 
-    <!-- Add Task Dialog -->
+    <!-- Add Activity Dialog -->
     <Dialog 
-      v-model:visible="showAddTaskDialog" 
+      v-model:visible="showAddActivityDialog" 
       :style="{ width: '600px' }" 
       modal 
-      header="Add New Task"
+      header="Add New Activity"
       :closable="true"
     >
       <div class="space-y-4">
         <div class="grid grid-cols-1 gap-4">
           <div>
-            <label class="block text-sm font-medium mb-2">Task Title</label>
-            <InputText v-model="newTask.title" class="w-full" placeholder="Enter task title" />
+            <label class="block text-sm font-medium mb-2">Activity Title</label>
+            <InputText v-model="newActivity.title" class="w-full" placeholder="Enter activity title" />
           </div>
         </div>
         
@@ -164,12 +164,12 @@
           <div>
             <label class="block text-sm font-medium mb-2">Activity Category</label>
             <Select 
-              v-model="newTask.type" 
-              :options="taskTypeOptions" 
+              v-model="newActivity.type" 
+              :options="activityTypeOptions" 
               optionLabel="label" 
               optionValue="value"
               class="w-full"
-              @change="newTask.subcategory = ''"
+              @change="newActivity.subcategory = ''"
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2">
@@ -182,7 +182,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Subcategory</label>
             <Select 
-              v-model="newTask.subcategory" 
+              v-model="newActivity.subcategory" 
               :options="subcategoryOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -193,7 +193,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Priority</label>
             <Select 
-              v-model="newTask.priority" 
+              v-model="newActivity.priority" 
               :options="priorityOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -216,7 +216,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Start Date & Time</label>
             <DatePicker 
-              v-model="newTask.startTime" 
+              v-model="newActivity.startTime" 
               showTime 
               hourFormat="12"
               class="w-full"
@@ -225,7 +225,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">End Date & Time</label>
             <DatePicker 
-              v-model="newTask.endTime" 
+              v-model="newActivity.endTime" 
               showTime 
               hourFormat="12"
               class="w-full"
@@ -237,7 +237,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Impact Level</label>
             <Select 
-              v-model="newTask.impact" 
+              v-model="newActivity.impact" 
               :options="impactOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -247,7 +247,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Estimated Hours</label>
             <InputNumber 
-              v-model="newTask.estimatedHours" 
+              v-model="newActivity.estimatedHours" 
               :min="0.25" 
               :max="24" 
               :step="0.25"
@@ -261,7 +261,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
             <Select 
-              v-model="newTask.engineerId" 
+              v-model="newActivity.engineerId" 
               :options="engineerOptions.filter(e => e.value !== 'all')" 
               optionLabel="label" 
               optionValue="value"
@@ -271,7 +271,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Related Ticket</label>
             <Select 
-              v-model="newTask.ticketId" 
+              v-model="newActivity.ticketId" 
               :options="ticketOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -330,7 +330,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex items-center gap-3">
             <Checkbox 
-              v-model="newTask.maintenanceWindow" 
+              v-model="newActivity.maintenanceWindow" 
               inputId="maintenanceWindow" 
               binary 
             />
@@ -340,7 +340,7 @@
           </div>
           <div class="flex items-center gap-3">
             <Checkbox 
-              v-model="newTask.customerFacing" 
+              v-model="newActivity.customerFacing" 
               inputId="customerFacing" 
               binary 
             />
@@ -352,16 +352,239 @@
         
         <div>
           <label class="block text-sm font-medium mb-2">Description</label>
-          <Textarea v-model="newTask.description" rows="3" class="w-full" />
+          <Textarea v-model="newActivity.description" rows="3" class="w-full" />
         </div>
       </div>
       
       <template #footer>
-        <Button label="Cancel" @click="showAddTaskDialog = false" text />
+        <Button label="Cancel" @click="showAddActivityDialog = false" text />
         <Button 
-          label="Create Task" 
-          @click="createTask" 
-          :loading="isCreatingTask"
+          label="Create Activity" 
+          @click="createActivity" 
+          :loading="isCreatingActivity"
+          icon="pi pi-check"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Edit Activity Dialog -->
+    <Dialog 
+      v-model:visible="showEditActivityDialog" 
+      :style="{ width: '600px' }" 
+      modal 
+      header="Edit Activity"
+      :closable="true"
+    >
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Activity Title</label>
+            <InputText v-model="editActivity.title" class="w-full" placeholder="Enter activity title" />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Activity Category</label>
+            <Select 
+              v-model="editActivity.type" 
+              :options="activityTypeOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              @change="editActivity.subcategory = ''"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <i :class="option.icon" :style="{ color: option.color }"></i>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Subcategory</label>
+            <Select 
+              v-model="editActivity.subcategory" 
+              :options="subcategoryOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              placeholder="Select subcategory..."
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Priority</label>
+            <Select 
+              v-model="editActivity.priority" 
+              :options="priorityOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :style="{ backgroundColor: option.color }"
+                  ></div>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Start Date & Time</label>
+            <DatePicker 
+              v-model="editActivity.startTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">End Date & Time</label>
+            <DatePicker 
+              v-model="editActivity.endTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Impact Level</label>
+            <Select 
+              v-model="editActivity.impact" 
+              :options="impactOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Estimated Hours</label>
+            <InputNumber 
+              v-model="editActivity.estimatedHours" 
+              :min="0.25" 
+              :max="24" 
+              :step="0.25"
+              suffix=" hrs"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
+            <Select 
+              v-model="editActivity.engineerId" 
+              :options="engineerOptions.filter(e => e.value !== 'all')" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Related Ticket</label>
+            <Select 
+              v-model="editActivity.ticketId" 
+              :options="ticketOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              placeholder="Select a ticket..."
+              class="w-full"
+              filter
+              filterPlaceholder="Search tickets..."
+              showClear
+              :pt="{
+                root: { class: 'h-11' },
+                input: { class: 'h-11 flex items-center' },
+                filterContainer: { class: 'p-3 border-b border-surface-200' },
+                filterInput: { class: 'w-full p-2 border border-surface-300 rounded-md text-sm' },
+                list: { class: 'max-h-60 overflow-auto' },
+                item: { class: 'p-3 hover:bg-surface-100 cursor-pointer border-b border-surface-100 last:border-b-0' }
+              }"
+            >
+              <template #option="{ option }">
+                <div v-if="option.value" class="flex flex-col gap-1 py-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-sm">{{ option.ticket_number }}</span>
+                    <div class="flex gap-2">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-green-100 text-green-800': option.status === 'Open',
+                          'bg-yellow-100 text-yellow-800': option.status === 'Pending',
+                          'bg-blue-100 text-blue-800': option.status === 'In Progress',
+                          'bg-gray-100 text-gray-800': !['Open', 'Pending', 'In Progress'].includes(option.status)
+                        }"
+                      >
+                        {{ option.status }}
+                      </span>
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-red-100 text-red-800': option.priority === 'High' || option.priority === 'Critical',
+                          'bg-orange-100 text-orange-800': option.priority === 'Normal',
+                          'bg-gray-100 text-gray-800': option.priority === 'Low'
+                        }"
+                      >
+                        {{ option.priority }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-sm text-surface-600 truncate">{{ option.subject }}</span>
+                </div>
+                <div v-else class="py-2 text-sm text-surface-500 italic">
+                  {{ option.label }}
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-center gap-3">
+            <Checkbox 
+              v-model="editActivity.maintenanceWindow" 
+              inputId="editMaintenanceWindow" 
+              binary 
+            />
+            <label for="editMaintenanceWindow" class="text-sm font-medium">
+              Requires Maintenance Window
+            </label>
+          </div>
+          <div class="flex items-center gap-3">
+            <Checkbox 
+              v-model="editActivity.customerFacing" 
+              inputId="editCustomerFacing" 
+              binary 
+            />
+            <label for="editCustomerFacing" class="text-sm font-medium">
+              Customer-Facing Activity
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Description</label>
+          <Textarea v-model="editActivity.description" rows="3" class="w-full" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <Button label="Cancel" @click="showEditActivityDialog = false" text />
+        <Button 
+          label="Update Activity" 
+          @click="updateActivity" 
+          :loading="isUpdatingActivity"
           icon="pi pi-check"
         />
       </template>
@@ -434,28 +657,28 @@
 
         <!-- Regular Event Display -->
         <div v-else class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div 
-                class="w-4 h-4 rounded"
-                :style="{ backgroundColor: selectedEvent.CategoryColor }"
-              ></div>
-              <span class="font-medium">{{ engineeringEventTypes[selectedEvent.Category]?.label || selectedEvent.Category }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span 
-                class="px-2 py-1 text-xs rounded-full font-medium"
-                :class="{
-                  'bg-red-100 text-red-800': selectedEvent.Priority === 'emergency' || selectedEvent.Priority === 'critical',
-                  'bg-orange-100 text-orange-800': selectedEvent.Priority === 'high',
-                  'bg-blue-100 text-blue-800': selectedEvent.Priority === 'normal',
-                  'bg-gray-100 text-gray-800': selectedEvent.Priority === 'low'
-                }"
-              >
-                {{ selectedEvent.Priority?.charAt(0).toUpperCase() + selectedEvent.Priority?.slice(1) || 'Normal' }}
-              </span>
-            </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div 
+              class="w-4 h-4 rounded"
+              :style="{ backgroundColor: selectedEvent.CategoryColor }"
+            ></div>
+            <span class="font-medium">{{ engineeringEventTypes[selectedEvent.Category]?.label || selectedEvent.Category }}</span>
           </div>
+          <div class="flex items-center gap-2">
+            <span 
+              class="px-2 py-1 text-xs rounded-full font-medium"
+              :class="{
+                'bg-red-100 text-red-800': selectedEvent.Priority === 'emergency' || selectedEvent.Priority === 'critical',
+                'bg-orange-100 text-orange-800': selectedEvent.Priority === 'high',
+                'bg-blue-100 text-blue-800': selectedEvent.Priority === 'normal',
+                'bg-gray-100 text-gray-800': selectedEvent.Priority === 'low'
+              }"
+            >
+              {{ selectedEvent.Priority?.charAt(0).toUpperCase() + selectedEvent.Priority?.slice(1) || 'Normal' }}
+            </span>
+          </div>
+        </div>
 
         <div v-if="selectedEvent.Subcategory" class="bg-surface-50 dark:bg-surface-800 p-3 rounded-lg">
           <h4 class="font-medium mb-1 text-sm">Activity Type</h4>
@@ -551,7 +774,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, provide } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEngineeringStore } from '@/stores/engineeringStore'
 import { useToast } from 'primevue/usetoast'
@@ -585,8 +808,10 @@ const toast = useToast()
 // Refs
 const scheduleObj = ref(null)
 const isLoading = ref(false)
-const isCreatingTask = ref(false)
-const showAddTaskDialog = ref(false)
+const isCreatingActivity = ref(false)
+const isUpdatingActivity = ref(false)
+const showAddActivityDialog = ref(false)
+const showEditActivityDialog = ref(false)
 const showEventDialog = ref(false)
 const selectedEvent = ref(null)
 
@@ -626,8 +851,26 @@ const timeScale = ref({
   template: '${majorSlot(date)}'
 })
 
-// New task form
-const newTask = ref({
+// New activity form
+const newActivity = ref({
+  title: '',
+  type: 'maintenance',
+  subcategory: '',
+  priority: 'normal',
+  impact: 'internal',
+  startTime: new Date(),
+  endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours later
+  engineerId: null,
+  ticketId: null,
+  description: '',
+  estimatedHours: 1,
+  maintenanceWindow: false,
+  customerFacing: false
+})
+
+// Edit activity form
+const editActivity = ref({
+  id: null,
   title: '',
   type: 'maintenance',
   subcategory: '',
@@ -645,10 +888,11 @@ const newTask = ref({
 
 // Get subcategories for selected type
 const subcategoryOptions = computed(() => {
-  if (!newTask.value.type || !engineeringEventTypes.value[newTask.value.type]) {
+  const activityType = newActivity.value.type || editActivity.value.type
+  if (!activityType || !engineeringEventTypes.value[activityType]) {
     return []
   }
-  return engineeringEventTypes.value[newTask.value.type].subcategories.map(sub => ({
+  return engineeringEventTypes.value[activityType].subcategories.map(sub => ({
     label: sub,
     value: sub
   }))
@@ -752,7 +996,7 @@ const engineeringEventTypes = ref({
 })
 
 // Flatten for dropdown options
-const taskTypeOptions = computed(() => {
+const activityTypeOptions = computed(() => {
   return Object.entries(engineeringEventTypes.value).map(([key, type]) => ({
     label: type.label,
     value: key,
@@ -808,7 +1052,7 @@ const engineerOptions = computed(() => {
   return engineers
 })
 
-// Ticket options for task creation
+// Ticket options for activity creation
 const ticketOptions = computed(() => {
   // Use calendar tickets from backend if available
   if (engineeringStore.calendarTickets && Array.isArray(engineeringStore.calendarTickets) && engineeringStore.calendarTickets.length > 0) {
@@ -1136,6 +1380,9 @@ const onEngineerChange = () => {
 }
 
 const onEventRendered = (args) => {
+  // Debug: Check if this function is being called
+  console.log('onEventRendered called for:', args.data?.Subject)
+  
   // Customize event appearance based on category and type
   const eventElement = args.element
   const eventData = args.data
@@ -1201,8 +1448,8 @@ const onEventRendered = (args) => {
     title.textContent = cleanTitle
     
     // Add ticket-specific metadata
-    if (eventData.TicketNumber) {
-      metadata.innerHTML = `#${eventData.TicketNumber}`
+    if (eventData.TicketId) {
+      metadata.innerHTML = `#${eventData.TicketId}`
     }
     
   } else {
@@ -1210,7 +1457,7 @@ const onEventRendered = (args) => {
     
     // Get event type info
     const eventType = eventData.Category || 'administrative'
-    const eventTypeInfo = engineeringEventTypes.value[eventType]
+    const eventTypeInfo = engineeringEventTypes.value[eventType] || engineeringEventTypes.value[eventType.toLowerCase()]
     
     if (eventTypeInfo) {
       eventIcon = eventTypeInfo.icon.replace('pi pi-', '').replace('fas fa-', '').replace('fab fa-', '')
@@ -1229,14 +1476,15 @@ const onEventRendered = (args) => {
       eventTypeLabel = eventTypeInfo.label
     } else {
       eventIcon = '📋'
-      eventTypeLabel = 'Task'
+      // Use the raw category name if available, otherwise fallback to 'Activity'
+      eventTypeLabel = eventType.charAt(0).toUpperCase() + eventType.slice(1).replace(/[-_]/g, ' ') || 'Activity'
     }
     
     // Get clean title
     const cleanTitle = eventData.Subject.replace(/^[🔧🚀👥📝🎓📈⚙️🛠️📋]\s*/, '')
     title.textContent = cleanTitle
     
-    // Add task-specific metadata
+          // Add activity-specific metadata
     if (eventData.EstimatedHours) {
       metadata.innerHTML = `${eventData.EstimatedHours}h`
     }
@@ -1251,7 +1499,45 @@ const onEventRendered = (args) => {
     eventElement.classList.add(`priority-${eventData.Priority.toLowerCase()}`)
     const priorityDot = document.createElement('div')
     priorityDot.className = 'priority-indicator'
-    priorityDot.title = `${eventData.Priority} Priority`
+    
+    // Use fast tooltip for priority indicator too
+    const priorityTooltipText = `${eventData.Priority} Priority`
+    priorityDot._tooltipText = priorityTooltipText
+    
+    const showPriorityTooltip = (e) => {
+      const existingTooltip = document.querySelector('.fast-tooltip')
+      if (existingTooltip) existingTooltip.remove()
+      
+      const tooltip = document.createElement('div')
+      tooltip.className = 'fast-tooltip'
+      tooltip.textContent = priorityTooltipText
+      
+      const rect = e.target.getBoundingClientRect()
+      tooltip.style.cssText = `
+        position: fixed;
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        left: ${Math.min(rect.left, window.innerWidth - 100)}px;
+        top: ${rect.bottom + 4}px;
+        opacity: 1;
+      `
+      document.body.appendChild(tooltip)
+    }
+    
+    const hidePriorityTooltip = () => {
+      const tooltip = document.querySelector('.fast-tooltip')
+      if (tooltip) tooltip.remove()
+    }
+    
+    priorityDot.addEventListener('mouseenter', showPriorityTooltip)
+    priorityDot.addEventListener('mouseleave', hidePriorityTooltip)
+    
     header.appendChild(priorityDot)
   }
   
@@ -1271,8 +1557,195 @@ const onEventRendered = (args) => {
   const endTime = new Date(eventData.EndTime)
   const timeString = `${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
   
-  // Add time info as tooltip
-  eventElement.title = `${eventData.Subject}\n${timeString}\n${assignedTo ? 'Assigned to: ' + assignedTo : 'Unassigned'}`
+  // Create enhanced tooltip with comprehensive information
+  let tooltipContent = []
+  
+  // Add title (clean, without emoji prefix)
+  const cleanTitle = eventData.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋]\s*/, '') || 'Untitled Event'
+  tooltipContent.push(`📋 ${cleanTitle}`)
+  
+  // Add time information
+  tooltipContent.push(`⏰ ${timeString}`)
+  
+  // Add event type
+  tooltipContent.push(`🏷️ Type: ${eventTypeLabel}`)
+  
+  // Add priority if available
+  if (eventData.Priority) {
+    const priorityEmoji = {
+      'emergency': '🚨',
+      'critical': '🔴', 
+      'high': '🟠',
+      'normal': '🟡',
+      'low': '⚪'
+    }
+    const emoji = priorityEmoji[eventData.Priority.toLowerCase()] || '🟡'
+    tooltipContent.push(`${emoji} Priority: ${eventData.Priority.charAt(0).toUpperCase() + eventData.Priority.slice(1)}`)
+  }
+  
+  // Add assignment information
+  if (assignedTo) {
+    tooltipContent.push(`👤 Assigned: ${assignedTo}`)
+  } else {
+    tooltipContent.push(`👤 Unassigned`)
+  }
+  
+  // Add ticket-specific information for ticket events
+  if (eventData.EventType === 'ticket_due') {
+    if (eventData.TicketId) {
+      tooltipContent.push(`🎫 Ticket ID: ${eventData.TicketId}`)
+    }
+    if (eventData.Customer && eventData.Customer !== 'Unassigned') {
+      tooltipContent.push(`🏢 Customer: ${eventData.Customer}`)
+    }
+    if (eventData.Status) {
+      tooltipContent.push(`📊 Status: ${eventData.Status}`)
+    }
+    if (eventData.LastActivity) {
+      const lastUpdate = new Date(eventData.LastActivity)
+      const now = new Date()
+      const diffTime = Math.abs(now - lastUpdate)
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+      tooltipContent.push(`🕒 Last Update: ${timeAgo}`)
+    }
+  } else {
+    // Add activity-specific information
+    if (eventData.EstimatedHours) {
+      tooltipContent.push(`⏱️ Duration: ${eventData.EstimatedHours} hours`)
+    }
+    if (eventData.Impact) {
+      const impactEmoji = {
+        'internal': '🏠',
+        'single-customer': '👤',
+        'multiple-customers': '👥',
+        'company-wide': '🌐'
+      }
+      const emoji = impactEmoji[eventData.Impact] || '📊'
+      tooltipContent.push(`${emoji} Impact: ${eventData.Impact.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
+    }
+    if (eventData.Subcategory) {
+      tooltipContent.push(`📂 Category: ${eventData.Subcategory}`)
+    }
+    if (eventData.MaintenanceWindow) {
+      tooltipContent.push(`⚠️ Requires Maintenance Window`)
+    }
+    if (eventData.CustomerFacing) {
+      tooltipContent.push(`👥 Customer-Facing Activity`)
+    }
+  }
+  
+  // Add description preview if available
+  if (eventData.Description && eventData.EventType !== 'ticket_due') {
+    const shortDesc = eventData.Description.length > 100 
+      ? eventData.Description.substring(0, 100) + '...' 
+      : eventData.Description
+    tooltipContent.push(`📝 ${shortDesc}`)
+  }
+  
+  // Set comprehensive tooltip with FAST custom tooltip system
+  const tooltipText = tooltipContent.join('\n')
+  
+  // Debug: Log tooltip setup
+  console.log('Setting fast tooltip for:', eventData.Subject)
+  console.log('Tooltip text length:', tooltipText.length)
+  
+  // REMOVE native title attributes to prevent slow browser tooltips
+  eventElement.removeAttribute('title')
+  container.removeAttribute('title')
+  
+  // Store tooltip data for our custom system
+  eventElement._tooltipText = tooltipText
+  container._tooltipText = tooltipText
+  
+  // Fast custom tooltip implementation - appears immediately on hover
+  const showTooltip = (e) => {
+    // Remove any existing tooltip
+    const existingTooltip = document.querySelector('.fast-tooltip')
+    if (existingTooltip) {
+      existingTooltip.remove()
+    }
+    
+    // Create new tooltip element
+    const tooltip = document.createElement('div')
+    tooltip.className = 'fast-tooltip'
+    tooltip.innerHTML = tooltipText.replace(/\n/g, '<br>')
+    
+    // Position tooltip near mouse cursor
+    const rect = e.target.getBoundingClientRect()
+    tooltip.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transform: translateY(-100%);
+      margin-top: -8px;
+      left: ${Math.min(rect.left, window.innerWidth - 320)}px;
+      top: ${rect.top}px;
+      opacity: 1;
+      transition: opacity 0.1s ease-in-out;
+    `
+    
+    // Adjust position if tooltip would go off-screen
+    document.body.appendChild(tooltip)
+    const tooltipRect = tooltip.getBoundingClientRect()
+    
+    // Adjust horizontal position if needed
+    if (tooltipRect.right > window.innerWidth - 10) {
+      tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px'
+    }
+    
+    // Adjust vertical position if needed
+    if (tooltipRect.top < 10) {
+      tooltip.style.top = (rect.bottom + 8) + 'px'
+      tooltip.style.transform = 'translateY(0)'
+    }
+  }
+  
+  const hideTooltip = () => {
+    const tooltip = document.querySelector('.fast-tooltip')
+    if (tooltip) {
+      tooltip.style.opacity = '0'
+      setTimeout(() => {
+        if (tooltip.parentNode) {
+          tooltip.remove()
+        }
+      }, 100)
+    }
+  }
+  
+  // Add fast tooltip event listeners - NO DELAY
+  eventElement.addEventListener('mouseenter', showTooltip)
+  eventElement.addEventListener('mouseleave', hideTooltip)
+  container.addEventListener('mouseenter', showTooltip)
+  container.addEventListener('mouseleave', hideTooltip)
+  
+  // Also handle mouse movement for repositioning
+  eventElement.addEventListener('mousemove', (e) => {
+    const tooltip = document.querySelector('.fast-tooltip')
+    if (tooltip) {
+      const rect = e.target.getBoundingClientRect()
+      tooltip.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px'
+      tooltip.style.top = rect.top + 'px'
+    }
+  })
+  
+  // Ensure the element is hoverable
+  eventElement.style.cursor = 'pointer'
+  
+  // Debug: Verify fast tooltip was set
+  console.log('Fast tooltip system enabled for:', eventData.Subject)
+  console.log('Element tagName:', eventElement.tagName)
+  console.log('Element classes:', eventElement.className)
 }
 
 const onPopupOpen = (args) => {
@@ -1285,11 +1758,33 @@ const onPopupOpen = (args) => {
 }
 
 const onActionBegin = async (args) => {
+  console.log('Action Begin:', args.requestType, args)
+  
   // Handle CRUD operations
   if (args.requestType === 'eventCreate') {
     args.cancel = true // Cancel default creation, we handle it manually
   } else if (args.requestType === 'eventChange') {
-    args.cancel = true // Cancel default edit
+    // Check if this is a ticket event (read-only)
+    if (args.data && args.data.EventType === 'ticket_due') {
+      args.cancel = true
+      toast.add({
+        severity: 'warn',
+        summary: 'Read Only',
+        detail: 'Ticket events cannot be edited. Please update the ticket directly.',
+        life: 3000
+      })
+      return
+    }
+    
+    // Allow the edit dialog to open, but cancel the actual save operation
+    // We'll handle the save ourselves
+    args.cancel = true
+    
+    console.log('=== UPDATE EVENT DEBUG ===')
+    console.log('Full args object:', args)
+    console.log('Update Event Data:', args.data)
+    console.log('Event Data Keys:', Object.keys(args.data || {}))
+    console.log('Event ID:', args.data.Id)
     
     try {
       const eventData = {
@@ -1297,12 +1792,15 @@ const onActionBegin = async (args) => {
         description: args.data.Description || '',
         start_time: args.data.StartTime.toISOString(),
         end_time: args.data.EndTime.toISOString(),
-        event_type: args.data.Category || 'task',
+        event_type: args.data.Category || 'administrative',
         assigned_engineer: args.data.EngineerName || null,
         related_ticket_id: args.data.TicketId || null,
         location: args.data.Location || '',
         is_all_day: args.data.IsAllDay || false
       }
+      
+      console.log('Prepared Event Data for Backend:', eventData)
+      console.log('Event Data JSON:', JSON.stringify(eventData, null, 2))
       
       await engineeringStore.updateCalendarEvent(args.data.Id, eventData)
       
@@ -1322,10 +1820,59 @@ const onActionBegin = async (args) => {
       })
     }
   } else if (args.requestType === 'eventRemove') {
+    // Check if this is a ticket event (read-only)
+    if (args.data && args.data.EventType === 'ticket_due') {
+      args.cancel = true
+      toast.add({
+        severity: 'warn',
+        summary: 'Read Only',
+        detail: 'Ticket events cannot be deleted. Please update the ticket directly.',
+        life: 3000
+      })
+      return
+    }
+    
     args.cancel = true // Cancel default deletion
     
+    // Debug: Log the event data to see what ID fields are available
+    console.log('=== DELETE EVENT DEBUG ===')
+    console.log('Full args object:', args)
+    console.log('Delete Event Data:', args.data)
+    console.log('Is args.data an array?', Array.isArray(args.data))
+    
+    // Handle case where args.data might be an array
+    const eventData = Array.isArray(args.data) ? args.data[0] : args.data
+    
+    console.log('Actual Event Data:', eventData)
+    console.log('Event Data Keys:', Object.keys(eventData || {}))
+    console.log('Available ID fields:', {
+      Id: eventData?.Id,
+      id: eventData?.id,
+      _originalEvent: eventData?._originalEvent,
+      originalEventId: eventData?._originalEvent?.id,
+      originalEventId2: eventData?._originalEvent?.Id
+    })
+    
+    // Try to get the ID from various possible fields
+    const eventId = eventData?.Id || eventData?.id || eventData?._originalEvent?.id || eventData?._originalEvent?.Id
+    
+    console.log('Resolved Event ID:', eventId)
+    console.log('Event ID type:', typeof eventId)
+    
+    if (!eventId || eventId === undefined || eventId === null) {
+      console.error('No valid event ID found for deletion')
+      console.error('Event data structure:', JSON.stringify(args.data, null, 2))
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Cannot delete event: No valid ID found',
+        life: 3000
+      })
+      return
+    }
+    
     try {
-      await engineeringStore.deleteCalendarEvent(args.data.Id)
+      await engineeringStore.deleteCalendarEvent(eventId)
       
       toast.add({
         severity: 'success',
@@ -1351,7 +1898,7 @@ const onActionComplete = (args) => {
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Task created successfully',
+              detail: 'Activity created successfully',
       life: 3000
     })
   }
@@ -1469,8 +2016,8 @@ const refreshCalendar = async () => {
   }
 }
 
-const createTask = async () => {
-  if (!newTask.value.title || !newTask.value.startTime || !newTask.value.endTime) {
+const createActivity = async () => {
+  if (!newActivity.value.title || !newActivity.value.startTime || !newActivity.value.endTime) {
     toast.add({
       severity: 'warn',
       summary: 'Validation Error',
@@ -1480,23 +2027,23 @@ const createTask = async () => {
     return
   }
   
-  isCreatingTask.value = true
+  isCreatingActivity.value = true
   try {
     // Create event data for backend
     const eventData = {
-      subject: newTask.value.title,
-      description: newTask.value.description,
-      start_time: newTask.value.startTime.toISOString(),
-      end_time: newTask.value.endTime.toISOString(),
-      event_type: newTask.value.type,
-      subcategory: newTask.value.subcategory,
-      priority: newTask.value.priority,
-      impact: newTask.value.impact,
-      estimated_hours: newTask.value.estimatedHours,
-      maintenance_window: newTask.value.maintenanceWindow,
-      customer_facing: newTask.value.customerFacing,
-      assigned_engineer: newTask.value.engineerId !== 'all' ? newTask.value.engineerId : null,
-      related_ticket_id: newTask.value.ticketId || null,
+      subject: newActivity.value.title,
+      description: newActivity.value.description,
+      start_time: newActivity.value.startTime.toISOString(),
+      end_time: newActivity.value.endTime.toISOString(),
+      event_type: newActivity.value.type,
+      subcategory: newActivity.value.subcategory,
+      priority: newActivity.value.priority,
+      impact: newActivity.value.impact,
+      estimated_hours: newActivity.value.estimatedHours,
+      maintenance_window: newActivity.value.maintenanceWindow,
+      customer_facing: newActivity.value.customerFacing,
+      assigned_engineer: newActivity.value.engineerId !== 'all' ? newActivity.value.engineerId : null,
+      related_ticket_id: newActivity.value.ticketId || null,
       location: '',
       is_all_day: false
     }
@@ -1505,7 +2052,7 @@ const createTask = async () => {
     await engineeringStore.createCalendarEvent(eventData)
     
     // Reset form
-    newTask.value = {
+    newActivity.value = {
       title: '',
       type: 'maintenance',
       subcategory: '',
@@ -1521,29 +2068,118 @@ const createTask = async () => {
       customerFacing: false
     }
     
-    showAddTaskDialog.value = false
+    showAddActivityDialog.value = false
     
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Task created successfully',
+      detail: 'Activity created successfully',
       life: 3000
     })
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to create task',
+      detail: 'Failed to create activity',
       life: 3000
     })
   } finally {
-    isCreatingTask.value = false
+    isCreatingActivity.value = false
+  }
+}
+
+const updateActivity = async () => {
+  if (!editActivity.value.title || !editActivity.value.startTime || !editActivity.value.endTime) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Please fill in all required fields',
+      life: 3000
+    })
+    return
+  }
+  
+  isUpdatingActivity.value = true
+  try {
+    // Create event data for backend
+    const eventData = {
+      subject: editActivity.value.title,
+      description: editActivity.value.description,
+      start_time: editActivity.value.startTime.toISOString(),
+      end_time: editActivity.value.endTime.toISOString(),
+      event_type: editActivity.value.type,
+      subcategory: editActivity.value.subcategory,
+      priority: editActivity.value.priority,
+      impact: editActivity.value.impact,
+      estimated_hours: editActivity.value.estimatedHours,
+      maintenance_window: editActivity.value.maintenanceWindow,
+      customer_facing: editActivity.value.customerFacing,
+      assigned_engineer: editActivity.value.engineerId !== 'all' ? editActivity.value.engineerId : null,
+      related_ticket_id: editActivity.value.ticketId || null,
+      location: '',
+      is_all_day: false
+    }
+    
+    // Call backend API to update the event
+    await engineeringStore.updateCalendarEvent(editActivity.value.id, eventData)
+    
+    showEditActivityDialog.value = false
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Activity updated successfully',
+      life: 3000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update activity',
+      life: 3000
+    })
+  } finally {
+    isUpdatingActivity.value = false
   }
 }
 
 const editEvent = () => {
   console.log('Edit event:', selectedEvent.value)
+  
+  // Check if this is a ticket event (read-only)
+  if (selectedEvent.value && selectedEvent.value.EventType === 'ticket_due') {
   showEventDialog.value = false
+    toast.add({
+      severity: 'warn',
+      summary: 'Read Only',
+      detail: 'Ticket events cannot be edited. Please update the ticket directly.',
+      life: 3000
+    })
+    return
+  }
+  
+  // Populate the edit form with current event data
+  if (selectedEvent.value) {
+    editActivity.value = {
+      id: selectedEvent.value.Id,
+      title: selectedEvent.value.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋]\s/, '') || '', // Remove emoji prefix
+      type: selectedEvent.value.Category || 'maintenance',
+      subcategory: selectedEvent.value.Subcategory || '',
+      priority: selectedEvent.value.Priority || 'normal',
+      impact: selectedEvent.value.Impact || 'internal',
+      startTime: new Date(selectedEvent.value.StartTime),
+      endTime: new Date(selectedEvent.value.EndTime),
+      engineerId: selectedEvent.value.EngineerName || null,
+      ticketId: selectedEvent.value.TicketId || null,
+      description: selectedEvent.value.Description?.split('\n')[0] || '', // Get description without metadata
+      estimatedHours: selectedEvent.value.EstimatedHours || 1,
+      maintenanceWindow: selectedEvent.value.MaintenanceWindow || false,
+      customerFacing: selectedEvent.value.CustomerFacing || false
+    }
+  }
+  
+  showEventDialog.value = false
+  showEditActivityDialog.value = true
 }
 
 const viewTicket = (ticketId) => {
@@ -1555,6 +2191,13 @@ const viewTicket = (ticketId) => {
 // Lifecycle
 onMounted(async () => {
   await refreshCalendar()
+})
+
+// Cleanup fast tooltips on component unmount
+onUnmounted(() => {
+  // Remove any lingering tooltips
+  const tooltips = document.querySelectorAll('.fast-tooltip')
+  tooltips.forEach(tooltip => tooltip.remove())
 })
 
 // Provide Syncfusion modules
@@ -1643,6 +2286,9 @@ provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, 
   overflow: hidden;
   padding: 0;
   min-height: 60px;
+  /* Ensure tooltips work properly */
+  cursor: pointer;
+  position: relative;
 }
 
 /* Event Card Container */
