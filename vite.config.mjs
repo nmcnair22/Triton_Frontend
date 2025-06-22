@@ -9,7 +9,8 @@ export default defineConfig({
         'import.meta.env.VITE_API_BASE_URL': JSON.stringify(process.env.VITE_API_BASE_URL || 'http://localhost:8000/api'),
     },
     optimizeDeps: {
-        noDiscovery: true,
+        // Temporarily comment out for debugging
+        // noDiscovery: true,
         include: ['quill', '@primevue/forms', 'pusher-js', 'laravel-echo']
     },
     plugins: [
@@ -40,20 +41,24 @@ export default defineConfig({
         host: '0.0.0.0'
     },
     build: {
-        // Simple, default rollup configuration
+        // Disable code splitting temporarily
         rollupOptions: {
             output: {
-                // Let Vite handle the naming with single hashes
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
-                assetFileNames: 'assets/[name]-[hash].[ext]'
+                assetFileNames: 'assets/[name]-[hash].[ext]',
+                // Force everything into fewer chunks
+                manualChunks: undefined,
+                inlineDynamicImports: false
             }
         },
         // Increase chunk size warning limit
-        chunkSizeWarningLimit: 1000,
+        chunkSizeWarningLimit: 2000,
         // Clear the output directory before build
         emptyOutDir: true,
         // Generate source maps for debugging
-        sourcemap: true
+        sourcemap: true,
+        // Disable minification for debugging
+        minify: false
     }
 });
