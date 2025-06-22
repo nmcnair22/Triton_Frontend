@@ -4,6 +4,7 @@
  */
 
 import { ref } from 'vue';
+import axios from 'axios';
 import MicrosoftAuth from './MicrosoftAuth';
 import LocalAuth from './LocalAuth';
 import LogoutService from './LogoutService';

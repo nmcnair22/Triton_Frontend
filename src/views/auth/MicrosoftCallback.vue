@@ -21,7 +21,7 @@ function findAccessibleRoute(permissions) {
   
   // Define fallback routes in order of preference (these should not require permissions)
   const fallbackRoutes = [
-    '/dashboard',
+    '/field-services/visit-management',
     '/profile',
     '/'
   ];
@@ -32,7 +32,7 @@ function findAccessibleRoute(permissions) {
   }
   
   if (permissions.includes('inventory.view')) {
-    return '/dashboard';
+    return '/field-services/visit-management';
   }
   
   // Return the first fallback route if no matching permissions
