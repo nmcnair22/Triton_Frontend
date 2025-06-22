@@ -40,27 +40,13 @@ export default defineConfig({
         host: '0.0.0.0'
     },
     build: {
-        // Force consistent chunk naming
+        // Simple, default rollup configuration
         rollupOptions: {
             output: {
-                // Use a simpler hash pattern to avoid double-hash issues
+                // Let Vite handle the naming with single hashes
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
-                assetFileNames: 'assets/[name]-[hash].[ext]',
-                // Prevent chunk name collisions
-                manualChunks: (id) => {
-                    // Group vendor chunks to reduce dynamic imports
-                    if (id.includes('node_modules')) {
-                        if (id.includes('vue') || id.includes('@vue')) {
-                            return 'vue-vendor';
-                        }
-                        if (id.includes('primevue')) {
-                            return 'primevue-vendor';
-                        }
-                        // Other vendor libraries
-                        return 'vendor';
-                    }
-                }
+                assetFileNames: 'assets/[name]-[hash].[ext]'
             }
         },
         // Increase chunk size warning limit
