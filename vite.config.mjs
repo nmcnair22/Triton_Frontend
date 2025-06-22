@@ -41,24 +41,22 @@ export default defineConfig({
         host: '0.0.0.0'
     },
     build: {
-        // Disable code splitting temporarily
+        // Simplified build config to avoid conflicts
         rollupOptions: {
             output: {
+                // Use default naming
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
-                assetFileNames: 'assets/[name]-[hash].[ext]',
-                // Force everything into fewer chunks
-                manualChunks: undefined,
-                inlineDynamicImports: false
+                assetFileNames: 'assets/[name]-[hash].[ext]'
             }
         },
-        // Increase chunk size warning limit
-        chunkSizeWarningLimit: 2000,
+        // Disable code splitting temporarily to avoid the preload issue
+        cssCodeSplit: false,
         // Clear the output directory before build
         emptyOutDir: true,
-        // Generate source maps for debugging
-        sourcemap: true,
-        // Disable minification for debugging
-        minify: false
+        // Disable source maps temporarily
+        sourcemap: false,
+        // Use default esbuild for minification
+        minify: 'esbuild'
     }
 });
