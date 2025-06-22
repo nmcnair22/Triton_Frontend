@@ -45,11 +45,7 @@ export default defineConfig({
             output: {
                 // Use a simpler hash pattern to avoid double-hash issues
                 entryFileNames: 'assets/[name]-[hash].js',
-                chunkFileNames: (chunkInfo) => {
-                    // Ensure consistent naming for chunks
-                    const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
-                    return `assets/${facadeModuleId}-[hash].js`;
-                },
+                chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash].[ext]',
                 // Prevent chunk name collisions
                 manualChunks: (id) => {
