@@ -167,9 +167,25 @@ export const EngineeringService = {
 
   // === CALENDAR ENDPOINTS ===
   
-  // Get calendar events with optional filters
-  getCalendarEvents(params = {}) {
-    return ApiService.get('/engineering/calendar', params);
+  // Get calendar events with date range parameters (REQUIRED by backend)
+  getCalendarEvents(startDate, endDate, engineerId = 'all', eventType = null) {
+    const params = new URLSearchParams();
+    
+    // CRITICAL: Always send date range parameters
+    if (startDate) {
+      params.append('start_date', startDate);
+    }
+    if (endDate) {
+      params.append('end_date', endDate);
+    }
+    if (engineerId && engineerId !== 'all') {
+      params.append('engineer_id', engineerId);
+    }
+    if (eventType) {
+      params.append('event_type', eventType);
+    }
+    
+    return ApiService.get(`/engineering/calendar?${params.toString()}`);
   },
 
   // Create a new calendar event
@@ -198,8 +214,12 @@ export const EngineeringService = {
   },
 
   // Get calendar statistics and analytics
-  getCalendarStatistics() {
-    return ApiService.get('/engineering/calendar/statistics');
+  getCalendarStatistics(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    return ApiService.get(`/engineering/calendar/statistics?${params.toString()}`);
   },
 
   // === QUEUE ANALYTICS ENDPOINTS ===

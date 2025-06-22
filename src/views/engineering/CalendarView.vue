@@ -7,7 +7,7 @@
           🗓️ Engineering Calendar
         </h1>
         <p class="text-surface-600 dark:text-surface-300">
-          Track ticket deadlines, engineer assignments, and task schedules
+          Track ticket deadlines, engineer assignments, and activity schedules
         </p>
       </div>
       
@@ -53,9 +53,9 @@
         
         <!-- Add Event Button -->
         <Button 
-          label="Add Task" 
+          label="Add Activity" 
           icon="pi pi-plus"
-          @click="showAddTaskDialog = true"
+          @click="showAddActivityDialog = true"
           severity="primary"
         />
       </div>
@@ -76,8 +76,17 @@
         :popupOpen="onPopupOpen"
         :actionBegin="onActionBegin"
         :actionComplete="onActionComplete"
+        :navigating="onNavigating"
         :cellClick="onCellClick"
         :eventClick="onEventClick"
+        :locale="'en-US'"
+        :dateFormat="'MM/dd/yyyy'"
+        :timeFormat="'h:mm a'"
+        :firstDayOfWeek="0"
+        :showTimeIndicator="true"
+        :allowMultiDrag="false"
+        :allowResizing="true"
+        :allowDragAndDrop="true"
         cssClass="engineering-schedule"
       >
         <e-views>
@@ -135,19 +144,19 @@
       </div>
     </div>
 
-    <!-- Add Task Dialog -->
+    <!-- Add Activity Dialog -->
     <Dialog 
-      v-model:visible="showAddTaskDialog" 
+      v-model:visible="showAddActivityDialog" 
       :style="{ width: '600px' }" 
       modal 
-      header="Add New Task"
+      header="Add New Activity"
       :closable="true"
     >
       <div class="space-y-4">
         <div class="grid grid-cols-1 gap-4">
           <div>
-            <label class="block text-sm font-medium mb-2">Task Title</label>
-            <InputText v-model="newTask.title" class="w-full" placeholder="Enter task title" />
+            <label class="block text-sm font-medium mb-2">Activity Title</label>
+            <InputText v-model="newActivity.title" class="w-full" placeholder="Enter activity title" />
           </div>
         </div>
         
@@ -155,12 +164,12 @@
           <div>
             <label class="block text-sm font-medium mb-2">Activity Category</label>
             <Select 
-              v-model="newTask.type" 
-              :options="taskTypeOptions" 
+              v-model="newActivity.type" 
+              :options="activityTypeOptions" 
               optionLabel="label" 
               optionValue="value"
               class="w-full"
-              @change="newTask.subcategory = ''"
+              @change="newActivity.subcategory = ''"
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2">
@@ -173,7 +182,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Subcategory</label>
             <Select 
-              v-model="newTask.subcategory" 
+              v-model="newActivity.subcategory" 
               :options="subcategoryOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -184,7 +193,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Priority</label>
             <Select 
-              v-model="newTask.priority" 
+              v-model="newActivity.priority" 
               :options="priorityOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -207,7 +216,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Start Date & Time</label>
             <DatePicker 
-              v-model="newTask.startTime" 
+              v-model="newActivity.startTime" 
               showTime 
               hourFormat="12"
               class="w-full"
@@ -216,7 +225,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">End Date & Time</label>
             <DatePicker 
-              v-model="newTask.endTime" 
+              v-model="newActivity.endTime" 
               showTime 
               hourFormat="12"
               class="w-full"
@@ -228,7 +237,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Impact Level</label>
             <Select 
-              v-model="newTask.impact" 
+              v-model="newActivity.impact" 
               :options="impactOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -238,7 +247,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Estimated Hours</label>
             <InputNumber 
-              v-model="newTask.estimatedHours" 
+              v-model="newActivity.estimatedHours" 
               :min="0.25" 
               :max="24" 
               :step="0.25"
@@ -252,7 +261,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
             <Select 
-              v-model="newTask.engineerId" 
+              v-model="newActivity.engineerId" 
               :options="engineerOptions.filter(e => e.value !== 'all')" 
               optionLabel="label" 
               optionValue="value"
@@ -262,7 +271,7 @@
           <div>
             <label class="block text-sm font-medium mb-2">Related Ticket</label>
             <Select 
-              v-model="newTask.ticketId" 
+              v-model="newActivity.ticketId" 
               :options="ticketOptions" 
               optionLabel="label" 
               optionValue="value"
@@ -321,7 +330,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex items-center gap-3">
             <Checkbox 
-              v-model="newTask.maintenanceWindow" 
+              v-model="newActivity.maintenanceWindow" 
               inputId="maintenanceWindow" 
               binary 
             />
@@ -331,7 +340,7 @@
           </div>
           <div class="flex items-center gap-3">
             <Checkbox 
-              v-model="newTask.customerFacing" 
+              v-model="newActivity.customerFacing" 
               inputId="customerFacing" 
               binary 
             />
@@ -343,16 +352,239 @@
         
         <div>
           <label class="block text-sm font-medium mb-2">Description</label>
-          <Textarea v-model="newTask.description" rows="3" class="w-full" />
+          <Textarea v-model="newActivity.description" rows="3" class="w-full" />
         </div>
       </div>
       
       <template #footer>
-        <Button label="Cancel" @click="showAddTaskDialog = false" text />
+        <Button label="Cancel" @click="showAddActivityDialog = false" text />
         <Button 
-          label="Create Task" 
-          @click="createTask" 
-          :loading="isCreatingTask"
+          label="Create Activity" 
+          @click="createActivity" 
+          :loading="isCreatingActivity"
+          icon="pi pi-check"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Edit Activity Dialog -->
+    <Dialog 
+      v-model:visible="showEditActivityDialog" 
+      :style="{ width: '600px' }" 
+      modal 
+      header="Edit Activity"
+      :closable="true"
+    >
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Activity Title</label>
+            <InputText v-model="editActivity.title" class="w-full" placeholder="Enter activity title" />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Activity Category</label>
+            <Select 
+              v-model="editActivity.type" 
+              :options="activityTypeOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              @change="editActivity.subcategory = ''"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <i :class="option.icon" :style="{ color: option.color }"></i>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Subcategory</label>
+            <Select 
+              v-model="editActivity.subcategory" 
+              :options="subcategoryOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              placeholder="Select subcategory..."
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Priority</label>
+            <Select 
+              v-model="editActivity.priority" 
+              :options="priorityOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :style="{ backgroundColor: option.color }"
+                  ></div>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Start Date & Time</label>
+            <DatePicker 
+              v-model="editActivity.startTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">End Date & Time</label>
+            <DatePicker 
+              v-model="editActivity.endTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Impact Level</label>
+            <Select 
+              v-model="editActivity.impact" 
+              :options="impactOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Estimated Hours</label>
+            <InputNumber 
+              v-model="editActivity.estimatedHours" 
+              :min="0.25" 
+              :max="24" 
+              :step="0.25"
+              suffix=" hrs"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
+            <Select 
+              v-model="editActivity.engineerId" 
+              :options="engineerOptions.filter(e => e.value !== 'all')" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Related Ticket</label>
+            <Select 
+              v-model="editActivity.ticketId" 
+              :options="ticketOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              placeholder="Select a ticket..."
+              class="w-full"
+              filter
+              filterPlaceholder="Search tickets..."
+              showClear
+              :pt="{
+                root: { class: 'h-11' },
+                input: { class: 'h-11 flex items-center' },
+                filterContainer: { class: 'p-3 border-b border-surface-200' },
+                filterInput: { class: 'w-full p-2 border border-surface-300 rounded-md text-sm' },
+                list: { class: 'max-h-60 overflow-auto' },
+                item: { class: 'p-3 hover:bg-surface-100 cursor-pointer border-b border-surface-100 last:border-b-0' }
+              }"
+            >
+              <template #option="{ option }">
+                <div v-if="option.value" class="flex flex-col gap-1 py-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-sm">{{ option.ticket_number }}</span>
+                    <div class="flex gap-2">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-green-100 text-green-800': option.status === 'Open',
+                          'bg-yellow-100 text-yellow-800': option.status === 'Pending',
+                          'bg-blue-100 text-blue-800': option.status === 'In Progress',
+                          'bg-gray-100 text-gray-800': !['Open', 'Pending', 'In Progress'].includes(option.status)
+                        }"
+                      >
+                        {{ option.status }}
+                      </span>
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-red-100 text-red-800': option.priority === 'High' || option.priority === 'Critical',
+                          'bg-orange-100 text-orange-800': option.priority === 'Normal',
+                          'bg-gray-100 text-gray-800': option.priority === 'Low'
+                        }"
+                      >
+                        {{ option.priority }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-sm text-surface-600 truncate">{{ option.subject }}</span>
+                </div>
+                <div v-else class="py-2 text-sm text-surface-500 italic">
+                  {{ option.label }}
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-center gap-3">
+            <Checkbox 
+              v-model="editActivity.maintenanceWindow" 
+              inputId="editMaintenanceWindow" 
+              binary 
+            />
+            <label for="editMaintenanceWindow" class="text-sm font-medium">
+              Requires Maintenance Window
+            </label>
+          </div>
+          <div class="flex items-center gap-3">
+            <Checkbox 
+              v-model="editActivity.customerFacing" 
+              inputId="editCustomerFacing" 
+              binary 
+            />
+            <label for="editCustomerFacing" class="text-sm font-medium">
+              Customer-Facing Activity
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Description</label>
+          <Textarea v-model="editActivity.description" rows="3" class="w-full" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <Button label="Cancel" @click="showEditActivityDialog = false" text />
+        <Button 
+          label="Update Activity" 
+          @click="updateActivity" 
+          :loading="isUpdatingActivity"
           icon="pi pi-check"
         />
       </template>
@@ -361,12 +593,70 @@
     <!-- Event Details Dialog -->
     <Dialog 
       v-model:visible="showEventDialog" 
-      :style="{ width: '500px' }" 
+      :style="{ width: '600px' }" 
       modal 
-      :header="selectedEvent?.Subject || 'Event Details'"
+      :header="selectedEvent?.EventType === 'ticket_due' ? selectedEvent?.TicketNumber || 'Ticket Details' : selectedEvent?.Subject || 'Event Details'"
       :closable="true"
     >
       <div v-if="selectedEvent" class="space-y-4">
+        <!-- Ticket Event Display -->
+        <div v-if="selectedEvent.EventType === 'ticket_due'" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div 
+                class="w-4 h-4 rounded"
+                :style="{ backgroundColor: selectedEvent.CategoryColor }"
+              ></div>
+              <span class="font-medium text-orange-600">{{ selectedEvent.Category || 'Overdue' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span 
+                class="px-2 py-1 text-xs rounded-full font-medium bg-blue-100 text-blue-800"
+              >
+                {{ selectedEvent.Priority?.charAt(0).toUpperCase() + selectedEvent.Priority?.slice(1) || 'Normal' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4">
+            <div class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg">
+              <div class="space-y-3">
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Ticket ID:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.TicketId }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Customer:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.Customer || 'Unassigned' }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Engineer:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.Owner || selectedEvent.EngineerName || 'Unassigned' }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Subject:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.TicketSubject || selectedEvent.Subject }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Last Update:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.LastActivity ? formatDateTime(new Date(selectedEvent.LastActivity)) : 'No recent activity' }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Ticket Due:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.DueDate ? formatDateTime(new Date(selectedEvent.DueDate)) : 'No due date set' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="selectedEvent.ReasonForTicket" class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg">
+              <h4 class="font-medium text-sm text-surface-900 dark:text-surface-0 mb-2">Reason for Ticket:</h4>
+              <p class="text-surface-700 dark:text-surface-200 text-sm leading-relaxed">{{ selectedEvent.ReasonForTicket }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular Event Display -->
+        <div v-else class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div 
@@ -460,14 +750,16 @@
           <h4 class="font-medium mb-2">Description</h4>
           <p class="text-surface-600 dark:text-surface-300">{{ selectedEvent.Description }}</p>
         </div>
+        </div>
       </div>
       
       <template #footer>
         <Button 
-          v-if="selectedEvent?.TicketId" 
+          v-if="selectedEvent?.EventType === 'ticket_due' && selectedEvent?.TicketId" 
           label="View Ticket" 
           @click="viewTicket(selectedEvent.TicketId)" 
           outlined 
+          icon="pi pi-external-link"
         />
         <Button 
           v-if="selectedEvent?.IsEditable" 
@@ -482,7 +774,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, provide } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEngineeringStore } from '@/stores/engineeringStore'
 import { useToast } from 'primevue/usetoast'
@@ -516,14 +808,16 @@ const toast = useToast()
 // Refs
 const scheduleObj = ref(null)
 const isLoading = ref(false)
-const isCreatingTask = ref(false)
-const showAddTaskDialog = ref(false)
+const isCreatingActivity = ref(false)
+const isUpdatingActivity = ref(false)
+const showAddActivityDialog = ref(false)
+const showEditActivityDialog = ref(false)
 const showEventDialog = ref(false)
 const selectedEvent = ref(null)
 
 // Calendar configuration
 const selectedDate = ref(new Date())
-const calendarHeight = ref('700px')
+const calendarHeight = ref('750px')
 const selectedView = ref('Week')
 const selectedEngineer = ref('all')
 
@@ -553,11 +847,30 @@ const workHours = ref({
 const timeScale = ref({
   enable: true,
   interval: 60,
-  slotCount: 1
+  slotCount: 2,
+  template: '${majorSlot(date)}'
 })
 
-// New task form
-const newTask = ref({
+// New activity form
+const newActivity = ref({
+  title: '',
+  type: 'maintenance',
+  subcategory: '',
+  priority: 'normal',
+  impact: 'internal',
+  startTime: new Date(),
+  endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours later
+  engineerId: null,
+  ticketId: null,
+  description: '',
+  estimatedHours: 1,
+  maintenanceWindow: false,
+  customerFacing: false
+})
+
+// Edit activity form
+const editActivity = ref({
+  id: null,
   title: '',
   type: 'maintenance',
   subcategory: '',
@@ -575,10 +888,11 @@ const newTask = ref({
 
 // Get subcategories for selected type
 const subcategoryOptions = computed(() => {
-  if (!newTask.value.type || !engineeringEventTypes.value[newTask.value.type]) {
+  const activityType = newActivity.value.type || editActivity.value.type
+  if (!activityType || !engineeringEventTypes.value[activityType]) {
     return []
   }
-  return engineeringEventTypes.value[newTask.value.type].subcategories.map(sub => ({
+  return engineeringEventTypes.value[activityType].subcategories.map(sub => ({
     label: sub,
     value: sub
   }))
@@ -682,7 +996,7 @@ const engineeringEventTypes = ref({
 })
 
 // Flatten for dropdown options
-const taskTypeOptions = computed(() => {
+const activityTypeOptions = computed(() => {
   return Object.entries(engineeringEventTypes.value).map(([key, type]) => ({
     label: type.label,
     value: key,
@@ -738,7 +1052,7 @@ const engineerOptions = computed(() => {
   return engineers
 })
 
-// Ticket options for task creation
+// Ticket options for activity creation
 const ticketOptions = computed(() => {
   // Use calendar tickets from backend if available
   if (engineeringStore.calendarTickets && Array.isArray(engineeringStore.calendarTickets) && engineeringStore.calendarTickets.length > 0) {
@@ -796,24 +1110,42 @@ const eventSettings = computed(() => ({
     endTime: { name: 'EndTime' },
     categoryColor: { name: 'CategoryColor' },
     description: { name: 'Description' }
-  }
+  },
+  enableMaxHeight: true,
+  ignoreWhitespace: false
 }))
 
 // Get calendar events from store (includes both real events and ticket deadlines)
 const calendarEvents = computed(() => {
   // Ensure we have an array to work with
   const storeEvents = engineeringStore.calendarEvents || []
-  let events = Array.isArray(storeEvents) ? [...storeEvents] : []
+  
+  // DEBUG: Log the raw events from store
+  console.log('Raw Store Events:', storeEvents)
+  
+  // Extract the actual events array from the store response
+  let events = []
+  if (Array.isArray(storeEvents)) {
+    // Store now contains just the events array
+    events = [...storeEvents]
+  } else if (storeEvents.data && Array.isArray(storeEvents.data)) {
+    // Fallback if store still has response structure
+    events = [...storeEvents.data]
+  }
+  
+  console.log('Extracted Events Array:', events)
+  console.log('Events Length:', events.length)
   
   // Filter by selected engineer if not 'all'
   if (selectedEngineer.value !== 'all') {
     events = events.filter(event => 
       event.EngineerName === selectedEngineer.value || 
-      event.assigned_engineer === selectedEngineer.value
+      event.assigned_engineer === selectedEngineer.value ||
+      event.engineer_name === selectedEngineer.value
     )
   }
   
-  // Apply color coding based on event type and priority
+  // Apply color coding and map to Syncfusion format
   events = events.map(event => {
     const eventType = event.event_type || event.Category || 'administrative'
     const priority = event.priority || 'normal'
@@ -838,20 +1170,118 @@ const calendarEvents = computed(() => {
       finalColor = adjustColorBrightness(baseColor, 0.3)
     }
     
-    return {
-      ...event,
+    // Enhanced subject with more context
+    let enhancedSubject = event.subject || event.Subject || event.title || 'Untitled Event'
+    let enhancedDescription = event.description || event.Description || ''
+    
+    // For ticket events, enhance the display with comprehensive info
+    if (event.EventType === 'ticket_due') {
+      const ticketId = event.TicketId || ''
+      const status = event.Status || ''
+      const engineer = event.Owner || event.EngineerName || ''
+      const customer = event.Customer || 'Unassigned'
+      const dueDate = event.DueDate ? new Date(event.DueDate) : null
+      const lastActivity = event.LastActivity ? new Date(event.LastActivity) : null
+      const maintenanceWindow = event.MaintenanceWindow || false
+      
+      // Use the clean ticket subject (without ticket number prefix)
+      const cleanSubject = event.TicketSubject || event.Subject || enhancedSubject
+      
+      // Add ticket icon to calendar display
+      enhancedSubject = `🎫 ${cleanSubject}`
+      
+      // Build comprehensive description for the popup
+      const descriptionParts = [
+        `Ticket ID: ${ticketId}`,
+        `Customer: ${customer}`,
+        `Engineer: ${engineer}`,
+        `Subject: ${cleanSubject}`,
+        lastActivity ? `Last Update: ${formatDateTime(lastActivity)}` : '',
+        dueDate ? `Ticket Due: ${formatDateTime(dueDate)}` : 'Ticket Due: No due date set',
+        '',
+        event.ReasonForTicket ? `Reason for Ticket:\n${event.ReasonForTicket}` : ''
+      ].filter(Boolean)
+      
+      enhancedDescription = descriptionParts.join('\n')
+    } else {
+      // For manual events, show category and engineer
+      const categoryLabel = engineeringEventTypes.value[eventType]?.label || eventType
+      const engineer = event.assigned_engineer || event.engineer_name || event.EngineerName
+      
+      enhancedSubject = `${getEventIcon(eventType)} ${enhancedSubject}`
+      
+      enhancedDescription = [
+        event.description || event.Description || '',
+        `Type: ${categoryLabel}`,
+        engineer ? `Engineer: ${engineer}` : '',
+        event.subcategory ? `Category: ${event.subcategory}` : '',
+        event.estimated_hours ? `Duration: ${event.estimated_hours}h` : ''
+      ].filter(Boolean).join('\n')
+    }
+
+    // Map backend fields to Syncfusion expected format
+    const mappedEvent = {
+      // Core Syncfusion fields
+      Id: event.id || event.Id,
+      Subject: enhancedSubject,
+      StartTime: new Date(event.start_time || event.StartTime),
+      EndTime: new Date(event.end_time || event.EndTime),
+      Description: enhancedDescription,
       CategoryColor: finalColor,
-      // Add display text for better event info
-      Subject: event.Subject || event.subject,
+      IsAllDay: event.is_all_day || event.IsAllDay || false,
+      Location: event.location || event.Location || '',
+      
+      // Additional metadata
       Category: eventType,
       Priority: priority,
       Subcategory: event.subcategory,
       Impact: event.impact,
       EstimatedHours: event.estimated_hours,
       MaintenanceWindow: event.maintenance_window,
-      CustomerFacing: event.customer_facing
+      CustomerFacing: event.customer_facing,
+      EngineerName: event.assigned_engineer || event.engineer_name || event.EngineerName,
+      TicketId: event.TicketId || event.related_ticket_id || event.ticket_id,
+      TicketNumber: event.TicketNumber || event.ticket_number,
+      EventType: event.EventType || 'manual',
+      IsEditable: event.EventType !== 'ticket_due', // Tickets are read-only
+      
+      // Enhanced ticket fields from backend
+      Status: event.Status,
+      Owner: event.Owner,
+      Customer: event.Customer,
+      LastActivity: event.LastActivity,
+      DueDate: event.DueDate,
+      ReasonForTicket: event.ReasonForTicket,
+      MaintenanceWindow: event.MaintenanceWindow,
+      CustomerFacing: event.CustomerFacing,
+      Impact: event.Impact,
+      CategoryColor: event.CategoryColor,
+      
+      // Keep original data for debugging
+      _originalEvent: event
     }
+    
+    // DEBUG: Log the mapping for first event
+    if (events.indexOf(event) === 0) {
+      console.log('Event Mapping Example:')
+      console.log('Original:', event)
+      console.log('Mapped:', mappedEvent)
+    }
+    
+    return mappedEvent
   })
+  
+  // DEBUG: Log event types breakdown
+  const eventTypes = events.reduce((acc, event) => {
+    const type = event.EventType || 'manual'
+    acc[type] = (acc[type] || 0) + 1
+    return acc
+  }, {})
+  
+  console.log('Final Mapped Events for Syncfusion:', events)
+  console.log('Events Count:', events.length)
+  console.log('Event Types Breakdown:', eventTypes)
+  console.log('Current Engineer Filter:', selectedEngineer.value)
   
   return events
 })
@@ -866,6 +1296,80 @@ const adjustColorBrightness = (color, percent) => {
   return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (B < 255 ? B < 1 ? 0 : B : 255) * 0x100 + (G < 255 ? G < 1 ? 0 : G : 255)).toString(16).slice(1)
 }
 
+// Helper function to extract customer name from ticket subject
+const extractCustomerFromSubject = (subject) => {
+  if (!subject) return null
+  
+  // Common patterns for customer names in ticket subjects
+  const patterns = [
+    /^([A-Za-z\s&]+)\s*-/,  // "Customer Name - Description"
+    /^([A-Za-z\s&]+)_/,     // "Customer_Name_Description"
+    /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/  // Capitalized words
+  ]
+  
+  for (const pattern of patterns) {
+    const match = subject.match(pattern)
+    if (match && match[1] && match[1].length > 2 && match[1].length < 50) {
+      // Filter out common non-customer words
+      const nonCustomerWords = ['Network', 'Alert', 'Site', 'Status', 'Changed', 'Down', 'Up', 'Request', 'Update']
+      if (!nonCustomerWords.some(word => match[1].includes(word))) {
+        return match[1].trim()
+      }
+    }
+  }
+  
+  return null
+}
+
+// Helper function to get icon for event type
+const getEventIcon = (eventType) => {
+  const icons = {
+    'maintenance': '🔧',
+    'ticket-work': '🎫',
+    'deployment': '🚀',
+    'customer-activity': '👥',
+    'documentation': '📝',
+    'training': '🎓',
+    'monitoring': '📊',
+    'administrative': '📋'
+  }
+  return icons[eventType] || '📅'
+}
+
+// Helper function to format date and time for display
+const formatDateTime = (date) => {
+  if (!date) return ''
+  
+  const now = new Date()
+  const diffDays = Math.floor((date - now) / (1000 * 60 * 60 * 24))
+  
+  const dateStr = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  let relativePart = ''
+  if (diffDays === 0) {
+    relativePart = ' (today)'
+  } else if (diffDays === 1) {
+    relativePart = ' (tomorrow)'
+  } else if (diffDays === -1) {
+    relativePart = ' (yesterday)'
+  } else if (diffDays > 0) {
+    relativePart = ` (${diffDays} days from now)`
+  } else if (diffDays < 0) {
+    relativePart = ` (${Math.abs(diffDays)} days ago)`
+  }
+  
+  return `${dateStr} ${timeStr}${relativePart}`
+}
+
 // Event handlers
 const onViewChange = () => {
   currentView.value = selectedView.value
@@ -876,12 +1380,372 @@ const onEngineerChange = () => {
 }
 
 const onEventRendered = (args) => {
-  // Customize event appearance based on category
-  if (args.data.Category === 'Overdue') {
-    args.element.classList.add('overdue-event')
-  } else if (args.data.Category === 'Due Today') {
-    args.element.classList.add('due-today-event')
+  // Debug: Check if this function is being called
+  console.log('onEventRendered called for:', args.data?.Subject)
+  
+  // Customize event appearance based on category and type
+  const eventElement = args.element
+  const eventData = args.data
+  
+  // Clear default content and create custom layout
+  eventElement.innerHTML = ''
+  
+  // Create main container
+  const container = document.createElement('div')
+  container.className = 'event-card-container'
+  
+  // Create header section with type indicator and assignment
+  const header = document.createElement('div')
+  header.className = 'event-card-header'
+  
+  // Create type indicator
+  const typeIndicator = document.createElement('div')
+  typeIndicator.className = 'event-type-indicator'
+  
+  // Create assignment info
+  const assignmentInfo = document.createElement('div')
+  assignmentInfo.className = 'event-assignment-info'
+  
+  // Create content section
+  const content = document.createElement('div')
+  content.className = 'event-card-content'
+  
+  // Create title
+  const title = document.createElement('div')
+  title.className = 'event-card-title'
+  
+  // Create metadata
+  const metadata = document.createElement('div')
+  metadata.className = 'event-card-metadata'
+  
+  // Determine event type and styling
+  let eventTypeLabel = ''
+  let eventIcon = ''
+  let assignedTo = eventData.EngineerName || 'Unassigned'
+  
+  if (eventData.EventType === 'ticket_due') {
+    eventElement.classList.add('ticket-event')
+    eventIcon = '🎫'
+    eventTypeLabel = 'Ticket'
+    
+    // Add category-specific classes
+    if (eventData.Category === 'Overdue') {
+      eventElement.classList.add('overdue-event')
+      eventTypeLabel = 'Overdue Ticket'
+    } else if (eventData.Category === 'Due Today') {
+      eventElement.classList.add('due-today-event')
+      eventTypeLabel = 'Due Today'
+    } else if (eventData.Category === 'Due This Week') {
+      eventElement.classList.add('due-this-week-event')
+      eventTypeLabel = 'Due This Week'
+    } else {
+      eventElement.classList.add('upcoming-event')
+      eventTypeLabel = 'Upcoming Ticket'
+    }
+    
+    // Get clean title without ticket number prefix
+    const cleanTitle = eventData.Subject.replace(/^🎫\s*/, '')
+    title.textContent = cleanTitle
+    
+    // Add ticket-specific metadata
+    if (eventData.TicketId) {
+      metadata.innerHTML = `#${eventData.TicketId}`
+    }
+    
+  } else {
+    eventElement.classList.add('manual-event')
+    
+    // Get event type info
+    const eventType = eventData.Category || 'administrative'
+    const eventTypeInfo = engineeringEventTypes.value[eventType] || engineeringEventTypes.value[eventType.toLowerCase()]
+    
+    if (eventTypeInfo) {
+      eventIcon = eventTypeInfo.icon.replace('pi pi-', '').replace('fas fa-', '').replace('fab fa-', '')
+      // Convert icon classes to emoji equivalents for better display
+      const iconMap = {
+        'wrench': '🔧',
+        'rocket': '🚀', 
+        'users': '👥',
+        'file-text': '📝',
+        'graduation-cap': '🎓',
+        'chart-line': '📈',
+        'cog': '⚙️',
+        'tools': '🛠️'
+      }
+      eventIcon = iconMap[eventIcon] || '📋'
+      eventTypeLabel = eventTypeInfo.label
+    } else {
+      eventIcon = '📋'
+      // Use the raw category name if available, otherwise fallback to 'Activity'
+      eventTypeLabel = eventType.charAt(0).toUpperCase() + eventType.slice(1).replace(/[-_]/g, ' ') || 'Activity'
+    }
+    
+    // Get clean title
+    const cleanTitle = eventData.Subject.replace(/^[🔧🚀👥📝🎓📈⚙️🛠️📋]\s*/, '')
+    title.textContent = cleanTitle
+    
+          // Add activity-specific metadata
+    if (eventData.EstimatedHours) {
+      metadata.innerHTML = `${eventData.EstimatedHours}h`
+    }
   }
+  
+  // Set content
+  typeIndicator.innerHTML = `${eventIcon} ${eventTypeLabel}`
+  assignmentInfo.textContent = assignedTo
+  
+  // Add priority indicator if high priority
+  if (eventData.Priority && ['emergency', 'critical', 'high'].includes(eventData.Priority.toLowerCase())) {
+    eventElement.classList.add(`priority-${eventData.Priority.toLowerCase()}`)
+    const priorityDot = document.createElement('div')
+    priorityDot.className = 'priority-indicator'
+    
+    // Use fast tooltip for priority indicator too
+    const priorityTooltipText = `${eventData.Priority} Priority`
+    priorityDot._tooltipText = priorityTooltipText
+    
+    const showPriorityTooltip = (e) => {
+      const existingTooltip = document.querySelector('.fast-tooltip')
+      if (existingTooltip) existingTooltip.remove()
+      
+      const tooltip = document.createElement('div')
+      tooltip.className = 'fast-tooltip'
+      tooltip.textContent = priorityTooltipText
+      
+      const rect = e.target.getBoundingClientRect()
+      tooltip.style.cssText = `
+        position: fixed;
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        left: ${Math.min(rect.left, window.innerWidth - 100)}px;
+        top: ${rect.bottom + 4}px;
+        opacity: 1;
+      `
+      document.body.appendChild(tooltip)
+    }
+    
+    const hidePriorityTooltip = () => {
+      const tooltip = document.querySelector('.fast-tooltip')
+      if (tooltip) tooltip.remove()
+    }
+    
+    priorityDot.addEventListener('mouseenter', showPriorityTooltip)
+    priorityDot.addEventListener('mouseleave', hidePriorityTooltip)
+    
+    header.appendChild(priorityDot)
+  }
+  
+  // Assemble the card
+  header.appendChild(typeIndicator)
+  header.appendChild(assignmentInfo)
+  content.appendChild(title)
+  if (metadata.innerHTML) {
+    content.appendChild(metadata)
+  }
+  container.appendChild(header)
+  container.appendChild(content)
+  eventElement.appendChild(container)
+  
+  // Apply time formatting for better display
+  const startTime = new Date(eventData.StartTime)
+  const endTime = new Date(eventData.EndTime)
+  const timeString = `${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+  
+  // Create enhanced tooltip with comprehensive information
+  let tooltipContent = []
+  
+  // Add title (clean, without emoji prefix)
+  const cleanTitle = eventData.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋]\s*/, '') || 'Untitled Event'
+  tooltipContent.push(`📋 ${cleanTitle}`)
+  
+  // Add time information
+  tooltipContent.push(`⏰ ${timeString}`)
+  
+  // Add event type
+  tooltipContent.push(`🏷️ Type: ${eventTypeLabel}`)
+  
+  // Add priority if available
+  if (eventData.Priority) {
+    const priorityEmoji = {
+      'emergency': '🚨',
+      'critical': '🔴', 
+      'high': '🟠',
+      'normal': '🟡',
+      'low': '⚪'
+    }
+    const emoji = priorityEmoji[eventData.Priority.toLowerCase()] || '🟡'
+    tooltipContent.push(`${emoji} Priority: ${eventData.Priority.charAt(0).toUpperCase() + eventData.Priority.slice(1)}`)
+  }
+  
+  // Add assignment information
+  if (assignedTo) {
+    tooltipContent.push(`👤 Assigned: ${assignedTo}`)
+  } else {
+    tooltipContent.push(`👤 Unassigned`)
+  }
+  
+  // Add ticket-specific information for ticket events
+  if (eventData.EventType === 'ticket_due') {
+    if (eventData.TicketId) {
+      tooltipContent.push(`🎫 Ticket ID: ${eventData.TicketId}`)
+    }
+    if (eventData.Customer && eventData.Customer !== 'Unassigned') {
+      tooltipContent.push(`🏢 Customer: ${eventData.Customer}`)
+    }
+    if (eventData.Status) {
+      tooltipContent.push(`📊 Status: ${eventData.Status}`)
+    }
+    if (eventData.LastActivity) {
+      const lastUpdate = new Date(eventData.LastActivity)
+      const now = new Date()
+      const diffTime = Math.abs(now - lastUpdate)
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
+      tooltipContent.push(`🕒 Last Update: ${timeAgo}`)
+    }
+  } else {
+    // Add activity-specific information
+    if (eventData.EstimatedHours) {
+      tooltipContent.push(`⏱️ Duration: ${eventData.EstimatedHours} hours`)
+    }
+    if (eventData.Impact) {
+      const impactEmoji = {
+        'internal': '🏠',
+        'single-customer': '👤',
+        'multiple-customers': '👥',
+        'company-wide': '🌐'
+      }
+      const emoji = impactEmoji[eventData.Impact] || '📊'
+      tooltipContent.push(`${emoji} Impact: ${eventData.Impact.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
+    }
+    if (eventData.Subcategory) {
+      tooltipContent.push(`📂 Category: ${eventData.Subcategory}`)
+    }
+    if (eventData.MaintenanceWindow) {
+      tooltipContent.push(`⚠️ Requires Maintenance Window`)
+    }
+    if (eventData.CustomerFacing) {
+      tooltipContent.push(`👥 Customer-Facing Activity`)
+    }
+  }
+  
+  // Add description preview if available
+  if (eventData.Description && eventData.EventType !== 'ticket_due') {
+    const shortDesc = eventData.Description.length > 100 
+      ? eventData.Description.substring(0, 100) + '...' 
+      : eventData.Description
+    tooltipContent.push(`📝 ${shortDesc}`)
+  }
+  
+  // Set comprehensive tooltip with FAST custom tooltip system
+  const tooltipText = tooltipContent.join('\n')
+  
+  // Debug: Log tooltip setup
+  console.log('Setting fast tooltip for:', eventData.Subject)
+  console.log('Tooltip text length:', tooltipText.length)
+  
+  // REMOVE native title attributes to prevent slow browser tooltips
+  eventElement.removeAttribute('title')
+  container.removeAttribute('title')
+  
+  // Store tooltip data for our custom system
+  eventElement._tooltipText = tooltipText
+  container._tooltipText = tooltipText
+  
+  // Fast custom tooltip implementation - appears immediately on hover
+  const showTooltip = (e) => {
+    // Remove any existing tooltip
+    const existingTooltip = document.querySelector('.fast-tooltip')
+    if (existingTooltip) {
+      existingTooltip.remove()
+    }
+    
+    // Create new tooltip element
+    const tooltip = document.createElement('div')
+    tooltip.className = 'fast-tooltip'
+    tooltip.innerHTML = tooltipText.replace(/\n/g, '<br>')
+    
+    // Position tooltip near mouse cursor
+    const rect = e.target.getBoundingClientRect()
+    tooltip.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transform: translateY(-100%);
+      margin-top: -8px;
+      left: ${Math.min(rect.left, window.innerWidth - 320)}px;
+      top: ${rect.top}px;
+      opacity: 1;
+      transition: opacity 0.1s ease-in-out;
+    `
+    
+    // Adjust position if tooltip would go off-screen
+    document.body.appendChild(tooltip)
+    const tooltipRect = tooltip.getBoundingClientRect()
+    
+    // Adjust horizontal position if needed
+    if (tooltipRect.right > window.innerWidth - 10) {
+      tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px'
+    }
+    
+    // Adjust vertical position if needed
+    if (tooltipRect.top < 10) {
+      tooltip.style.top = (rect.bottom + 8) + 'px'
+      tooltip.style.transform = 'translateY(0)'
+    }
+  }
+  
+  const hideTooltip = () => {
+    const tooltip = document.querySelector('.fast-tooltip')
+    if (tooltip) {
+      tooltip.style.opacity = '0'
+      setTimeout(() => {
+        if (tooltip.parentNode) {
+          tooltip.remove()
+        }
+      }, 100)
+    }
+  }
+  
+  // Add fast tooltip event listeners - NO DELAY
+  eventElement.addEventListener('mouseenter', showTooltip)
+  eventElement.addEventListener('mouseleave', hideTooltip)
+  container.addEventListener('mouseenter', showTooltip)
+  container.addEventListener('mouseleave', hideTooltip)
+  
+  // Also handle mouse movement for repositioning
+  eventElement.addEventListener('mousemove', (e) => {
+    const tooltip = document.querySelector('.fast-tooltip')
+    if (tooltip) {
+      const rect = e.target.getBoundingClientRect()
+      tooltip.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px'
+      tooltip.style.top = rect.top + 'px'
+    }
+  })
+  
+  // Ensure the element is hoverable
+  eventElement.style.cursor = 'pointer'
+  
+  // Debug: Verify fast tooltip was set
+  console.log('Fast tooltip system enabled for:', eventData.Subject)
+  console.log('Element tagName:', eventElement.tagName)
+  console.log('Element classes:', eventElement.className)
 }
 
 const onPopupOpen = (args) => {
@@ -894,11 +1758,33 @@ const onPopupOpen = (args) => {
 }
 
 const onActionBegin = async (args) => {
+  console.log('Action Begin:', args.requestType, args)
+  
   // Handle CRUD operations
   if (args.requestType === 'eventCreate') {
     args.cancel = true // Cancel default creation, we handle it manually
   } else if (args.requestType === 'eventChange') {
-    args.cancel = true // Cancel default edit
+    // Check if this is a ticket event (read-only)
+    if (args.data && args.data.EventType === 'ticket_due') {
+      args.cancel = true
+      toast.add({
+        severity: 'warn',
+        summary: 'Read Only',
+        detail: 'Ticket events cannot be edited. Please update the ticket directly.',
+        life: 3000
+      })
+      return
+    }
+    
+    // Allow the edit dialog to open, but cancel the actual save operation
+    // We'll handle the save ourselves
+    args.cancel = true
+    
+    console.log('=== UPDATE EVENT DEBUG ===')
+    console.log('Full args object:', args)
+    console.log('Update Event Data:', args.data)
+    console.log('Event Data Keys:', Object.keys(args.data || {}))
+    console.log('Event ID:', args.data.Id)
     
     try {
       const eventData = {
@@ -906,12 +1792,15 @@ const onActionBegin = async (args) => {
         description: args.data.Description || '',
         start_time: args.data.StartTime.toISOString(),
         end_time: args.data.EndTime.toISOString(),
-        event_type: args.data.Category || 'task',
+        event_type: args.data.Category || 'administrative',
         assigned_engineer: args.data.EngineerName || null,
         related_ticket_id: args.data.TicketId || null,
         location: args.data.Location || '',
         is_all_day: args.data.IsAllDay || false
       }
+      
+      console.log('Prepared Event Data for Backend:', eventData)
+      console.log('Event Data JSON:', JSON.stringify(eventData, null, 2))
       
       await engineeringStore.updateCalendarEvent(args.data.Id, eventData)
       
@@ -931,10 +1820,59 @@ const onActionBegin = async (args) => {
       })
     }
   } else if (args.requestType === 'eventRemove') {
+    // Check if this is a ticket event (read-only)
+    if (args.data && args.data.EventType === 'ticket_due') {
+      args.cancel = true
+      toast.add({
+        severity: 'warn',
+        summary: 'Read Only',
+        detail: 'Ticket events cannot be deleted. Please update the ticket directly.',
+        life: 3000
+      })
+      return
+    }
+    
     args.cancel = true // Cancel default deletion
     
+    // Debug: Log the event data to see what ID fields are available
+    console.log('=== DELETE EVENT DEBUG ===')
+    console.log('Full args object:', args)
+    console.log('Delete Event Data:', args.data)
+    console.log('Is args.data an array?', Array.isArray(args.data))
+    
+    // Handle case where args.data might be an array
+    const eventData = Array.isArray(args.data) ? args.data[0] : args.data
+    
+    console.log('Actual Event Data:', eventData)
+    console.log('Event Data Keys:', Object.keys(eventData || {}))
+    console.log('Available ID fields:', {
+      Id: eventData?.Id,
+      id: eventData?.id,
+      _originalEvent: eventData?._originalEvent,
+      originalEventId: eventData?._originalEvent?.id,
+      originalEventId2: eventData?._originalEvent?.Id
+    })
+    
+    // Try to get the ID from various possible fields
+    const eventId = eventData?.Id || eventData?.id || eventData?._originalEvent?.id || eventData?._originalEvent?.Id
+    
+    console.log('Resolved Event ID:', eventId)
+    console.log('Event ID type:', typeof eventId)
+    
+    if (!eventId || eventId === undefined || eventId === null) {
+      console.error('No valid event ID found for deletion')
+      console.error('Event data structure:', JSON.stringify(args.data, null, 2))
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Cannot delete event: No valid ID found',
+        life: 3000
+      })
+      return
+    }
+    
     try {
-      await engineeringStore.deleteCalendarEvent(args.data.Id)
+      await engineeringStore.deleteCalendarEvent(eventId)
       
       toast.add({
         severity: 'success',
@@ -960,7 +1898,7 @@ const onActionComplete = (args) => {
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Task created successfully',
+              detail: 'Activity created successfully',
       life: 3000
     })
   }
@@ -973,6 +1911,55 @@ const onCellClick = (args) => {
 const onEventClick = (args) => {
   selectedEvent.value = args.event
   showEventDialog.value = true
+}
+
+// CRITICAL: Handle navigation to load events for new date ranges
+const onNavigating = async (args) => {
+  if (args.action === 'date' || args.action === 'view') {
+    const startDate = new Date(args.currentDate)
+    const endDate = new Date(args.currentDate)
+    
+    // Adjust date range based on current view
+    switch (args.currentView) {
+      case 'Month':
+        startDate.setDate(1)
+        endDate.setMonth(endDate.getMonth() + 1, 0)
+        break
+      case 'Week':
+      case 'WorkWeek':
+        const dayOfWeek = startDate.getDay()
+        startDate.setDate(startDate.getDate() - dayOfWeek)
+        endDate.setDate(startDate.getDate() + 6)
+        break
+      case 'TimelineWeek':
+        const timelineDayOfWeek = startDate.getDay()
+        startDate.setDate(startDate.getDate() - timelineDayOfWeek)
+        endDate.setDate(startDate.getDate() + 6)
+        break
+      case 'TimelineMonth':
+        startDate.setDate(1)
+        endDate.setMonth(endDate.getMonth() + 1, 0)
+        break
+      case 'Day':
+        endDate.setDate(startDate.getDate())
+        break
+    }
+    
+    try {
+      await engineeringStore.fetchCalendarEvents(
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0]
+      )
+    } catch (error) {
+      console.error('Failed to load calendar events for navigation:', error)
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load calendar events',
+        life: 3000
+      })
+    }
+  }
 }
 
 // Utility functions
@@ -999,8 +1986,13 @@ const formatEventTime = (startTime, endTime) => {
 const refreshCalendar = async () => {
   isLoading.value = true
   try {
+    // Load calendar events for current month if no dates are set
+    const now = new Date()
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    
     await Promise.all([
-      engineeringStore.fetchCalendarEvents(),
+      engineeringStore.fetchCalendarEvents(startDate, endDate),
       engineeringStore.fetchCalendarEngineers(),
       engineeringStore.fetchCalendarTickets(),
       engineeringStore.fetchCalendarStatistics()
@@ -1024,8 +2016,8 @@ const refreshCalendar = async () => {
   }
 }
 
-const createTask = async () => {
-  if (!newTask.value.title || !newTask.value.startTime || !newTask.value.endTime) {
+const createActivity = async () => {
+  if (!newActivity.value.title || !newActivity.value.startTime || !newActivity.value.endTime) {
     toast.add({
       severity: 'warn',
       summary: 'Validation Error',
@@ -1035,23 +2027,23 @@ const createTask = async () => {
     return
   }
   
-  isCreatingTask.value = true
+  isCreatingActivity.value = true
   try {
     // Create event data for backend
     const eventData = {
-      subject: newTask.value.title,
-      description: newTask.value.description,
-      start_time: newTask.value.startTime.toISOString(),
-      end_time: newTask.value.endTime.toISOString(),
-      event_type: newTask.value.type,
-      subcategory: newTask.value.subcategory,
-      priority: newTask.value.priority,
-      impact: newTask.value.impact,
-      estimated_hours: newTask.value.estimatedHours,
-      maintenance_window: newTask.value.maintenanceWindow,
-      customer_facing: newTask.value.customerFacing,
-      assigned_engineer: newTask.value.engineerId !== 'all' ? newTask.value.engineerId : null,
-      related_ticket_id: newTask.value.ticketId || null,
+      subject: newActivity.value.title,
+      description: newActivity.value.description,
+      start_time: newActivity.value.startTime.toISOString(),
+      end_time: newActivity.value.endTime.toISOString(),
+      event_type: newActivity.value.type,
+      subcategory: newActivity.value.subcategory,
+      priority: newActivity.value.priority,
+      impact: newActivity.value.impact,
+      estimated_hours: newActivity.value.estimatedHours,
+      maintenance_window: newActivity.value.maintenanceWindow,
+      customer_facing: newActivity.value.customerFacing,
+      assigned_engineer: newActivity.value.engineerId !== 'all' ? newActivity.value.engineerId : null,
+      related_ticket_id: newActivity.value.ticketId || null,
       location: '',
       is_all_day: false
     }
@@ -1060,7 +2052,7 @@ const createTask = async () => {
     await engineeringStore.createCalendarEvent(eventData)
     
     // Reset form
-    newTask.value = {
+    newActivity.value = {
       title: '',
       type: 'maintenance',
       subcategory: '',
@@ -1076,29 +2068,118 @@ const createTask = async () => {
       customerFacing: false
     }
     
-    showAddTaskDialog.value = false
+    showAddActivityDialog.value = false
     
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Task created successfully',
+      detail: 'Activity created successfully',
       life: 3000
     })
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to create task',
+      detail: 'Failed to create activity',
       life: 3000
     })
   } finally {
-    isCreatingTask.value = false
+    isCreatingActivity.value = false
+  }
+}
+
+const updateActivity = async () => {
+  if (!editActivity.value.title || !editActivity.value.startTime || !editActivity.value.endTime) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Please fill in all required fields',
+      life: 3000
+    })
+    return
+  }
+  
+  isUpdatingActivity.value = true
+  try {
+    // Create event data for backend
+    const eventData = {
+      subject: editActivity.value.title,
+      description: editActivity.value.description,
+      start_time: editActivity.value.startTime.toISOString(),
+      end_time: editActivity.value.endTime.toISOString(),
+      event_type: editActivity.value.type,
+      subcategory: editActivity.value.subcategory,
+      priority: editActivity.value.priority,
+      impact: editActivity.value.impact,
+      estimated_hours: editActivity.value.estimatedHours,
+      maintenance_window: editActivity.value.maintenanceWindow,
+      customer_facing: editActivity.value.customerFacing,
+      assigned_engineer: editActivity.value.engineerId !== 'all' ? editActivity.value.engineerId : null,
+      related_ticket_id: editActivity.value.ticketId || null,
+      location: '',
+      is_all_day: false
+    }
+    
+    // Call backend API to update the event
+    await engineeringStore.updateCalendarEvent(editActivity.value.id, eventData)
+    
+    showEditActivityDialog.value = false
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Activity updated successfully',
+      life: 3000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update activity',
+      life: 3000
+    })
+  } finally {
+    isUpdatingActivity.value = false
   }
 }
 
 const editEvent = () => {
   console.log('Edit event:', selectedEvent.value)
+  
+  // Check if this is a ticket event (read-only)
+  if (selectedEvent.value && selectedEvent.value.EventType === 'ticket_due') {
   showEventDialog.value = false
+    toast.add({
+      severity: 'warn',
+      summary: 'Read Only',
+      detail: 'Ticket events cannot be edited. Please update the ticket directly.',
+      life: 3000
+    })
+    return
+  }
+  
+  // Populate the edit form with current event data
+  if (selectedEvent.value) {
+    editActivity.value = {
+      id: selectedEvent.value.Id,
+      title: selectedEvent.value.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋]\s/, '') || '', // Remove emoji prefix
+      type: selectedEvent.value.Category || 'maintenance',
+      subcategory: selectedEvent.value.Subcategory || '',
+      priority: selectedEvent.value.Priority || 'normal',
+      impact: selectedEvent.value.Impact || 'internal',
+      startTime: new Date(selectedEvent.value.StartTime),
+      endTime: new Date(selectedEvent.value.EndTime),
+      engineerId: selectedEvent.value.EngineerName || null,
+      ticketId: selectedEvent.value.TicketId || null,
+      description: selectedEvent.value.Description?.split('\n')[0] || '', // Get description without metadata
+      estimatedHours: selectedEvent.value.EstimatedHours || 1,
+      maintenanceWindow: selectedEvent.value.MaintenanceWindow || false,
+      customerFacing: selectedEvent.value.CustomerFacing || false
+    }
+  }
+  
+  showEventDialog.value = false
+  showEditActivityDialog.value = true
 }
 
 const viewTicket = (ticketId) => {
@@ -1112,6 +2193,13 @@ onMounted(async () => {
   await refreshCalendar()
 })
 
+// Cleanup fast tooltips on component unmount
+onUnmounted(() => {
+  // Remove any lingering tooltips
+  const tooltips = document.querySelectorAll('.fast-tooltip')
+  tooltips.forEach(tooltip => tooltip.remove())
+})
+
 // Provide Syncfusion modules
 provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, DragAndDrop])
 </script>
@@ -1119,6 +2207,16 @@ provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, 
 
 
 <style scoped>
+/* Import required Syncfusion Material theme styles */
+@import '@syncfusion/ej2-base/styles/material.css';
+@import '@syncfusion/ej2-buttons/styles/material.css';
+@import '@syncfusion/ej2-calendars/styles/material.css';
+@import '@syncfusion/ej2-dropdowns/styles/material.css';
+@import '@syncfusion/ej2-inputs/styles/material.css';
+@import '@syncfusion/ej2-navigations/styles/material.css';
+@import '@syncfusion/ej2-popups/styles/material.css';
+@import '@syncfusion/ej2-vue-schedule/styles/material.css';
+
 .engineering-calendar {
   padding: 1.5rem;
   background: var(--surface-ground);
@@ -1173,229 +2271,234 @@ provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, 
   border-color: var(--surface-700);
 }
 
-/* Custom event styles */
-:deep(.overdue-event) {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-  border-color: #dc2626 !important;
-  color: white !important;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
-}
-
-:deep(.due-today-event) {
-  background: linear-gradient(135deg, #f97316, #ea580c) !important;
-  border-color: #ea580c !important;
-  color: white !important;
-  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3) !important;
-}
-
-/* Schedule component styling */
+/* Minimal Schedule component styling - Let Syncfusion Material theme handle most styling */
 :deep(.engineering-schedule) {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  font-family: 'Roboto', sans-serif;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-:deep(.engineering-schedule .e-schedule-toolbar) {
-  background: var(--surface-0) !important;
-  border-bottom: 1px solid var(--surface-200) !important;
-  padding: 12px 16px !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-:deep(.engineering-schedule .e-toolbar-item) {
-  margin: 0 4px !important;
-}
-
-:deep(.engineering-schedule .e-toolbar-item .e-btn) {
-  border-radius: 6px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-}
-
-:deep(.engineering-schedule .e-toolbar-item .e-btn:hover) {
-  background: var(--primary-100) !important;
-  color: var(--primary-700) !important;
-}
-
-:deep(.engineering-schedule .e-toolbar-item .e-btn.e-active) {
-  background: var(--primary-500) !important;
-  color: white !important;
-  box-shadow: 0 2px 4px rgba(var(--primary-500), 0.3) !important;
-}
-
-/* Calendar header styling */
-:deep(.engineering-schedule .e-date-header-wrap) {
-  background: var(--surface-50) !important;
-  border-bottom: 1px solid var(--surface-200) !important;
-}
-
-:deep(.engineering-schedule .e-header-cells) {
-  background: var(--surface-50) !important;
-  color: var(--surface-700) !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.05em !important;
-  padding: 12px 8px !important;
-}
-
-/* Time column styling */
-:deep(.engineering-schedule .e-time-cells) {
-  background: var(--surface-25) !important;
-  color: var(--surface-600) !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  border-right: 1px solid var(--surface-200) !important;
-}
-
-/* Work hours highlighting */
-:deep(.engineering-schedule .e-work-hours) {
-  background: rgba(59, 130, 246, 0.05) !important;
-}
-
-/* Cell styling */
-:deep(.engineering-schedule .e-work-cells) {
-  border: 1px solid var(--surface-100) !important;
-  transition: background-color 0.2s ease !important;
-}
-
-:deep(.engineering-schedule .e-work-cells:hover) {
-  background: var(--surface-50) !important;
-}
-
-/* Appointment/Event styling */
+/* Enhanced Event Card Styling */
 :deep(.engineering-schedule .e-appointment) {
-  border-radius: 8px !important;
-  font-weight: 500 !important;
-  font-size: 0.875rem !important;
-  padding: 4px 8px !important;
-  margin: 1px !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 0;
+  min-height: 60px;
+  /* Ensure tooltips work properly */
+  cursor: pointer;
+  position: relative;
+}
+
+/* Event Card Container */
+:deep(.engineering-schedule .event-card-container) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 6px 8px;
+  gap: 4px;
+}
+
+/* Event Card Header */
+:deep(.engineering-schedule .event-card-header) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.9;
+  position: relative;
+  color: inherit !important;
+}
+
+/* Event Type Indicator */
+:deep(.engineering-schedule .event-type-indicator) {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: inherit !important;
+}
+
+/* Assignment Info */
+:deep(.engineering-schedule .event-assignment-info) {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.8;
+  text-align: right;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit !important;
+}
+
+/* Event Card Content */
+:deep(.engineering-schedule .event-card-content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit !important;
+}
+
+/* Event Card Title */
+:deep(.engineering-schedule .event-card-title) {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  color: inherit !important;
+}
+
+/* Event Card Metadata */
+:deep(.engineering-schedule .event-card-metadata) {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-top: auto;
+  color: inherit !important;
+}
+
+/* Priority Indicator */
+:deep(.engineering-schedule .priority-indicator) {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4444;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Ticket Event Styling - Override Syncfusion theme */
+:deep(.engineering-schedule .ticket-event) {
+  background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+  color: white !important;
   border: none !important;
-  transition: all 0.2s ease !important;
 }
 
+:deep(.engineering-schedule .overdue-event) {
+  background: linear-gradient(135deg, #f44336, #d32f2f) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3) !important;
+  border: none !important;
+}
+
+:deep(.engineering-schedule .due-today-event) {
+  background: linear-gradient(135deg, #ff5722, #e64a19) !important;
+  color: white !important;
+  box-shadow: 0 2px 6px rgba(255, 87, 34, 0.3) !important;
+  border: none !important;
+}
+
+:deep(.engineering-schedule .due-this-week-event) {
+  background: linear-gradient(135deg, #ffc107, #ffa000) !important;
+  color: #333 !important;
+  border: none !important;
+}
+
+:deep(.engineering-schedule .upcoming-event) {
+  background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Manual Event Styling - Override Syncfusion theme */
+:deep(.engineering-schedule .manual-event) {
+  background: linear-gradient(135deg, #2196f3, #1976d2) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Event Type Specific Colors for Manual Events */
+:deep(.engineering-schedule .manual-event.maintenance) {
+  background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+  color: white !important;
+}
+
+:deep(.engineering-schedule .manual-event.deployment) {
+  background: linear-gradient(135deg, #9c27b0, #7b1fa2) !important;
+  color: white !important;
+}
+
+:deep(.engineering-schedule .manual-event.customer-activity) {
+  background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
+  color: white !important;
+}
+
+:deep(.engineering-schedule .manual-event.documentation) {
+  background: linear-gradient(135deg, #673ab7, #512da8) !important;
+  color: white !important;
+}
+
+:deep(.engineering-schedule .manual-event.training) {
+  background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+  color: white !important;
+}
+
+:deep(.engineering-schedule .manual-event.monitoring) {
+  background: linear-gradient(135deg, #607d8b, #455a64) !important;
+  color: white !important;
+}
+
+/* Priority Styling */
+:deep(.engineering-schedule .priority-emergency .priority-indicator) {
+  background: #ff1744;
+  animation: pulse 1.5s infinite;
+}
+
+:deep(.engineering-schedule .priority-critical .priority-indicator) {
+  background: #ff5722;
+}
+
+:deep(.engineering-schedule .priority-high .priority-indicator) {
+  background: #ff9800;
+}
+
+/* Hover Effects */
 :deep(.engineering-schedule .e-appointment:hover) {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
 }
 
-/* Today highlighting */
-:deep(.engineering-schedule .e-other-month) {
-  color: var(--surface-400) !important;
-  background: var(--surface-25) !important;
+/* Animation for emergency priority */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-:deep(.engineering-schedule .e-current-day) {
-  background: rgba(59, 130, 246, 0.1) !important;
-}
-
-/* Month view specific styling */
-:deep(.engineering-schedule .e-month-view .e-work-cells) {
-  min-height: 100px !important;
-  padding: 4px !important;
-}
-
-:deep(.engineering-schedule .e-month-view .e-date-header) {
-  color: var(--surface-700) !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
-}
-
-/* Week view specific styling */
-:deep(.engineering-schedule .e-week-view .e-work-cells) {
-  min-height: 50px !important;
-}
-
-/* Agenda view styling */
-:deep(.engineering-schedule .e-agenda-view) {
-  background: var(--surface-0) !important;
-}
-
-:deep(.engineering-schedule .e-agenda-view .e-appointment) {
-  background: var(--surface-50) !important;
-  border-left: 4px solid var(--primary-500) !important;
-  border-radius: 0 6px 6px 0 !important;
-  margin: 2px 0 !important;
-  padding: 8px 12px !important;
-}
-
-/* Popup styling */
-:deep(.e-schedule-dialog) {
-  border-radius: 12px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-}
-
-:deep(.e-schedule-dialog .e-dlg-header) {
-  background: var(--surface-0) !important;
-  border-bottom: 1px solid var(--surface-200) !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 16px 20px !important;
-}
-
-/* Dark mode adjustments */
-:deep(.app-dark .engineering-schedule) {
-  background: var(--surface-900) !important;
-}
-
-:deep(.app-dark .engineering-schedule .e-schedule-toolbar) {
-  background: var(--surface-800) !important;
-  border-bottom-color: var(--surface-700) !important;
-}
-
-:deep(.app-dark .engineering-schedule .e-header-cells) {
-  background: var(--surface-800) !important;
-  color: var(--surface-200) !important;
-}
-
-:deep(.app-dark .engineering-schedule .e-time-cells) {
-  background: var(--surface-850) !important;
-  color: var(--surface-300) !important;
-  border-right-color: var(--surface-700) !important;
-}
-
-:deep(.app-dark .engineering-schedule .e-work-cells) {
-  border-color: var(--surface-700) !important;
-  background: var(--surface-900) !important;
-}
-
-:deep(.app-dark .engineering-schedule .e-work-cells:hover) {
-  background: var(--surface-800) !important;
-}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .engineering-calendar {
     padding: 1rem;
   }
-  
-  :deep(.engineering-schedule) {
-    height: 600px !important;
-  }
-  
-  :deep(.engineering-schedule .e-toolbar-item .e-btn) {
-    padding: 6px 8px !important;
-    font-size: 0.875rem !important;
-  }
-  
-  :deep(.engineering-schedule .e-header-cells) {
-    padding: 8px 4px !important;
-    font-size: 0.75rem !important;
-  }
 }
 
 @media (max-width: 480px) {
   .engineering-calendar {
     padding: 0.5rem;
-  }
-  
-  :deep(.engineering-schedule) {
-    height: 500px !important;
-  }
-  
-  :deep(.engineering-schedule .e-month-view .e-work-cells) {
-    min-height: 80px !important;
   }
 }
 </style> 
