@@ -3,6 +3,8 @@
  * Provides functions for checking user permissions and roles
  */
 
+import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '@/constants/roleConstants';
+
 /**
  * Check if the current user has a specific permission
  * @param {string} permission - The permission to check for

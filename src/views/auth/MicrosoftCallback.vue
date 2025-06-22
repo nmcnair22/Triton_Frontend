@@ -35,6 +35,29 @@ function findAccessibleRoute(permissions) {
     return '/field-services/visit-management';
   }
   
+  // Check user roles for routing (prioritize highest privilege role)
+  const userData = AuthService.getUser();
+  if (userData?.roles) {
+    const userRoles = userData.roles.map(r => typeof r === 'string' ? r : r.name);
+    
+    // Priority order: admin > employee > partner > customer
+    if (userRoles.includes('admin')) {
+      return '/field-services/visit-management';
+    }
+    
+    if (userRoles.includes('employee')) {
+      return '/field-services/visit-management';
+    }
+    
+    if (userRoles.includes('partner')) {
+      return '/dashboard';
+    }
+    
+    if (userRoles.includes('customer')) {
+      return '/dashboard';
+    }
+  }
+  
   // Return the first fallback route if no matching permissions
   return fallbackRoutes[0];
 }

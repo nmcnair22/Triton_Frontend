@@ -8,6 +8,7 @@ import axios from 'axios';
 import MicrosoftAuth from './MicrosoftAuth';
 import LocalAuth from './LocalAuth';
 import LogoutService from './LogoutService';
+import { ROLES, PERMISSIONS } from '@/constants/roleConstants';
 
 // Initialize reactive state
 const token = ref(localStorage.getItem('auth_token') || null);
@@ -88,6 +89,36 @@ export const AuthService = {
     if (!userData || !userData.roles) return false;
     
     return userData.roles.some(r => r === role || r.name === role);
+  },
+  
+  // Get supported roles
+  getSupportedRoles() {
+    return Object.values(ROLES);
+  },
+  
+  // Check if a role is supported
+  isSupportedRole(role) {
+    return Object.values(ROLES).includes(role);
+  },
+  
+  // Get all user roles as an array of strings
+  getUserRoles() {
+    const userData = this.getUser();
+    if (!userData || !userData.roles) return [];
+    
+    return userData.roles.map(r => typeof r === 'string' ? r : r.name);
+  },
+  
+  // Check if user has any of the specified roles
+  hasAnyRole(roles) {
+    if (!Array.isArray(roles) || roles.length === 0) return false;
+    return roles.some(role => this.hasRole(role));
+  },
+  
+  // Check if user has all of the specified roles
+  hasAllRoles(roles) {
+    if (!Array.isArray(roles) || roles.length === 0) return false;
+    return roles.every(role => this.hasRole(role));
   },
   
   // Get current user data from localStorage (for backward compatibility)
