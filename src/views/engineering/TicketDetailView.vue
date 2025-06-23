@@ -20,6 +20,7 @@
           <div class="flex justify-between items-start mb-4">
             <div class="flex items-center gap-3">
               <Button icon="pi pi-arrow-left" text @click="goBack" />
+              <Button icon="pi pi-chart-line" text @click="navigateToDashboard" title="Go to Dashboard" />
               <div>
                 <h4 class="text-surface-900 dark:text-surface-0 font-semibold m-0">
                   Ticket #{{ ticketDetail.ticket.ticket_id }}
@@ -371,6 +372,10 @@ async function refreshData() {
 
 function goBack() {
   router.push('/engineering/tickets');
+}
+
+function navigateToDashboard() {
+  router.push({ name: 'engineering-dashboard' });
 }
 
 // Utility functions for styling

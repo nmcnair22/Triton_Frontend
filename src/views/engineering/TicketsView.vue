@@ -17,6 +17,15 @@
                 <!-- Action Buttons - Responsive Layout -->
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button 
+                        icon="pi pi-chart-line" 
+                        :label="isDesktop ? 'Dashboard' : undefined"
+                        severity="info"
+                        :outlined="true"
+                        @click="navigateToDashboard" 
+                        :size="isMobile ? 'large' : 'default'"
+                        class="w-full sm:w-auto"
+                    />
+                    <Button 
                         icon="pi pi-refresh" 
                         :label="isDesktop ? 'Refresh' : undefined"
                         :text="isMobile"
@@ -906,6 +915,11 @@ function viewTicketDetails(ticketData) {
     name: 'engineering-ticket-detail', 
     params: { id: ticketData.ticket_id } 
   });
+}
+
+// Navigate to engineering dashboard
+function navigateToDashboard() {
+  router.push({ name: 'engineering-dashboard' });
 }
 
 // Open new ticket window

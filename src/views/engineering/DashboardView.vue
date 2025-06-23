@@ -234,7 +234,12 @@
             <DataTable :value="stalledTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
               <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
+                  <span 
+                    class="font-bold text-primary cursor-pointer hover:underline" 
+                    @click="navigateToTicket(data.ticketid)"
+                  >
+                    {{ data.ticketid }}
+                  </span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -252,7 +257,7 @@
               <Column header="Actions">
                 <template #body="{ data }">
                   <Button icon="pi pi-user-plus" text size="small" title="Assign" />
-                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" @click="navigateToTicket(data.ticketid)" />
                 </template>
               </Column>
             </DataTable>
@@ -263,7 +268,12 @@
             <DataTable :value="unassignedTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
               <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
+                  <span 
+                    class="font-bold text-primary cursor-pointer hover:underline" 
+                    @click="navigateToTicket(data.ticketid)"
+                  >
+                    {{ data.ticketid }}
+                  </span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -285,7 +295,7 @@
               <Column header="Actions">
                 <template #body="{ data }">
                   <Button icon="pi pi-user-plus" text size="small" title="Assign" />
-                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" @click="navigateToTicket(data.ticketid)" />
                 </template>
               </Column>
             </DataTable>
@@ -296,7 +306,12 @@
             <DataTable :value="dueThisWeekData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
               <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
+                  <span 
+                    class="font-bold text-primary cursor-pointer hover:underline" 
+                    @click="navigateToTicket(data.ticketid)"
+                  >
+                    {{ data.ticketid }}
+                  </span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -324,7 +339,12 @@
             <DataTable :value="oldTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
               <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
+                  <span 
+                    class="font-bold text-primary cursor-pointer hover:underline" 
+                    @click="navigateToTicket(data.ticketid)"
+                  >
+                    {{ data.ticketid }}
+                  </span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -342,7 +362,7 @@
               <Column header="Actions">
                 <template #body="{ data }">
                   <Button icon="pi pi-check" text size="small" title="Close" />
-                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" @click="navigateToTicket(data.ticketid)" />
                 </template>
               </Column>
             </DataTable>
@@ -1040,6 +1060,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useEngineeringStore } from '@/stores/engineeringStore'
 import { useToast } from 'primevue/usetoast'
+import { useRouter } from 'vue-router'
 import Chart from 'primevue/chart'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -1093,6 +1114,7 @@ const BAR_CHART_OPTIONS = {
 
 const engineeringStore = useEngineeringStore()
 const toast = useToast()
+const router = useRouter()
 const isLoading = ref(false)
 const isFieldSyncing = ref(false)
 const isAIAnalyzing = ref(false)
@@ -1996,6 +2018,15 @@ const enhancedPriorityChartOptions = computed(() => ({
     }
   }
 }))
+
+// === NAVIGATION FUNCTIONS ===
+
+// Navigate to ticket detail page
+const navigateToTicket = (ticketId) => {
+  if (ticketId) {
+    router.push(`/engineering/tickets/${ticketId}`)
+  }
+}
 
 // === SYNC AND AI TRIGGER FUNCTIONS ===
 
