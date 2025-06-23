@@ -32,43 +32,66 @@ jobs:
           cache: 'npm' # Enable npm caching automatically
           cache-dependency-path: '**/package-lock.json'
 
-      - name: Cache build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            dist
-            .vite
-          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*', 'public/**/*', 'index.html', 'vite.config.*') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-build-
+      # REMOVED BUILD CACHE - This was causing stale builds
+      # Always build fresh to ensure consistency
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Clean build directories
+        run: |
+          rm -rf dist/
+          rm -rf .vite/
+          rm -rf node_modules/.vite/
+
       - name: Build application
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || secrets.VITE_API_BASE_URL }}
-        run: npm run build
+        run: |
+          # Force clean build
+          npm run build
+          # Verify build output
+          echo "Build complete. Checking output..."
+          ls -la dist/
+          ls -la dist/assets/ | head -10
 
       - name: Run tests
         run: npm run test --if-present
 
-      # Only include necessary files for deployment (exclude node_modules, source files, etc.)
+      # Deploy the ENTIRE application, not just dist folder
       - name: Prepare deployment package
         run: |
+          echo "Creating deployment package..."
           mkdir deployment-package
-          cp -r dist/* deployment-package/ 2>/dev/null || cp -r build/* deployment-package/ 2>/dev/null || echo "No dist or build folder found"
+          
+          # Copy built files
+          cp -r dist deployment-package/
+          
+          # Copy all necessary config and source files
           cp package.json deployment-package/
           cp package-lock.json deployment-package/
-          # Copy any other necessary files (server.js, etc.)
-          [ -f server.js ] && cp server.js deployment-package/ || echo "No server.js found"
-          [ -f vercel.json ] && cp vercel.json deployment-package/ || echo "No vercel.json found"
+          cp server.js deployment-package/
+          cp vite.config.mjs deployment-package/
+          
+          # Copy source files (needed for Azure to run properly)
+          cp -r src deployment-package/
+          cp -r public deployment-package/ 2>/dev/null || echo "No public folder"
+          cp index.html deployment-package/ 2>/dev/null || echo "No index.html in root"
+          
+          # Copy any other config files
+          [ -f .env.production ] && cp .env.production deployment-package/ || echo "No .env.production found"
+          [ -f tsconfig.json ] && cp tsconfig.json deployment-package/ || echo "No tsconfig.json found"
+          [ -f postcss.config.js ] && cp postcss.config.js deployment-package/ || echo "No postcss.config.js found"
+          [ -f tailwind.config.js ] && cp tailwind.config.js deployment-package/ || echo "No tailwind.config.js found"
+          
+          # List what we're deploying
+          echo "Deployment package contents:"
+          ls -la deployment-package/
 
       - name: Create deployment artifact
         run: |
           cd deployment-package
-          zip -r ../release.zip . -x "*.git*" "node_modules/*" "src/*" "*.md"
+          zip -r ../release.zip . -x "*.git*" "node_modules/*" "*.md" ".vscode/*" ".github/*"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -94,7 +117,10 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
+        run: |
+          unzip release.zip
+          echo "Deployment contents:"
+          ls -la
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -111,3 +137,8 @@ jobs:
           slot-name: 'Production'
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
           
+      # Add post-deployment verification
+      - name: Verify deployment
+        run: |
+          echo "Deployment complete. Waiting 30 seconds for app to restart..."
+          sleep 30
