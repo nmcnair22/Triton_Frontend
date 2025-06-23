@@ -791,22 +791,7 @@ const getTimelineIcon = (eventType) => {
   color: #059669;
 }
 
-/* Timeline styling */
-.timeline-item {
-  position: relative;
-  padding-left: 2rem;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: 0.5rem;
-  top: 0.5rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  background: var(--primary-color);
-  border-radius: 50%;
-}
+/* Timeline styling - removed conflicting styles that created dots */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

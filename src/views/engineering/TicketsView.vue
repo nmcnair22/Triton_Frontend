@@ -12,8 +12,8 @@
                     <p class="text-sm md:text-base text-surface-600 dark:text-surface-400">
                         Manage and track engineering support tickets
                     </p>
-                </div>
-                
+                        </div>
+                        
                 <!-- Action Buttons - Responsive Layout -->
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button 
@@ -64,22 +64,22 @@
                         @click="openNewTicketWindow"
                     />
                 </div>
-            </div>
-
+                        </div>
+                        
             <!-- Search and Filter Controls -->
             <div class="flex flex-col lg:flex-row gap-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg border">
                 <!-- Global Search -->
                 <div class="flex-1 lg:max-w-md">
                     <IconField iconPosition="left" class="w-full">
                         <InputIcon class="pi pi-search" />
-                        <InputText 
+                                <InputText 
                             v-model="filters.global.value" 
-                            placeholder="Search tickets..." 
-                            class="w-full"
+                                    placeholder="Search tickets..." 
+                                    class="w-full" 
                             :size="isMobile ? 'large' : 'default'"
-                        />
-                    </IconField>
-                </div>
+                                />
+                            </IconField>
+                        </div>
                 
                 <!-- Show Closed Tickets Toggle -->
                 <div class="flex items-center gap-3">
@@ -118,9 +118,9 @@
                         @click="collapseAll" 
                     />
                 </div>
-            </div>
-        </div>
-
+                    </div>
+                </div>
+                
         <!-- Mobile Quick Actions (when desktop actions are hidden) -->
         <div v-if="!isDesktop" class="flex flex-wrap gap-2 mb-4">
             <Button 
@@ -211,22 +211,22 @@
                 </div>
             </div>
 
-            <DataTable 
-                v-model:expandedRows="expandedRows"
+                    <DataTable 
+                        v-model:expandedRows="expandedRows"
                 v-model:filters="filters"
-                :value="filteredTickets" 
-                :loading="isLoading" 
-                :paginator="true" 
+                        :value="filteredTickets" 
+                        :loading="isLoading" 
+                        :paginator="true" 
                 :rows="isMobile ? 10 : isTablet ? 15 : 25" 
                 :rowsPerPageOptions="isMobile ? [5, 10, 20] : [10, 25, 50, 100]"
-                paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 :currentPageReportTemplate="isMobile ? '{first}-{last} of {totalRecords}' : 'Showing {first} to {last} of {totalRecords} tickets'"
-                dataKey="id"
+                        dataKey="id"
                 filterDisplay="menu"
                 :globalFilterFields="['ticket_id', 'subject', 'customer_name', 'status', 'priority', 'owner']"
                 :rowHover="!isMobile"
                 stripedRows
-                :metaKeySelection="false"
+                        :metaKeySelection="false"
                 :rowClass="getRowClass"
                 @rowExpand="onRowExpand"
                 @rowCollapse="onRowCollapse"
@@ -258,14 +258,14 @@
                             <!-- Show subject on mobile -->
                             <span v-if="isMobile" class="text-xs text-surface-500 mt-1 line-clamp-2">
                                 {{ slotProps.data.subject }}
-                            </span>
-                        </div>
-                    </template>
+                                </span>
+                            </div>
+                        </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" placeholder="Search by ID" class="p-column-filter" />
-                    </template>
-                </Column>
-
+                            </template>
+                        </Column>
+                        
                 <!-- Subject - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('subject')"
@@ -274,16 +274,16 @@
                     sortable
                     :style="{ width: isMobile ? '40%' : '25%', minWidth: '200px' }"
                 >
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <div class="max-w-xs lg:max-w-sm truncate" :title="slotProps.data.subject">
-                            {{ slotProps.data.subject }}
-                        </div>
-                    </template>
+                                    {{ slotProps.data.subject }}
+                                </div>
+                            </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" placeholder="Search subject" class="p-column-filter" />
                     </template>
-                </Column>
-
+                        </Column>
+                        
                 <!-- Customer - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('customer')"
@@ -292,16 +292,16 @@
                     sortable
                     :style="{ width: '15%' }"
                 >
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <div class="truncate" :title="slotProps.data.customer_name">
                             {{ slotProps.data.customer_name || 'Unassigned' }}
                         </div>
                     </template>
                     <template #filter="{ filterModel }">
                         <InputText v-model="filterModel.value" placeholder="Search customer" class="p-column-filter" />
-                    </template>
-                </Column>
-
+                            </template>
+                        </Column>
+                        
                 <!-- Status - Always Visible -->
                 <Column 
                     field="status" 
@@ -309,10 +309,10 @@
                     sortable
                     :style="{ width: isMobile ? '25%' : '12%' }"
                 >
-                    <template #body="slotProps">
-                        <Tag 
-                            :value="slotProps.data.status" 
-                            :severity="getStatusSeverity(slotProps.data.status)"
+                            <template #body="slotProps">
+                                <Tag 
+                                    :value="slotProps.data.status" 
+                                    :severity="getStatusSeverity(slotProps.data.status)" 
                             :class="isMobile ? 'text-xs' : ''"
                         />
                     </template>
@@ -325,10 +325,10 @@
                             placeholder="Select Status" 
                             class="p-column-filter" 
                             showClear 
-                        />
-                    </template>
-                </Column>
-
+                                />
+                            </template>
+                        </Column>
+                        
                 <!-- Priority - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('priority')"
@@ -337,10 +337,10 @@
                     sortable
                     :style="{ width: '10%' }"
                 >
-                    <template #body="slotProps">
-                        <Tag 
-                            :value="slotProps.data.priority" 
-                            :severity="getPrioritySeverity(slotProps.data.priority)"
+                            <template #body="slotProps">
+                                <Tag 
+                                    :value="slotProps.data.priority" 
+                                    :severity="getPrioritySeverity(slotProps.data.priority)"
                             class="text-xs"
                         />
                     </template>
@@ -353,10 +353,10 @@
                             placeholder="Select Priority" 
                             class="p-column-filter" 
                             showClear 
-                        />
-                    </template>
-                </Column>
-
+                                />
+                            </template>
+                        </Column>
+                        
                 <!-- Owner - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('owner')"
@@ -365,9 +365,9 @@
                     sortable
                     :style="{ width: '12%' }"
                 >
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <div class="truncate">
-                            {{ slotProps.data.owner || 'Unassigned' }}
+                                    {{ slotProps.data.owner || 'Unassigned' }}
                         </div>
                     </template>
                     <template #filter="{ filterModel }">
@@ -380,12 +380,12 @@
                             class="p-column-filter" 
                             showClear 
                         />
-                    </template>
-                </Column>
-
+                            </template>
+                        </Column>
+                        
                 <!-- Mobile: Combined Actions Column - Show only on actual mobile devices -->
                 <Column v-if="isMobile" header="Actions" :style="{ width: '20%' }">
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <div class="flex flex-col gap-1">
                             <Tag 
                                 v-if="slotProps.data.priority && !getColumnVisibility('priority')"
@@ -402,9 +402,9 @@
                                 :title="'View in Triton'"
                             />
                         </div>
-                    </template>
-                </Column>
-
+                            </template>
+                        </Column>
+                        
                 <!-- Due Date - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('dueDate')"
@@ -413,21 +413,21 @@
                     sortable
                     :style="{ width: '10%' }"
                 >
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <span 
                             v-if="slotProps.data.dates?.due_date" 
                             :class="getDueDateClass(slotProps.data.dates.due_date, slotProps.data.sla?.is_overdue)"
                             class="text-sm"
                         >
                             {{ formatDate(slotProps.data.dates.due_date) }}
-                        </span>
+                                </span>
                         <span v-else class="text-surface-400 text-sm">-</span>
                     </template>
                     <template #filter="{ filterModel }">
                         <DatePicker v-model="filterModel.value" placeholder="Filter by date" class="p-column-filter" />
-                    </template>
-                </Column>
-
+                            </template>
+                        </Column>
+                        
                 <!-- Age - Configurable Column -->
                 <Column 
                     v-if="getColumnVisibility('age')"
@@ -436,16 +436,16 @@
                     sortable
                     :style="{ width: '8%' }"
                 >
-                    <template #body="slotProps">
+                            <template #body="slotProps">
                         <span :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.created_at))" class="text-sm font-medium">
                             {{ calculateAgeInDays(slotProps.data.dates?.created_at) }}d
-                        </span>
-                    </template>
+                                </span>
+                            </template>
                     <template #filter="{ filterModel }">
                         <InputNumber v-model="filterModel.value" placeholder="Max days" class="p-column-filter" />
                     </template>
-                </Column>
-
+                        </Column>
+                        
                 <!-- View in Triton - Configurable Column -->
                 <Column v-if="getColumnVisibility('viewInTriton')" header="View in Triton" :style="{ width: '10%' }">
                     <template #body="slotProps">
@@ -461,7 +461,7 @@
                 </Column>
 
                 <!-- Responsive Expansion Template -->
-                <template #expansion="slotProps">
+                        <template #expansion="slotProps">
                     <div class="p-3 md:p-6">
                         <!-- Mobile: Show all hidden information -->
                         <div v-if="isMobile" class="space-y-4">
@@ -500,62 +500,62 @@
 
                         <!-- Desktop: Enhanced details -->
                         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- Ticket Details -->
-                            <div class="space-y-3">
-                                <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
+                                    <!-- Ticket Details -->
+                                    <div class="space-y-3">
+                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Created:</span>
                                         <span class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
+                                            </div>
+                                            <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Updated:</span>
                                         <span class="font-medium">{{ formatDate(slotProps.data.dates?.updated_at) }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Creator:</span>
+                                                <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-surface-600 dark:text-surface-400">Creator:</span>
-                                        <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
+                                    
                             <!-- Status & Assignment -->
-                            <div class="space-y-3">
+                                    <div class="space-y-3">
                                 <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Assignment</h6>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Status:</span>
                                         <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
-                                    </div>
-                                    <div class="flex justify-between">
+                                            </div>
+                                            <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Priority:</span>
                                         <Tag :value="slotProps.data.priority" :severity="getPrioritySeverity(slotProps.data.priority)" />
-                                    </div>
-                                    <div class="flex justify-between">
+                                            </div>
+                                            <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Owner:</span>
                                         <span class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- SLA & Metrics -->
+                                    <div class="space-y-3">
+                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">SLA & Metrics</h6>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">SLA Status:</span>
+                                                <Tag :value="slotProps.data.sla?.is_overdue ? 'Overdue' : 'On Track'" 
+                                                     :severity="slotProps.data.sla?.is_overdue ? 'danger' : 'success'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Reply Count:</span>
+                                                <span class="font-medium">{{ slotProps.data.counts?.replies || 0 }}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <!-- SLA & Metrics -->
-                            <div class="space-y-3">
-                                <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">SLA & Metrics</h6>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-surface-600 dark:text-surface-400">SLA Status:</span>
-                                        <Tag :value="slotProps.data.sla?.is_overdue ? 'Overdue' : 'On Track'" 
-                                             :severity="slotProps.data.sla?.is_overdue ? 'danger' : 'success'" />
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-surface-600 dark:text-surface-400">Reply Count:</span>
-                                        <span class="font-medium">{{ slotProps.data.counts?.replies || 0 }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Action Buttons -->
+                                
+                                <!-- Action Buttons -->
                         <div class="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
                                                         <div :class="`flex gap-2 ${isMobile ? 'flex-col' : ''}`">
                                 <Button 
@@ -575,10 +575,10 @@
                                     @click="openTritonTicket(slotProps.data.ticket_id)"
                                 />
                             </div>
-                        </div>
-                    </div>
-                </template>
-            </DataTable>
+                                </div>
+                            </div>
+                        </template>
+                    </DataTable>
         </div>
     </div>
 </template>
