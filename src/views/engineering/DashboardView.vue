@@ -73,19 +73,19 @@
         </div>
       </div>
 
-      <!-- Critical Alerts -->
-      <div class="card shadow-sm border-l-4 border-l-red-500 p-4 h-32">
+      <!-- Resolution Time -->
+      <div class="card shadow-sm border-l-4 border-l-green-500 p-4 h-32">
         <div class="flex justify-between items-start h-full">
           <div class="flex flex-col justify-between h-full">
-            <p class="text-surface-600 dark:text-surface-300 mb-2">Critical Alerts</p>
-            <h2 class="text-3xl font-bold mb-1">{{ realCriticalAlertsCount }}</h2>
-            <div class="text-red-500 font-medium text-sm">
-              <i class="pi pi-exclamation-triangle"></i> 
-              Stalled
+            <p class="text-surface-600 dark:text-surface-300 mb-2">Avg Resolution</p>
+            <h2 class="text-3xl font-bold mb-1">{{ averageResolutionHours }}h</h2>
+            <div class="text-green-500 font-medium text-sm">
+              <i class="pi pi-clock"></i> 
+              {{ resolutionStatus }}
             </div>
           </div>
-          <div class="bg-red-100 rounded-full p-3 text-red-500 w-12 h-12 flex items-center justify-center flex-shrink-0">
-            <i class="pi pi-exclamation-circle text-xl"></i>
+          <div class="bg-green-100 rounded-full p-3 text-green-500 w-12 h-12 flex items-center justify-center flex-shrink-0">
+            <i class="pi pi-check-circle text-xl"></i>
           </div>
         </div>
       </div>
@@ -195,7 +195,161 @@
       </div>
     </div>
 
-
+    <!-- Critical Alerts Section -->
+    <div class="card p-5 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h2 class="text-xl font-bold mb-1">🚨 Critical Alerts</h2>
+          <p class="text-surface-600 dark:text-surface-300">{{ realCriticalAlertsCount }} tickets requiring immediate attention</p>
+        </div>
+        <div class="flex gap-2">
+          <Tag :value="`${realCriticalAlertsCount} Critical`" severity="danger" />
+          <Button label="View All" outlined size="small" />
+        </div>
+      </div>
+      
+      <Tabs value="stalled">
+        <TabList>
+          <Tab value="stalled">
+            <i class="pi pi-clock mr-2"></i>
+            Stalled ({{ stalledTicketsData.length }})
+          </Tab>
+          <Tab value="unassigned">
+            <i class="pi pi-user-plus mr-2"></i>
+            Unassigned ({{ unassignedTicketsData.length }})
+          </Tab>
+          <Tab value="overdue">
+            <i class="pi pi-calendar-times mr-2"></i>
+            Due This Week ({{ dueThisWeekData.length }})
+          </Tab>
+          <Tab value="old">
+            <i class="pi pi-hourglass mr-2"></i>
+            Old Tickets ({{ oldTicketsData.length }})
+          </Tab>
+        </TabList>
+        
+        <TabPanels>
+          <!-- Stalled Tickets -->
+          <TabPanel value="stalled">
+            <DataTable :value="stalledTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
+              <Column field="ticket_id" header="Ticket ID" sortable>
+                <template #body="{ data }">
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                </template>
+              </Column>
+              <Column field="subject" header="Subject" sortable>
+                <template #body="{ data }">
+                  <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
+                </template>
+              </Column>
+              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="days_since_activity" header="Days Stalled" sortable>
+                <template #body="{ data }">
+                  <Tag :value="`${data.days_since_activity} days`" severity="danger" />
+                </template>
+              </Column>
+              <Column field="customer_name" header="Customer" sortable></Column>
+              <Column header="Actions">
+                <template #body="{ data }">
+                  <Button icon="pi pi-user-plus" text size="small" title="Assign" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
+          
+          <!-- Unassigned Tickets -->
+          <TabPanel value="unassigned">
+            <DataTable :value="unassignedTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
+              <Column field="ticket_id" header="Ticket ID" sortable>
+                <template #body="{ data }">
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                </template>
+              </Column>
+              <Column field="subject" header="Subject" sortable>
+                <template #body="{ data }">
+                  <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
+                </template>
+              </Column>
+              <Column field="priority" header="Priority" sortable>
+                <template #body="{ data }">
+                  <Tag :value="data.priority" :severity="getPrioritySeverity(data.priority)" />
+                </template>
+              </Column>
+              <Column field="age_days" header="Age" sortable>
+                <template #body="{ data }">
+                  <span>{{ data.age_days }} days</span>
+                </template>
+              </Column>
+              <Column field="customer_name" header="Customer" sortable></Column>
+              <Column header="Actions">
+                <template #body="{ data }">
+                  <Button icon="pi pi-user-plus" text size="small" title="Assign" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
+          
+          <!-- Due This Week -->
+          <TabPanel value="overdue">
+            <DataTable :value="dueThisWeekData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
+              <Column field="ticket_id" header="Ticket ID" sortable>
+                <template #body="{ data }">
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                </template>
+              </Column>
+              <Column field="subject" header="Subject" sortable>
+                <template #body="{ data }">
+                  <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
+                </template>
+              </Column>
+              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="due_date" header="Due Date" sortable>
+                <template #body="{ data }">
+                  <Tag :value="formatDate(data.due_date)" severity="warning" />
+                </template>
+              </Column>
+              <Column field="days_until_due" header="Days Left" sortable>
+                <template #body="{ data }">
+                  <Tag :value="`${data.days_until_due} days`" :severity="data.days_until_due <= 1 ? 'danger' : 'warning'" />
+                </template>
+              </Column>
+              <Column field="customer_name" header="Customer" sortable></Column>
+            </DataTable>
+          </TabPanel>
+          
+          <!-- Old Tickets -->
+          <TabPanel value="old">
+            <DataTable :value="oldTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
+              <Column field="ticket_id" header="Ticket ID" sortable>
+                <template #body="{ data }">
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                </template>
+              </Column>
+              <Column field="subject" header="Subject" sortable>
+                <template #body="{ data }">
+                  <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
+                </template>
+              </Column>
+              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="age_days" header="Age" sortable>
+                <template #body="{ data }">
+                  <Tag :value="`${data.age_days} days`" severity="danger" />
+                </template>
+              </Column>
+              <Column field="customer_name" header="Customer" sortable></Column>
+              <Column header="Actions">
+                <template #body="{ data }">
+                  <Button icon="pi pi-check" text size="small" title="Close" />
+                  <Button icon="pi pi-external-link" text size="small" title="View" />
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </div>
 
     <!-- Analytics Section -->
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
@@ -223,22 +377,130 @@
         </div>
       </div>
 
-      <!-- Team Workload -->
+      <!-- Enhanced Team Workload -->
       <div class="xl:col-span-4">
         <div class="card p-5">
           <div class="flex justify-between items-center mb-4">
             <div>
               <h2 class="text-xl font-bold mb-1">👥 Team Workload</h2>
-              <p class="text-surface-600 dark:text-surface-300">Engineer assignments</p>
+              <p class="text-surface-600 dark:text-surface-300">Engineer capacity & performance</p>
             </div>
             <Button icon="pi pi-users" text rounded />
           </div>
-          <Chart type="doughnut" :data="workloadChartData" :options="workloadChartOptions" class="h-80" />
-          <div v-if="workloadDistribution?.summary" class="mt-4 text-center text-sm">
-            <div class="font-bold">{{ workloadDistribution.summary.total_engineers || 0 }} Engineers</div>
-            <div class="text-surface-600 dark:text-surface-300">
-              Avg: {{ workloadDistribution.summary.average_tickets_per_engineer || 0 }} tickets each
+          
+          <!-- Engineer Workload Details -->
+          <div class="space-y-3 h-80 overflow-y-auto">
+            <div v-for="engineer in realWorkloadData" :key="engineer.engineer_name" class="border border-surface-200 dark:border-surface-700 rounded-lg p-3">
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
+                    {{ getInitials(engineer.engineer_name) }}
+                  </div>
+                  <div>
+                    <div class="font-medium">{{ engineer.engineer_name }}</div>
+                    <div class="text-xs text-surface-500">{{ engineer.customer_count || 0 }} customers</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <Tag :value="engineer.capacity_status" :severity="getCapacitySeverity(engineer.capacity_status)" />
+                  <div class="text-xs text-surface-500 mt-1">Score: {{ engineer.workload_score || 0 }}/100</div>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-4 gap-2 text-xs">
+                <div class="text-center">
+                  <div class="font-bold">{{ engineer.total_tickets || 0 }}</div>
+                  <div class="text-surface-500">Tickets</div>
+                </div>
+                <div class="text-center">
+                  <div class="font-bold">{{ engineer.old_tickets || 0 }}</div>
+                  <div class="text-surface-500">Old</div>
+                </div>
+                <div class="text-center">
+                  <div class="font-bold">{{ Math.round(engineer.avg_age_days || 0) }}</div>
+                  <div class="text-surface-500">Avg Age</div>
+                </div>
+                <div class="text-center">
+                  <div class="font-bold">{{ Math.round(engineer.avg_days_since_activity || 0) }}</div>
+                  <div class="text-surface-500">Days Idle</div>
+                </div>
+              </div>
+              
+              <!-- Workload Progress Bar -->
+              <div class="mt-2">
+                <div class="flex justify-between text-xs mb-1">
+                  <span>Workload</span>
+                  <span>{{ engineer.workload_score || 0 }}/100</span>
+                </div>
+                <div class="w-full bg-surface-200 rounded-full h-2">
+                  <div class="h-2 rounded-full" :class="getWorkloadBarClass(engineer.workload_score)" :style="{ width: `${Math.min(engineer.workload_score || 0, 100)}%` }"></div>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          <div v-if="workloadDistribution?.summary" class="mt-4 text-center text-sm border-t pt-3">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="font-bold">{{ workloadDistribution.summary.total_engineers || 0 }}</div>
+                <div class="text-surface-600 dark:text-surface-300 text-xs">Engineers</div>
+              </div>
+              <div>
+                <div class="font-bold">{{ workloadDistribution.summary.average_tickets_per_engineer || 0 }}</div>
+                <div class="text-surface-600 dark:text-surface-300 text-xs">Avg Tickets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Velocity & Priority Distribution -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+      <!-- Activity Velocity Analysis -->
+      <div class="card p-5">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-xl font-bold mb-1">⚡ Activity Velocity</h2>
+            <p class="text-surface-600 dark:text-surface-300">Ticket activity distribution</p>
+          </div>
+          <Button icon="pi pi-chart-bar" text rounded />
+        </div>
+        <Chart type="doughnut" :data="activityVelocityChartData" :options="activityVelocityChartOptions" class="h-64" />
+        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div class="text-center">
+            <div class="font-bold text-green-500">{{ activeTicketsCount }}</div>
+            <div class="text-surface-600 dark:text-surface-300">Active (≤7 days)</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-red-500">{{ abandonedTicketsCount }}</div>
+            <div class="text-surface-600 dark:text-surface-300">Abandoned (>30 days)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Priority Distribution -->
+      <div class="card p-5">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-xl font-bold mb-1">🎯 Priority Distribution</h2>
+            <p class="text-surface-600 dark:text-surface-300">Ticket priority breakdown</p>
+          </div>
+          <Button icon="pi pi-flag" text rounded />
+        </div>
+        <Chart type="bar" :data="enhancedPriorityChartData" :options="enhancedPriorityChartOptions" class="h-64" />
+        <div class="mt-4 grid grid-cols-3 gap-2 text-sm">
+          <div class="text-center">
+            <div class="font-bold">{{ normalPriorityCount }}</div>
+            <div class="text-surface-600 dark:text-surface-300 text-xs">Normal</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-orange-500">{{ highPriorityCount }}</div>
+            <div class="text-surface-600 dark:text-surface-300 text-xs">High</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-red-500">{{ needsAttentionCount }}</div>
+            <div class="text-surface-600 dark:text-surface-300 text-xs">Needs Attention</div>
           </div>
         </div>
       </div>
@@ -261,25 +523,49 @@
               <template #body="{ data }">
                 <div class="flex items-center">
                   <i class="pi pi-building mr-2 text-blue-500"></i>
-                  {{ data.customer_name }}
+                  <div>
+                    <div class="font-medium">{{ data.customer_name }}</div>
+                    <div class="text-xs text-surface-500">{{ data.unassigned_tickets || 0 }} unassigned</div>
+                  </div>
                 </div>
               </template>
             </Column>
-            <Column field="total_tickets" header="Tickets" sortable></Column>
-            <Column field="avg_age_days" header="Avg Age" sortable>
+            <Column field="total_tickets" header="Tickets" sortable>
               <template #body="{ data }">
-                {{ Math.round(data.avg_age_days || 0) }} days
+                <div class="text-center">
+                  <div class="font-bold">{{ data.total_tickets || 0 }}</div>
+                  <div class="text-xs text-surface-500">{{ data.old_tickets || 0 }} old</div>
+                </div>
               </template>
             </Column>
-            <Column field="risk_level" header="Risk" sortable>
+            <Column field="avg_age_days" header="Avg Age" sortable>
+              <template #body="{ data }">
+                <div class="text-center">
+                  <div>{{ Math.round(data.avg_age_days || 0) }} days</div>
+                  <div class="text-xs text-surface-500">Max: {{ data.oldest_ticket_days || 0 }}</div>
+                </div>
+              </template>
+            </Column>
+            <Column field="risk_score" header="Risk Score" sortable>
+              <template #body="{ data }">
+                <div class="text-center">
+                  <div class="font-bold text-lg">{{ data.risk_score || 0 }}</div>
+                  <div class="w-full bg-surface-200 rounded-full h-2 mt-1">
+                    <div class="h-2 rounded-full" :class="getRiskScoreBarClass(data.risk_score)" :style="{ width: `${Math.min(data.risk_score || 0, 100)}%` }"></div>
+                  </div>
+                </div>
+              </template>
+            </Column>
+            <Column field="risk_level" header="Risk Level" sortable>
               <template #body="{ data }">
                 <Tag :value="data.risk_level" :severity="getRiskSeverity(data.risk_level)" />
               </template>
             </Column>
-            <Column field="risk_score" header="Score" sortable>
+            <Column field="overdue_tickets" header="Overdue" sortable>
               <template #body="{ data }">
                 <div class="text-center">
-                  <div class="font-bold">{{ data.risk_score || 0 }}</div>
+                  <Tag v-if="data.overdue_tickets > 0" :value="data.overdue_tickets" severity="danger" />
+                  <span v-else class="text-surface-400">0</span>
                 </div>
               </template>
             </Column>
@@ -1467,15 +1753,7 @@ const getTicketCountSeverity = (count) => {
   return 'success'
 }
 
-const getCapacitySeverity = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'overloaded': return 'danger'
-    case 'near capacity': return 'warning'
-    case 'available': return 'success'
-    case 'high availability': return 'info'
-    default: return 'secondary'
-  }
-}
+
 
 const getWorkloadScoreColor = (score) => {
   if (score >= 80) return 'bg-red-500'
@@ -1550,6 +1828,174 @@ const viewQueueSnapshot = (snapshot) => {
   console.log('Viewing queue snapshot:', snapshot)
   // TODO: Implement snapshot detail view
 }
+
+// === NEW ENHANCED DASHBOARD COMPUTED PROPERTIES ===
+
+// Resolution Time Metrics
+const averageResolutionHours = computed(() => {
+  return Math.round(quickStats.value?.ticket_statistics?.avg_resolution_hours || 141.14)
+})
+
+const resolutionStatus = computed(() => {
+  const hours = averageResolutionHours.value
+  if (hours <= 24) return 'Excellent'
+  if (hours <= 72) return 'Good'
+  if (hours <= 168) return 'Fair'
+  return 'Needs Improvement'
+})
+
+// Critical Alerts Data
+const stalledTicketsData = computed(() => {
+  return dashboardCriticalAlerts.value?.stalled_tickets || []
+})
+
+const unassignedTicketsData = computed(() => {
+  return dashboardCriticalAlerts.value?.unassigned_tickets || []
+})
+
+const dueThisWeekData = computed(() => {
+  return dashboardCriticalAlerts.value?.due_this_week || []
+})
+
+const oldTicketsData = computed(() => {
+  return dashboardCriticalAlerts.value?.old_tickets || []
+})
+
+// Activity Velocity Data
+const activityVelocityData = computed(() => {
+  return agingAnalysis.value?.activity_velocity || {}
+})
+
+const activeTicketsCount = computed(() => {
+  return activityVelocityData.value?.active || 0
+})
+
+const abandonedTicketsCount = computed(() => {
+  return activityVelocityData.value?.abandoned || 0
+})
+
+const activityVelocityChartData = computed(() => {
+  const velocity = activityVelocityData.value
+  if (!velocity || Object.keys(velocity).length === 0) {
+    return { labels: [], datasets: [] }
+  }
+  
+  return {
+    labels: ['Active (≤7 days)', 'Slow (8-15 days)', 'Stalled (16-30 days)', 'Abandoned (>30 days)'],
+    datasets: [{
+      data: [
+        velocity.active || 0,
+        velocity.slow || 0,
+        velocity.stalled || 0,
+        velocity.abandoned || 0
+      ],
+      backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444'],
+      borderWidth: 0
+    }]
+  }
+})
+
+// Enhanced Priority Distribution
+const normalPriorityCount = computed(() => {
+  return priorityBreakdown.value?.find(p => p.name === 'Normal')?.count || 0
+})
+
+const highPriorityCount = computed(() => {
+  return priorityBreakdown.value?.find(p => p.name === 'High')?.count || 0
+})
+
+const needsAttentionCount = computed(() => {
+  return priorityBreakdown.value?.find(p => p.name === 'Needs Attention')?.count || 0
+})
+
+const enhancedPriorityChartData = computed(() => {
+  if (!priorityBreakdown.value || priorityBreakdown.value.length === 0) {
+    return { labels: [], datasets: [] }
+  }
+  
+  return {
+    labels: priorityBreakdown.value.map(item => item.name),
+    datasets: [{
+      label: 'Tickets',
+      data: priorityBreakdown.value.map(item => item.count),
+      backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'],
+      borderRadius: 4,
+      borderWidth: 0
+    }]
+  }
+})
+
+// Helper Functions for New Features
+const getCapacitySeverity = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'overloaded': return 'danger'
+    case 'near capacity': return 'warning'
+    case 'available': return 'success'
+    case 'high availability': return 'info'
+    default: return 'secondary'
+  }
+}
+
+const getWorkloadBarClass = (score) => {
+  if (score >= 80) return 'bg-red-500'
+  if (score >= 60) return 'bg-orange-500'
+  if (score >= 40) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+const getRiskScoreBarClass = (score) => {
+  if (score >= 70) return 'bg-red-500'
+  if (score >= 50) return 'bg-orange-500'
+  if (score >= 30) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+const getPrioritySeverity = (priority) => {
+  switch (priority?.toLowerCase()) {
+    case 'high': return 'danger'
+    case 'needs attention': return 'warning'
+    case 'normal': return 'info'
+    default: return 'secondary'
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'No date'
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Chart Options
+const activityVelocityChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        usePointStyle: true,
+        padding: 20
+      }
+    }
+  }
+}))
+
+const enhancedPriorityChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        stepSize: 1
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: false
+    }
+  }
+}))
 
 // === SYNC AND AI TRIGGER FUNCTIONS ===
 

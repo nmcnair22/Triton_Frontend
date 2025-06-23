@@ -766,36 +766,76 @@ export const useEngineeringStore = defineStore('engineering', () => {
         }));
       }
       
-      // Update comprehensive dashboard data
+      // Update comprehensive dashboard data from dashboard_metrics
       if (data.dashboard_metrics) {
         completeDashboard.value = data.dashboard_metrics;
+        
+        // Map health_score to quickStats structure for compatibility
+        if (data.dashboard_metrics.health_score) {
+          quickStats.value = {
+            health_summary: {
+              total_open: data.dashboard_metrics.health_score.total_open || 0,
+              high_risk: data.dashboard_metrics.health_score.high_risk || 0,
+              unassigned: data.dashboard_metrics.health_score.unassigned || 0,
+              due_this_week: data.dashboard_metrics.health_score.due_this_week || 0,
+              system_health_score: data.dashboard_metrics.health_score.total_open ? 
+                Math.max(100 - Math.round((data.dashboard_metrics.health_score.high_risk / data.dashboard_metrics.health_score.total_open) * 100), 0) : 0
+            },
+            critical_counts: {
+              old_tickets: data.dashboard_metrics.critical_alerts?.summary?.old_count || 0,
+              stalled_tickets: data.dashboard_metrics.critical_alerts?.summary?.stalled_count || 0,
+              unassigned_tickets: data.dashboard_metrics.critical_alerts?.summary?.unassigned_count || 0,
+              due_this_week: data.dashboard_metrics.critical_alerts?.summary?.due_this_week_count || 0
+            },
+            customer_summary: {
+              total_customers: data.dashboard_metrics.customer_health?.summary?.total_customers || 0,
+              high_risk_customers: data.dashboard_metrics.customer_health?.summary?.high_risk_count || 0
+            },
+            aging_summary: {
+              average_age_days: data.dashboard_metrics.aging_analysis?.summary?.average_age_all_tickets || 0,
+              oldest_ticket_days: data.dashboard_metrics.aging_analysis?.most_stale_tickets?.[0]?.age_days || 0
+            },
+            ticket_statistics: {
+              avg_resolution_hours: parseFloat(data.ticket_statistics?.avg_resolution_hours) || 0
+            }
+          };
+        }
+        
+                 // Update individual sections
+         dashboardHealthScore.value = data.dashboard_metrics.health_score || {};
+         dashboardCriticalAlerts.value = data.dashboard_metrics.critical_alerts || {};
+         dashboardActionItems.value = data.dashboard_metrics.action_plan_coverage || {};
+         customerHealthMatrix.value = data.dashboard_metrics.customer_health || {};
+         workloadDistribution.value = data.dashboard_metrics.workload_distribution || {};
+         agingAnalysis.value = data.dashboard_metrics.aging_analysis || {};
       }
       
-      if (data.quick_stats) {
+      // Fallback for direct properties (backwards compatibility)
+      if (data.quick_stats && !data.dashboard_metrics) {
         quickStats.value = data.quick_stats;
       }
       
-      if (data.health_score) {
+      if (data.health_score && !data.dashboard_metrics) {
         dashboardHealthScore.value = data.health_score;
       }
       
-      if (data.critical_alerts) {
-        dashboardCriticalAlerts.value = data.critical_alerts;
-      }
-      
-      if (data.action_items) {
-        dashboardActionItems.value = data.action_items;
-      }
-      
-      if (data.customer_health) {
+             if (data.critical_alerts && !data.dashboard_metrics) {
+         dashboardCriticalAlerts.value = data.critical_alerts;
+       }
+       
+       if (data.action_items && !data.dashboard_metrics) {
+         dashboardActionItems.value = data.action_items;
+       }
+       
+       if (data.customer_health && !data.dashboard_metrics) {
         customerHealthMatrix.value = data.customer_health;
       }
       
-      if (data.workload_distribution) {
+      if (data.workload_distribution && !data.dashboard_metrics) {
         workloadDistribution.value = data.workload_distribution;
       }
       
-      if (data.aging_analysis) {
+      if (data.aging_analysis && !data.dashboard_metrics) {
         agingAnalysis.value = data.aging_analysis;
       }
       
