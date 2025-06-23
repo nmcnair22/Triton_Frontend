@@ -738,7 +738,7 @@ export const useEngineeringStore = defineStore('engineering', () => {
       
       if (data.priority_breakdown) {
         priorityBreakdown.value = Object.entries(data.priority_breakdown).map(([priority, count]) => ({
-          priority,
+          name: priority,
           count
         }));
       }
@@ -807,7 +807,24 @@ export const useEngineeringStore = defineStore('engineering', () => {
          dashboardActionItems.value = data.dashboard_metrics.action_plan_coverage || {};
          customerHealthMatrix.value = data.dashboard_metrics.customer_health || {};
          workloadDistribution.value = data.dashboard_metrics.workload_distribution || {};
-         agingAnalysis.value = data.dashboard_metrics.aging_analysis || {};
+         
+         // Transform aging analysis with activity velocity mapping
+         if (data.dashboard_metrics.aging_analysis) {
+           const aging = data.dashboard_metrics.aging_analysis;
+           agingAnalysis.value = {
+             ...aging,
+             activity_velocity: aging.activity_velocity ? aging.activity_velocity.reduce((acc, item) => {
+               const status = item.activity_status.toLowerCase();
+               if (status.includes('active')) acc.active = item.count;
+               else if (status.includes('slow')) acc.slow = item.count;
+               else if (status.includes('stalled')) acc.stalled = item.count;
+               else if (status.includes('abandoned')) acc.abandoned = item.count;
+               return acc;
+             }, {}) : {}
+           };
+         } else {
+           agingAnalysis.value = {};
+         }
       }
       
       // Fallback for direct properties (backwards compatibility)

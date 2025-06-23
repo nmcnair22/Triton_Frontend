@@ -232,9 +232,9 @@
           <!-- Stalled Tickets -->
           <TabPanel value="stalled">
             <DataTable :value="stalledTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
-              <Column field="ticket_id" header="Ticket ID" sortable>
+              <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -242,7 +242,7 @@
                   <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
                 </template>
               </Column>
-              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="ownerstaffname" header="Owner" sortable></Column>
               <Column field="days_since_activity" header="Days Stalled" sortable>
                 <template #body="{ data }">
                   <Tag :value="`${data.days_since_activity} days`" severity="danger" />
@@ -261,9 +261,9 @@
           <!-- Unassigned Tickets -->
           <TabPanel value="unassigned">
             <DataTable :value="unassignedTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
-              <Column field="ticket_id" header="Ticket ID" sortable>
+              <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -271,9 +271,9 @@
                   <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
                 </template>
               </Column>
-              <Column field="priority" header="Priority" sortable>
+              <Column field="prioritytitle" header="Priority" sortable>
                 <template #body="{ data }">
-                  <Tag :value="data.priority" :severity="getPrioritySeverity(data.priority)" />
+                  <Tag :value="data.prioritytitle" :severity="getPrioritySeverity(data.prioritytitle)" />
                 </template>
               </Column>
               <Column field="age_days" header="Age" sortable>
@@ -294,9 +294,9 @@
           <!-- Due This Week -->
           <TabPanel value="overdue">
             <DataTable :value="dueThisWeekData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
-              <Column field="ticket_id" header="Ticket ID" sortable>
+              <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -304,7 +304,7 @@
                   <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
                 </template>
               </Column>
-              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="ownerstaffname" header="Owner" sortable></Column>
               <Column field="due_date" header="Due Date" sortable>
                 <template #body="{ data }">
                   <Tag :value="formatDate(data.due_date)" severity="warning" />
@@ -322,9 +322,9 @@
           <!-- Old Tickets -->
           <TabPanel value="old">
             <DataTable :value="oldTicketsData" stripedRows showGridlines class="p-datatable-sm" :paginator="true" :rows="5">
-              <Column field="ticket_id" header="Ticket ID" sortable>
+              <Column field="ticketid" header="Ticket ID" sortable>
                 <template #body="{ data }">
-                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticket_id }}</span>
+                  <span class="font-bold text-primary cursor-pointer hover:underline">{{ data.ticketid }}</span>
                 </template>
               </Column>
               <Column field="subject" header="Subject" sortable>
@@ -332,7 +332,7 @@
                   <div class="max-w-xs truncate" :title="data.subject">{{ data.subject }}</div>
                 </template>
               </Column>
-              <Column field="owner_name" header="Owner" sortable></Column>
+              <Column field="ownerstaffname" header="Owner" sortable></Column>
               <Column field="age_days" header="Age" sortable>
                 <template #body="{ data }">
                   <Tag :value="`${data.age_days} days`" severity="danger" />
