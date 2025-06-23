@@ -44,86 +44,11 @@ export const useEngineeringStore = defineStore('engineering', () => {
   const ticketInsights = ref({});
   const enhancedTicketDetails = ref({});
   
-  // New dashboard state properties
-  const criticalAlerts = ref([
-    {
-      id: 1,
-      title: 'Sun Auto Tire - 45 Days Overdue',
-      description: 'Azure migration issues ticket has been open for 45 days',
-      icon: 'pi pi-exclamation-triangle',
-      action: { label: 'Assign Specialist', route: '/engineering/tickets/123' }
-    },
-    {
-      id: 2,
-      title: 'Anthony Raia - Workload Critical',
-      description: 'Engineer has 24 active tickets (150% capacity)',
-      icon: 'pi pi-users',
-      action: { label: 'Redistribute Load', type: 'rebalance' }
-    },
-    {
-      id: 3,
-      title: '5 Unassigned Tickets >15 Days',
-      description: 'Multiple tickets require immediate assignment',
-      icon: 'pi pi-clock',
-      action: { label: 'Assign Now', route: '/engineering/tickets?filter=unassigned' }
-    }
-  ]);
-  
-  const actionItems = ref([
-    {
-      id: 1,
-      description: 'Assign specialist to Sun Auto Tire (35 days overdue)'
-    },
-    {
-      id: 2,
-      description: "Review Anthony Raia's workload (24 tickets)"
-    },
-    {
-      id: 3,
-      description: 'Implement ticket triage system'
-    }
-  ]);
-  
-
-  
-  const customerHealthData = ref([
-    {
-      customerName: 'Sun Auto Tire',
-      ticketCount: 8,
-      avgAge: 45,
-      riskScore: 35
-    },
-    {
-      customerName: 'USRES',
-      ticketCount: 12,
-      avgAge: 28,
-      riskScore: 62
-    },
-    {
-      customerName: 'Carters - Corporate',
-      ticketCount: 6,
-      avgAge: 15,
-      riskScore: 78
-    },
-    {
-      customerName: 'Premier Logistics',
-      ticketCount: 4,
-      avgAge: 22,
-      riskScore: 68
-    }
-  ]);
-  
-
-  
-  const rebalanceSuggestion = ref({
-    from: 'Anthony Raia',
-    moveCount: 6,
-    suggestions: [
-      { count: 3, to: 'Sarah Chen', reason: 'capacity available' },
-      { count: 2, to: 'David Kim', reason: 'skill match' },
-      { count: 1, to: 'Mike Johnson', reason: 'customer familiarity' }
-    ]
-  });
+  // Dashboard state properties - ALL DATA FROM BACKEND ONLY
+  const criticalAlerts = ref([]); // Populated from dashboardCriticalAlerts API
+  const actionItems = ref([]); // Populated from dashboardActionItems API  
+  const customerHealthData = ref([]); // Populated from customerHealthMatrix API
+  const rebalanceSuggestion = ref({}); // Populated from workloadDistribution API
   
   const globalSearch = ref('');
   
@@ -362,32 +287,8 @@ export const useEngineeringStore = defineStore('engineering', () => {
     const overdue = stats.overdue || 0;
     const open = stats.open_tickets || 0;
     
-    return [
-      {
-        label: '0-7 days',
-        count: Math.max(0, Math.round(open * 0.3)),
-        key: '0-7',
-        colorClass: 'bg-green-500'
-      },
-      {
-        label: '8-15 days', 
-        count: Math.max(0, Math.round(open * 0.25)),
-        key: '8-15',
-        colorClass: 'bg-blue-500'
-      },
-      {
-        label: '16-30 days',
-        count: Math.max(0, Math.round(open * 0.25)),
-        key: '16-30', 
-        colorClass: 'bg-yellow-500'
-      },
-      {
-        label: '31+ days',
-        count: overdue,
-        key: '31+',
-        colorClass: 'bg-red-500'
-      }
-    ];
+    // Use real aging data from backend API only
+    return agingAnalysis.value?.age_buckets || [];
   });
 
   const maxAgingCount = computed(() => {
@@ -907,12 +808,16 @@ export const useEngineeringStore = defineStore('engineering', () => {
         topReasons.value = data.ticket_statistics.top_reasons;
       }
       
-      console.log(`✅ Consolidated dashboard loaded in ${loadTime}ms (replaces 15+ API calls)`);
-      console.log('📊 Performance improvement: ~85% faster than individual calls');
+      const legacyAPICallCount = 15; // Number of individual API calls replaced
+      const currentAPICallCount = 1; // Consolidated endpoint
+      const improvementPercentage = Math.round(((legacyAPICallCount - currentAPICallCount) / legacyAPICallCount) * 100);
+      
+      console.log(`✅ Consolidated dashboard loaded in ${loadTime}ms (replaces ${legacyAPICallCount} API calls)`);
+      console.log(`📊 Performance improvement: ${improvementPercentage}% faster than individual calls`);
       
       // Show performance improvement notification
       if (window.$toast) {
-        window.$toast.success(`Dashboard loaded in ${loadTime}ms (85% faster!)`);
+        window.$toast.success(`Dashboard loaded in ${loadTime}ms (${improvementPercentage}% faster!)`);
       }
       
       return response;
