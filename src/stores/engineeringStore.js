@@ -1505,6 +1505,44 @@ export const useEngineeringStore = defineStore('engineering', () => {
     }
   }
 
+  // === SYNC AND AI TRIGGERS ===
+  
+  async function triggerFieldSync() {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.triggerFieldSync();
+      return response.data;
+    } catch (error) {
+      console.error('Error triggering field sync:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function triggerAIAnalysis() {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.triggerAIAnalysis();
+      return response.data;
+    } catch (error) {
+      console.error('Error triggering AI analysis:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function getSyncStatus() {
+    try {
+      const response = await EngineeringService.getSyncStatus();
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sync status:', error);
+      throw error;
+    }
+  }
+
   return {
     // State
     tickets,
@@ -1625,6 +1663,11 @@ export const useEngineeringStore = defineStore('engineering', () => {
     fetchQueueHistory,
     fetchQueueTrends,
     fetchQueueWorkload,
-    fetchQueuePerformance
+    fetchQueuePerformance,
+    
+    // === SYNC AND AI TRIGGERS ===
+    triggerFieldSync,
+    triggerAIAnalysis,
+    getSyncStatus
   };
 }); 

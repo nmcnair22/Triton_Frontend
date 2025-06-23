@@ -257,5 +257,32 @@ export const EngineeringService = {
   // Performance metrics and throughput
   getQueuePerformance(params = { days: 30 }) {
     return ApiService.get('/engineering/queue/performance', params);
+  },
+
+  // === SYNC AND AI TRIGGERS ===
+  
+  // Trigger field synchronization between MySQL and PostgreSQL
+  triggerFieldSync() {
+    return ApiService.post('/engineering/sync/trigger/field-sync');
+  },
+
+  // Trigger full AI analysis of all tickets
+  triggerAIAnalysis() {
+    return ApiService.post('/engineering/sync/trigger/ai-analysis');
+  },
+
+  // Get sync system status and health
+  getSyncStatus() {
+    return ApiService.get('/engineering/sync/status');
+  },
+
+  // Get sync operation history
+  getSyncHistory(params = { limit: 10 }) {
+    return ApiService.get('/engineering/sync/history', params);
+  },
+
+  // Get validation report
+  getValidationReport() {
+    return ApiService.get('/engineering/sync/validation');
   }
 }; 

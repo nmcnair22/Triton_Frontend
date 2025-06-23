@@ -12,6 +12,26 @@
       </div>
       <div class="flex gap-2">
         <Button icon="pi pi-refresh" text rounded @click="refreshData" :disabled="isLoading" />
+        <Button 
+          icon="pi pi-sync" 
+          label="Field Sync" 
+          severity="secondary"
+          outlined
+          size="small"
+          @click="triggerFieldSync" 
+          :disabled="isFieldSyncing" 
+          :loading="isFieldSyncing"
+        />
+        <Button 
+          icon="pi pi-brain" 
+          label="AI Analysis" 
+          severity="info"
+          outlined
+          size="small"
+          @click="triggerAIAnalysis" 
+          :disabled="isAIAnalyzing" 
+          :loading="isAIAnalyzing"
+        />
         <Button icon="pi pi-bell" text rounded :badge="realCriticalAlertsCount > 0 ? realCriticalAlertsCount.toString() : null" badgeClass="p-badge-danger" />
         <Button icon="pi pi-filter" label="Filters" outlined />
       </div>
@@ -733,6 +753,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useEngineeringStore } from '@/stores/engineeringStore'
+import { useToast } from 'primevue/usetoast'
 import Chart from 'primevue/chart'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -785,7 +806,10 @@ const BAR_CHART_OPTIONS = {
 }
 
 const engineeringStore = useEngineeringStore()
+const toast = useToast()
 const isLoading = ref(false)
+const isFieldSyncing = ref(false)
+const isAIAnalyzing = ref(false)
 const performanceMetrics = ref({
   loadTime: 0,
   apiCallsReplaced: 15,
@@ -1096,9 +1120,9 @@ const agingAnalysis = computed(() => engineeringStore.agingAnalysis)
 
 // === REAL BACKEND DATA ONLY - ALL STAT BOXES ===
 
-// 1. System Health Score (72/100)
+// 1. System Health Score (72/100) - CORRECTED DATA PATHS
 const healthScore = computed(() => {
-  return dashboardHealthScore.value?.overall_score || 0
+  return quickStats.value?.health_summary?.system_health_score || 0
 })
 
 const healthStatus = computed(() => {
@@ -1110,27 +1134,27 @@ const healthStatus = computed(() => {
 })
 
 const healthRiskPercentage = computed(() => {
-  const total = dashboardHealthScore.value?.total_open || 1
-  const highRisk = dashboardHealthScore.value?.high_risk || 0
+  const total = quickStats.value?.health_summary?.total_open || 1
+  const highRisk = quickStats.value?.health_summary?.high_risk || 0
   return Math.round((highRisk / total) * 100)
 })
 
-// 2. Critical Alerts (10 Stalled)
+// 2. Critical Alerts (10 Stalled) - CORRECTED DATA PATHS
 const realCriticalAlertsCount = computed(() => {
-  return dashboardCriticalAlerts.value?.summary?.stalled_count || 0
+  return quickStats.value?.critical_counts?.old_tickets || 0
 })
 
 const stalledTicketsCount = computed(() => {
-  return dashboardCriticalAlerts.value?.summary?.stalled_count || 0
+  return quickStats.value?.critical_counts?.old_tickets || 0
 })
 
-// 3. Open Tickets (51 total, 24 unassigned)
+// 3. Open Tickets (49 total, 14 unassigned) - CORRECTED DATA PATHS
 const openTicketsCount = computed(() => {
-  return dashboardHealthScore.value?.total_open || 0
+  return quickStats.value?.health_summary?.total_open || 0
 })
 
 const unassignedTickets = computed(() => {
-  return dashboardHealthScore.value?.unassigned || 0
+  return quickStats.value?.health_summary?.unassigned || 0
 })
 
 const unassignedPercentage = computed(() => {
@@ -1139,18 +1163,18 @@ const unassignedPercentage = computed(() => {
   return Math.round((unassigned / total) * 100)
 })
 
-// 4. Customer Risk (1 of 10 customers)
+// 4. Customer Risk (0 of 9 customers) - CORRECTED DATA PATHS
 const highRiskCustomers = computed(() => {
-  return customerHealthMatrix.value?.summary?.high_risk_count || 0
+  return quickStats.value?.customer_summary?.high_risk_customers || 0
 })
 
 const totalCustomers = computed(() => {
-  return customerHealthMatrix.value?.summary?.total_customers || 0
+  return quickStats.value?.customer_summary?.total_customers || 0
 })
 
-// 5. Due This Week (2 tickets)
+// 5. Due This Week (10 tickets) - CORRECTED DATA PATHS
 const dueThisWeekCount = computed(() => {
-  return dashboardHealthScore.value?.due_this_week || 0
+  return quickStats.value?.health_summary?.due_this_week || 0
 })
 
 const dueThisWeekStatus = computed(() => {
@@ -1161,9 +1185,9 @@ const dueThisWeekStatus = computed(() => {
   return 'High'
 })
 
-// 6. Average Ticket Age (87 days)
+// 6. Average Ticket Age (63 days) - CORRECTED DATA PATHS
 const averageTicketAge = computed(() => {
-  return Math.round(agingAnalysis.value?.summary?.average_age_all_tickets || 0)
+  return Math.round(quickStats.value?.aging_summary?.average_age_days || 0)
 })
 
 const averageAgeStatus = computed(() => {
@@ -1174,10 +1198,9 @@ const averageAgeStatus = computed(() => {
   return 'Above Normal'
 })
 
-// 7. Oldest Ticket (897 days)
+// 7. Oldest Ticket (897 days) - CORRECTED DATA PATHS
 const oldestTicketAge = computed(() => {
-  const oldestTicket = agingAnalysis.value?.most_stale_tickets?.[0]
-  return oldestTicket?.age_days || 0
+  return quickStats.value?.aging_summary?.oldest_ticket_days || 0
 })
 
 const oldestTicketStatus = computed(() => {
@@ -1526,6 +1549,70 @@ const getHealthSeverity = (score) => {
 const viewQueueSnapshot = (snapshot) => {
   console.log('Viewing queue snapshot:', snapshot)
   // TODO: Implement snapshot detail view
+}
+
+// === SYNC AND AI TRIGGER FUNCTIONS ===
+
+// Trigger field sync
+const triggerFieldSync = async () => {
+  isFieldSyncing.value = true
+  
+  try {
+    await engineeringStore.triggerFieldSync()
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Field Sync Complete',
+      detail: 'Field synchronization completed successfully',
+      life: 3000
+    })
+    
+    // Refresh the dashboard data after sync
+    await refreshData()
+    
+  } catch (error) {
+    console.error('Field sync error:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Field Sync Failed',
+      detail: error.message || 'Failed to complete field synchronization',
+      life: 5000
+    })
+  } finally {
+    isFieldSyncing.value = false
+  }
+}
+
+// Trigger AI analysis
+const triggerAIAnalysis = async () => {
+  isAIAnalyzing.value = true
+  
+  try {
+    await engineeringStore.triggerAIAnalysis()
+    
+    toast.add({
+      severity: 'info',
+      summary: 'AI Analysis Started',
+      detail: 'Full AI analysis has been initiated. This process may take 2-10 minutes to complete.',
+      life: 5000
+    })
+    
+    // Optionally refresh data after a delay to pick up any immediate changes
+    setTimeout(() => {
+      refreshData()
+    }, 3000)
+    
+  } catch (error) {
+    console.error('AI analysis error:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'AI Analysis Failed',
+      detail: error.message || 'Failed to initiate AI analysis',
+      life: 5000
+    })
+  } finally {
+    isAIAnalyzing.value = false
+  }
 }
 
 // Methods

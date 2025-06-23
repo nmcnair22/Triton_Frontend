@@ -1,293 +1,609 @@
 <template>
     <Toast position="bottom-center" />
-    <div class="grid">
-        <div class="col-12">
-            <div class="space-y-6">
-                <!-- Clean Engineering Tickets Table -->
-                <div class="card">
-                    <DataTable 
-                        v-model:expandedRows="expandedRows"
-                        v-model:filters="filters"
-                        :value="filteredTickets" 
-                        :loading="isLoading" 
-                        :paginator="true" 
-                        :rows="25" 
-                        :rowsPerPageOptions="[10, 25, 50, 100]"
-                        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tickets"
-                        :rowClass="getRowClass"
-                        dataKey="id"
-                        :rowHover="true"
-                        :metaKeySelection="false"
-                        @row-expand="onRowExpand"
-                        @row-collapse="onRowCollapse"
-                        tableStyle="min-width: 50rem"
-                        responsiveLayout="scroll"
-                        filterDisplay="menu"
-                        :globalFilterFields="['ticket_id', 'subject', 'customer_name', 'owner', 'status', 'priority']"
-                        showGridlines
-                        :resizableColumns="true"
-                        columnResizeMode="fit"
-                        stateStorage="session"
-                        stateKey="engineering-tickets-table-state">
-                        
-                        <template #header>
-                            <div class="flex flex-col gap-3 p-2">
-                                <!-- Top row with title and controls -->
-                                <div class="flex flex-col sm:flex-row justify-between gap-3">
-                                    <div class="flex items-center gap-2">
-                                        <i class="pi pi-ticket text-lg text-surface-500"></i>
-                                        <span class="font-semibold text-surface-900 dark:text-surface-0">Engineering Tickets</span>
-                                        <span class="text-sm text-surface-500 ml-2">({{ filteredTickets.length }} total)</span>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <Button type="button" icon="pi pi-filter-slash" label="Clear Filters" size="small" outlined @click="clearAllFilters" />
-                                        <Button icon="pi pi-plus" size="small" text @click="expandAll" v-tooltip="'Expand All'" />
-                                        <Button icon="pi pi-minus" size="small" text @click="collapseAll" v-tooltip="'Collapse All'" />
-                                        <Button icon="pi pi-refresh" size="small" @click="refreshData" :loading="isLoading" v-tooltip="'Refresh Data'" />
-                                    </div>
-                                </div>
-
-                                <!-- Global Search and Show Closed Toggle -->
-                                <div class="flex flex-col sm:flex-row justify-between gap-3">
-                                    <div class="flex gap-3">
-                                        <IconField>
-                                            <InputIcon>
-                                                <i class="pi pi-search" />
-                                            </InputIcon>
-                                            <InputText v-model="filters['global'].value" placeholder="Search tickets..." class="w-full sm:w-auto" />
-                                        </IconField>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <Checkbox v-model="showClosedTickets" :binary="true" inputId="showClosed" @change="onShowClosedChange" />
-                                        <label for="showClosed" class="text-sm font-medium text-surface-700 dark:text-surface-300 cursor-pointer">Show Closed Tickets</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        
-                        <template #empty>
-                            <div class="flex flex-column align-items-center p-8">
-                                <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
-                                <span class="text-lg font-medium text-gray-700">No tickets found</span>
-                                <span class="text-sm text-gray-500 mt-2">
-                                    Try adjusting your filters or refresh the data
-                                </span>
-                            </div>
-                        </template>
-                        
-                        <template #loading>
-                            <div class="flex items-center justify-center p-6">
-                                <ProgressSpinner style="width: 40px; height: 40px" />
-                                <span class="ml-3 text-surface-600 dark:text-surface-400">Loading tickets...</span>
-                            </div>
-                        </template>
-                        
-                        <!-- Expansion Column -->
-                        <Column expander style="width: 3rem" />
-                        
-                        <!-- Ticket ID Column -->
-                        <Column field="ticket_id" header="Ticket ID" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <span class="ticket-id cursor-pointer hover:text-blue-600"
-                                      @click="viewTicketDetails(slotProps.data)">
-                                    #{{ slotProps.data.ticket_id }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by ID" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Subject Column -->
-                        <Column field="subject" header="Subject" style="min-width: 20rem" sortable>
-                            <template #body="slotProps">
-                                <div class="subject-text max-w-xs truncate" :title="slotProps.data.subject">
-                                    {{ slotProps.data.subject }}
-                                </div>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by subject" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Customer Column -->
-                        <Column field="customer_name" header="Customer" style="min-width: 12rem" sortable>
-                            <template #body="slotProps">
-                                <span v-if="slotProps.data.customer_name && slotProps.data.customer_name !== 'Unassigned'" class="customer-name">
-                                    {{ slotProps.data.customer_name }}
-                                </span>
-                                <span v-else class="text-amber-600 font-medium">Unassigned</span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Status Column -->
-                        <Column field="status" header="Status" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <Tag 
-                                    :value="slotProps.data.status" 
-                                    :severity="getStatusSeverity(slotProps.data.status)" 
-                                />
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <Select v-model="filterModel.value" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Select Status" class="p-column-filter" showClear>
-                                    <template #option="slotProps">
-                                        <Tag :value="slotProps.option.label" :severity="getStatusSeverity(slotProps.option.value)" />
-                                    </template>
-                                </Select>
-                            </template>
-                        </Column>
-                        
-                        <!-- Priority Column -->
-                        <Column field="priority" header="Priority" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <Tag 
-                                    :value="slotProps.data.priority" 
-                                    :severity="getPrioritySeverity(slotProps.data.priority)"
-                                    :class="getPriorityClass(slotProps.data.priority)"
-                                />
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <Select v-model="filterModel.value" :options="priorityOptions" optionLabel="label" optionValue="value" placeholder="Select Priority" class="p-column-filter" showClear>
-                                    <template #option="slotProps">
-                                        <Tag :value="slotProps.option.label" :severity="getPrioritySeverity(slotProps.option.value)" />
-                                    </template>
-                                </Select>
-                            </template>
-                        </Column>
-                        
-                        <!-- Owner Column -->
-                        <Column field="owner" header="Owner" style="min-width: 10rem" sortable>
-                            <template #body="slotProps">
-                                <span class="owner-text" :class="{'text-gray-400': !slotProps.data.owner}">
-                                    {{ slotProps.data.owner || 'Unassigned' }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <Select v-model="filterModel.value" :options="ownerOptions" optionLabel="label" optionValue="value" placeholder="Select Owner" class="p-column-filter" showClear>
-                                </Select>
-                            </template>
-                        </Column>
-                        
-                        <!-- Due Date Column -->
-                        <Column field="dates.due_date" header="Due Date" style="min-width: 10rem" sortable>
-                            <template #body="slotProps">
-                                <span v-if="slotProps.data.dates?.due_date" :class="formatDueDate(slotProps.data.dates.due_date, slotProps.data.status).class">
-                                    {{ formatDueDate(slotProps.data.dates.due_date, slotProps.data.status).message }}
-                                </span>
-                                <span v-else class="text-gray-400">No due date</span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <DatePicker v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="Filter by due date" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Age (Days) Column -->
-                        <Column field="dates.created_at" header="Age (Days)" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <span :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.created_at))">
-                                    {{ calculateAgeInDays(slotProps.data.dates?.created_at) }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" placeholder="Filter by age" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Last Updated (Days) Column -->
-                        <Column field="dates.updated_at" header="Last Updated (Days)" style="min-width: 8rem" sortable>
-                            <template #body="slotProps">
-                                <span :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.updated_at))">
-                                    {{ calculateAgeInDays(slotProps.data.dates?.updated_at) }}
-                                </span>
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" placeholder="Filter by days" class="p-column-filter" />
-                            </template>
-                        </Column>
-                        
-                        <!-- Expansion Template -->
-                        <template #expansion="slotProps">
-                            <div class="p-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <!-- Ticket Details -->
-                                    <div class="space-y-3">
-                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Created:</span>
-                                                <span class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Updated:</span>
-                                                <span class="font-medium">{{ formatDate(slotProps.data.dates?.updated_at) }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Creator:</span>
-                                                <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Status & Assignment -->
-                                    <div class="space-y-3">
-                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Assignment</h6>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Status:</span>
-                                                <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Priority:</span>
-                                                <Tag :value="slotProps.data.priority" :severity="getPrioritySeverity(slotProps.data.priority)" />
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Owner:</span>
-                                                <span class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- SLA & Metrics -->
-                                    <div class="space-y-3">
-                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">SLA & Metrics</h6>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">SLA Status:</span>
-                                                <Tag :value="slotProps.data.sla?.is_overdue ? 'Overdue' : 'On Track'" 
-                                                     :severity="slotProps.data.sla?.is_overdue ? 'danger' : 'success'" />
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Reply Count:</span>
-                                                <span class="font-medium">{{ slotProps.data.counts?.replies || 0 }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Action Buttons -->
-                                <div class="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 flex gap-2">
-                                    <Button icon="pi pi-eye" label="View Details" size="small" @click="viewTicketDetails(slotProps.data)" />
-                                </div>
-                            </div>
-                        </template>
-                    </DataTable>
+    <div class="engineering-tickets">
+        <!-- Responsive Header Section -->
+        <div class="mb-4 md:mb-6">
+            <!-- Title and Controls Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-surface-900 dark:text-surface-0 mb-1">
+                        Engineering Tickets
+                    </h1>
+                    <p class="text-sm md:text-base text-surface-600 dark:text-surface-400">
+                        Manage and track engineering support tickets
+                    </p>
+                </div>
+                
+                <!-- Action Buttons - Responsive Layout -->
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <Button 
+                        icon="pi pi-refresh" 
+                        :label="isDesktop ? 'Refresh' : undefined"
+                        :text="isMobile"
+                        :outlined="!isMobile"
+                        @click="refreshData" 
+                        :disabled="isLoading"
+                        :size="isMobile ? 'large' : 'default'"
+                        class="w-full sm:w-auto"
+                    />
+                    <Button 
+                        icon="pi pi-sync" 
+                        :label="isDesktop ? 'Field Sync' : undefined"
+                        severity="secondary"
+                        :outlined="true"
+                        @click="triggerFieldSync" 
+                        :disabled="isLoading || isFieldSyncing"
+                        :loading="isFieldSyncing"
+                        :size="isMobile ? 'large' : 'default'"
+                        class="w-full sm:w-auto"
+                    />
+                    <Button 
+                        icon="pi pi-eye" 
+                        :label="isDesktop ? 'Columns' : undefined"
+                        severity="secondary"
+                        :outlined="true"
+                        @click="toggleColumnSelector" 
+                        :size="isMobile ? 'large' : 'default'"
+                        class="w-full sm:w-auto"
+                    />
+                    <Button 
+                        icon="pi pi-plus" 
+                        :label="isDesktop ? 'New Ticket' : undefined"
+                        severity="primary"
+                        :size="isMobile ? 'large' : 'default'"
+                        class="w-full sm:w-auto"
+                        @click="openNewTicketWindow"
+                    />
                 </div>
             </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="flex flex-col lg:flex-row gap-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg border">
+                <!-- Global Search -->
+                <div class="flex-1 lg:max-w-md">
+                    <IconField iconPosition="left" class="w-full">
+                        <InputIcon class="pi pi-search" />
+                        <InputText 
+                            v-model="filters.global.value" 
+                            placeholder="Search tickets..." 
+                            class="w-full"
+                            :size="isMobile ? 'large' : 'default'"
+                        />
+                    </IconField>
+                </div>
+                
+                <!-- Show Closed Tickets Toggle -->
+                <div class="flex items-center gap-3">
+                    <Checkbox 
+                        v-model="showClosedTickets" 
+                        @change="onShowClosedChange"
+                        inputId="showClosed" 
+                    />
+                    <label for="showClosed" class="text-sm font-medium select-none">
+                        Show closed tickets
+                    </label>
+                </div>
+                
+                <!-- Quick Actions - Desktop Only -->
+                <div v-if="isDesktop" class="flex gap-2">
+                    <Button 
+                        icon="pi pi-filter-slash" 
+                        label="Clear Filters" 
+                        text 
+                        size="small"
+                        @click="clearAllFilters" 
+                    />
+                    <Button 
+                        icon="pi pi-expand" 
+                        label="Expand All" 
+                        text 
+                        size="small"
+                        @click="expandAll" 
+                    />
+                    <Button 
+                        icon="pi pi-compress" 
+                        label="Collapse All" 
+                        text 
+                        size="small"
+                        @click="collapseAll" 
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Quick Actions (when desktop actions are hidden) -->
+        <div v-if="!isDesktop" class="flex flex-wrap gap-2 mb-4">
+            <Button 
+                icon="pi pi-filter-slash" 
+                label="Clear" 
+                text 
+                size="small"
+                @click="clearAllFilters" 
+            />
+            <Button 
+                icon="pi pi-expand" 
+                label="Expand" 
+                text 
+                size="small"
+                @click="expandAll" 
+            />
+            <Button 
+                icon="pi pi-compress" 
+                label="Collapse" 
+                text 
+                size="small"
+                @click="collapseAll" 
+            />
+        </div>
+
+        <!-- Responsive DataTable -->
+        <!-- Column Selector Overlay -->
+        <OverlayPanel ref="columnSelectorPanel" appendTo="body" :showCloseIcon="true" class="w-80">
+            <template #header>
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-eye text-lg"></i>
+                    <span class="font-semibold">Column Visibility</span>
+                </div>
+            </template>
+            
+            <div class="space-y-3">
+                <div class="text-sm text-surface-600 dark:text-surface-300 mb-4">
+                    Choose which columns to display in the table. Your preferences will be saved automatically.
+                </div>
+                
+                <!-- Column Toggle Checkboxes -->
+                <div class="space-y-2">
+                    <div v-for="column in availableColumns" :key="column.key" class="flex items-center">
+                        <Checkbox 
+                            v-model="column.visible" 
+                            :inputId="column.key"
+                            :disabled="column.required"
+                            @change="saveColumnPreferences"
+                        />
+                        <label :for="column.key" class="ml-2 text-sm flex-1 cursor-pointer">
+                            {{ column.label }}
+                            <span v-if="column.required" class="text-xs text-surface-500 ml-1">(Required)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="border-t pt-3 mt-4 flex gap-2">
+                    <Button 
+                        label="Show All" 
+                        size="small" 
+                        outlined 
+                        @click="showAllColumns"
+                        class="flex-1"
+                    />
+                    <Button 
+                        label="Reset to Default" 
+                        size="small" 
+                        outlined 
+                        severity="secondary"
+                        @click="resetToDefault"
+                        class="flex-1"
+                    />
+                </div>
+            </div>
+        </OverlayPanel>
+
+        <div class="card overflow-hidden">
+            <!-- Mobile: Show ticket count and pagination info -->
+            <div v-if="isMobile" class="p-4 border-b bg-surface-50 dark:bg-surface-800">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-medium">{{ filteredTickets.length }} tickets</span>
+                    <span v-if="!showClosedTickets" class="text-surface-500">
+                        (Closed tickets hidden)
+                    </span>
+                </div>
+            </div>
+
+            <DataTable 
+                v-model:expandedRows="expandedRows"
+                v-model:filters="filters"
+                :value="filteredTickets" 
+                :loading="isLoading" 
+                :paginator="true" 
+                :rows="isMobile ? 10 : isTablet ? 15 : 25" 
+                :rowsPerPageOptions="isMobile ? [5, 10, 20] : [10, 25, 50, 100]"
+                paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                :currentPageReportTemplate="isMobile ? '{first}-{last} of {totalRecords}' : 'Showing {first} to {last} of {totalRecords} tickets'"
+                dataKey="id"
+                filterDisplay="menu"
+                :globalFilterFields="['ticket_id', 'subject', 'customer_name', 'status', 'priority', 'owner']"
+                :rowHover="!isMobile"
+                stripedRows
+                :metaKeySelection="false"
+                :rowClass="getRowClass"
+                @rowExpand="onRowExpand"
+                @rowCollapse="onRowCollapse"
+                class="responsive-datatable"
+                :tableStyle="{ 'min-width': isMobile ? '100%' : '60rem' }"
+                :scrollable="!isMobile"
+                :scrollHeight="!isMobile ? '70vh' : undefined"
+            >
+                <!-- Expandable Row Toggle - Always Visible -->
+                <Column :expander="true" :style="{ width: isMobile ? '3rem' : '3rem' }" />
+                
+                <!-- Ticket ID - Always Visible -->
+                <Column 
+                    field="ticket_id" 
+                    header="Ticket" 
+                    sortable 
+                    :style="{ width: isMobile ? '25%' : '12%' }"
+                    class="font-medium"
+                >
+                    <template #body="slotProps">
+                        <div class="flex flex-col">
+                            <span 
+                                class="font-bold text-primary text-sm md:text-base cursor-pointer hover:text-primary-600 hover:underline"
+                                @click="viewTicketDetails(slotProps.data)"
+                                :title="'View ticket details for #' + slotProps.data.ticket_id"
+                            >
+                                {{ slotProps.data.ticket_id }}
+                            </span>
+                            <!-- Show subject on mobile -->
+                            <span v-if="isMobile" class="text-xs text-surface-500 mt-1 line-clamp-2">
+                                {{ slotProps.data.subject }}
+                            </span>
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <InputText v-model="filterModel.value" placeholder="Search by ID" class="p-column-filter" />
+                    </template>
+                </Column>
+
+                <!-- Subject - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('subject')"
+                    field="subject" 
+                    header="Subject" 
+                    sortable
+                    :style="{ width: isMobile ? '40%' : '25%', minWidth: '200px' }"
+                >
+                    <template #body="slotProps">
+                        <div class="max-w-xs lg:max-w-sm truncate" :title="slotProps.data.subject">
+                            {{ slotProps.data.subject }}
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <InputText v-model="filterModel.value" placeholder="Search subject" class="p-column-filter" />
+                    </template>
+                </Column>
+
+                <!-- Customer - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('customer')"
+                    field="customer_name" 
+                    header="Customer" 
+                    sortable
+                    :style="{ width: '15%' }"
+                >
+                    <template #body="slotProps">
+                        <div class="truncate" :title="slotProps.data.customer_name">
+                            {{ slotProps.data.customer_name || 'Unassigned' }}
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <InputText v-model="filterModel.value" placeholder="Search customer" class="p-column-filter" />
+                    </template>
+                </Column>
+
+                <!-- Status - Always Visible -->
+                <Column 
+                    field="status" 
+                    header="Status" 
+                    sortable
+                    :style="{ width: isMobile ? '25%' : '12%' }"
+                >
+                    <template #body="slotProps">
+                        <Tag 
+                            :value="slotProps.data.status" 
+                            :severity="getStatusSeverity(slotProps.data.status)"
+                            :class="isMobile ? 'text-xs' : ''"
+                        />
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <Select 
+                            v-model="filterModel.value" 
+                            :options="statusOptions" 
+                            optionLabel="label" 
+                            optionValue="value"
+                            placeholder="Select Status" 
+                            class="p-column-filter" 
+                            showClear 
+                        />
+                    </template>
+                </Column>
+
+                <!-- Priority - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('priority')"
+                    field="priority" 
+                    header="Priority" 
+                    sortable
+                    :style="{ width: '10%' }"
+                >
+                    <template #body="slotProps">
+                        <Tag 
+                            :value="slotProps.data.priority" 
+                            :severity="getPrioritySeverity(slotProps.data.priority)"
+                            class="text-xs"
+                        />
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <Select 
+                            v-model="filterModel.value" 
+                            :options="priorityOptions" 
+                            optionLabel="label" 
+                            optionValue="value"
+                            placeholder="Select Priority" 
+                            class="p-column-filter" 
+                            showClear 
+                        />
+                    </template>
+                </Column>
+
+                <!-- Owner - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('owner')"
+                    field="owner" 
+                    header="Owner" 
+                    sortable
+                    :style="{ width: '12%' }"
+                >
+                    <template #body="slotProps">
+                        <div class="truncate">
+                            {{ slotProps.data.owner || 'Unassigned' }}
+                        </div>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <Select 
+                            v-model="filterModel.value" 
+                            :options="ownerOptions" 
+                            optionLabel="label" 
+                            optionValue="value"
+                            placeholder="Select Owner" 
+                            class="p-column-filter" 
+                            showClear 
+                        />
+                    </template>
+                </Column>
+
+                <!-- Mobile: Combined Actions Column - Show only on actual mobile devices -->
+                <Column v-if="isMobile" header="Actions" :style="{ width: '20%' }">
+                    <template #body="slotProps">
+                        <div class="flex flex-col gap-1">
+                            <Tag 
+                                v-if="slotProps.data.priority && !getColumnVisibility('priority')"
+                                :value="slotProps.data.priority" 
+                                :severity="getPrioritySeverity(slotProps.data.priority)"
+                                class="text-xs"
+                            />
+                            <Button 
+                                icon="pi pi-external-link" 
+                                text 
+                                size="small"
+                                class="p-1"
+                                @click="openTritonTicket(slotProps.data.ticket_id)"
+                                :title="'View in Triton'"
+                            />
+                        </div>
+                    </template>
+                </Column>
+
+                <!-- Due Date - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('dueDate')"
+                    field="dates.due_date" 
+                    header="Due Date" 
+                    sortable
+                    :style="{ width: '10%' }"
+                >
+                    <template #body="slotProps">
+                        <span 
+                            v-if="slotProps.data.dates?.due_date" 
+                            :class="getDueDateClass(slotProps.data.dates.due_date, slotProps.data.sla?.is_overdue)"
+                            class="text-sm"
+                        >
+                            {{ formatDate(slotProps.data.dates.due_date) }}
+                        </span>
+                        <span v-else class="text-surface-400 text-sm">-</span>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <DatePicker v-model="filterModel.value" placeholder="Filter by date" class="p-column-filter" />
+                    </template>
+                </Column>
+
+                <!-- Age - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('age')"
+                    field="dates.created_at" 
+                    header="Age" 
+                    sortable
+                    :style="{ width: '8%' }"
+                >
+                    <template #body="slotProps">
+                        <span :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.created_at))" class="text-sm font-medium">
+                            {{ calculateAgeInDays(slotProps.data.dates?.created_at) }}d
+                        </span>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <InputNumber v-model="filterModel.value" placeholder="Max days" class="p-column-filter" />
+                    </template>
+                </Column>
+
+                <!-- View in Triton - Configurable Column -->
+                <Column v-if="getColumnVisibility('viewInTriton')" header="View in Triton" :style="{ width: '10%' }">
+                    <template #body="slotProps">
+                        <Button 
+                            icon="pi pi-external-link" 
+                            text 
+                            rounded
+                            size="small"
+                            @click="openTritonTicket(slotProps.data.ticket_id)"
+                            :title="'View ticket #' + slotProps.data.ticket_id + ' in Triton'"
+                        />
+                    </template>
+                </Column>
+
+                <!-- Responsive Expansion Template -->
+                <template #expansion="slotProps">
+                    <div class="p-3 md:p-6">
+                        <!-- Mobile: Show all hidden information -->
+                        <div v-if="isMobile" class="space-y-4">
+                            <!-- Essential Info Grid -->
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <span class="font-medium text-surface-600">Customer:</span>
+                                    <div class="font-medium">{{ slotProps.data.customer_name || 'Unassigned' }}</div>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-surface-600">Owner:</span>
+                                    <div class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</div>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-surface-600">Age:</span>
+                                    <div :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.created_at))">
+                                        {{ calculateAgeInDays(slotProps.data.dates?.created_at) }} days
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-surface-600">Due:</span>
+                                    <div v-if="slotProps.data.dates?.due_date" 
+                                         :class="getDueDateClass(slotProps.data.dates.due_date, slotProps.data.sla?.is_overdue)">
+                                        {{ formatDate(slotProps.data.dates.due_date) }}
+                                    </div>
+                                    <div v-else class="text-surface-400">Not set</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Subject for mobile (if not already shown) -->
+                            <div>
+                                <span class="font-medium text-surface-600 block mb-1">Subject:</span>
+                                <p class="text-sm leading-relaxed">{{ slotProps.data.subject }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Desktop: Enhanced details -->
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Ticket Details -->
+                            <div class="space-y-3">
+                                <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Created:</span>
+                                        <span class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Updated:</span>
+                                        <span class="font-medium">{{ formatDate(slotProps.data.dates?.updated_at) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Creator:</span>
+                                        <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status & Assignment -->
+                            <div class="space-y-3">
+                                <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Assignment</h6>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Status:</span>
+                                        <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Priority:</span>
+                                        <Tag :value="slotProps.data.priority" :severity="getPrioritySeverity(slotProps.data.priority)" />
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Owner:</span>
+                                        <span class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- SLA & Metrics -->
+                            <div class="space-y-3">
+                                <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">SLA & Metrics</h6>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">SLA Status:</span>
+                                        <Tag :value="slotProps.data.sla?.is_overdue ? 'Overdue' : 'On Track'" 
+                                             :severity="slotProps.data.sla?.is_overdue ? 'danger' : 'success'" />
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Reply Count:</span>
+                                        <span class="font-medium">{{ slotProps.data.counts?.replies || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
+                                                        <div :class="`flex gap-2 ${isMobile ? 'flex-col' : ''}`">
+                                <Button 
+                                    icon="pi pi-eye" 
+                                    label="View Details" 
+                                    :size="isMobile ? 'large' : 'small'"
+                                    :class="isMobile ? 'w-full' : ''"
+                                    @click="viewTicketDetails(slotProps.data)" 
+                                />
+                                <Button 
+                                    icon="pi pi-external-link" 
+                                    label="View in Triton" 
+                                    severity="secondary"
+                                    outlined
+                                    :size="isMobile ? 'large' : 'small'"
+                                    :class="isMobile ? 'w-full' : ''"
+                                    @click="openTritonTicket(slotProps.data.ticket_id)"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </DataTable>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useEngineeringStore } from '@/stores/engineeringStore';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { formatDate, formatDueDate, calculateAgeInDays } from '@/lib/utils';
 import { FilterMatchMode } from '@primevue/core/api';
+
+// Responsive breakpoints using VueUse
+import { useBreakpoints } from '@vueuse/core';
+
+const breakpoints = useBreakpoints({
+  sm: 640,
+  md: 768, 
+  lg: 1024,
+  xl: 1280,
+  '2xl': 1536,
+});
+
+// Reactive breakpoint checks - More conservative hiding of columns
+const isMobile = breakpoints.smaller('md'); // Only phones < 768px
+const isTabletAndUp = breakpoints.greaterOrEqual('md'); // 768px+
+const isDesktop = breakpoints.greaterOrEqual('lg'); // 1024px+ 
+const isLargeDesktop = breakpoints.greaterOrEqual('xl'); // 1280px+
+const isTablet = breakpoints.between('md', 'lg'); // 768px - 1023px
+
+// More conservative column visibility - show more columns by default
+const showSubject = breakpoints.greaterOrEqual('md'); // Show subject on tablet+
+const showCustomer = breakpoints.greaterOrEqual('lg'); // Show customer on desktop+
+const showPriority = breakpoints.greaterOrEqual('md'); // Show priority on tablet+
+const showOwner = breakpoints.greaterOrEqual('lg'); // Show owner on desktop+
+const showDueDate = breakpoints.greaterOrEqual('xl'); // Show due date on large desktop+
+const showAge = breakpoints.greaterOrEqual('xl'); // Show age on large desktop+
 
 // PrimeVue Components
 import Toast from 'primevue/toast';
@@ -303,6 +619,7 @@ import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import ProgressSpinner from 'primevue/progressspinner';
 import Checkbox from 'primevue/checkbox';
+import OverlayPanel from 'primevue/overlaypanel';
 
 // Composables
 const engineeringStore = useEngineeringStore();
@@ -314,6 +631,27 @@ const tickets = computed(() => engineeringStore.tickets);
 const isLoading = computed(() => engineeringStore.loading);
 const pagination = computed(() => engineeringStore.pagination);
 const expandedRows = ref({});
+const isFieldSyncing = ref(false);
+
+// Column preferences system
+const columnSelectorPanel = ref();
+const STORAGE_KEY = 'engineering-tickets-column-preferences';
+
+// Default column configuration
+const defaultColumns = [
+  { key: 'ticketId', label: 'Ticket ID', visible: true, required: true },
+  { key: 'subject', label: 'Subject', visible: isTabletAndUp.value, required: false },
+  { key: 'customer', label: 'Customer', visible: isDesktop.value, required: false },
+  { key: 'status', label: 'Status', visible: true, required: true },
+  { key: 'priority', label: 'Priority', visible: isTabletAndUp.value, required: false },
+  { key: 'owner', label: 'Owner', visible: isDesktop.value, required: false },
+  { key: 'dueDate', label: 'Due Date', visible: isLargeDesktop.value, required: false },
+  { key: 'age', label: 'Age', visible: isLargeDesktop.value, required: false },
+  { key: 'viewInTriton', label: 'View in Triton', visible: isDesktop.value, required: false }
+];
+
+// Column preferences reactive array
+const availableColumns = ref([...defaultColumns]);
 
 // Filter states
 const showClosedTickets = ref(false);
@@ -332,11 +670,11 @@ const filters = ref({
 
 // Filter options
 const statusOptions = ref([
-  { label: 'Open', value: 'open' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Resolved', value: 'resolved' },
-  { label: 'Closed', value: 'closed' }
+  { label: 'Open', value: 'Open' },
+  { label: 'In Progress', value: 'In Progress' },
+  { label: 'Pending', value: 'Pending' },
+  { label: 'Resolved', value: 'Resolved' },
+  { label: 'Closed', value: 'Closed' }
 ]);
 
 const priorityOptions = ref([
@@ -365,6 +703,7 @@ const filteredTickets = computed(() => {
 
 // Load tickets on component mount
 onMounted(async () => {
+  loadColumnPreferences();
   await loadTickets();
 });
 
@@ -451,7 +790,7 @@ function getDueDateClass(dueDate, isOverdue) {
 function getStatusSeverity(status) {
   const severityMap = {
     'open': 'info',
-    'in_progress': 'primary',
+    'in progress': 'primary',
     'pending': 'warning',
     'resolved': 'success',
     'closed': 'secondary'
@@ -558,344 +897,225 @@ function formatCreatorName(creator) {
   return 'N/A';
 }
 
-// Action handlers for expansion row buttons
-function viewTicketDetails(ticket) {
-  router.push(`/engineering/tickets/${ticket.ticket_id}`);
+// Navigate to ticket details
+function viewTicketDetails(ticketData) {
+  router.push({ 
+    name: 'engineering-ticket-detail', 
+    params: { id: ticketData.ticket_id } 
+  });
 }
+
+// Open new ticket window
+function openNewTicketWindow() {
+  window.open('https://staff.cissdm.com/ticketing/department/7', '_blank', 'noopener,noreferrer');
+}
+
+// Open Triton ticket in new window
+function openTritonTicket(ticketId) {
+  window.open(`https://staff.cissdm.com/ticketing/ticket/${ticketId}`, '_blank', 'noopener,noreferrer');
+}
+
+// Trigger field sync
+async function triggerFieldSync() {
+  isFieldSyncing.value = true;
+  
+  try {
+    await engineeringStore.triggerFieldSync();
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Field Sync Complete',
+      detail: 'Field synchronization completed successfully',
+      life: 3000
+    });
+    
+    // Refresh the tickets data after sync
+    await loadTickets();
+    
+  } catch (error) {
+    console.error('Field sync error:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Field Sync Failed',
+      detail: error.message || 'Failed to complete field synchronization',
+      life: 5000
+    });
+  } finally {
+    isFieldSyncing.value = false;
+  }
+}
+
+// === COLUMN PREFERENCES METHODS ===
+
+// Load column preferences from localStorage
+function loadColumnPreferences() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const savedPrefs = JSON.parse(saved);
+      
+      // Merge saved preferences with defaults, keeping the structure intact
+      availableColumns.value = defaultColumns.map(defaultCol => {
+        const savedCol = savedPrefs.find(saved => saved.key === defaultCol.key);
+        return {
+          ...defaultCol,
+          visible: savedCol ? savedCol.visible : defaultCol.visible
+        };
+      });
+    }
+  } catch (error) {
+    console.error('Error loading column preferences:', error);
+    availableColumns.value = [...defaultColumns];
+  }
+}
+
+// Save column preferences to localStorage
+function saveColumnPreferences() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(availableColumns.value));
+    toast.add({
+      severity: 'success',
+      summary: 'Preferences Saved',
+      detail: 'Column preferences have been saved',
+      life: 2000
+    });
+  } catch (error) {
+    console.error('Error saving column preferences:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Save Failed',
+      detail: 'Failed to save column preferences',
+      life: 3000
+    });
+  }
+}
+
+// Get column visibility based on preferences
+function getColumnVisibility(columnKey) {
+  const column = availableColumns.value.find(col => col.key === columnKey);
+  return column ? column.visible : false;
+}
+
+// Toggle column selector overlay
+function toggleColumnSelector(event) {
+  columnSelectorPanel.value.toggle(event);
+}
+
+// Show all columns
+function showAllColumns() {
+  availableColumns.value.forEach(column => {
+    column.visible = true;
+  });
+  saveColumnPreferences();
+}
+
+// Reset to default preferences
+function resetToDefault() {
+  availableColumns.value = defaultColumns.map(col => ({
+    ...col,
+    visible: col.visible // Use the original default visibility
+  }));
+  saveColumnPreferences();
+  toast.add({
+    severity: 'info',
+    summary: 'Reset Complete',
+    detail: 'Column preferences have been reset to defaults',
+    life: 3000
+  });
+}
+
 </script>
 
 <style scoped>
-/* ========================================
-   ULTRA-CLEAN TABLE DESIGN
-   Matching the reference table style
-   ======================================== */
-
-/* Main table container - ultra clean */
-:deep(.p-datatable) {
-  background: #ffffff;
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Responsive DataTable styles */
+.responsive-datatable {
+  --datatable-header-padding: 0.75rem 0.5rem;
+  --datatable-cell-padding: 0.75rem 0.5rem;
 }
 
-/* Remove all table header background and styling */
-:deep(.p-datatable .p-datatable-header) {
-  background: transparent;
-  border: none;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
-  border-bottom: none;
-}
-
-/* Ultra-clean table headers */
-:deep(.p-datatable .p-datatable-thead > tr > th) {
-  background: transparent;
-  color: #4b5563;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-  text-transform: none;
-  letter-spacing: 0.025em;
-}
-
-/* Clean, spacious rows */
-:deep(.p-datatable .p-datatable-tbody > tr) {
-  background: #ffffff;
-  border: none;
-  transition: background-color 0.1s ease;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: #f3f4f6;
-  transform: none;
-  box-shadow: none;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr > td) {
-  padding: 1rem 1.5rem;
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: #1f2937;
-  vertical-align: middle;
-  font-weight: 500;
-}
-
-/* Remove all row state indicators for ultra-clean look */
-:deep(.p-datatable .p-datatable-tbody > tr.overdue-row),
-:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row),
-:deep(.p-datatable .p-datatable-tbody > tr.unassigned-customer-row) {
-  background: #ffffff;
-  border-left: none;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr.overdue-row:hover),
-:deep(.p-datatable .p-datatable-tbody > tr.high-priority-row:hover),
-:deep(.p-datatable .p-datatable-tbody > tr.unassigned-customer-row:hover) {
-  background: #f9fafb;
-  border-left: none;
-}
-
-/* Clean expansion panel */
-:deep(.p-datatable .p-datatable-row-expansion) {
-  background: #f9fafb;
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  padding: 1.5rem;
-}
-
-/* Minimal tag styling like reference */
-:deep(.p-tag) {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  text-transform: capitalize;
-  border: none;
-}
-
-/* Status-specific tag colors with distinct variations */
-:deep(.p-tag.p-tag-info) {
-  background: #dbeafe;
-  color: #1e40af;
-  font-weight: 600;
-  border: 1px solid #93c5fd;
-}
-
-:deep(.p-tag.p-tag-primary) {
-  background: #c7d2fe;
-  color: #4338ca;
-  font-weight: 600;
-  border: 1px solid #a5b4fc;
-}
-
-:deep(.p-tag.p-tag-warning) {
-  background: #fed7aa;
-  color: #ea580c;
-  font-weight: 600;
-  border: 1px solid #fdba74;
-}
-
-:deep(.p-tag.p-tag-success) {
-  background: #bbf7d0;
-  color: #047857;
-  font-weight: 600;
-  border: 1px solid #86efac;
-}
-
-:deep(.p-tag.p-tag-secondary) {
-  background: #e5e7eb;
-  color: #374151;
-  font-weight: 600;
-  border: 1px solid #d1d5db;
-}
-
-:deep(.p-tag.p-tag-danger) {
-  background: #fecaca;
-  color: #dc2626;
-  font-weight: 600;
-  border: 1px solid #fca5a5;
-}
-
-/* Priority-specific tag colors for more variation */
-:deep(.p-tag.priority-low) {
-  background: #f0fdf4;
-  color: #15803d;
-  font-weight: 600;
-  border: 1px solid #bbf7d0;
-}
-
-:deep(.p-tag.priority-medium) {
-  background: #fef7cd;
-  color: #a16207;
-  font-weight: 600;
-  border: 1px solid #fde68a;
-}
-
-:deep(.p-tag.priority-high) {
-  background: #ffedd5;
-  color: #c2410c;
-  font-weight: 600;
-  border: 1px solid #fed7aa;
-}
-
-:deep(.p-tag.priority-critical) {
-  background: #fef2f2;
-  color: #b91c1c;
-  font-weight: 600;
-  border: 1px solid #fecaca;
-  animation: pulse-critical 2s infinite;
-}
-
-@keyframes pulse-critical {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.4);
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .responsive-datatable {
+    --datatable-header-padding: 0.5rem 0.25rem;
+    --datatable-cell-padding: 0.5rem 0.25rem;
   }
-  50% {
-    box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.1);
+  
+  /* Hide table borders on mobile for cleaner look */
+  .responsive-datatable :deep(.p-datatable-table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  /* Make rows more card-like on mobile */
+  .responsive-datatable :deep(.p-datatable-tbody tr) {
+    border-bottom: 2px solid var(--surface-border);
+  }
+  
+  /* Touch-friendly expansion toggle */
+  .responsive-datatable :deep(.p-row-toggler) {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
   }
 }
 
-/* Clean pagination */
-:deep(.p-paginator) {
-  background: transparent;
-  border: none;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #f3f4f6;
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .responsive-datatable {
+    --datatable-header-padding: 1rem 0.75rem;
+    --datatable-cell-padding: 1rem 0.75rem;
+  }
 }
 
-:deep(.p-paginator .p-paginator-pages .p-paginator-page) {
-  min-width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 6px;
-  border: none;
-  margin: 0 0.125rem;
-  font-size: 0.875rem;
+/* Desktop enhancements */
+@media (min-width: 1025px) {
+  .responsive-datatable :deep(.p-datatable-tbody tr:hover) {
+    background-color: var(--surface-hover);
+  }
 }
 
-/* Ultra-clean expander */
-:deep(.p-datatable .p-row-toggler) {
-  color: #9ca3af;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  width: 1.75rem;
-  height: 1.75rem;
-  transition: all 0.1s ease;
+/* Custom row classes */
+.responsive-datatable :deep(.overdue-row) {
+  background-color: rgba(239, 68, 68, 0.05);
+  border-left: 4px solid #ef4444;
 }
 
-:deep(.p-datatable .p-row-toggler:hover) {
-  background: #f3f4f6;
-  color: #6b7280;
+.responsive-datatable :deep(.high-priority-row) {
+  background-color: rgba(245, 158, 11, 0.05);
+  border-left: 4px solid #f59e0b;
 }
 
-/* Remove last row border */
-:deep(.p-datatable .p-datatable-tbody > tr:last-child > td) {
-  border-bottom: none;
+.responsive-datatable :deep(.unassigned-customer-row) {
+  background-color: rgba(156, 163, 175, 0.05);
+  border-left: 4px solid #9ca3af;
 }
 
-/* Clean filter section */
-.card {
-  background: #ffffff;
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* Minimal button styling */
-:deep(.p-button.p-button-outlined) {
-  border: 1px solid #e5e7eb;
-  background: transparent;
-  color: #6b7280;
-  font-size: 0.875rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-}
-
-:deep(.p-button.p-button-outlined:hover) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #374151;
-}
-
-:deep(.p-button.p-button-text) {
-  background: transparent;
-  color: #6b7280;
-  border: none;
-  font-size: 0.875rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-}
-
-:deep(.p-button.p-button-text:hover) {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* Age indicators - better contrast */
-.age-new {
-  color: #059669;
-  font-weight: 600;
+/* Age color coding */
+.age-old {
+  @apply text-red-600 font-bold;
 }
 
 .age-moderate {
-  color: #d97706;
-  font-weight: 600;
+  @apply text-orange-600 font-medium;
 }
 
-.age-old {
-  color: #dc2626;
-  font-weight: 600;
+.age-new {
+  @apply text-green-600;
 }
 
-/* Due date styling - clean */
-.due-overdue {
-  color: #dc2626;
-  font-weight: 600;
+/* Utility classes for mobile */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.due-soon {
-  color: #d97706;
-  font-weight: 600;
-}
-
-.due-normal {
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* Ticket ID styling like reference */
-:deep(.p-datatable .p-datatable-tbody .ticket-id) {
-  color: #1f2937;
-  font-weight: 700;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
-  font-size: 0.875rem;
-}
-
-/* Customer name styling */
-:deep(.p-datatable .p-datatable-tbody .customer-name) {
-  color: #1f2937;
-  font-weight: 600;
-}
-
-/* Subject styling */
-:deep(.p-datatable .p-datatable-tbody .subject-text) {
-  color: #1f2937;
-  font-weight: 500;
-}
-
-/* Owner styling */
-:deep(.p-datatable .p-datatable-tbody .owner-text) {
-  color: #4b5563;
-  font-weight: 500;
-}
-
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  :deep(.p-datatable) {
-    background: #1f2937;
-  }
-  
-  :deep(.p-datatable .p-datatable-tbody > tr) {
-    background: #1f2937;
-  }
-  
-  :deep(.p-datatable .p-datatable-tbody > tr:hover) {
-    background: #374151;
-  }
-  
-  :deep(.p-datatable .p-datatable-tbody > tr > td) {
-    color: #e5e7eb;
-    border-bottom: 1px solid #374151;
-  }
-  
-  :deep(.p-datatable .p-datatable-thead > tr > th) {
-    color: #9ca3af;
-    border-bottom: 1px solid #374151;
+/* Enhanced mobile expansion panel */
+@media (max-width: 768px) {
+  .responsive-datatable :deep(.p-datatable-row-expansion) {
+    background-color: var(--surface-50);
+    border-radius: 0.5rem;
+    margin: 0.25rem;
   }
 }
 </style> 
