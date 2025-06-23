@@ -3,81 +3,15 @@
     <div class="grid">
         <div class="col-12">
             <div class="space-y-6">
-                <!-- Modern Filters Section -->
-                <div class="mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-lg border border-surface-200 dark:border-surface-700">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Status Filter -->
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Status</label>
-                            <Select 
-                                v-model="selectedStatus" 
-                                :options="statusOptions" 
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="All Statuses"
-                                showClear
-                                @change="onStatusFilterChange"
-                                class="w-full" 
-                            />
-                        </div>
-                        
-                        <!-- Priority Filter -->
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Priority</label>
-                            <Select 
-                                v-model="selectedPriority" 
-                                :options="priorityOptions" 
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="All Priorities"
-                                showClear
-                                @change="onPriorityFilterChange"
-                                class="w-full" 
-                            />
-                        </div>
-                        
-                        <!-- Owner Filter -->
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Owner</label>
-                            <Select 
-                                v-model="selectedOwner" 
-                                :options="ownerOptions" 
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="All Owners"
-                                showClear
-                                @change="onOwnerFilterChange"
-                                class="w-full" 
-                            />
-                        </div>
-                        
-                        <!-- Search -->
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Search</label>
-                            <IconField>
-                                <InputIcon>
-                                    <i class="pi pi-search" />
-                                </InputIcon>
-                                <InputText 
-                                    v-model="searchTerm" 
-                                    placeholder="Search tickets..." 
-                                    @input="onSearchChange"
-                                    class="w-full" 
-                                />
-                            </IconField>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Clean Engineering Tickets Table -->
                 <div class="card">
                     <DataTable 
                         v-model:expandedRows="expandedRows"
+                        v-model:filters="filters"
                         :value="filteredTickets" 
                         :loading="isLoading" 
                         :paginator="true" 
                         :rows="25" 
-                        :totalRecords="pagination.total"
                         :rowsPerPageOptions="[10, 25, 50, 100]"
                         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tickets"
@@ -88,20 +22,46 @@
                         @row-expand="onRowExpand"
                         @row-collapse="onRowCollapse"
                         tableStyle="min-width: 50rem"
-                        responsiveLayout="scroll">
+                        responsiveLayout="scroll"
+                        filterDisplay="menu"
+                        :globalFilterFields="['ticket_id', 'subject', 'customer_name', 'owner', 'status', 'priority']"
+                        showGridlines
+                        :resizableColumns="true"
+                        columnResizeMode="fit"
+                        stateStorage="session"
+                        stateKey="engineering-tickets-table-state">
                         
                         <template #header>
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-2">
-                                    <i class="pi pi-ticket text-lg text-surface-500"></i>
-                                    <span class="font-semibold text-surface-900 dark:text-surface-0">Engineering Tickets</span>
-                                    <span class="text-sm text-surface-500 ml-2">({{ filteredTickets.length }} total)</span>
+                            <div class="flex flex-col gap-3 p-2">
+                                <!-- Top row with title and controls -->
+                                <div class="flex flex-col sm:flex-row justify-between gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <i class="pi pi-ticket text-lg text-surface-500"></i>
+                                        <span class="font-semibold text-surface-900 dark:text-surface-0">Engineering Tickets</span>
+                                        <span class="text-sm text-surface-500 ml-2">({{ filteredTickets.length }} total)</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <Button type="button" icon="pi pi-filter-slash" label="Clear Filters" size="small" outlined @click="clearAllFilters" />
+                                        <Button icon="pi pi-plus" size="small" text @click="expandAll" v-tooltip="'Expand All'" />
+                                        <Button icon="pi pi-minus" size="small" text @click="collapseAll" v-tooltip="'Collapse All'" />
+                                        <Button icon="pi pi-refresh" size="small" @click="refreshData" :loading="isLoading" v-tooltip="'Refresh Data'" />
+                                    </div>
                                 </div>
-                                <div class="flex gap-2">
-                                    <Button icon="pi pi-filter-slash" label="Clear Filters" size="small" text @click="clearAllFilters" />
-                                    <Button icon="pi pi-plus" size="small" text @click="expandAll" v-tooltip="'Expand All'" />
-                                    <Button icon="pi pi-minus" size="small" text @click="collapseAll" v-tooltip="'Collapse All'" />
-                                    <Button icon="pi pi-refresh" size="small" @click="refreshData" :loading="isLoading" v-tooltip="'Refresh Data'" />
+
+                                <!-- Global Search and Show Closed Toggle -->
+                                <div class="flex flex-col sm:flex-row justify-between gap-3">
+                                    <div class="flex gap-3">
+                                        <IconField>
+                                            <InputIcon>
+                                                <i class="pi pi-search" />
+                                            </InputIcon>
+                                            <InputText v-model="filters['global'].value" placeholder="Search tickets..." class="w-full sm:w-auto" />
+                                        </IconField>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <Checkbox v-model="showClosedTickets" :binary="true" inputId="showClosed" @change="onShowClosedChange" />
+                                        <label for="showClosed" class="text-sm font-medium text-surface-700 dark:text-surface-300 cursor-pointer">Show Closed Tickets</label>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -117,7 +77,10 @@
                         </template>
                         
                         <template #loading>
-                            Loading engineering tickets...
+                            <div class="flex items-center justify-center p-6">
+                                <ProgressSpinner style="width: 40px; height: 40px" />
+                                <span class="ml-3 text-surface-600 dark:text-surface-400">Loading tickets...</span>
+                            </div>
                         </template>
                         
                         <!-- Expansion Column -->
@@ -131,6 +94,9 @@
                                     #{{ slotProps.data.ticket_id }}
                                 </span>
                             </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" placeholder="Search by ID" class="p-column-filter" />
+                            </template>
                         </Column>
                         
                         <!-- Subject Column -->
@@ -139,6 +105,9 @@
                                 <div class="subject-text max-w-xs truncate" :title="slotProps.data.subject">
                                     {{ slotProps.data.subject }}
                                 </div>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" placeholder="Search by subject" class="p-column-filter" />
                             </template>
                         </Column>
                         
@@ -150,6 +119,9 @@
                                 </span>
                                 <span v-else class="text-amber-600 font-medium">Unassigned</span>
                             </template>
+                            <template #filter="{ filterModel }">
+                                <InputText v-model="filterModel.value" type="text" placeholder="Search by customer" class="p-column-filter" />
+                            </template>
                         </Column>
                         
                         <!-- Status Column -->
@@ -159,6 +131,13 @@
                                     :value="slotProps.data.status" 
                                     :severity="getStatusSeverity(slotProps.data.status)" 
                                 />
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Select v-model="filterModel.value" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Select Status" class="p-column-filter" showClear>
+                                    <template #option="slotProps">
+                                        <Tag :value="slotProps.option.label" :severity="getStatusSeverity(slotProps.option.value)" />
+                                    </template>
+                                </Select>
                             </template>
                         </Column>
                         
@@ -171,6 +150,13 @@
                                     :class="getPriorityClass(slotProps.data.priority)"
                                 />
                             </template>
+                            <template #filter="{ filterModel }">
+                                <Select v-model="filterModel.value" :options="priorityOptions" optionLabel="label" optionValue="value" placeholder="Select Priority" class="p-column-filter" showClear>
+                                    <template #option="slotProps">
+                                        <Tag :value="slotProps.option.label" :severity="getPrioritySeverity(slotProps.option.value)" />
+                                    </template>
+                                </Select>
+                            </template>
                         </Column>
                         
                         <!-- Owner Column -->
@@ -179,6 +165,10 @@
                                 <span class="owner-text" :class="{'text-gray-400': !slotProps.data.owner}">
                                     {{ slotProps.data.owner || 'Unassigned' }}
                                 </span>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Select v-model="filterModel.value" :options="ownerOptions" optionLabel="label" optionValue="value" placeholder="Select Owner" class="p-column-filter" showClear>
+                                </Select>
                             </template>
                         </Column>
                         
@@ -190,6 +180,9 @@
                                 </span>
                                 <span v-else class="text-gray-400">No due date</span>
                             </template>
+                            <template #filter="{ filterModel }">
+                                <DatePicker v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="Filter by due date" />
+                            </template>
                         </Column>
                         
                         <!-- Age (Days) Column -->
@@ -199,6 +192,9 @@
                                     {{ calculateAgeInDays(slotProps.data.dates?.created_at) }}
                                 </span>
                             </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" placeholder="Filter by age" class="p-column-filter" />
+                            </template>
                         </Column>
                         
                         <!-- Last Updated (Days) Column -->
@@ -207,6 +203,9 @@
                                 <span :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.updated_at))">
                                     {{ calculateAgeInDays(slotProps.data.dates?.updated_at) }}
                                 </span>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" placeholder="Filter by days" class="p-column-filter" />
                             </template>
                         </Column>
                         
@@ -219,29 +218,6 @@
                                         <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
                                         <div class="space-y-2 text-sm">
                                             <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Ticket Mask:</span>
-                                                <span class="font-medium">{{ slotProps.data.ticket_mask_id }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Department:</span>
-                                                <span class="font-medium">{{ slotProps.data.department || 'N/A' }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Type:</span>
-                                                <span class="font-medium">{{ slotProps.data.ticket_type || 'N/A' }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Creator:</span>
-                                                <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Dates & Timeline -->
-                                    <div class="space-y-3">
-                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Timeline</h6>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between">
                                                 <span class="text-surface-600 dark:text-surface-400">Created:</span>
                                                 <span class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</span>
                                             </div>
@@ -250,10 +226,27 @@
                                                 <span class="font-medium">{{ formatDate(slotProps.data.dates?.updated_at) }}</span>
                                             </div>
                                             <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Due Date:</span>
-                                                <span class="font-medium" :class="getDueDateClass(slotProps.data.dates?.due_date, slotProps.data.sla?.is_overdue)">
-                                                    {{ slotProps.data.dates?.due_date ? formatDate(slotProps.data.dates.due_date) : 'Not Set' }}
-                                                </span>
+                                                <span class="text-surface-600 dark:text-surface-400">Creator:</span>
+                                                <span class="font-medium">{{ formatCreatorName(slotProps.data.creator) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status & Assignment -->
+                                    <div class="space-y-3">
+                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Assignment</h6>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Status:</span>
+                                                <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Priority:</span>
+                                                <Tag :value="slotProps.data.priority" :severity="getPrioritySeverity(slotProps.data.priority)" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Owner:</span>
+                                                <span class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -294,6 +287,7 @@ import { useEngineeringStore } from '@/stores/engineeringStore';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { formatDate, formatDueDate, calculateAgeInDays } from '@/lib/utils';
+import { FilterMatchMode } from '@primevue/core/api';
 
 // PrimeVue Components
 import Toast from 'primevue/toast';
@@ -302,11 +296,13 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import ProgressSpinner from 'primevue/progressspinner';
+import Checkbox from 'primevue/checkbox';
 
 // Composables
 const engineeringStore = useEngineeringStore();
@@ -320,10 +316,19 @@ const pagination = computed(() => engineeringStore.pagination);
 const expandedRows = ref({});
 
 // Filter states
-const selectedStatus = ref(null);
-const selectedPriority = ref(null);
-const selectedOwner = ref(null);
-const searchTerm = ref('');
+const showClosedTickets = ref(false);
+const filters = ref({
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  ticket_id: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  subject: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  customer_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  status: { value: null, matchMode: FilterMatchMode.EQUALS },
+  priority: { value: null, matchMode: FilterMatchMode.EQUALS },
+  owner: { value: null, matchMode: FilterMatchMode.EQUALS },
+  'dates.due_date': { value: null, matchMode: FilterMatchMode.DATE_IS },
+  'dates.created_at': { value: null, matchMode: FilterMatchMode.EQUALS },
+  'dates.updated_at': { value: null, matchMode: FilterMatchMode.EQUALS }
+});
 
 // Filter options
 const statusOptions = ref([
@@ -346,34 +351,13 @@ const ownerOptions = computed(() => {
   return owners.map(owner => ({ label: owner, value: owner }));
 });
 
-// Computed filtered tickets
+// Computed filtered tickets - Apply closed filter before DataTable filters
 const filteredTickets = computed(() => {
   let filtered = [...tickets.value];
   
-  // Apply status filter
-  if (selectedStatus.value) {
-    filtered = filtered.filter(ticket => ticket.status === selectedStatus.value);
-  }
-  
-  // Apply priority filter
-  if (selectedPriority.value) {
-    filtered = filtered.filter(ticket => ticket.priority === selectedPriority.value);
-  }
-  
-  // Apply owner filter
-  if (selectedOwner.value) {
-    filtered = filtered.filter(ticket => ticket.owner === selectedOwner.value);
-  }
-  
-  // Apply search filter
-  if (searchTerm.value) {
-    const search = searchTerm.value.toLowerCase();
-    filtered = filtered.filter(ticket => 
-      ticket.subject?.toLowerCase().includes(search) ||
-      ticket.ticket_id?.toString().includes(search) ||
-      ticket.customer_name?.toLowerCase().includes(search) ||
-      ticket.owner?.toLowerCase().includes(search)
-    );
+  // Apply closed tickets filter first (case-insensitive)
+  if (!showClosedTickets.value) {
+    filtered = filtered.filter(ticket => ticket.status?.toLowerCase() !== 'closed');
   }
   
   return filtered;
@@ -518,28 +502,29 @@ function onRowCollapse(event) {
   console.log('Row collapsed:', event.data);
 }
 
-// Filter change handlers
-function onStatusFilterChange() {
-  // Filter change is handled by computed property
-}
-
-function onPriorityFilterChange() {
-  // Filter change is handled by computed property
-}
-
-function onOwnerFilterChange() {
-  // Filter change is handled by computed property
-}
-
-function onSearchChange() {
-  // Search change is handled by computed property
+// Show closed tickets toggle handler
+function onShowClosedChange() {
+  toast.add({
+    severity: 'info',
+    summary: showClosedTickets.value ? 'Showing Closed Tickets' : 'Hiding Closed Tickets',
+    detail: showClosedTickets.value ? 'Closed tickets are now visible' : 'Closed tickets are now hidden',
+    life: 2000
+  });
 }
 
 function clearAllFilters() {
-  selectedStatus.value = null;
-  selectedPriority.value = null;
-  selectedOwner.value = null;
-  searchTerm.value = '';
+  filters.value = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    ticket_id: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    subject: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    customer_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    priority: { value: null, matchMode: FilterMatchMode.EQUALS },
+    owner: { value: null, matchMode: FilterMatchMode.EQUALS },
+    'dates.due_date': { value: null, matchMode: FilterMatchMode.DATE_IS },
+    'dates.created_at': { value: null, matchMode: FilterMatchMode.EQUALS },
+    'dates.updated_at': { value: null, matchMode: FilterMatchMode.EQUALS }
+  };
   
   toast.add({
     severity: 'info',
