@@ -77,7 +77,8 @@
                     <Checkbox 
                         v-model="showClosedTickets" 
                         @change="onShowClosedChange"
-                        inputId="showClosed" 
+                        inputId="showClosed"
+                        binary
                     />
                     <label for="showClosed" class="text-sm font-medium select-none">
                         Show closed tickets
@@ -137,56 +138,58 @@
         </div>
 
         <!-- Responsive DataTable -->
-        <!-- Column Selector Overlay -->
-        <OverlayPanel ref="columnSelectorPanel" appendTo="body" :showCloseIcon="true" class="w-80">
-            <template #header>
-                <div class="flex items-center gap-2">
+        <!-- Column Selector Popover -->
+        <Popover ref="columnSelectorPanel" appendTo="body" class="w-80">
+            <div class="p-4 space-y-4">
+                <!-- Header -->
+                <div class="flex items-center gap-2 pb-3 border-b">
                     <i class="pi pi-eye text-lg"></i>
                     <span class="font-semibold">Column Visibility</span>
                 </div>
-            </template>
-            
-            <div class="space-y-3">
-                <div class="text-sm text-surface-600 dark:text-surface-300 mb-4">
-                    Choose which columns to display in the table. Your preferences will be saved automatically.
-                </div>
                 
-                <!-- Column Toggle Checkboxes -->
-                <div class="space-y-2">
-                    <div v-for="column in availableColumns" :key="column.key" class="flex items-center">
-                        <Checkbox 
-                            v-model="column.visible" 
-                            :inputId="column.key"
-                            :disabled="column.required"
-                            @change="saveColumnPreferences"
+                <div class="space-y-3">
+                    <div class="text-sm text-surface-600 dark:text-surface-300">
+                        Choose which columns to display in the table. Your preferences will be saved automatically.
+                    </div>
+                    
+                    <!-- Column Toggle Checkboxes -->
+                    <div class="space-y-2">
+                        <div v-for="column in availableColumns" :key="column.key" class="flex items-center">
+                            <Checkbox 
+                                v-model="column.visible" 
+                                :inputId="column.key"
+                                :disabled="column.required"
+                                binary
+                                @change="saveColumnPreferences"
+                            />
+                            <label :for="column.key" class="ml-2 text-sm flex-1 cursor-pointer">
+                                {{ column.label }}
+                                <span v-if="column.required" class="text-xs text-surface-500 ml-1">(Required)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="border-t pt-3 flex gap-2">
+                        <Button 
+                            label="Show All" 
+                            size="small" 
+                            outlined 
+                            @click="showAllColumns"
+                            class="flex-1"
                         />
-                        <label :for="column.key" class="ml-2 text-sm flex-1 cursor-pointer">
-                            {{ column.label }}
-                            <span v-if="column.required" class="text-xs text-surface-500 ml-1">(Required)</span>
-                        </label>
+                        <Button 
+                            label="Reset to Default" 
+                            size="small" 
+                            outlined 
+                            severity="secondary"
+                            @click="resetToDefault"
+                            class="flex-1"
+                        />
                     </div>
                 </div>
-                
-                <!-- Quick Actions -->
-                <div class="border-t pt-3 mt-4 flex gap-2">
-                    <Button 
-                        label="Show All" 
-                        size="small" 
-                        outlined 
-                        @click="showAllColumns"
-                        class="flex-1"
-                    />
-                    <Button 
-                        label="Reset to Default" 
-                        size="small" 
-                        outlined 
-                        severity="secondary"
-                        @click="resetToDefault"
-                        class="flex-1"
-                    />
-                </div>
             </div>
-        </OverlayPanel>
+        </Popover>
 
         <div class="card overflow-hidden">
             <!-- Mobile: Show ticket count and pagination info -->
@@ -619,7 +622,7 @@ import DatePicker from 'primevue/datepicker';
 import Tag from 'primevue/tag';
 import ProgressSpinner from 'primevue/progressspinner';
 import Checkbox from 'primevue/checkbox';
-import OverlayPanel from 'primevue/overlaypanel';
+import Popover from 'primevue/popover';
 
 // Composables
 const engineeringStore = useEngineeringStore();
@@ -637,8 +640,8 @@ const isFieldSyncing = ref(false);
 const columnSelectorPanel = ref();
 const STORAGE_KEY = 'engineering-tickets-column-preferences';
 
-// Default column configuration
-const defaultColumns = [
+// Default column configuration function - ensures proper reactivity
+const getDefaultColumns = () => [
   { key: 'ticketId', label: 'Ticket ID', visible: true, required: true },
   { key: 'subject', label: 'Subject', visible: isTabletAndUp.value, required: false },
   { key: 'customer', label: 'Customer', visible: isDesktop.value, required: false },
@@ -650,8 +653,8 @@ const defaultColumns = [
   { key: 'viewInTriton', label: 'View in Triton', visible: isDesktop.value, required: false }
 ];
 
-// Column preferences reactive array
-const availableColumns = ref([...defaultColumns]);
+// Column preferences reactive array - initialize with proper array
+const availableColumns = ref(getDefaultColumns());
 
 // Filter states
 const showClosedTickets = ref(false);
@@ -953,6 +956,7 @@ function loadColumnPreferences() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const savedPrefs = JSON.parse(saved);
+      const defaultColumns = getDefaultColumns();
       
       // Merge saved preferences with defaults, keeping the structure intact
       availableColumns.value = defaultColumns.map(defaultCol => {
@@ -965,14 +969,19 @@ function loadColumnPreferences() {
     }
   } catch (error) {
     console.error('Error loading column preferences:', error);
-    availableColumns.value = [...defaultColumns];
+    availableColumns.value = getDefaultColumns();
   }
 }
 
 // Save column preferences to localStorage
 function saveColumnPreferences() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(availableColumns.value));
+    // Ensure we're working with a proper array before saving
+    const columnsToSave = Array.isArray(availableColumns.value) 
+      ? [...availableColumns.value] 
+      : [];
+      
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(columnsToSave));
     toast.add({
       severity: 'success',
       summary: 'Preferences Saved',
@@ -1004,17 +1013,17 @@ function toggleColumnSelector(event) {
 // Show all columns
 function showAllColumns() {
   availableColumns.value.forEach(column => {
-    column.visible = true;
+    if (!column.required) { // Only change non-required columns
+      column.visible = true;
+    }
   });
   saveColumnPreferences();
 }
 
 // Reset to default preferences
 function resetToDefault() {
-  availableColumns.value = defaultColumns.map(col => ({
-    ...col,
-    visible: col.visible // Use the original default visibility
-  }));
+  const defaultColumns = getDefaultColumns();
+  availableColumns.value = [...defaultColumns];
   saveColumnPreferences();
   toast.add({
     severity: 'info',
