@@ -168,7 +168,7 @@ export const EngineeringService = {
   // === CALENDAR ENDPOINTS ===
   
   // Get calendar events with date range parameters (REQUIRED by backend)
-  getCalendarEvents(startDate, endDate, engineerId = 'all', eventType = null) {
+  getCalendarEvents(startDate, endDate, engineerId = 'all', eventType = null, includeAiTasks = true) {
     const params = new URLSearchParams();
     
     // CRITICAL: Always send date range parameters
@@ -183,6 +183,10 @@ export const EngineeringService = {
     }
     if (eventType) {
       params.append('event_type', eventType);
+    }
+    // NEW: Include AI-generated tasks by default
+    if (includeAiTasks) {
+      params.append('include_ai_tasks', 'true');
     }
     
     return ApiService.get(`/engineering/calendar?${params.toString()}`);

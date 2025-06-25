@@ -79,6 +79,7 @@
         :navigating="onNavigating"
         :cellClick="onCellClick"
         :eventClick="onEventClick"
+        :rendering="onScheduleRendering"
         :locale="'en-US'"
         :dateFormat="'MM/dd/yyyy'"
         :timeFormat="'h:mm a'"
@@ -87,7 +88,10 @@
         :allowMultiDrag="false"
         :allowResizing="true"
         :allowDragAndDrop="true"
-        cssClass="engineering-schedule"
+        :enableAutoRowHeight="true"
+        :rowAutoHeight="true"
+        :allowInline="false"
+        cssClass="engineering-schedule engineering-schedule-overlap"
       >
         <e-views>
           <e-view option="Day"></e-view>
@@ -99,6 +103,296 @@
           <e-view option="TimelineMonth"></e-view>
         </e-views>
       </ejs-schedule>
+    </div>
+
+    <!-- Statistics Panel -->
+    <div class="calendar-statistics bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl mb-6 overflow-hidden">
+      <!-- Collapsed Stats Header -->
+      <div class="flex items-center justify-between p-4 bg-gradient-to-r from-primary-50 to-blue-50 dark:from-surface-800 dark:to-surface-700 border-b border-surface-200 dark:border-surface-600">
+        <div class="flex items-center gap-4">
+          <!-- Quick Stats Cards -->
+          <div class="flex items-center gap-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {{ quickStatsDisplay.total }}
+              </div>
+              <div class="text-xs text-surface-600 dark:text-surface-300 font-medium">
+                Total Events
+              </div>
+            </div>
+            
+            <div class="h-8 w-px bg-surface-300 dark:bg-surface-600"></div>
+            
+            <div class="text-center">
+              <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {{ quickStatsDisplay.tickets }}
+              </div>
+              <div class="text-xs text-surface-600 dark:text-surface-300 font-medium">
+                Ticket Deadlines
+              </div>
+            </div>
+            
+            <div class="h-8 w-px bg-surface-300 dark:bg-surface-600"></div>
+            
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                {{ quickStatsDisplay.activities }}
+              </div>
+              <div class="text-xs text-surface-600 dark:text-surface-300 font-medium">
+                Activities
+              </div>
+            </div>
+            
+            <div class="h-8 w-px bg-surface-300 dark:bg-surface-600"></div>
+            
+            <div class="text-center">
+              <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {{ quickStatsDisplay.aiTasks }}
+              </div>
+              <div class="text-xs text-surface-600 dark:text-surface-300 font-medium">
+                AI Tasks
+              </div>
+            </div>
+            
+            <div class="h-8 w-px bg-surface-300 dark:bg-surface-600"></div>
+            
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {{ quickStatsDisplay.activeEngineers }}
+              </div>
+              <div class="text-xs text-surface-600 dark:text-surface-300 font-medium">
+                Active Engineers
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Expand/Collapse Controls -->
+        <div class="flex items-center gap-3">
+          <div class="text-sm text-surface-600 dark:text-surface-300">
+            {{ currentPeriodLabel }}
+          </div>
+          <Button 
+            :icon="showDetailedStats ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+            @click="showDetailedStats = !showDetailedStats"
+            severity="secondary"
+            variant="text"
+            size="small"
+            v-tooltip="showDetailedStats ? 'Hide detailed statistics' : 'Show detailed statistics'"
+          />
+        </div>
+      </div>
+      
+      <!-- Expanded Detailed Statistics -->
+      <div v-if="showDetailedStats" class="p-6 bg-surface-50 dark:bg-surface-800">
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          
+          <!-- Event Type Distribution -->
+          <Card class="shadow-sm border-0">
+            <template #title>
+              <div class="flex items-center gap-2 text-lg font-semibold">
+                <i class="pi pi-chart-pie text-primary-600"></i>
+                Event Distribution
+              </div>
+            </template>
+            <template #content>
+              <div class="space-y-3">
+                <div 
+                  v-for="(stat, type) in eventTypeBreakdown" 
+                  :key="type"
+                  class="flex items-center justify-between p-2 rounded-lg bg-surface-0 dark:bg-surface-700"
+                >
+                  <div class="flex items-center gap-2">
+                    <div 
+                      class="w-3 h-3 rounded"
+                      :style="{ backgroundColor: getEventTypeColor(type) }"
+                    ></div>
+                    <span class="text-sm font-medium">{{ getEventTypeLabel(type) }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+                      {{ stat.count }}
+                    </span>
+                    <span class="text-xs text-surface-500 bg-surface-100 dark:bg-surface-600 px-2 py-1 rounded">
+                      {{ stat.percentage }}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+          
+          <!-- Engineer Workload -->
+          <Card class="shadow-sm border-0">
+            <template #title>
+              <div class="flex items-center gap-2 text-lg font-semibold">
+                <i class="pi pi-users text-blue-600"></i>
+                Engineer Workload
+              </div>
+            </template>
+            <template #content>
+              <div class="space-y-3">
+                <div 
+                  v-for="engineer in engineerWorkloadDisplay" 
+                  :key="engineer.name"
+                  class="space-y-2"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <Avatar 
+                        :label="engineer.initials" 
+                        size="small" 
+                        shape="circle"
+                        :style="{ backgroundColor: engineer.color, color: 'white' }"
+                      />
+                      <span class="text-sm font-medium">{{ engineer.name }}</span>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-lg font-bold">{{ engineer.eventCount }}</div>
+                      <div class="text-xs text-surface-500">{{ engineer.totalHours }}h</div>
+                    </div>
+                  </div>
+                  <div class="w-full bg-surface-200 dark:bg-surface-600 rounded-full h-2">
+                    <div 
+                      class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      :style="{ width: `${engineer.workloadPercentage}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+          
+          <!-- Time Distribution & Peak Hours -->
+          <Card class="shadow-sm border-0">
+            <template #title>
+              <div class="flex items-center gap-2 text-lg font-semibold">
+                <i class="pi pi-clock text-orange-600"></i>
+                Time Analysis
+              </div>
+            </template>
+            <template #content>
+              <div class="space-y-4">
+                <!-- Peak Hours -->
+                <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                  <div class="text-sm font-medium text-orange-800 dark:text-orange-200 mb-1">
+                    Peak Activity Hours
+                  </div>
+                  <div class="text-xl font-bold text-orange-600 dark:text-orange-400">
+                    {{ peakHoursDisplay }}
+                  </div>
+                </div>
+                
+                <!-- Daily Distribution -->
+                <div class="space-y-2">
+                  <div class="text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">
+                    Daily Distribution
+                  </div>
+                  <div 
+                    v-for="day in dailyDistribution" 
+                    :key="day.name"
+                    class="flex items-center justify-between"
+                  >
+                    <span class="text-sm text-surface-600 dark:text-surface-300">{{ day.name }}</span>
+                    <div class="flex items-center gap-2">
+                      <div class="w-20 bg-surface-200 dark:bg-surface-600 rounded-full h-1.5">
+                        <div 
+                          class="bg-gradient-to-r from-blue-500 to-purple-600 h-1.5 rounded-full"
+                          :style="{ width: `${day.percentage}%` }"
+                        ></div>
+                      </div>
+                      <span class="text-sm font-medium w-8 text-right">{{ day.count }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Maintenance Windows -->
+                <div v-if="maintenanceWindowsCount > 0" class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+                  <div class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                    Maintenance Windows
+                  </div>
+                  <div class="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                    {{ maintenanceWindowsCount }} Scheduled
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+          
+          <!-- Priority Distribution (spans full width on large screens) -->
+          <Card class="xl:col-span-3 shadow-sm border-0">
+            <template #title>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-lg font-semibold">
+                  <i class="pi pi-exclamation-triangle text-red-600"></i>
+                  Priority & Risk Analysis
+                </div>
+                <div class="flex items-center gap-2">
+                  <span 
+                    v-if="criticalEventsCount > 0"
+                    class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-full"
+                  >
+                    {{ criticalEventsCount }} Critical
+                  </span>
+                  <span 
+                    v-if="overdueTicketsCount > 0"
+                    class="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 rounded-full"
+                  >
+                    {{ overdueTicketsCount }} Overdue
+                  </span>
+                </div>
+              </div>
+            </template>
+            <template #content>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div 
+                  v-for="priority in priorityBreakdown" 
+                  :key="priority.level"
+                  class="text-center p-4 rounded-lg"
+                  :class="priority.bgClass"
+                >
+                  <div class="text-3xl font-bold" :class="priority.textClass">
+                    {{ priority.count }}
+                  </div>
+                  <div class="text-sm font-medium text-surface-600 dark:text-surface-300 mt-1">
+                    {{ priority.level }} Priority
+                  </div>
+                  <div class="text-xs text-surface-500 mt-1">
+                    {{ priority.percentage }}% of total
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
+        
+        <!-- Statistics Footer with Actions -->
+        <div class="flex items-center justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-600">
+          <div class="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+            <i class="pi pi-info-circle"></i>
+            <span>Statistics updated {{ lastStatsUpdate }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <Button 
+              label="Export Data"
+              icon="pi pi-download"
+              size="small"
+              severity="secondary"
+              variant="outlined"
+              @click="exportStatistics"
+            />
+            <Button 
+              label="Refresh"
+              icon="pi pi-refresh"
+              size="small"
+              severity="secondary"
+              variant="outlined"
+              @click="refreshStatistics"
+              :loading="isRefreshingStats"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Engineering Categories Legend -->
@@ -655,6 +949,56 @@
           </div>
         </div>
 
+        <!-- AI Task Display -->
+        <div v-else-if="selectedEvent.EventType === 'ai-task'" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-4 h-4 rounded bg-purple-600"></div>
+              <span class="font-medium text-purple-600">AI-Generated Task</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span 
+                class="px-2 py-1 text-xs rounded-full font-medium"
+                :class="{
+                  'bg-red-100 text-red-800': selectedEvent.PriorityLevel === 'high',
+                  'bg-yellow-100 text-yellow-800': selectedEvent.PriorityLevel === 'medium',
+                  'bg-green-100 text-green-800': selectedEvent.PriorityLevel === 'low'
+                }"
+              >
+                {{ selectedEvent.PriorityLevel?.charAt(0).toUpperCase() + selectedEvent.PriorityLevel?.slice(1) || 'Medium' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4">
+            <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+              <div class="space-y-3">
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Task Title:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.TaskTitle || selectedEvent.Subject }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Assigned Engineer:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.AssignedTo || selectedEvent.EngineerName || 'Unassigned' }}</span>
+                </div>
+                <div v-if="selectedEvent.EstimatedDurationMinutes">
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Estimated Duration:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ Math.round(selectedEvent.EstimatedDurationMinutes / 60 * 100) / 100 }} hours</span>
+                </div>
+                <div v-if="selectedEvent.GeneratedAt">
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Generated:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">{{ formatDateTime(new Date(selectedEvent.GeneratedAt)) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="selectedEvent.TaskDescription" class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg">
+              <h4 class="font-medium text-sm text-surface-900 dark:text-surface-0 mb-2">Task Description:</h4>
+              <p class="text-surface-700 dark:text-surface-200 text-sm leading-relaxed">{{ selectedEvent.TaskDescription }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Regular Event Display -->
         <div v-else class="space-y-4">
         <div class="flex items-center justify-between">
@@ -799,6 +1143,8 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
+import Card from 'primevue/card'
+import Avatar from 'primevue/avatar'
 
 // Store and utilities
 const router = useRouter()
@@ -814,6 +1160,10 @@ const showAddActivityDialog = ref(false)
 const showEditActivityDialog = ref(false)
 const showEventDialog = ref(false)
 const selectedEvent = ref(null)
+
+// Statistics Panel State
+const showDetailedStats = ref(false)
+const isRefreshingStats = ref(false)
 
 // Calendar configuration
 const selectedDate = ref(new Date())
@@ -992,6 +1342,19 @@ const engineeringEventTypes = ref({
       'Administrative Tasks',
       'Team Meetings'
     ]
+  },
+  'ai-task': {
+    label: 'AI-Generated Tasks',
+    color: '#8b5cf6',
+    icon: 'pi pi-sparkles',
+    subcategories: [
+      'Maintenance Tasks',
+      'Performance Optimization',
+      'Security Updates',
+      'Documentation Updates',
+      'Code Review',
+      'Infrastructure Monitoring'
+    ]
   }
 })
 
@@ -1112,7 +1475,9 @@ const eventSettings = computed(() => ({
     description: { name: 'Description' }
   },
   enableMaxHeight: true,
-  ignoreWhitespace: false
+  ignoreWhitespace: false,
+  enableTooltip: false, // We handle our own custom tooltips
+  spannedEventPlacement: 'TimeSlot' // Ensures proper spacing for overlapping events
 }))
 
 // Get calendar events from store (includes both real events and ticket deadlines)
@@ -1203,6 +1568,22 @@ const calendarEvents = computed(() => {
       ].filter(Boolean)
       
       enhancedDescription = descriptionParts.join('\n')
+    } else if (event.EventType === 'ai-task') {
+      // For AI-generated tasks, show special formatting
+      const engineer = event.AssignedTo || event.assigned_engineer || event.engineer_name || event.EngineerName
+      const duration = event.EstimatedDurationMinutes ? Math.round(event.EstimatedDurationMinutes / 60 * 100) / 100 : event.estimated_hours
+      
+      // Use the AI task title directly (already has 🤖 prefix from backend)
+      enhancedSubject = event.TaskTitle || event.Subject || enhancedSubject
+      
+      enhancedDescription = [
+        event.TaskDescription || event.description || event.Description || '',
+        `Type: AI-Generated Task`,
+        engineer ? `Engineer: ${engineer}` : '',
+        event.PriorityLevel ? `Priority: ${event.PriorityLevel}` : '',
+        duration ? `Duration: ${duration}h` : '',
+        event.GeneratedAt ? `Generated: ${formatDateTime(new Date(event.GeneratedAt))}` : ''
+      ].filter(Boolean).join('\n')
     } else {
       // For manual events, show category and engineer
       const categoryLabel = engineeringEventTypes.value[eventType]?.label || eventType
@@ -1256,6 +1637,14 @@ const calendarEvents = computed(() => {
       CustomerFacing: event.CustomerFacing,
       Impact: event.Impact,
       CategoryColor: event.CategoryColor,
+      
+      // AI Task fields from backend
+      TaskTitle: event.TaskTitle,
+      TaskDescription: event.TaskDescription,
+      AssignedTo: event.AssignedTo,
+      PriorityLevel: event.PriorityLevel,
+      EstimatedDurationMinutes: event.EstimatedDurationMinutes,
+      GeneratedAt: event.GeneratedAt,
       
       // Keep original data for debugging
       _originalEvent: event
@@ -1331,7 +1720,8 @@ const getEventIcon = (eventType) => {
     'documentation': '📝',
     'training': '🎓',
     'monitoring': '📊',
-    'administrative': '📋'
+    'administrative': '📋',
+    'ai-task': '🤖'
   }
   return icons[eventType] || '📅'
 }
@@ -1452,6 +1842,22 @@ const onEventRendered = (args) => {
       metadata.innerHTML = `#${eventData.TicketId}`
     }
     
+  } else if (eventData.EventType === 'ai-task') {
+    eventElement.classList.add('ai-task-event')
+    eventIcon = '🤖'
+    eventTypeLabel = 'AI Task'
+    
+    // Get clean title (should already have 🤖 prefix from backend)
+    const cleanTitle = eventData.Subject.replace(/^🤖\s*/, '')
+    title.textContent = cleanTitle
+    
+    // Add AI task-specific metadata
+    if (eventData.EstimatedDurationMinutes) {
+      const hours = Math.round(eventData.EstimatedDurationMinutes / 60 * 100) / 100
+      metadata.innerHTML = `${hours}h`
+    } else if (eventData.EstimatedHours) {
+      metadata.innerHTML = `${eventData.EstimatedHours}h`
+    }
   } else {
     eventElement.classList.add('manual-event')
     
@@ -1470,7 +1876,8 @@ const onEventRendered = (args) => {
         'graduation-cap': '🎓',
         'chart-line': '📈',
         'cog': '⚙️',
-        'tools': '🛠️'
+        'tools': '🛠️',
+        'sparkles': '🤖'
       }
       eventIcon = iconMap[eventIcon] || '📋'
       eventTypeLabel = eventTypeInfo.label
@@ -1481,7 +1888,7 @@ const onEventRendered = (args) => {
     }
     
     // Get clean title
-    const cleanTitle = eventData.Subject.replace(/^[🔧🚀👥📝🎓📈⚙️🛠️📋]\s*/, '')
+    const cleanTitle = eventData.Subject.replace(/^[🔧🚀👥📝🎓📈⚙️🛠️📋🤖]\s*/, '')
     title.textContent = cleanTitle
     
           // Add activity-specific metadata
@@ -1561,7 +1968,7 @@ const onEventRendered = (args) => {
   let tooltipContent = []
   
   // Add title (clean, without emoji prefix)
-  const cleanTitle = eventData.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋]\s*/, '') || 'Untitled Event'
+  const cleanTitle = eventData.Subject?.replace(/^[🔧🎫🚀👥📝🎓📊📋🤖]\s*/, '') || 'Untitled Event'
   tooltipContent.push(`📋 ${cleanTitle}`)
   
   // Add time information
@@ -1608,6 +2015,30 @@ const onEventRendered = (args) => {
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
       const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`
       tooltipContent.push(`🕒 Last Update: ${timeAgo}`)
+    }
+  } else if (eventData.EventType === 'ai-task') {
+    // Add AI task-specific information
+    if (eventData.EstimatedDurationMinutes) {
+      const hours = Math.round(eventData.EstimatedDurationMinutes / 60 * 100) / 100
+      tooltipContent.push(`⏱️ Duration: ${hours} hours`)
+    } else if (eventData.EstimatedHours) {
+      tooltipContent.push(`⏱️ Duration: ${eventData.EstimatedHours} hours`)
+    }
+    if (eventData.PriorityLevel) {
+      tooltipContent.push(`🎯 AI Priority: ${eventData.PriorityLevel}`)
+    }
+    if (eventData.AssignedTo) {
+      tooltipContent.push(`👤 AI Assignment: ${eventData.AssignedTo}`)
+    }
+    if (eventData.GeneratedAt) {
+      const generatedDate = new Date(eventData.GeneratedAt)
+      tooltipContent.push(`🧠 Generated: ${formatDateTime(generatedDate)}`)
+    }
+    if (eventData.TaskDescription) {
+      const shortDesc = eventData.TaskDescription.length > 100 
+        ? eventData.TaskDescription.substring(0, 100) + '...' 
+        : eventData.TaskDescription
+      tooltipContent.push(`📝 ${shortDesc}`)
     }
   } else {
     // Add activity-specific information
@@ -1746,6 +2177,9 @@ const onEventRendered = (args) => {
   console.log('Fast tooltip system enabled for:', eventData.Subject)
   console.log('Element tagName:', eventElement.tagName)
   console.log('Element classes:', eventElement.className)
+  
+  // Trigger overlap handling after this event is rendered
+  setTimeout(() => handleOverlappingEvents(), 50)
 }
 
 const onPopupOpen = (args) => {
@@ -1911,6 +2345,67 @@ const onCellClick = (args) => {
 const onEventClick = (args) => {
   selectedEvent.value = args.event
   showEventDialog.value = true
+}
+
+const onScheduleRendering = (args) => {
+  // This event is triggered during the rendering process
+  // We can use it to apply custom positioning for overlapping events
+  if (args.requestType === 'eventRendered') {
+    handleOverlappingEvents()
+  }
+}
+
+const handleOverlappingEvents = () => {
+  // Wait for next tick to ensure DOM is updated
+  setTimeout(() => {
+    if (!scheduleObj.value) return
+    
+    try {
+      // Get all appointment elements
+      const appointments = scheduleObj.value.$el.querySelectorAll('.e-appointment')
+      const processedSlots = new Set()
+      
+      appointments.forEach((appointment, index) => {
+        const appointmentRect = appointment.getBoundingClientRect()
+        const slotKey = `${appointmentRect.top}-${appointmentRect.left}`
+        
+        if (processedSlots.has(slotKey)) return
+        processedSlots.add(slotKey)
+        
+        // Find overlapping appointments
+        const overlapping = Array.from(appointments).filter((other, otherIndex) => {
+          if (otherIndex === index) return false
+          const otherRect = other.getBoundingClientRect()
+          
+          // Check if appointments overlap vertically and horizontally
+          const verticalOverlap = appointmentRect.top < otherRect.bottom && appointmentRect.bottom > otherRect.top
+          const horizontalOverlap = appointmentRect.left < otherRect.right && appointmentRect.right > otherRect.left
+          
+          return verticalOverlap && horizontalOverlap
+        })
+        
+        if (overlapping.length > 0) {
+          // Calculate how many appointments are overlapping
+          const totalOverlapping = overlapping.length + 1
+          const appointmentWidth = 100 / totalOverlapping
+          
+          // Position the main appointment
+          appointment.style.width = `${appointmentWidth - 1}%`
+          appointment.style.left = '0%'
+          appointment.style.zIndex = '10'
+          
+          // Position overlapping appointments side by side
+          overlapping.forEach((overlappingAppointment, i) => {
+            overlappingAppointment.style.width = `${appointmentWidth - 1}%`
+            overlappingAppointment.style.left = `${(i + 1) * appointmentWidth}%`
+            overlappingAppointment.style.zIndex = '10'
+          })
+        }
+      })
+    } catch (error) {
+      console.warn('Error handling overlapping events:', error)
+    }
+  }, 100)
 }
 
 // CRITICAL: Handle navigation to load events for new date ranges
@@ -2202,6 +2697,327 @@ onUnmounted(() => {
 
 // Provide Syncfusion modules
 provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, DragAndDrop])
+
+// Statistics Panel Computed Properties
+const quickStatsDisplay = computed(() => {
+  const events = calendarEvents.value || []
+  const tickets = events.filter(e => e.EventType === 'ticket_due').length
+  const aiTasks = events.filter(e => e.EventType === 'ai-task').length
+  const activities = events.filter(e => e.EventType !== 'ticket_due' && e.EventType !== 'ai-task').length
+  const uniqueEngineers = new Set(events.map(e => e.EngineerName || e.engineer_name || e.AssignedTo).filter(Boolean)).size
+  
+  return {
+    total: events.length,
+    tickets: tickets,
+    aiTasks: aiTasks,
+    activities: activities,
+    activeEngineers: uniqueEngineers
+  }
+})
+
+const currentPeriodLabel = computed(() => {
+  if (!engineeringStore.currentViewStart || !engineeringStore.currentViewEnd) return 'Current Period'
+  
+  const start = new Date(engineeringStore.currentViewStart)
+  const end = new Date(engineeringStore.currentViewEnd)
+  const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+  
+  if (diffDays <= 1) return 'Today'
+  if (diffDays <= 7) return 'This Week'
+  if (diffDays <= 31) return 'This Month'
+  return `${diffDays} Days`
+})
+
+const eventTypeBreakdown = computed(() => {
+  const events = calendarEvents.value || []
+  const total = events.length
+  
+  if (total === 0) return {}
+  
+  const breakdown = {}
+  
+  events.forEach(event => {
+    const type = event.EventType === 'ticket_due' ? 'ticket_due' : (event.Category || 'unknown')
+    if (!breakdown[type]) {
+      breakdown[type] = { count: 0, percentage: 0 }
+    }
+    breakdown[type].count++
+  })
+  
+  // Calculate percentages
+  Object.keys(breakdown).forEach(type => {
+    breakdown[type].percentage = Math.round((breakdown[type].count / total) * 100)
+  })
+  
+  return breakdown
+})
+
+const engineerWorkloadDisplay = computed(() => {
+  const events = calendarEvents.value || []
+  const engineerStats = {}
+  
+  // Aggregate data by engineer
+  events.forEach(event => {
+    const engineerName = event.EngineerName || event.engineer_name || 'Unassigned'
+    
+    if (!engineerStats[engineerName]) {
+      engineerStats[engineerName] = {
+        name: engineerName,
+        eventCount: 0,
+        totalHours: 0,
+        initials: engineerName.split(' ').map(n => n[0]).join('').substring(0, 2),
+        color: getEngineerColor(engineerName)
+      }
+    }
+    
+    engineerStats[engineerName].eventCount++
+    engineerStats[engineerName].totalHours += event.EstimatedHours || event.estimated_hours || 1
+  })
+  
+  const engineers = Object.values(engineerStats)
+  const maxWorkload = Math.max(...engineers.map(e => e.eventCount), 1)
+  
+  // Calculate workload percentages
+  engineers.forEach(engineer => {
+    engineer.workloadPercentage = Math.round((engineer.eventCount / maxWorkload) * 100)
+  })
+  
+  return engineers.sort((a, b) => b.eventCount - a.eventCount)
+})
+
+const peakHoursDisplay = computed(() => {
+  const events = calendarEvents.value || []
+  const hourCounts = {}
+  
+  events.forEach(event => {
+    const startHour = new Date(event.StartTime || event.start_time).getHours()
+    hourCounts[startHour] = (hourCounts[startHour] || 0) + 1
+  })
+  
+  if (Object.keys(hourCounts).length === 0) return 'No data'
+  
+  const peakHour = Object.entries(hourCounts)
+    .sort(([,a], [,b]) => b - a)[0]?.[0]
+  
+  if (!peakHour) return 'No data'
+  
+  const hour = parseInt(peakHour)
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+  
+  return `${displayHour}:00 ${period}`
+})
+
+const dailyDistribution = computed(() => {
+  const events = calendarEvents.value || []
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const dayCounts = {}
+  
+  events.forEach(event => {
+    const dayOfWeek = new Date(event.StartTime || event.start_time).getDay()
+    const dayName = dayNames[dayOfWeek]
+    dayCounts[dayName] = (dayCounts[dayName] || 0) + 1
+  })
+  
+  const maxCount = Math.max(...Object.values(dayCounts), 1)
+  
+  return dayNames.map(day => ({
+    name: day,
+    count: dayCounts[day] || 0,
+    percentage: Math.round(((dayCounts[day] || 0) / maxCount) * 100)
+  }))
+})
+
+const priorityBreakdown = computed(() => {
+  const events = calendarEvents.value || []
+  const total = events.length
+  
+  if (total === 0) return []
+  
+  const priorities = ['emergency', 'critical', 'high', 'normal', 'low']
+  const priorityCounts = {}
+  
+  events.forEach(event => {
+    const priority = (event.Priority || event.priority || 'normal').toLowerCase()
+    priorityCounts[priority] = (priorityCounts[priority] || 0) + 1
+  })
+  
+  return priorities.map(level => {
+    const count = priorityCounts[level] || 0
+    const percentage = total > 0 ? Math.round((count / total) * 100) : 0
+    
+    return {
+      level: level.charAt(0).toUpperCase() + level.slice(1),
+      count,
+      percentage,
+      bgClass: getPriorityBgClass(level),
+      textClass: getPriorityTextClass(level)
+    }
+  }).filter(p => p.count > 0)
+})
+
+const criticalEventsCount = computed(() => {
+  const events = calendarEvents.value || []
+  return events.filter(event => {
+    const priority = (event.Priority || event.priority || '').toLowerCase()
+    return priority === 'critical' || priority === 'emergency'
+  }).length
+})
+
+const overdueTicketsCount = computed(() => {
+  const events = calendarEvents.value || []
+  return events.filter(event => {
+    return event.EventType === 'ticket_due' && event.Category === 'Overdue'
+  }).length
+})
+
+const maintenanceWindowsCount = computed(() => {
+  const events = calendarEvents.value || []
+  return events.filter(event => event.MaintenanceWindow || event.maintenance_window).length
+})
+
+const lastStatsUpdate = computed(() => {
+  return new Date().toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+})
+
+// Statistics Panel Helper Functions
+const getEventTypeColor = (type) => {
+  const colors = {
+    'ticket_due': '#f59e0b',
+    'maintenance': '#10b981',
+    'deployment': '#8b5cf6',
+    'customer': '#3b82f6',
+    'planning': '#8b5cf6',
+    'development': '#06b6d4',
+    'monitoring': '#84cc16',
+    'administrative': '#6b7280',
+    'ticket-work': '#ef4444',
+    'ai-task': '#8b5cf6'
+  }
+  return colors[type] || '#6b7280'
+}
+
+const getEventTypeLabel = (type) => {
+  const labels = {
+    'ticket_due': 'Ticket Deadlines',
+    'maintenance': 'Maintenance',
+    'deployment': 'Deployments',
+    'customer': 'Customer Activities',
+    'planning': 'Planning & Documentation',
+    'development': 'Training & Development',
+    'monitoring': 'Monitoring & Analysis',
+    'administrative': 'Administrative',
+    'ticket-work': 'Ticket Work',
+    'ai-task': 'AI-Generated Tasks'
+  }
+  return labels[type] || type.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+const getEngineerColor = (engineerName) => {
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+    '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+  ]
+  
+  if (!engineerName) return colors[0]
+  
+  const hash = engineerName.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0)
+    return a & a
+  }, 0)
+  
+  return colors[Math.abs(hash) % colors.length]
+}
+
+const getPriorityBgClass = (priority) => {
+  const classes = {
+    'emergency': 'bg-red-50 dark:bg-red-900/20',
+    'critical': 'bg-red-50 dark:bg-red-900/20',
+    'high': 'bg-orange-50 dark:bg-orange-900/20',
+    'normal': 'bg-blue-50 dark:bg-blue-900/20',
+    'low': 'bg-gray-50 dark:bg-gray-900/20'
+  }
+  return classes[priority] || classes['normal']
+}
+
+const getPriorityTextClass = (priority) => {
+  const classes = {
+    'emergency': 'text-red-600 dark:text-red-400',
+    'critical': 'text-red-600 dark:text-red-400',
+    'high': 'text-orange-600 dark:text-orange-400',
+    'normal': 'text-blue-600 dark:text-blue-400',
+    'low': 'text-gray-600 dark:text-gray-400'
+  }
+  return classes[priority] || classes['normal']
+}
+
+const exportStatistics = () => {
+  const stats = {
+    period: {
+      start: engineeringStore.currentViewStart,
+      end: engineeringStore.currentViewEnd,
+      label: currentPeriodLabel.value
+    },
+    summary: quickStatsDisplay.value,
+    eventTypes: eventTypeBreakdown.value,
+    engineers: engineerWorkloadDisplay.value,
+    timeAnalysis: {
+      peakHours: peakHoursDisplay.value,
+      dailyDistribution: dailyDistribution.value
+    },
+    priorities: priorityBreakdown.value,
+    alerts: {
+      critical: criticalEventsCount.value,
+      overdue: overdueTicketsCount.value,
+      maintenance: maintenanceWindowsCount.value
+    },
+    exportedAt: new Date().toISOString()
+  }
+  
+  const blob = new Blob([JSON.stringify(stats, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `calendar-statistics-${new Date().toISOString().split('T')[0]}.json`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  
+  toast.add({
+    severity: 'success',
+    summary: 'Export Complete',
+    detail: 'Statistics exported successfully',
+    life: 3000
+  })
+}
+
+const refreshStatistics = async () => {
+  isRefreshingStats.value = true
+  try {
+    await refreshCalendar()
+    toast.add({
+      severity: 'success',
+      summary: 'Statistics Refreshed',
+      detail: 'Calendar statistics updated successfully',
+      life: 3000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Refresh Failed',
+      detail: 'Failed to refresh statistics',
+      life: 3000
+    })
+  } finally {
+    isRefreshingStats.value = false
+  }
+}
+
+// Lifecycle
 </script>
 
 
@@ -2276,6 +3092,63 @@ provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, 
   font-family: 'Roboto', sans-serif;
   border-radius: 8px;
   overflow: hidden;
+}
+
+/* Enhanced overlap handling for side-by-side events */
+:deep(.engineering-schedule-overlap) {
+  /* Enable proper event collision detection and side-by-side layout */
+}
+
+/* Force overlapping events to display side-by-side */
+:deep(.engineering-schedule .e-work-cells) {
+  position: relative;
+  overflow: visible;
+}
+
+/* Ensure appointments can display side-by-side when overlapping */
+:deep(.engineering-schedule .e-appointment-wrapper) {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 2px;
+}
+
+/* Handle overlapping events by reducing width and positioning side-by-side */
+:deep(.engineering-schedule .e-appointment.e-appointment-border) {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* When multiple events overlap, make them narrower and position side-by-side */
+:deep(.engineering-schedule .e-work-cells .e-appointment) {
+  position: absolute;
+  min-width: 80px; /* Minimum width for readability when overlapping */
+  max-width: calc(100% - 4px);
+  box-sizing: border-box;
+  transition: width 0.2s ease-in-out, left 0.2s ease-in-out;
+}
+
+/* Specific styling for overlapping appointments */
+:deep(.engineering-schedule .e-appointment + .e-appointment) {
+  margin-left: 2px;
+}
+
+/* Ensure proper z-index layering for overlapping events */
+:deep(.engineering-schedule .e-appointment) {
+  z-index: 10;
+}
+
+:deep(.engineering-schedule .e-appointment:hover) {
+  z-index: 20;
+}
+
+/* Multi-day and all-day event handling */
+:deep(.engineering-schedule .e-all-day-appointment-wrapper .e-appointment) {
+  position: relative;
+  display: inline-block;
+  margin-right: 2px;
+  min-width: 100px;
 }
 
 /* Enhanced Event Card Styling */
@@ -2418,6 +3291,14 @@ provide('schedule', [Day, Week, WorkWeek, Month, Agenda, TimelineViews, Resize, 
   background: linear-gradient(135deg, #2196f3, #1976d2) !important;
   color: white !important;
   border: none !important;
+}
+
+/* AI Task Event Styling - Override Syncfusion theme */
+:deep(.engineering-schedule .ai-task-event) {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
 }
 
 /* Event Type Specific Colors for Manual Events */

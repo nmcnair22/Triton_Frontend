@@ -1,14 +1,16 @@
 <template>
+  <!-- Global Progress Bar -->
+  <div v-if="isAnyLoading" class="fixed top-0 left-0 right-0 z-50">
+    <div class="h-1 bg-primary-500 transition-all duration-500 ease-out" 
+         :style="{ width: `${loadingProgress}%` }"></div>
+  </div>
+
   <div class="engineering-dashboard">
     <!-- Header section with title and controls -->
     <div class="flex justify-between items-center mb-5">
       <div>
         <h1 class="text-3xl font-bold mb-1">Engineering Dashboard</h1>
         <p class="text-surface-600 dark:text-surface-300">Monitor system health, track tickets, and manage engineering workload</p>
-        <!-- Performance Indicator -->
-        <div v-if="performanceMetrics.loadTime > 0" class="mt-2 text-xs text-green-600 dark:text-green-400 font-medium">
-          ⚡ Loaded in {{ performanceMetrics.loadTime }}ms ({{ performanceMetrics.performanceImprovement }}) • 1 API call replaces {{ performanceMetrics.apiCallsReplaced }}
-        </div>
       </div>
       <div class="flex gap-2">
         <Button icon="pi pi-refresh" text rounded @click="refreshData" :disabled="isLoading" />
@@ -56,8 +58,24 @@
 
     <!-- KPI Cards Row 1 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-      <!-- System Health -->
-      <div class="card shadow-sm border-l-4 border-l-blue-500 p-4 h-32">
+      <!-- Loading State for KPI Cards -->
+      <template v-if="loadingStates.kpiCards">
+        <div v-for="i in 4" :key="i" class="card shadow-sm border-l-4 border-l-surface-300 p-4 h-32">
+          <div class="flex justify-between items-start h-full">
+            <div class="flex flex-col justify-between h-full flex-1">
+              <Skeleton width="60%" height="1rem" class="mb-2" />
+              <Skeleton width="80%" height="2rem" class="mb-1" />
+              <Skeleton width="70%" height="0.875rem" />
+            </div>
+            <Skeleton shape="circle" size="3rem" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Actual KPI Cards -->
+      <template v-else>
+        <!-- System Health -->
+        <div class="card shadow-sm border-l-4 border-l-blue-500 p-4 h-32">
         <div class="flex justify-between items-start h-full">
           <div class="flex flex-col justify-between h-full">
             <p class="text-surface-600 dark:text-surface-300 mb-2">System Health</p>
@@ -122,11 +140,28 @@
           </div>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- Real Data Only Row 2 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-      <!-- Unassigned Tickets -->
+      <!-- Loading State for KPI Cards Row 2 -->
+      <template v-if="loadingStates.kpiCards">
+        <div v-for="i in 4" :key="`row2-${i}`" class="card shadow-sm border-l-4 border-l-surface-300 p-4 h-32">
+          <div class="flex justify-between items-start h-full">
+            <div class="flex flex-col justify-between h-full flex-1">
+              <Skeleton width="60%" height="1rem" class="mb-2" />
+              <Skeleton width="80%" height="2rem" class="mb-1" />
+              <Skeleton width="70%" height="0.875rem" />
+            </div>
+            <Skeleton shape="circle" size="3rem" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Actual KPI Cards Row 2 -->
+      <template v-else>
+        <!-- Unassigned Tickets -->
       <div class="card shadow-sm border-l-4 border-l-red-500 p-4 h-32">
         <div class="flex justify-between items-start h-full">
           <div class="flex flex-col justify-between h-full">
@@ -193,20 +228,58 @@
           </div>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- Critical Alerts Section -->
     <div class="card p-5 mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-xl font-bold mb-1">🚨 Critical Alerts</h2>
-          <p class="text-surface-600 dark:text-surface-300">{{ realCriticalAlertsCount }} tickets requiring immediate attention</p>
+      <!-- Loading State for Critical Alerts -->
+      <template v-if="loadingStates.criticalAlerts">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <Skeleton width="12rem" height="1.5rem" class="mb-1" />
+            <Skeleton width="20rem" height="1rem" />
+          </div>
+          <div class="flex gap-2">
+            <Skeleton width="5rem" height="1.5rem" borderRadius="16px" />
+            <Skeleton width="4rem" height="1.5rem" borderRadius="4px" />
+          </div>
         </div>
-        <div class="flex gap-2">
-          <Tag :value="`${realCriticalAlertsCount} Critical`" severity="danger" />
-          <Button label="View All" outlined size="small" />
+        
+        <!-- Skeleton Tabs -->
+        <div class="mb-4">
+          <div class="flex gap-4 mb-4">
+            <Skeleton v-for="i in 4" :key="i" width="8rem" height="2rem" borderRadius="4px" />
+          </div>
         </div>
-      </div>
+        
+        <!-- Skeleton Table -->
+        <div class="border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden">
+          <div class="bg-surface-50 dark:bg-surface-800 p-3 border-b border-surface-200 dark:border-surface-700">
+            <div class="grid grid-cols-6 gap-4">
+              <Skeleton v-for="i in 6" :key="i" width="100%" height="1rem" />
+            </div>
+          </div>
+          <div v-for="row in 3" :key="row" class="p-3 border-b border-surface-200 dark:border-surface-700">
+            <div class="grid grid-cols-6 gap-4">
+              <Skeleton v-for="i in 6" :key="i" width="100%" height="1rem" />
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Actual Critical Alerts Content -->
+      <template v-else>
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-xl font-bold mb-1">🚨 Critical Alerts</h2>
+            <p class="text-surface-600 dark:text-surface-300">{{ realCriticalAlertsCount }} tickets requiring immediate attention</p>
+          </div>
+          <div class="flex gap-2">
+            <Tag :value="`${realCriticalAlertsCount} Critical`" severity="danger" />
+            <Button label="View All" outlined size="small" />
+          </div>
+        </div>
       
       <Tabs value="stalled">
         <TabList>
@@ -369,6 +442,7 @@
           </TabPanel>
         </TabPanels>
       </Tabs>
+      </template>
     </div>
 
     <!-- Analytics Section -->
@@ -376,14 +450,43 @@
       <!-- Ticket Aging Analysis -->
       <div class="xl:col-span-8">
         <div class="card p-5">
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h2 class="text-xl font-bold mb-1">📊 Ticket Aging Distribution</h2>
-              <p class="text-surface-600 dark:text-surface-300">Breakdown of tickets by age categories</p>
+          <!-- Loading State for Aging Chart -->
+          <template v-if="loadingStates.agingAnalysis">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <Skeleton width="16rem" height="1.5rem" class="mb-1" />
+                <Skeleton width="20rem" height="1rem" />
+              </div>
+              <Skeleton shape="circle" size="2.5rem" />
             </div>
-            <Button icon="pi pi-download" text rounded />
-          </div>
-          <Chart type="bar" :data="agingChartData" :options="agingChartOptions" class="h-80" />
+            <div class="h-80 flex items-center justify-center">
+              <div class="text-center">
+                <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" />
+                <p class="mt-3 text-surface-600 dark:text-surface-400">Loading chart data...</p>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+              <div class="text-center">
+                <Skeleton width="3rem" height="1.5rem" class="mx-auto mb-1" />
+                <Skeleton width="6rem" height="1rem" class="mx-auto" />
+              </div>
+              <div class="text-center">
+                <Skeleton width="3rem" height="1.5rem" class="mx-auto mb-1" />
+                <Skeleton width="6rem" height="1rem" class="mx-auto" />
+              </div>
+            </div>
+          </template>
+
+          <!-- Actual Aging Chart -->
+          <template v-else>
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h2 class="text-xl font-bold mb-1">📊 Ticket Aging Distribution</h2>
+                <p class="text-surface-600 dark:text-surface-300">Breakdown of tickets by age categories</p>
+              </div>
+              <Button icon="pi pi-download" text rounded />
+            </div>
+            <Chart type="bar" :data="agingChartData" :options="agingChartOptions" class="h-80" />
           <div v-if="agingAnalysis?.summary" class="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div class="text-center">
               <div class="font-bold text-lg">{{ agingAnalysis.summary.average_age_days || 0 }}</div>
@@ -394,21 +497,95 @@
               <div class="text-surface-600 dark:text-surface-300">Oldest Ticket</div>
             </div>
           </div>
+          </template>
         </div>
       </div>
 
       <!-- Enhanced Team Workload -->
       <div class="xl:col-span-4">
         <div class="card p-5">
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h2 class="text-xl font-bold mb-1">👥 Team Workload</h2>
-              <p class="text-surface-600 dark:text-surface-300">Engineer capacity & performance</p>
+          <!-- Loading State for Workload -->
+          <template v-if="loadingStates.workloadData">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <Skeleton width="10rem" height="1.5rem" class="mb-1" />
+                <Skeleton width="14rem" height="1rem" />
+              </div>
+              <Skeleton shape="circle" size="2.5rem" />
             </div>
-            <Button icon="pi pi-users" text rounded />
-          </div>
-          
-          <!-- Engineer Workload Details -->
+            
+            <!-- Skeleton Engineer Cards -->
+            <div class="space-y-3 h-80 overflow-y-auto">
+              <div v-for="i in 4" :key="i" class="border border-surface-200 dark:border-surface-700 rounded-lg p-3">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <Skeleton shape="circle" size="2rem" />
+                    <div>
+                      <Skeleton width="6rem" height="1rem" class="mb-1" />
+                      <Skeleton width="4rem" height="0.75rem" />
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <Skeleton width="4rem" height="1rem" class="mb-1" borderRadius="16px" />
+                    <Skeleton width="3rem" height="0.75rem" />
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-2 text-xs mb-2">
+                  <div class="text-center">
+                    <Skeleton width="100%" height="1rem" class="mb-1" />
+                    <Skeleton width="100%" height="0.75rem" />
+                  </div>
+                  <div class="text-center">
+                    <Skeleton width="100%" height="1rem" class="mb-1" />
+                    <Skeleton width="100%" height="0.75rem" />
+                  </div>
+                  <div class="text-center">
+                    <Skeleton width="100%" height="1rem" class="mb-1" />
+                    <Skeleton width="100%" height="0.75rem" />
+                  </div>
+                  <div class="text-center">
+                    <Skeleton width="100%" height="1rem" class="mb-1" />
+                    <Skeleton width="100%" height="0.75rem" />
+                  </div>
+                </div>
+                
+                <!-- Workload Progress Bar Skeleton -->
+                <div class="mt-2">
+                  <div class="flex justify-between text-xs mb-1">
+                    <Skeleton width="3rem" height="0.75rem" />
+                    <Skeleton width="2rem" height="0.75rem" />
+                  </div>
+                  <Skeleton width="100%" height="0.5rem" borderRadius="9999px" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 text-center text-sm border-t pt-3">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <Skeleton width="2rem" height="1rem" class="mx-auto mb-1" />
+                  <Skeleton width="4rem" height="0.75rem" class="mx-auto" />
+                </div>
+                <div>
+                  <Skeleton width="2rem" height="1rem" class="mx-auto mb-1" />
+                  <Skeleton width="5rem" height="0.75rem" class="mx-auto" />
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Actual Workload Content -->
+          <template v-else>
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h2 class="text-xl font-bold mb-1">👥 Team Workload</h2>
+                <p class="text-surface-600 dark:text-surface-300">Engineer capacity & performance</p>
+              </div>
+              <Button icon="pi pi-users" text rounded />
+            </div>
+            
+            <!-- Engineer Workload Details -->
           <div class="space-y-3 h-80 overflow-y-auto">
             <div v-for="engineer in realWorkloadData" :key="engineer.engineer_name" class="border border-surface-200 dark:border-surface-700 rounded-lg p-3">
               <div class="flex justify-between items-start mb-2">
@@ -471,6 +648,7 @@
               </div>
             </div>
           </div>
+          </template>
         </div>
       </div>
     </div>
@@ -479,24 +657,54 @@
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
       <!-- Activity Velocity Analysis -->
       <div class="card p-5">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <h2 class="text-xl font-bold mb-1">⚡ Activity Velocity</h2>
-            <p class="text-surface-600 dark:text-surface-300">Ticket activity distribution</p>
+        <!-- Loading State for Charts -->
+        <template v-if="loadingStates.charts">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <Skeleton width="10rem" height="1.5rem" class="mb-1" />
+              <Skeleton width="14rem" height="1rem" />
+            </div>
+            <Skeleton shape="circle" size="2.5rem" />
           </div>
-          <Button icon="pi pi-chart-bar" text rounded />
-        </div>
-        <Chart type="doughnut" :data="activityVelocityChartData" :options="activityVelocityChartOptions" class="h-64" />
-        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
-          <div class="text-center">
-            <div class="font-bold text-green-500">{{ activeTicketsCount }}</div>
-            <div class="text-surface-600 dark:text-surface-300">Active (≤7 days)</div>
+          <div class="h-64 flex items-center justify-center">
+            <div class="text-center">
+              <ProgressSpinner style="width: 40px; height: 40px" strokeWidth="4" />
+              <p class="mt-3 text-surface-600 dark:text-surface-400">Loading charts...</p>
+            </div>
           </div>
-          <div class="text-center">
-            <div class="font-bold text-red-500">{{ abandonedTicketsCount }}</div>
-            <div class="text-surface-600 dark:text-surface-300">Abandoned (>30 days)</div>
+          <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div class="text-center">
+              <Skeleton width="2rem" height="1rem" class="mx-auto mb-1" />
+              <Skeleton width="6rem" height="0.75rem" class="mx-auto" />
+            </div>
+            <div class="text-center">
+              <Skeleton width="2rem" height="1rem" class="mx-auto mb-1" />
+              <Skeleton width="7rem" height="0.75rem" class="mx-auto" />
+            </div>
           </div>
-        </div>
+        </template>
+
+        <!-- Actual Chart Content -->
+        <template v-else>
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h2 class="text-xl font-bold mb-1">⚡ Activity Velocity</h2>
+              <p class="text-surface-600 dark:text-surface-300">Ticket activity distribution</p>
+            </div>
+            <Button icon="pi pi-chart-bar" text rounded />
+          </div>
+          <Chart type="doughnut" :data="activityVelocityChartData" :options="activityVelocityChartOptions" class="h-64" />
+          <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div class="text-center">
+              <div class="font-bold text-green-500">{{ activeTicketsCount }}</div>
+              <div class="text-surface-600 dark:text-surface-300">Active (≤7 days)</div>
+            </div>
+            <div class="text-center">
+              <div class="font-bold text-red-500">{{ abandonedTicketsCount }}</div>
+              <div class="text-surface-600 dark:text-surface-300">Abandoned (>30 days)</div>
+            </div>
+          </div>
+        </template>
       </div>
 
       <!-- Enhanced Priority Distribution -->
@@ -1071,6 +1279,8 @@ import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
+import Skeleton from 'primevue/skeleton'
+import ProgressSpinner from 'primevue/progressspinner'
 
 // Chart configuration constants
 const CHART_COLORS = {
@@ -1118,10 +1328,50 @@ const router = useRouter()
 const isLoading = ref(false)
 const isFieldSyncing = ref(false)
 const isAIAnalyzing = ref(false)
+
+// Granular loading states for different dashboard sections
+const loadingStates = ref({
+  kpiCards: true,
+  criticalAlerts: true,
+  charts: true,
+  customerHealth: true,
+  recentActivity: true,
+  actionItems: true,
+  queueStats: true,
+  workloadData: true,
+  agingAnalysis: true
+})
+
+// Error states for different sections
+const errorStates = ref({
+  kpiCards: false,
+  criticalAlerts: false,
+  charts: false,
+  customerHealth: false,
+  recentActivity: false,
+  actionItems: false,
+  queueStats: false
+})
+
 const performanceMetrics = ref({
   loadTime: 0, // Calculated from actual performance timing
   apiCallsReplaced: 0, // Will be calculated from actual API optimization
   performanceImprovement: 'Loading...' // Will be calculated from actual metrics
+})
+
+// Loading state computed properties
+const isAnyLoading = computed(() => {
+  return Object.values(loadingStates.value).some(state => state === true)
+})
+
+const loadingProgress = computed(() => {
+  const totalSections = Object.keys(loadingStates.value).length
+  const loadedSections = Object.values(loadingStates.value).filter(state => state === false).length
+  return Math.round((loadedSections / totalSections) * 100)
+})
+
+const hasAnyError = computed(() => {
+  return Object.values(errorStates.value).some(state => state === true)
 })
 
 // === QUEUE STATS DATA ===
@@ -2095,33 +2345,108 @@ const triggerAIAnalysis = async () => {
 // Methods
 const refreshData = async () => {
   isLoading.value = true
+  
+  // Reset all loading states
+  Object.keys(loadingStates.value).forEach(key => {
+    loadingStates.value[key] = true
+  })
+  
+  // Reset error states
+  Object.keys(errorStates.value).forEach(key => {
+    errorStates.value[key] = false
+  })
+  
   try {
     console.log('🚀 Starting dashboard refresh...')
     const startTime = performance.now()
     
-    // Try the new consolidated endpoint first, fallback to legacy if needed
+    // Phase 1: Load critical KPI data first
     try {
-      console.log('🚀 Attempting consolidated dashboard fetch...')
+      console.log('🚀 Phase 1: Loading critical dashboard data...')
       if (typeof engineeringStore.fetchConsolidatedDashboard === 'function') {
         await engineeringStore.fetchConsolidatedDashboard()
         console.log('✅ Consolidated dashboard fetch successful')
       } else {
         throw new Error('fetchConsolidatedDashboard not available')
+        await engineeringStore.fetchAllDashboardData()
       }
+      
+      // Mark KPI cards as loaded
+      loadingStates.value.kpiCards = false
+      console.log('✅ KPI cards loaded')
+      
     } catch (err) {
-      console.warn('🔄 Consolidated endpoint failed, using legacy approach:', err.message)
-      await engineeringStore.fetchAllDashboardData()
+      console.warn('🔄 Critical data failed, using legacy approach:', err.message)
+      errorStates.value.kpiCards = true
+      try {
+        await engineeringStore.fetchAllDashboardData()
+        loadingStates.value.kpiCards = false
+        errorStates.value.kpiCards = false
+      } catch (legacyErr) {
+        console.error('❌ Legacy approach also failed:', legacyErr)
+      }
     }
     
-    // Also fetch enhanced action items with detailed ticket information
+    // Phase 2: Load critical alerts data
     try {
-      await engineeringStore.fetchEnhancedActionItems()
+      console.log('🚀 Phase 2: Loading critical alerts...')
+      // Critical alerts data should be available from consolidated call
+      loadingStates.value.criticalAlerts = false
+      console.log('✅ Critical alerts loaded')
     } catch (err) {
-      console.warn('Enhanced action items failed to load, using basic action items:', err)
+      console.warn('⚠️ Critical alerts failed to load:', err)
+      errorStates.value.criticalAlerts = true
+      loadingStates.value.criticalAlerts = false
     }
     
-    // Fetch queue analytics data
-    await fetchQueueData()
+    // Phase 3: Load secondary data (charts, workload, etc.)
+    const secondaryPromises = []
+    
+    // Enhanced action items
+    secondaryPromises.push(
+      engineeringStore.fetchEnhancedActionItems()
+        .then(() => {
+          loadingStates.value.actionItems = false
+          console.log('✅ Action items loaded')
+        })
+        .catch(err => {
+          console.warn('Enhanced action items failed to load:', err)
+          errorStates.value.actionItems = true
+          loadingStates.value.actionItems = false
+        })
+    )
+    
+    // Queue analytics data
+    secondaryPromises.push(
+      fetchQueueData()
+        .then(() => {
+          loadingStates.value.queueStats = false
+          console.log('✅ Queue stats loaded')
+        })
+        .catch(err => {
+          console.warn('Queue data failed to load:', err)
+          errorStates.value.queueStats = true
+          loadingStates.value.queueStats = false
+        })
+    )
+    
+    // Wait for secondary data with a small delay to show progressive loading
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await Promise.allSettled(secondaryPromises)
+    
+    // Phase 4: Mark remaining sections as loaded
+    setTimeout(() => {
+      loadingStates.value.charts = false
+      loadingStates.value.workloadData = false
+      loadingStates.value.agingAnalysis = false
+      console.log('✅ Charts and analysis loaded')
+    }, 200)
+    
+    setTimeout(() => {
+      loadingStates.value.customerHealth = false
+      loadingStates.value.recentActivity = false
+      console.log('✅ Customer health and activity loaded')
+    }, 300)
     
     const endTime = performance.now()
     const totalTime = Math.round(endTime - startTime)
@@ -2140,6 +2465,21 @@ const refreshData = async () => {
     
     console.log(`✅ Dashboard refresh completed in ${totalTime}ms`)
     console.log(`📊 Performance: ${improvementPercentage}% improvement (${currentAPICallCount} API call vs ${legacyAPICallCount} legacy calls)`)
+    
+  } catch (error) {
+    console.error('❌ Dashboard refresh failed:', error)
+    // Mark all sections as failed but not loading
+    Object.keys(loadingStates.value).forEach(key => {
+      loadingStates.value[key] = false
+      errorStates.value[key] = true
+    })
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Dashboard Load Failed',
+      detail: 'Unable to load dashboard data. Please try refreshing.',
+      life: 5000
+    })
   } finally {
     isLoading.value = false
   }
@@ -2152,6 +2492,11 @@ onMounted(() => {
   console.log('🔍 fetchConsolidatedDashboard available:', typeof engineeringStore.fetchConsolidatedDashboard)
   console.log('🔍 fetchAllDashboardData available:', typeof engineeringStore.fetchAllDashboardData)
   
+  // Initialize all loading states
+  Object.keys(loadingStates.value).forEach(key => {
+    loadingStates.value[key] = true
+  })
+  
   refreshData()
   
   // Debug: Log data after refresh (with delay to let async complete)
@@ -2163,6 +2508,7 @@ onMounted(() => {
     console.log('- ownerBreakdown:', ownerBreakdown.value)
     console.log('- performanceMetrics:', engineeringStore.performanceMetrics)
     console.log('- engineerWorkloadData:', engineerWorkloadData.value)
+    console.log('- loadingStates:', loadingStates.value)
   }, 3000)
 })
 </script>

@@ -1230,7 +1230,8 @@ export const useEngineeringStore = defineStore('engineering', () => {
         startDate,
         endDate,
         selectedEngineer.value || 'all',
-        selectedEventType.value || null
+        selectedEventType.value || null,
+        true // Include AI tasks by default
       );
 
       // DEBUG: Log the exact response structure

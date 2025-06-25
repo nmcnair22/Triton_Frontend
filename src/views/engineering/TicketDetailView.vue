@@ -137,6 +137,69 @@
                   </div>
                 </div>
 
+                <!-- AI Generated Tasks Section (Full Width) -->
+                <div v-if="ticketInsights?.ai_calendar_tasks?.tasks?.length > 0" class="mb-6">
+                  <div class="card">
+                    <div class="flex items-center justify-between mb-4">
+                      <div>
+                        <h6 class="section-title mb-2">🤖 AI Generated Tasks</h6>
+                        <div class="flex items-center gap-4 text-sm text-surface-600 dark:text-surface-400">
+                          <span><i class="pi pi-list mr-1"></i>{{ ticketInsights.ai_calendar_tasks.summary.total_tasks }} tasks</span>
+                          <span><i class="pi pi-clock mr-1"></i>{{ ticketInsights.ai_calendar_tasks.summary.total_estimated_hours }}h total</span>
+                          <span v-if="ticketInsights.ai_calendar_tasks.summary.high_priority_tasks > 0" class="text-orange-600 dark:text-orange-400">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>{{ ticketInsights.ai_calendar_tasks.summary.high_priority_tasks }} high priority
+                          </span>
+                        </div>
+                      </div>
+                      <Badge :value="`${ticketInsights.ai_calendar_tasks.summary.total_tasks} Tasks`" severity="info" />
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                      <div v-for="task in ticketInsights.ai_calendar_tasks.tasks" :key="task.task_index"
+                           class="task-card" :data-priority="task.priority_level">
+                        <div class="task-header">
+                          <div class="flex items-center gap-2 mb-2">
+                            <Badge :value="`Task ${task.task_index}`" severity="secondary" />
+                            <Tag :value="task.priority_level" :severity="getTaskPrioritySeverity(task.priority_level)" />
+                            <Tag v-if="task.is_blocking" value="Blocking" severity="danger" />
+                          </div>
+                          <h6 class="task-title">{{ task.task_title }}</h6>
+                        </div>
+                        
+                        <div class="task-content">
+                          <p class="task-description">{{ task.task_description }}</p>
+                          
+                          <div class="task-details">
+                            <div class="task-detail-item">
+                              <i class="pi pi-user text-blue-500"></i>
+                              <span class="task-detail-label">Assigned to:</span>
+                              <span class="task-detail-value">{{ task.assigned_to || 'Unassigned' }}</span>
+                            </div>
+                            
+                            <div class="task-detail-item">
+                              <i class="pi pi-clock text-green-500"></i>
+                              <span class="task-detail-label">Duration:</span>
+                              <span class="task-detail-value">{{ Math.round(task.estimated_duration_minutes / 60 * 10) / 10 }}h</span>
+                            </div>
+                            
+                            <div class="task-detail-item">
+                              <i class="pi pi-calendar text-purple-500"></i>
+                              <span class="task-detail-label">Start Date:</span>
+                              <span class="task-detail-value">{{ formatTaskDate(task.suggested_start_date) }}</span>
+                            </div>
+                            
+                            <div v-if="task.dependencies?.length > 0" class="task-detail-item">
+                              <i class="pi pi-link text-orange-500"></i>
+                              <span class="task-detail-label">Dependencies:</span>
+                              <span class="task-detail-value">{{ task.dependencies.join(', ') }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Bottom Row: Timeline and Recommendations -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <!-- Timeline Events -->
@@ -576,6 +639,37 @@ const getTimelineIcon = (eventType) => {
   };
   return iconMap[eventType] || 'pi pi-circle';
 };
+
+// Task utility functions
+const getTaskPrioritySeverity = (priority) => {
+  const severityMap = {
+    'low': 'success',
+    'medium': 'info',
+    'high': 'warning',
+    'critical': 'danger'
+  };
+  return severityMap[priority?.toLowerCase()] || 'info';
+};
+
+const formatTaskDate = (dateString) => {
+  if (!dateString) return 'No date set';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) {
+    return `${Math.abs(diffDays)} days ago`;
+  } else if (diffDays === 0) {
+    return 'Today';
+  } else if (diffDays === 1) {
+    return 'Tomorrow';
+  } else if (diffDays <= 7) {
+    return `In ${diffDays} days`;
+  } else {
+    return date.toLocaleDateString();
+  }
+};
 </script>
 
 <style scoped>
@@ -792,6 +886,93 @@ const getTimelineIcon = (eventType) => {
 }
 
 /* Timeline styling - removed conflicting styles that created dots */
+
+/* Task card styling */
+.task-card {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--primary-color);
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.12);
+  border-color: var(--primary-color);
+}
+
+.task-header {
+  margin-bottom: 1rem;
+}
+
+.task-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.task-description {
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.task-detail-item i {
+  width: 1rem;
+  flex-shrink: 0;
+}
+
+.task-detail-label {
+  color: var(--text-color-secondary);
+  font-weight: 500;
+  min-width: 5rem;
+}
+
+.task-detail-value {
+  color: var(--text-color);
+  font-weight: 400;
+  flex: 1;
+}
+
+/* Task priority styling */
+.task-card[data-priority="high"] {
+  border-left-color: #f59e0b;
+}
+
+.task-card[data-priority="critical"] {
+  border-left-color: #ef4444;
+}
+
+.task-card[data-priority="low"] {
+  border-left-color: #10b981;
+}
+
+.task-card[data-priority="medium"] {
+  border-left-color: #3b82f6;
+}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
