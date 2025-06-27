@@ -383,6 +383,28 @@
                             </template>
                         </Column>
                         
+                <!-- Create Date - Configurable Column -->
+                <Column 
+                    v-if="getColumnVisibility('createDate')"
+                    field="dates.created_at" 
+                    header="Create Date" 
+                    sortable
+                    :style="{ width: '12%' }"
+                >
+                            <template #body="slotProps">
+                        <span 
+                            v-if="slotProps.data.dates?.created_at" 
+                            class="text-sm"
+                        >
+                            {{ formatDate(slotProps.data.dates.created_at) }}
+                                </span>
+                        <span v-else class="text-surface-400 text-sm">-</span>
+                    </template>
+                    <template #filter="{ filterModel }">
+                        <DatePicker v-model="filterModel.value" placeholder="Filter by date" class="p-column-filter" />
+                            </template>
+                        </Column>
+                        
                 <!-- Mobile: Combined Actions Column - Show only on actual mobile devices -->
                 <Column v-if="isMobile" header="Actions" :style="{ width: '20%' }">
                             <template #body="slotProps">
@@ -476,6 +498,10 @@
                                     <div class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</div>
                                 </div>
                                 <div>
+                                    <span class="font-medium text-surface-600">Created:</span>
+                                    <div class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</div>
+                                </div>
+                                <div>
                                     <span class="font-medium text-surface-600">Age:</span>
                                     <div :class="getAgeClass(calculateAgeInDays(slotProps.data.dates?.created_at))">
                                         {{ calculateAgeInDays(slotProps.data.dates?.created_at) }} days
@@ -489,6 +515,26 @@
                                     </div>
                                     <div v-else class="text-surface-400">Not set</div>
                                 </div>
+                                <div>
+                                    <span class="font-medium text-surface-600">Priority:</span>
+                                    <Tag :value="slotProps.data.priority" :severity="getPrioritySeverity(slotProps.data.priority)" class="text-xs" />
+                                </div>
+                            </div>
+                            
+                            <!-- Additional Mobile Info -->
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-surface-500">Replies:</span>
+                                    <span>{{ slotProps.data.metrics?.total_replies || 0 }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-surface-500">Type:</span>
+                                    <span>{{ slotProps.data.ticket_type || 'N/A' }}</span>
+                                </div>
+                                <div v-if="slotProps.data.flags?.has_attachments" class="flex justify-between">
+                                    <span class="text-surface-500">Attachments:</span>
+                                    <Tag value="Yes" severity="info" class="text-xs" />
+                                </div>
                             </div>
                             
                             <!-- Subject for mobile (if not already shown) -->
@@ -496,14 +542,24 @@
                                 <span class="font-medium text-surface-600 block mb-1">Subject:</span>
                                 <p class="text-sm leading-relaxed">{{ slotProps.data.subject }}</p>
                             </div>
+                            
+                            <!-- Reason for Ticket on Mobile -->
+                            <div v-if="slotProps.data.reason_for_ticket">
+                                <span class="font-medium text-surface-600 block mb-1">Reason:</span>
+                                <p class="text-xs text-surface-500 leading-relaxed line-clamp-3">{{ slotProps.data.reason_for_ticket }}</p>
+                            </div>
                         </div>
 
                         <!-- Desktop: Enhanced details -->
-                        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <!-- Ticket Details -->
                                     <div class="space-y-3">
                                         <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Ticket Details</h6>
                                         <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Ticket ID:</span>
+                                        <span class="font-medium">{{ slotProps.data.ticket_mask_id || slotProps.data.ticket_id }}</span>
+                                            </div>
                                             <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Created:</span>
                                         <span class="font-medium">{{ formatDate(slotProps.data.dates?.created_at) }}</span>
@@ -511,6 +567,10 @@
                                             <div class="flex justify-between">
                                         <span class="text-surface-600 dark:text-surface-400">Updated:</span>
                                         <span class="font-medium">{{ formatDate(slotProps.data.dates?.updated_at) }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Last Activity:</span>
+                                                <span class="font-medium">{{ formatDate(slotProps.data.dates?.last_activity) }}</span>
                                             </div>
                                             <div class="flex justify-between">
                                                 <span class="text-surface-600 dark:text-surface-400">Creator:</span>
@@ -535,6 +595,14 @@
                                         <span class="text-surface-600 dark:text-surface-400">Owner:</span>
                                         <span class="font-medium">{{ slotProps.data.owner || 'Unassigned' }}</span>
                                             </div>
+                                            <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Department:</span>
+                                        <span class="font-medium">{{ slotProps.data.department || 'N/A' }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                        <span class="text-surface-600 dark:text-surface-400">Type:</span>
+                                        <span class="font-medium">{{ slotProps.data.ticket_type || 'N/A' }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                     
@@ -548,11 +616,68 @@
                                                      :severity="slotProps.data.sla?.is_overdue ? 'danger' : 'success'" />
                                             </div>
                                             <div class="flex justify-between">
-                                                <span class="text-surface-600 dark:text-surface-400">Reply Count:</span>
-                                                <span class="font-medium">{{ slotProps.data.counts?.replies || 0 }}</span>
+                                                <span class="text-surface-600 dark:text-surface-400">Age (Hours):</span>
+                                                <span class="font-medium">{{ slotProps.data.metrics?.age_hours?.toFixed(1) || 'N/A' }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Total Replies:</span>
+                                                <span class="font-medium">{{ slotProps.data.metrics?.total_replies || 0 }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Escalations:</span>
+                                                <span class="font-medium">{{ slotProps.data.metrics?.escalation_level_count || 0 }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Resolution Time:</span>
+                                                <span class="font-medium">{{ slotProps.data.metrics?.resolution_time_hours ? slotProps.data.metrics.resolution_time_hours.toFixed(1) + 'h' : 'N/A' }}</span>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Flags & Indicators -->
+                                    <div class="space-y-3">
+                                        <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-3">Flags & Status</h6>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Has Attachments:</span>
+                                                <Tag :value="slotProps.data.flags?.has_attachments ? 'Yes' : 'No'" 
+                                                     :severity="slotProps.data.flags?.has_attachments ? 'info' : 'secondary'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Has Billing:</span>
+                                                <Tag :value="slotProps.data.flags?.has_billing ? 'Yes' : 'No'" 
+                                                     :severity="slotProps.data.flags?.has_billing ? 'success' : 'secondary'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Has Notes:</span>
+                                                <Tag :value="slotProps.data.flags?.has_notes ? 'Yes' : 'No'" 
+                                                     :severity="slotProps.data.flags?.has_notes ? 'info' : 'secondary'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Escalated:</span>
+                                                <Tag :value="slotProps.data.flags?.is_escalated ? 'Yes' : 'No'" 
+                                                     :severity="slotProps.data.flags?.is_escalated ? 'warning' : 'secondary'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">Reopened:</span>
+                                                <Tag :value="slotProps.data.flags?.was_reopened ? 'Yes' : 'No'" 
+                                                     :severity="slotProps.data.flags?.was_reopened ? 'warning' : 'secondary'" />
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-surface-600 dark:text-surface-400">First Contact:</span>
+                                                <Tag :value="slotProps.data.flags?.is_first_contact_resolved ? 'Resolved' : 'Pending'" 
+                                                     :severity="slotProps.data.flags?.is_first_contact_resolved ? 'success' : 'warning'" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Reason for Ticket (Full Width) -->
+                                <div v-if="slotProps.data.reason_for_ticket" class="mt-6 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg">
+                                    <h6 class="text-surface-900 dark:text-surface-0 font-semibold mb-2">Reason for Ticket</h6>
+                                    <p class="text-sm text-surface-700 dark:text-surface-300 leading-relaxed">
+                                        {{ slotProps.data.reason_for_ticket }}
+                                    </p>
                                 </div>
                                 
                                 <!-- Action Buttons -->
@@ -657,6 +782,7 @@ const getDefaultColumns = () => [
   { key: 'status', label: 'Status', visible: true, required: true },
   { key: 'priority', label: 'Priority', visible: isTabletAndUp.value, required: false },
   { key: 'owner', label: 'Owner', visible: isDesktop.value, required: false },
+  { key: 'createDate', label: 'Create Date', visible: isDesktop.value, required: false },
   { key: 'dueDate', label: 'Due Date', visible: isLargeDesktop.value, required: false },
   { key: 'age', label: 'Age', visible: isLargeDesktop.value, required: false },
   { key: 'viewInTriton', label: 'View in Triton', visible: isDesktop.value, required: false }
@@ -675,8 +801,8 @@ const filters = ref({
   status: { value: null, matchMode: FilterMatchMode.EQUALS },
   priority: { value: null, matchMode: FilterMatchMode.EQUALS },
   owner: { value: null, matchMode: FilterMatchMode.EQUALS },
+  'dates.created_at': { value: null, matchMode: FilterMatchMode.DATE_IS },
   'dates.due_date': { value: null, matchMode: FilterMatchMode.DATE_IS },
-  'dates.created_at': { value: null, matchMode: FilterMatchMode.EQUALS },
   'dates.updated_at': { value: null, matchMode: FilterMatchMode.EQUALS }
 });
 
@@ -872,8 +998,8 @@ function clearAllFilters() {
     status: { value: null, matchMode: FilterMatchMode.EQUALS },
     priority: { value: null, matchMode: FilterMatchMode.EQUALS },
     owner: { value: null, matchMode: FilterMatchMode.EQUALS },
+    'dates.created_at': { value: null, matchMode: FilterMatchMode.DATE_IS },
     'dates.due_date': { value: null, matchMode: FilterMatchMode.DATE_IS },
-    'dates.created_at': { value: null, matchMode: FilterMatchMode.EQUALS },
     'dates.updated_at': { value: null, matchMode: FilterMatchMode.EQUALS }
   };
   
