@@ -11,6 +11,11 @@ const model = ref([
                 label: 'Visit Details',
                 icon: 'pi pi-fw pi-calendar-plus',
                 to: '/field-services/visit-management'
+            },
+            {
+                label: 'Estimates / Quotes',
+                icon: 'pi pi-fw pi-calculator',
+                to: '/field-services/estimates'
             }
         ]
     },

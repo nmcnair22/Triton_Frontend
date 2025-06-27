@@ -60,6 +60,19 @@ const routes = [
                 },
                 component: () => import('@/views/field-services/VisitDetailPage.vue')
             },
+            {
+                path: '/field-services/estimates',
+                name: 'field-services-estimates',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Estimates / Quotes', path: '/field-services/estimates' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/field-services/EstimatesView.vue')
+            },
 
             // Engineering Module Routes
             {

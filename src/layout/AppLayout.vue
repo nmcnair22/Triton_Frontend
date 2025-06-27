@@ -8,6 +8,7 @@ import AppRightMenu from './AppRightMenu.vue';
 import AppSearch from './AppSearch.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
+import Toast from 'primevue/toast';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
 const outsideClickListener = ref(null);
