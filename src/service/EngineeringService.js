@@ -288,5 +288,32 @@ export const EngineeringService = {
   // Get validation report
   getValidationReport() {
     return ApiService.get('/engineering/sync/validation');
+  },
+
+  // === TICKET TASK MANAGEMENT ===
+  
+  // Get all ticket tasks with optional filters
+  getTicketTasks(params = {}) {
+    return ApiService.get('/engineering/calendar/tasks', params);
+  },
+
+  // Create a new ticket task
+  createTicketTask(taskData) {
+    return ApiService.post('/engineering/calendar/tasks', taskData);
+  },
+
+  // Update an existing ticket task
+  updateTicketTask(taskId, taskData) {
+    return ApiService.put(`/engineering/calendar/tasks/${taskId}`, taskData);
+  },
+
+  // Delete a ticket task
+  deleteTicketTask(taskId) {
+    return ApiService.delete(`/engineering/calendar/tasks/${taskId}`);
+  },
+
+  // Get tasks for a specific ticket
+  getTasksForTicket(ticketId) {
+    return ApiService.get(`/engineering/calendar/tasks/ticket/${ticketId}`);
   }
 }; 

@@ -1506,6 +1506,78 @@ export const useEngineeringStore = defineStore('engineering', () => {
     }
   }
 
+  // === TICKET TASK MANAGEMENT ===
+  
+  async function createTicketTask(taskData) {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.createTicketTask(taskData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating ticket task:', error);
+      error.value = error.message || 'Failed to create ticket task';
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function updateTicketTask(taskId, taskData) {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.updateTicketTask(taskId, taskData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating ticket task:', error);
+      error.value = error.message || 'Failed to update ticket task';
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function deleteTicketTask(taskId) {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.deleteTicketTask(taskId);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting ticket task:', error);
+      error.value = error.message || 'Failed to delete ticket task';
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function fetchTicketTasks(params = {}) {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.getTicketTasks(params);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching ticket tasks:', error);
+      error.value = error.message || 'Failed to fetch ticket tasks';
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function fetchTasksForTicket(ticketId) {
+    try {
+      loading.value = true;
+      const response = await EngineeringService.getTasksForTicket(ticketId);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching tasks for ticket:', error);
+      error.value = error.message || 'Failed to fetch tasks for ticket';
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     // State
     tickets,
@@ -1631,6 +1703,13 @@ export const useEngineeringStore = defineStore('engineering', () => {
     // === SYNC AND AI TRIGGERS ===
     triggerFieldSync,
     triggerAIAnalysis,
-    getSyncStatus
+    getSyncStatus,
+    
+    // === TICKET TASK MANAGEMENT ===
+    createTicketTask,
+    updateTicketTask,
+    deleteTicketTask,
+    fetchTicketTasks,
+    fetchTasksForTicket
   };
 }); 

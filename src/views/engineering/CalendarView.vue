@@ -51,13 +51,38 @@
           v-tooltip="'Refresh Calendar'"
         />
         
-        <!-- Add Event Button -->
+        <!-- Add Event Popover -->
         <Button 
-          label="Add Activity" 
+          label="Add Event" 
           icon="pi pi-plus"
-          @click="showAddActivityDialog = true"
+          @click="toggleAddPopover"
           severity="primary"
+          ref="addEventButton"
         />
+        
+        <Popover ref="addEventPopover" class="w-64">
+          <div class="flex flex-col gap-3 p-2">
+            <div class="text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">
+              Choose Event Type
+            </div>
+            <Button 
+              label="Add Activity"
+              icon="pi pi-calendar-plus"
+              @click="openAddActivityDialog"
+              severity="primary"
+              outlined
+              class="w-full justify-start"
+            />
+            <Button 
+              label="Add Ticket Task"
+              icon="pi pi-ticket"
+              @click="openAddTicketTaskDialog"
+              severity="secondary"
+              outlined
+              class="w-full justify-start"
+            />
+          </div>
+        </Popover>
       </div>
     </div>
 
@@ -884,6 +909,323 @@
       </template>
     </Dialog>
 
+    <!-- Add Ticket Task Dialog -->
+    <Dialog 
+      v-model:visible="showAddTicketTaskDialog" 
+      :style="{ width: '600px' }" 
+      modal 
+      header="Add New Ticket Task"
+      :closable="true"
+    >
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Task Title</label>
+            <InputText v-model="newTicketTask.title" class="w-full" placeholder="Enter task title" />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Related Ticket</label>
+            <Select 
+              v-model="newTicketTask.ticketId" 
+              :options="ticketOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              placeholder="Select a ticket..."
+              class="w-full"
+              filter
+              filterPlaceholder="Search tickets..."
+              :pt="{
+                root: { class: 'h-11' },
+                input: { class: 'h-11 flex items-center' },
+                filterContainer: { class: 'p-3 border-b border-surface-200' },
+                filterInput: { class: 'w-full p-2 border border-surface-300 rounded-md text-sm' },
+                list: { class: 'max-h-60 overflow-auto' },
+                item: { class: 'p-3 hover:bg-surface-100 cursor-pointer border-b border-surface-100 last:border-b-0' }
+              }"
+            >
+              <template #option="{ option }">
+                <div v-if="option.value" class="flex flex-col gap-1 py-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-sm">{{ option.ticket_number }}</span>
+                    <div class="flex gap-2">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-green-100 text-green-800': option.status === 'Open',
+                          'bg-yellow-100 text-yellow-800': option.status === 'Pending',
+                          'bg-blue-100 text-blue-800': option.status === 'In Progress',
+                          'bg-gray-100 text-gray-800': !['Open', 'Pending', 'In Progress'].includes(option.status)
+                        }"
+                      >
+                        {{ option.status }}
+                      </span>
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-red-100 text-red-800': option.priority === 'High' || option.priority === 'Critical',
+                          'bg-orange-100 text-orange-800': option.priority === 'Normal',
+                          'bg-gray-100 text-gray-800': option.priority === 'Low'
+                        }"
+                      >
+                        {{ option.priority }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-sm text-surface-600 truncate">{{ option.subject }}</span>
+                </div>
+                <div v-else class="py-2 text-sm text-surface-500 italic">
+                  {{ option.label }}
+                </div>
+              </template>
+            </Select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Priority</label>
+            <Select 
+              v-model="newTicketTask.priorityLevel" 
+              :options="taskPriorityOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :style="{ backgroundColor: option.color }"
+                  ></div>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Start Date & Time</label>
+            <DatePicker 
+              v-model="newTicketTask.startTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Estimated Duration (minutes)</label>
+            <InputNumber 
+              v-model="newTicketTask.estimatedDurationMinutes" 
+              :min="15" 
+              :max="480" 
+              :step="15"
+              suffix=" min"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
+            <Select 
+              v-model="newTicketTask.assignedTo" 
+              :options="engineerOptions.filter(e => e.value !== 'all')" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              placeholder="Select engineer..."
+              showClear
+            />
+          </div>
+          <div class="flex items-center gap-3 mt-6">
+            <Checkbox 
+              v-model="newTicketTask.isBlocking" 
+              inputId="newTaskBlocking" 
+              binary 
+            />
+            <label for="newTaskBlocking" class="text-sm font-medium">
+              Blocking Task
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Task Description</label>
+          <Textarea v-model="newTicketTask.description" rows="3" class="w-full" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <Button label="Cancel" @click="showAddTicketTaskDialog = false" text />
+        <Button 
+          label="Create Task" 
+          @click="createTicketTask" 
+          :loading="isCreatingTicketTask"
+          icon="pi pi-check"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Edit Ticket Task Dialog -->
+    <Dialog 
+      v-model:visible="showEditTicketTaskDialog" 
+      :style="{ width: '600px' }" 
+      modal 
+      header="Edit Ticket Task"
+      :closable="true"
+    >
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Task Title</label>
+            <InputText v-model="editTicketTask.title" class="w-full" placeholder="Enter task title" />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Related Ticket</label>
+            <Select 
+              v-model="editTicketTask.ticketId" 
+              :options="ticketOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              placeholder="Select a ticket..."
+              class="w-full"
+              filter
+              filterPlaceholder="Search tickets..."
+              disabled
+              :pt="{
+                root: { class: 'h-11' },
+                input: { class: 'h-11 flex items-center' }
+              }"
+            >
+              <template #option="{ option }">
+                <div v-if="option.value" class="flex flex-col gap-1 py-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-sm">{{ option.ticket_number }}</span>
+                    <div class="flex gap-2">
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-green-100 text-green-800': option.status === 'Open',
+                          'bg-yellow-100 text-yellow-800': option.status === 'Pending',
+                          'bg-blue-100 text-blue-800': option.status === 'In Progress',
+                          'bg-gray-100 text-gray-800': !['Open', 'Pending', 'In Progress'].includes(option.status)
+                        }"
+                      >
+                        {{ option.status }}
+                      </span>
+                      <span 
+                        class="px-2 py-1 text-xs rounded-full"
+                        :class="{
+                          'bg-red-100 text-red-800': option.priority === 'High' || option.priority === 'Critical',
+                          'bg-orange-100 text-orange-800': option.priority === 'Normal',
+                          'bg-gray-100 text-gray-800': option.priority === 'Low'
+                        }"
+                      >
+                        {{ option.priority }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-sm text-surface-600 truncate">{{ option.subject }}</span>
+                </div>
+                <div v-else class="py-2 text-sm text-surface-500 italic">
+                  {{ option.label }}
+                </div>
+              </template>
+            </Select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Priority</label>
+            <Select 
+              v-model="editTicketTask.priorityLevel" 
+              :options="taskPriorityOptions" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :style="{ backgroundColor: option.color }"
+                  ></div>
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Start Date & Time</label>
+            <DatePicker 
+              v-model="editTicketTask.startTime" 
+              showTime 
+              hourFormat="12"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Estimated Duration (minutes)</label>
+            <InputNumber 
+              v-model="editTicketTask.estimatedDurationMinutes" 
+              :min="15" 
+              :max="480" 
+              :step="15"
+              suffix=" min"
+              class="w-full"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Assigned Engineer</label>
+            <Select 
+              v-model="editTicketTask.assignedTo" 
+              :options="engineerOptions.filter(e => e.value !== 'all')" 
+              optionLabel="label" 
+              optionValue="value"
+              class="w-full"
+              placeholder="Select engineer..."
+              showClear
+            />
+          </div>
+          <div class="flex items-center gap-3 mt-6">
+            <Checkbox 
+              v-model="editTicketTask.isBlocking" 
+              inputId="editTaskBlocking" 
+              binary 
+            />
+            <label for="editTaskBlocking" class="text-sm font-medium">
+              Blocking Task
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Task Description</label>
+          <Textarea v-model="editTicketTask.description" rows="3" class="w-full" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <Button label="Cancel" @click="showEditTicketTaskDialog = false" text />
+        <Button 
+          label="Update Task" 
+          @click="updateTicketTask" 
+          :loading="isUpdatingTicketTask"
+          icon="pi pi-check"
+        />
+      </template>
+    </Dialog>
+
     <!-- Event Details Dialog -->
     <Dialog 
       v-model:visible="showEventDialog" 
@@ -980,6 +1322,10 @@
                 <div>
                   <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Assigned Engineer:</span>
                   <span class="ml-2 text-surface-700 dark:text-surface-200">{{ selectedEvent.AssignedTo || selectedEvent.EngineerName || 'Unassigned' }}</span>
+                </div>
+                <div v-if="selectedEvent.TicketId || selectedEvent.RelatedTicketId">
+                  <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Related Ticket:</span>
+                  <span class="ml-2 text-surface-700 dark:text-surface-200">#{{ selectedEvent.TicketId || selectedEvent.RelatedTicketId }}</span>
                 </div>
                 <div v-if="selectedEvent.EstimatedDurationMinutes">
                   <span class="font-medium text-sm text-surface-900 dark:text-surface-0">Estimated Duration:</span>
@@ -1106,7 +1452,20 @@
           icon="pi pi-external-link"
         />
         <Button 
-          v-if="selectedEvent?.IsEditable" 
+          v-if="selectedEvent?.EventType === 'ai-task' && (selectedEvent?.TicketId || selectedEvent?.RelatedTicketId)" 
+          label="View Related Ticket" 
+          @click="viewTicket(selectedEvent.TicketId || selectedEvent.RelatedTicketId)" 
+          outlined 
+          icon="pi pi-external-link"
+        />
+        <Button 
+          v-if="selectedEvent?.EventType === 'ai-task'" 
+          label="Edit Task" 
+          @click="openEditTicketTaskDialog" 
+          icon="pi pi-pencil"
+        />
+        <Button 
+          v-if="selectedEvent?.IsEditable && selectedEvent?.EventType !== 'ai-task'" 
           label="Edit" 
           @click="editEvent" 
           icon="pi pi-pencil"
@@ -1138,6 +1497,7 @@ import {
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import Dialog from 'primevue/dialog'
+import Popover from 'primevue/popover'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
@@ -1153,11 +1513,17 @@ const toast = useToast()
 
 // Refs
 const scheduleObj = ref(null)
+const addEventButton = ref(null)
+const addEventPopover = ref(null)
 const isLoading = ref(false)
 const isCreatingActivity = ref(false)
 const isUpdatingActivity = ref(false)
+const isCreatingTicketTask = ref(false)
+const isUpdatingTicketTask = ref(false)
 const showAddActivityDialog = ref(false)
+const showAddTicketTaskDialog = ref(false)
 const showEditActivityDialog = ref(false)
+const showEditTicketTaskDialog = ref(false)
 const showEventDialog = ref(false)
 const selectedEvent = ref(null)
 
@@ -1234,6 +1600,33 @@ const editActivity = ref({
   estimatedHours: 1,
   maintenanceWindow: false,
   customerFacing: false
+})
+
+// New ticket task form
+const newTicketTask = ref({
+  ticketId: null,
+  title: '',
+  description: '',
+  startTime: new Date(),
+  estimatedDurationMinutes: 60,
+  assignedTo: null,
+  priorityLevel: 'medium',
+  isBlocking: false,
+  dependencies: []
+})
+
+// Edit ticket task form
+const editTicketTask = ref({
+  id: null,
+  ticketId: null,
+  title: '',
+  description: '',
+  startTime: new Date(),
+  estimatedDurationMinutes: 60,
+  assignedTo: null,
+  priorityLevel: 'medium',
+  isBlocking: false,
+  dependencies: []
 })
 
 // Get subcategories for selected type
@@ -1375,6 +1768,13 @@ const priorityOptions = ref([
   { label: 'High', value: 'high', color: '#f59e0b' },
   { label: 'Critical', value: 'critical', color: '#ef4444' },
   { label: 'Emergency', value: 'emergency', color: '#dc2626' }
+])
+
+// Task priority options (for AI/ticket tasks)
+const taskPriorityOptions = ref([
+  { label: 'Low', value: 'low', color: '#6b7280' },
+  { label: 'Medium', value: 'medium', color: '#3b82f6' },
+  { label: 'High', value: 'high', color: '#ef4444' }
 ])
 
 // Impact options
@@ -1580,6 +1980,7 @@ const calendarEvents = computed(() => {
         event.TaskDescription || event.description || event.Description || '',
         `Type: AI-Generated Task`,
         engineer ? `Engineer: ${engineer}` : '',
+        event.RelatedTicketId ? `Related Ticket: #${event.RelatedTicketId}` : '',
         event.PriorityLevel ? `Priority: ${event.PriorityLevel}` : '',
         duration ? `Duration: ${duration}h` : '',
         event.GeneratedAt ? `Generated: ${formatDateTime(new Date(event.GeneratedAt))}` : ''
@@ -1645,6 +2046,7 @@ const calendarEvents = computed(() => {
       PriorityLevel: event.PriorityLevel,
       EstimatedDurationMinutes: event.EstimatedDurationMinutes,
       GeneratedAt: event.GeneratedAt,
+      RelatedTicketId: event.RelatedTicketId || event.related_ticket_id,
       
       // Keep original data for debugging
       _originalEvent: event
@@ -1851,6 +2253,15 @@ const onEventRendered = (args) => {
     const cleanTitle = eventData.Subject.replace(/^🤖\s*/, '')
     title.textContent = cleanTitle
     
+    // Add ticket ID under the title if available
+    if (eventData.TicketId || eventData.RelatedTicketId) {
+      const ticketId = eventData.TicketId || eventData.RelatedTicketId
+      const ticketInfo = document.createElement('div')
+      ticketInfo.className = 'event-ticket-info'
+      ticketInfo.textContent = `Ticket #${ticketId}`
+      content.appendChild(ticketInfo)
+    }
+    
     // Add AI task-specific metadata
     if (eventData.EstimatedDurationMinutes) {
       const hours = Math.round(eventData.EstimatedDurationMinutes / 60 * 100) / 100
@@ -2029,6 +2440,10 @@ const onEventRendered = (args) => {
     }
     if (eventData.AssignedTo) {
       tooltipContent.push(`👤 AI Assignment: ${eventData.AssignedTo}`)
+    }
+    if (eventData.TicketId || eventData.RelatedTicketId) {
+      const ticketId = eventData.TicketId || eventData.RelatedTicketId
+      tooltipContent.push(`🎫 Related Ticket: #${ticketId}`)
     }
     if (eventData.GeneratedAt) {
       const generatedDate = new Date(eventData.GeneratedAt)
@@ -2683,6 +3098,157 @@ const viewTicket = (ticketId) => {
   }
 }
 
+// Popover and dialog management
+const toggleAddPopover = (event) => {
+  addEventPopover.value.toggle(event)
+}
+
+const openAddActivityDialog = () => {
+  addEventPopover.value.hide()
+  showAddActivityDialog.value = true
+}
+
+const openAddTicketTaskDialog = () => {
+  addEventPopover.value.hide()
+  showAddTicketTaskDialog.value = true
+}
+
+// Ticket task management
+const createTicketTask = async () => {
+  if (!newTicketTask.value.title || !newTicketTask.value.ticketId) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Please fill in task title and select a ticket',
+      life: 3000
+    })
+    return
+  }
+  
+  isCreatingTicketTask.value = true
+  try {
+    const taskData = {
+      ticketid: newTicketTask.value.ticketId,
+      task_title: newTicketTask.value.title,
+      task_description: newTicketTask.value.description,
+      suggested_start_date: newTicketTask.value.startTime.toISOString(),
+      estimated_duration_minutes: newTicketTask.value.estimatedDurationMinutes,
+      assigned_to: newTicketTask.value.assignedTo,
+      priority_level: newTicketTask.value.priorityLevel,
+      is_blocking: newTicketTask.value.isBlocking,
+      dependencies: newTicketTask.value.dependencies
+    }
+    
+    await engineeringStore.createTicketTask(taskData)
+    
+    // Reset form
+    newTicketTask.value = {
+      ticketId: null,
+      title: '',
+      description: '',
+      startTime: new Date(),
+      estimatedDurationMinutes: 60,
+      assignedTo: null,
+      priorityLevel: 'medium',
+      isBlocking: false,
+      dependencies: []
+    }
+    
+    showAddTicketTaskDialog.value = false
+    
+    // Refresh calendar to show new task
+    await refreshCalendar()
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Ticket task created successfully',
+      life: 3000
+    })
+  } catch (error) {
+    console.error('Error creating ticket task:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to create ticket task',
+      life: 3000
+    })
+  } finally {
+    isCreatingTicketTask.value = false
+  }
+}
+
+const openEditTicketTaskDialog = () => {
+  if (selectedEvent.value && selectedEvent.value.EventType === 'ai-task') {
+    // Populate the edit form with current task data
+    editTicketTask.value = {
+      id: selectedEvent.value.Id,
+      ticketId: selectedEvent.value.TicketId || selectedEvent.value.RelatedTicketId,
+      title: selectedEvent.value.TaskTitle || selectedEvent.value.Subject?.replace(/^🤖\s*/, ''),
+      description: selectedEvent.value.TaskDescription || '',
+      startTime: new Date(selectedEvent.value.StartTime),
+      estimatedDurationMinutes: selectedEvent.value.EstimatedDurationMinutes || 60,
+      assignedTo: selectedEvent.value.AssignedTo || selectedEvent.value.EngineerName,
+      priorityLevel: selectedEvent.value.PriorityLevel || 'medium',
+      isBlocking: selectedEvent.value.IsBlocking || false,
+      dependencies: selectedEvent.value.Dependencies || []
+    }
+    
+    showEventDialog.value = false
+    showEditTicketTaskDialog.value = true
+  }
+}
+
+const updateTicketTask = async () => {
+  if (!editTicketTask.value.title) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Please fill in task title',
+      life: 3000
+    })
+    return
+  }
+  
+  isUpdatingTicketTask.value = true
+  try {
+    const taskData = {
+      task_title: editTicketTask.value.title,
+      task_description: editTicketTask.value.description,
+      suggested_start_date: editTicketTask.value.startTime.toISOString(),
+      estimated_duration_minutes: editTicketTask.value.estimatedDurationMinutes,
+      assigned_to: editTicketTask.value.assignedTo,
+      priority_level: editTicketTask.value.priorityLevel,
+      is_blocking: editTicketTask.value.isBlocking,
+      dependencies: editTicketTask.value.dependencies
+    }
+    
+    await engineeringStore.updateTicketTask(editTicketTask.value.id, taskData)
+    
+    showEditTicketTaskDialog.value = false
+    
+    // Refresh calendar to show updated task
+    await refreshCalendar()
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Ticket task updated successfully',
+      life: 3000
+    })
+  } catch (error) {
+    console.error('Error updating ticket task:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update ticket task',
+      life: 3000
+    })
+  } finally {
+    isUpdatingTicketTask.value = false
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await refreshCalendar()
@@ -3239,6 +3805,20 @@ const refreshStatistics = async () => {
   opacity: 0.7;
   margin-top: auto;
   color: inherit !important;
+}
+
+/* Event Ticket Info */
+:deep(.engineering-schedule .event-ticket-info) {
+  font-size: 0.6rem;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-top: 2px;
+  padding: 1px 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: inherit !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Priority Indicator */
