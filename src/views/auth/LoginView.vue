@@ -85,81 +85,175 @@ function handleMicrosoftLogin() {
 </script>
 
 <template>
-    <section class="min-h-screen flex items-center lg:items-start lg:py-20 justify-center animate-fadein animate-duration-300 animate-ease-in max-w-[100rem] mx-auto">
-        <div class="flex w-full h-full justify-center gap-12">
-            <div class="flex flex-col py-20 lg:min-w-[30rem]">
-                <router-link to="/" class="flex items-center justify-center lg:justify-start mb-8">
-                    <Logo />
-                </router-link>
-                <div class="flex flex-col justify-center flex-grow">
-                    <div class="max-w-md mx-auto w-full">
-                        <h5 class="title-h5 text-center lg:text-left">Login</h5>
-                        <p class="body-small mt-3.5 text-center lg:text-left">Please enter your details</p>
-                        
-                        <!-- Display error message if there is one -->
-                        <Message v-if="errorMessage" severity="error" class="w-full mb-4">{{ errorMessage }}</Message>
-                        
-                        <button class="button-button mt-8" @click="handleMicrosoftLogin">
-                            <GoogleWidget /> 
-                            <span class="ml-2">Sign in with Microsoft</span>
-                        </button>
-                        <div class="flex items-center gap-3.5 my-7">
-                            <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
-                            <span class="body-small text-surface-400 dark:text-surface-600">or</span>
-                            <span class="flex-1 h-[1px] bg-surface-200 dark:bg-surface-800" />
-                        </div>
-                        <form @submit="handleLogin">
-                            <div class="mb-4">
-                                <label for="email" class="block text-sm font-medium mb-2">Email</label>
-                                <InputText 
+    <!-- Modern gradient background with animated elements -->
+    <section class="min-h-screen relative overflow-hidden">
+        <!-- Animated gradient background -->
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900"></div>
+        
+        <!-- Floating animated elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+            <div class="absolute top-40 left-40 w-80 h-80 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+            
+            <!-- Subtle grid pattern -->
+            <div class="absolute inset-0 opacity-5">
+                <div class="grid grid-cols-12 gap-4 h-full">
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                    <div class="border-r border-white/20"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
+            <div class="w-full max-w-md">
+                <!-- Glass morphism card -->
+                <div class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                    <!-- Subtle inner glow -->
+                    <div class="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+                    <div class="relative z-10">
+                    <!-- Logo section -->
+                    <div class="text-center mb-8">
+                        <img src="/layout/images/logo-cis.png" alt="CIS Logo" class="h-14 mx-auto mb-6 drop-shadow-lg" />
+                        <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">Welcome Back</h1>
+                        <p class="text-blue-100/80 text-lg">Sign in to access your account</p>
+                    </div>
+                    
+                    <!-- Error message -->
+                    <div v-if="errorMessage" class="mb-6 p-4 bg-red-500/20 border border-red-400/30 rounded-xl text-red-100 text-sm backdrop-blur-sm">
+                        {{ errorMessage }}
+                    </div>
+                    
+                    <!-- Login form -->
+                    <form @submit="handleLogin" class="space-y-6">
+                        <!-- Email field -->
+                        <div class="space-y-2">
+                            <label for="email" class="block text-sm font-medium text-blue-100">Email Address</label>
+                            <div class="relative">
+                                <input 
                                     id="email" 
-                                    type="text" 
+                                    type="email" 
                                     v-model="email" 
-                                    :class="{'p-invalid': errorMessage && !email}" 
-                                    class="w-full"
+                                    class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200/60 backdrop-blur-sm focus:bg-white/20 focus:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition-all duration-300"
                                     placeholder="Enter your email"
                                     autocomplete="email"
                                 />
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <i class="pi pi-envelope text-blue-200/60"></i>
+                                </div>
                             </div>
-                            <div class="mb-4">
-                                <label for="password" class="block text-sm font-medium mb-2">Password</label>
-                                <Password 
+                        </div>
+                        
+                        <!-- Password field -->
+                        <div class="space-y-2">
+                            <label for="password" class="block text-sm font-medium text-blue-100">Password</label>
+                            <div class="relative">
+                                <input 
+                                    id="password"
+                                    type="password" 
                                     v-model="password" 
-                                    id="password" 
-                                    :feedback="false" 
-                                    :toggleMask="true"
-                                    :class="{'p-invalid': errorMessage && !password}"
-                                    class="w-full" 
-                                    inputClass="w-full"
+                                    class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200/60 backdrop-blur-sm focus:bg-white/20 focus:border-blue-400/50 focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition-all duration-300"
                                     placeholder="Enter your password"
                                     autocomplete="current-password"
                                 />
-                            </div>
-                            <div class="my-4 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <Checkbox inputId="remember" v-model="remember" :binary="true" />
-                                    <label for="remember" class="body-small">Remember me</label>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <i class="pi pi-lock text-blue-200/60"></i>
                                 </div>
-                                <router-link to="/auth/forgot-password" class="body-small text-primary-500 hover:underline">Forgot password?</router-link>
                             </div>
-                            <Button 
-                                type="submit" 
-                                class="body-button w-full"
-                                :loading="isSubmitting || loading"
-                            >
-                                {{ isSubmitting || loading ? 'Logging in...' : 'Login' }}
-                            </Button>
-                        </form>
-                        <div class="mt-8 body-small text-center lg:text-left">Not registered? <router-link to="/auth/register" class="text-primary-500 hover:underline">Create an Account</router-link></div>
+                        </div>
+                        
+                        <!-- Remember me and forgot password -->
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center space-x-2 text-sm text-blue-100">
+                                <input type="checkbox" v-model="remember" class="rounded border-white/20 bg-white/10 text-blue-400 focus:ring-blue-400/30">
+                                <span>Remember me</span>
+                            </label>
+                            <router-link to="/auth/forgot-password" class="text-sm text-blue-200 hover:text-white transition-colors duration-200">
+                                Forgot password?
+                            </router-link>
+                        </div>
+                        
+                        <!-- CIS Employee Login Button -->
+                        <button 
+                            type="button" 
+                            @click="handleMicrosoftLogin"
+                            class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
+                        >
+                            <!-- Shimmer effect -->
+                            <div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
+                            <img src="/layout/images/cis-favicon.ico" alt="CIS" class="w-5 h-5 relative z-10" />
+                            <span class="relative z-10">CIS Employee Login</span>
+                            <i class="pi pi-arrow-right relative z-10"></i>
+                        </button>
+                    </form>
+                    
+                    <!-- Registration link -->
+                    <div class="mt-8 text-center">
+                        <p class="text-blue-100/80 text-sm">
+                            Don't have an account? 
+                            <router-link to="/auth/register" class="text-blue-200 hover:text-white font-medium transition-colors duration-200">
+                                Create one here
+                            </router-link>
+                        </p>
                     </div>
-                </div>
-                <div class="mt-8 text-center lg:text-start block relative text-surface-400 dark:text-surface-500 text-sm">©{{ new Date().getFullYear() }} Triton</div>
-            </div>
-            <div class="hidden lg:flex h-full py-20">
-                <div class="h-full w-full lg:max-w-[32.5rem] xl:max-w-[60.5rem] mx-auto flex items-center justify-center shadow-[0px_1px_2px_0px_rgba(18,18,23,0.05)] rounded-3xl border border-surface overflow-hidden">
-                    <LazyImageWidget class="w-auto h-full object-contain object-left" src="/demo/images/landing/auth-image.svg" alt="Auth Image" />
+                    
+                    <!-- Copyright -->
+                    <div class="mt-8 text-center text-blue-200/60 text-xs">
+                        ©{{ new Date().getFullYear() }} CIS. All rights reserved.
+                    </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 </template>
+
+<style scoped>
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+.animate-blob {
+    animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
+}
+
+/* Custom focus styles for better accessibility */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Hover effect for the login button */
+button:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+</style>
