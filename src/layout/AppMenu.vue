@@ -200,6 +200,16 @@ const model = ref([
         icon: 'pi pi-bolt',
         items: [
             {
+                label: 'HD Ticket Analysis',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/waveai/hd-ticket-analysis'
+            },
+            {
+                label: 'Dispatch Ticket Analysis',
+                icon: 'pi pi-fw pi-chart-bar',
+                to: '/waveai/dispatch-ticket-analysis'
+            },
+            {
                 label: 'Network News',
                 icon: 'pi pi-fw pi-globe',
                 items: [

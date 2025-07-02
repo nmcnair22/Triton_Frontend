@@ -215,6 +215,32 @@ const routes = [
                 component: () => import('@/views/apps/waveai/Circuits.vue')
             },
             {
+                path: '/waveai/hd-ticket-analysis',
+                name: 'waveai-hd-ticket-analysis',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'WaveAI', path: '/waveai' },
+                        { label: 'HD Ticket Analysis', path: '/waveai/hd-ticket-analysis' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/waveai/HDTicketAnalysis.vue')
+            },
+            {
+                path: '/waveai/dispatch-ticket-analysis',
+                name: 'waveai-dispatch-ticket-analysis',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'WaveAI', path: '/waveai' },
+                        { label: 'Dispatch Ticket Analysis', path: '/waveai/dispatch-ticket-analysis' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/waveai/DispatchTicketAnalysis.vue')
+            },
+            {
                 path: '/apps/files',
                 name: 'files',
                 component: () => import('@/views/apps/Files.vue')
