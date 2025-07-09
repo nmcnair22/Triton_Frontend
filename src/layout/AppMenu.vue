@@ -92,6 +92,18 @@ const model = ref([
     },
     { separator: true },
     {
+        label: 'Customers',
+        icon: 'pi pi-users',
+        items: [
+            {
+                label: 'Customer List',
+                icon: 'pi pi-fw pi-users',
+                to: '/customers'
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'Accounting',
         icon: 'pi pi-calculator',
         items: [

@@ -133,6 +133,20 @@ const routes = [
                 component: () => import('@/views/engineering/CalendarView.vue')
             },
 
+            // Customers Module Routes
+            {
+                path: '/customers',
+                name: 'customers',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Customers', path: '/customers' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/Customers.vue')
+            },
+
             {
                 path: '/streamline/dashboard',
                 name: 'streamline-dashboard',
