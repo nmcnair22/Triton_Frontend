@@ -92,6 +92,18 @@ const model = ref([
     },
     { separator: true },
     {
+        label: 'Flynn Project',
+        icon: 'pi pi-map',
+        items: [
+            {
+                label: 'Location Scope Review',
+                icon: 'pi pi-fw pi-map-marker',
+                to: '/flynn/location-scope-review'
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'Customers',
         icon: 'pi pi-users',
         items: [

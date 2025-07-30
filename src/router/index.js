@@ -133,6 +133,21 @@ const routes = [
                 component: () => import('@/views/engineering/CalendarView.vue')
             },
 
+            // Flynn Project Module Routes
+            {
+                path: '/flynn/location-scope-review',
+                name: 'flynn-location-scope-review',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Flynn Project', path: '/flynn' },
+                        { label: 'Location Scope Review', path: '/flynn/location-scope-review' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/flynn/LocationScopeReview.vue')
+            },
+
             // Customers Module Routes
             {
                 path: '/customers',
