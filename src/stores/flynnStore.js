@@ -485,7 +485,7 @@ export const useFlynnStore = defineStore('flynn', () => {
   function parseSessionDataStrings(sessionData) {
     if (!sessionData) return sessionData;
     
-    const fieldsToparse = ['pass_1', 'pass_2', 'pass_3', 'installation_document'];
+    const fieldsToparse = ['pass_1', 'pass_2', 'pass_3']; // installation_document is Markdown, not JSON
     
     fieldsToparse.forEach(field => {
       if (sessionData[field] && typeof sessionData[field] === 'string') {
@@ -499,6 +499,11 @@ export const useFlynnStore = defineStore('flynn', () => {
       }
     });
     
+    // Keep installation_document as Markdown string (do not parse as JSON)
+    if (sessionData.installation_document && typeof sessionData.installation_document === 'string') {
+      console.log('Keeping installation_document as Markdown string');
+    }
+
     console.log('Session data after JSON parsing:', sessionData);
     return sessionData;
   }
