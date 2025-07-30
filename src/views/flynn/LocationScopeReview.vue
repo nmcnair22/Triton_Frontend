@@ -2151,7 +2151,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useFlynnStore } from '@/stores/flynnStore';
 import { usePhotosStore } from '@/stores/photosStore';
 
@@ -2232,14 +2232,12 @@ const analysisProgress = ref({
     },
     error_message: null,
     show_retry_button: false
-});
 
 const analysisResults = ref({
     pass1: null, // High-level scope completed vs remaining
     pass2: null, // 45-task categorization 
     pass3: null, // Client validation
     installation_document: null
-});
 
 const analysisForm = ref({
     analysis_template: 'complete_scope_analysis',
@@ -2249,7 +2247,6 @@ const analysisForm = ref({
         include_client_comments: true,
         include_percentage_data: true
     }
-});
 
 // Form state for scope review notes and tasks
 const newScopeNote = ref({
@@ -2257,7 +2254,6 @@ const newScopeNote = ref({
     note_type: 'general',
     priority: 'medium',
     tags: []
-});
 
 const newScopeTask = ref({
     task_title: '',
@@ -2265,7 +2261,6 @@ const newScopeTask = ref({
     task_source: 'custom',
     priority: 'medium',
     due_date: null
-});
 
 // Removed status filter options since we're not showing status
 
@@ -2321,14 +2316,12 @@ const filteredLocations = computed(() => {
     }
     
     return locations;
-});
 
 const highCompletionCount = computed(() => {
     // Just count locations above 80% - no interpretation of "completed"
     return flynnStore.locations?.filter(location => 
         (location.completionPercentage || 0) >= 80
     ).length || 0;
-});
 
 // Helper function to extract completion fields
 const getCompletionFields = (data) => {
@@ -2366,6 +2359,13 @@ const selectLocation = (location) => {
     console.log('Selecting location:', location);
     flynnStore.selectLocation(location);
     console.log('Store selected location:', flynnStore.selectedLocation);
+    // Debug: Check tickets in UI
+    setTimeout(() => {
+        console.log('UI Debug - flynnStore.tickets:', flynnStore.tickets);
+        console.log('UI Debug - tickets length:', flynnStore.tickets?.length);
+        console.log('UI Debug - first ticket:', flynnStore.tickets?.[0]);
+    }, 2000);
+
 };
 
 const refreshData = async () => {
@@ -2413,12 +2413,26 @@ onMounted(() => {
   console.log('Component mounted, fetching data...');
   flynnStore.fetchLocations();
   flynnStore.fetchProjectInformation();
-});
 
 onUnmounted(() => {
   console.log('Component unmounting, cleaning up progress tracking...');
   cleanupProgressTracking();
-});
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
 
 const openTicketDrawer = (event) => {
     selectedTicket.value = event.data;
@@ -2466,7 +2480,6 @@ const startScopeReview = () => {
 
 const scopeReviewStarted = computed(() => {
     return flynnStore.scopeReviewStarted;
-});
 
 // New methods for Add Note Modal
 const noteTypeOptions = ref([
@@ -2863,6 +2876,22 @@ const analysisCompleted = (completedData) => {
     }
     
     cleanupProgressTracking();
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
 };
 
 // Handle analysis failure
@@ -2876,6 +2905,22 @@ const analysisFailed = (errorMessage) => {
     analysisProgress.value.show_retry_button = true;
     
     cleanupProgressTracking();
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
 };
 
 // Handle analysis timeout
@@ -2889,6 +2934,22 @@ const analysisTimeout = () => {
     analysisProgress.value.show_retry_button = true;
     
     cleanupProgressTracking();
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
 };
 
 // Cleanup progress tracking resources
@@ -2921,6 +2982,22 @@ const cancelAnalysis = async () => {
             
             // Clean up frontend state
             cleanupProgressTracking();
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
             
             // Update UI to cancelled state
             analysisProgress.value.status = 'cancelled';
@@ -3040,6 +3117,22 @@ const generateInstallationDocument = async () => {
 
 const resetAnalysis = () => {
     cleanupProgressTracking();
+
+// Debug: Watch tickets changes
+watch(() => flynnStore.tickets, (newTickets, oldTickets) => {
+    console.log('Watcher - Tickets changed!');
+    console.log('  Old tickets length:', oldTickets?.length || 0);
+    console.log('  New tickets length:', newTickets?.length || 0);
+    console.log('  New tickets:', newTickets);
+}, { deep: true, immediate: true });
+
+// Debug: Watch ticketPosts changes
+watch(() => flynnStore.ticketPosts, (newPosts, oldPosts) => {
+    console.log('Watcher - TicketPosts changed!');
+    console.log('  New posts keys:', Object.keys(newPosts || {}));
+    console.log('  Total posts:', Object.values(newPosts || {}).flat().length);
+}, { deep: true, immediate: true });
+
     
     analysisProgress.value.status = 'idle';
     analysisProgress.value.passes_completed = 0;
@@ -3087,7 +3180,6 @@ const exportAnalysisResults = () => {
 const issueCount = computed(() => {
     const data = flynnStore.selectedLocation?.siteComments || [];
     return data.filter(comment => comment.requires_follow_up).length;
-});
 
 const sessionOptions = computed(() => {
     return flynnStore.analysisSessions.map(session => ({
@@ -3095,7 +3187,6 @@ const sessionOptions = computed(() => {
         value: session.session_id,
         session: session
     }));
-});
 
 // Session Management
 const onSessionChange = async (event) => {
@@ -3139,22 +3230,18 @@ const hasRemainingScope = computed(() => {
            flynnStore.currentAnalysisResults.pass2?.pass_2_analysis_summary?.needs_correction_count > 0 ||
            flynnStore.currentAnalysisResults.pass3?.new_scope?.length > 0 ||
            flynnStore.currentAnalysisResults.pass3?.client_concerns?.length > 0;
-});
 
 const totalRemainingItems = computed(() => {
     return (flynnStore.currentAnalysisResults.pass1?.remaining_scope?.length || 0) +
            (flynnStore.currentAnalysisResults.pass2?.pass_2_analysis_summary?.needs_correction_count || 0) +
            (flynnStore.currentAnalysisResults.pass3?.new_scope?.length || 0) +
            (flynnStore.currentAnalysisResults.pass3?.client_concerns?.length || 0);
-});
 
 const incompleteDetailedTasks = computed(() => {
     return flynnStore.currentAnalysisResults.pass2?.task_analysis?.filter(task => task.status !== 'COMPLETED') || [];
-});
 
 const clientValidationIssues = computed(() => {
     return flynnStore.currentAnalysisResults.pass3?.validated_task_analysis?.filter(task => task.validated_status !== 'COMPLETED') || [];
-});
 
 const generateEnhancedInstallationDocument = async () => {
     if (!flynnStore.selectedLocation) return;
