@@ -247,8 +247,12 @@ export const useFlynnStore = defineStore('flynn', () => {
     try {
       console.log(`Fetching tickets for location ${locationId}...`);
       const response = await ApiService.get(`flynn/locations/${locationId}/tickets`);
+      console.log(`Tickets API response:`, response.data);
+
       if (response.data && response.data.success) {
         tickets.value = response.data.data.tickets || [];
+        console.log(`Stored ${tickets.value.length} tickets in store:`, tickets.value);
+
         
         // Also fetch ticket posts if we have tickets
         if (tickets.value.length > 0) {
