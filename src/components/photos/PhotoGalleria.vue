@@ -136,19 +136,40 @@
                             <p class="mt-4">Loading {{ slotProps.item.original_filename }}...</p>
                             <div class="progress-details">
                                 <p class="text-sm text-surface-500">{{ formatFileSize(slotProps.item.size) }}</p>
-                                <p class="text-xs text-surface-400 break-all max-w-md">{{ slotProps.item.download_url }}</p>
-                                <p class="text-xs text-surface-300 mt-2">Debug: Image loading timeout in 10 seconds...</p>
+                                <p class="text-xs text-surface-300 mt-2">Optimizing image for viewing...</p>
+                                <div class="w-48 bg-surface-700 rounded-full h-1 mt-2">
+                                    <div class="bg-primary-500 h-1 rounded-full progress-bar"></div>
+                                </div>
                             </div>
                         </div>
-                        <img 
-                            v-else
-                            :src="slotProps.item.download_url" 
-                            :alt="slotProps.item.original_filename"
-                            class="galleria-image"
-                            @load="onImageLoad"
-                            @error="onImageError"
-                            style="background: rgba(255,255,255,0.1);"
-                        />
+                        <div v-else class="image-container">
+                            <!-- Progressive loading: Low-quality placeholder first -->
+                            <img 
+                                v-if="!imageLoaded"
+                                :src="createProgressivePlaceholder(slotProps.item)"
+                                :alt="slotProps.item.original_filename"
+                                class="galleria-image placeholder-image"
+                                style="filter: blur(2px); transition: opacity 0.3s ease;"
+                            />
+                            <!-- High-quality image -->
+                            <img 
+                                :src="getOptimizedImageUrl(slotProps.item)"
+                                :alt="slotProps.item.original_filename"
+                                class="galleria-image main-image"
+                                :style="{ 
+                                    opacity: imageLoaded ? 1 : 0,
+                                    transition: 'opacity 0.5s ease',
+                                    position: imageLoaded ? 'relative' : 'absolute',
+                                    top: imageLoaded ? 'auto' : '0',
+                                    left: imageLoaded ? 'auto' : '0',
+                                    width: '100%',
+                                    height: '100%'
+                                }"
+                                @load="onImageLoad"
+                                @error="onImageError"
+                                loading="eager"
+                            />
+                        </div>
                         <div v-if="!imageLoading" class="debug-info" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 8px; font-size: 11px; max-width: 200px; border-radius: 4px; z-index: 20;">
                             <div>Index: {{ activeIndex }}</div>
                             <div>Filename: {{ slotProps.item.original_filename }}</div>
@@ -244,7 +265,9 @@ const currentPage = ref(1);
 const galleriaVisible = ref(false);
 const activeIndex = ref(0);
 const imageLoading = ref(false);
+const imageLoaded = ref(false);
 const loadingTimeout = ref(null);
+const preloadedImages = ref(new Set());
 
 // Galleria responsive options
 const responsiveOptions = ref([
@@ -311,9 +334,9 @@ watch(galleriaVisible, (visible) => {
             clearTimeout(loadingTimeout.value);
         }
         loadingTimeout.value = setTimeout(() => {
-            console.warn('PhotoGalleria: Image loading timeout after 10 seconds');
+            console.warn('PhotoGalleria: Image loading timeout after 5 seconds');
             imageLoading.value = false;
-        }, 10000);
+        }, 5000);
     } else {
         // Clear timeout when closing
         if (loadingTimeout.value) {
@@ -327,23 +350,39 @@ watch(galleriaVisible, (visible) => {
 watch(activeIndex, (newIndex, oldIndex) => {
     console.log('PhotoGalleria: activeIndex changed from', oldIndex, 'to', newIndex);
     if (galleriaVisible.value) {
-        imageLoading.value = true;
-        console.log('PhotoGalleria: Set imageLoading to true for index change');
         const currentPhoto = photos.value[newIndex];
-        console.log('PhotoGalleria: New photo for index', newIndex, ':', currentPhoto);
-        if (currentPhoto) {
-            console.log('PhotoGalleria: New photo download_url:', currentPhoto.download_url);
-            console.log('PhotoGalleria: New photo size:', currentPhoto.size, 'bytes');
+        
+        // Reset state for new image
+        imageLoaded.value = false;
+        
+        // Check if image is already preloaded
+        const optimizedUrl = currentPhoto ? getOptimizedImageUrl(currentPhoto) : null;
+        if (currentPhoto && optimizedUrl && preloadedImages.value.has(optimizedUrl)) {
+            console.log('PhotoGalleria: Image already preloaded, loading instantly');
+            imageLoading.value = false;
+            imageLoaded.value = true;
+        } else {
+            imageLoading.value = true;
+            console.log('PhotoGalleria: Set imageLoading to true for index change');
+            console.log('PhotoGalleria: New photo for index', newIndex, ':', currentPhoto);
+            if (currentPhoto) {
+                console.log('PhotoGalleria: New photo download_url:', currentPhoto.download_url);
+                console.log('PhotoGalleria: New photo size:', currentPhoto.size, 'bytes');
+            }
+            
+            // Set timeout to clear loading state
+            if (loadingTimeout.value) {
+                clearTimeout(loadingTimeout.value);
+            }
+            loadingTimeout.value = setTimeout(() => {
+                console.warn('PhotoGalleria: Image loading timeout after 5 seconds for index', newIndex);
+                imageLoading.value = false;
+                imageLoaded.value = true; // Show image even if timeout occurs
+            }, 5000);
         }
         
-        // Set timeout to clear loading state
-        if (loadingTimeout.value) {
-            clearTimeout(loadingTimeout.value);
-        }
-        loadingTimeout.value = setTimeout(() => {
-            console.warn('PhotoGalleria: Image loading timeout after 10 seconds for index', newIndex);
-            imageLoading.value = false;
-        }, 10000);
+        // Preload adjacent images for faster navigation
+        preloadAdjacentImages(newIndex);
     }
 });
 
@@ -362,6 +401,57 @@ async function loadPhotos() {
     }
 }
 
+// Image preloading function
+function preloadImage(url) {
+    return new Promise((resolve, reject) => {
+        if (preloadedImages.value.has(url)) {
+            resolve(url);
+            return;
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+            preloadedImages.value.add(url);
+            console.log('PhotoGalleria: Preloaded image:', url);
+            resolve(url);
+        };
+        img.onerror = (error) => {
+            console.warn('PhotoGalleria: Failed to preload image:', url, error);
+            reject(error);
+        };
+        img.src = url;
+    });
+}
+
+// Preload adjacent images for faster navigation
+function preloadAdjacentImages(currentIndex) {
+    const indicesToPreload = [];
+    
+    // Preload previous image
+    if (currentIndex > 0) {
+        indicesToPreload.push(currentIndex - 1);
+    }
+    
+    // Preload next image
+    if (currentIndex < photos.value.length - 1) {
+        indicesToPreload.push(currentIndex + 1);
+    }
+    
+    // Preload 2 images ahead and behind for smoother navigation
+    if (currentIndex > 1) indicesToPreload.push(currentIndex - 2);
+    if (currentIndex < photos.value.length - 2) indicesToPreload.push(currentIndex + 2);
+    
+    indicesToPreload.forEach(index => {
+        const photo = photos.value[index];
+        if (photo?.download_url) {
+            const optimizedUrl = getOptimizedImageUrl(photo);
+            preloadImage(optimizedUrl).catch(() => {
+                // Silently handle preload failures
+            });
+        }
+    });
+}
+
 function openGalleria(index) {
     console.log('PhotoGalleria: Opening galleria at index', index);
     console.log('PhotoGalleria: Total photos available:', photos.value.length);
@@ -369,12 +459,16 @@ function openGalleria(index) {
     
     activeIndex.value = index;
     galleriaVisible.value = true;
+    
+    // Start preloading adjacent images
+    preloadAdjacentImages(index);
+    
     emit('photo-clicked', { photo: photos.value[index], index });
 }
 
 function onImageLoad() {
     console.log('PhotoGalleria: Image loaded successfully');
-    console.log('PhotoGalleria: Setting imageLoading to false');
+    console.log('PhotoGalleria: Setting imageLoading to false and imageLoaded to true');
     
     // Clear timeout since image loaded successfully
     if (loadingTimeout.value) {
@@ -383,6 +477,10 @@ function onImageLoad() {
     }
     
     imageLoading.value = false;
+    imageLoaded.value = true;
+    
+    // Preload adjacent images for smoother navigation
+    preloadAdjacentImages(activeIndex.value);
 }
 
 function onImageError(event) {
@@ -475,6 +573,115 @@ function formatFileSize(bytes) {
 function formatDate(dateString) {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString();
+}
+
+// Advanced Azure image optimization with progressive loading and modern formats
+function getOptimizedImageUrl(photo, options = {}) {
+    const {
+        width = 1920,
+        height = 1080,
+        quality = 85,
+        progressive = false,
+        thumbnailMode = false
+    } = options;
+    
+    // Advanced format detection with AVIF and WebP support
+    const formatSupport = (() => {
+        const cache = getOptimizedImageUrl._formatCache || {};
+        if (Object.keys(cache).length === 0) {
+            // Test AVIF support
+            const avifCanvas = document.createElement('canvas');
+            avifCanvas.width = 1;
+            avifCanvas.height = 1;
+            cache.avif = avifCanvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
+            
+            // Test WebP support
+            const webpCanvas = document.createElement('canvas');
+            webpCanvas.width = 1;
+            webpCanvas.height = 1;
+            cache.webp = webpCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+            
+            getOptimizedImageUrl._formatCache = cache;
+        }
+        return cache;
+    })();
+    
+    const originalUrl = photo.download_url;
+    
+    // Enhanced Azure Blob Storage / CDN optimization
+    if (originalUrl.includes('azure') || originalUrl.includes('blob') || originalUrl.includes('azureedge')) {
+        try {
+            const url = new URL(originalUrl);
+            const params = new URLSearchParams();
+            
+            // Determine optimal format (AVIF > WebP > JPEG)
+            let format = 'jpeg';
+            if (formatSupport.avif) {
+                format = 'avif';
+            } else if (formatSupport.webp) {
+                format = 'webp';
+            }
+            
+            // Responsive sizing based on viewport and device pixel ratio
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth || 1920;
+            
+            // Adaptive sizing for performance
+            let adaptiveWidth = width;
+            let adaptiveHeight = height;
+            
+            if (thumbnailMode) {
+                adaptiveWidth = 300;
+                adaptiveHeight = 200;
+            } else if (viewportWidth < 768) {
+                // Mobile optimization
+                adaptiveWidth = Math.min(width, viewportWidth * dpr);
+                adaptiveHeight = Math.min(height, (viewportWidth * dpr * 0.75));
+            }
+            
+            // Azure Image Transformation parameters
+            params.set('format', format);
+            params.set('quality', progressive ? Math.max(quality - 15, 60) : quality);
+            params.set('width', Math.round(adaptiveWidth).toString());
+            params.set('height', Math.round(adaptiveHeight).toString());
+            params.set('mode', 'crop'); // Better for consistent aspect ratios
+            params.set('scale', 'both');
+            
+            // Performance optimizations
+            if (progressive) {
+                params.set('progressive', 'true');
+            }
+            
+            // Cache control headers for CDN
+            params.set('cache', '604800'); // 7 days cache
+            params.set('optimize', 'true');
+            
+            // Lossless optimization for high-quality images
+            if (quality >= 90) {
+                params.set('lossless', 'true');
+            }
+            
+            return `${url.origin}${url.pathname}?${params.toString()}`;
+            
+        } catch (error) {
+            console.warn('PhotoGalleria: URL optimization failed:', error);
+            return originalUrl;
+        }
+    }
+    
+    // Fallback to original URL
+    return originalUrl;
+}
+
+// Create progressive loading placeholder (blur-up effect)
+function createProgressivePlaceholder(photo) {
+    return getOptimizedImageUrl(photo, {
+        width: 40,
+        height: 30,
+        quality: 20,
+        progressive: true,
+        thumbnailMode: true
+    });
 }
 </script>
 
@@ -596,6 +803,59 @@ function formatDate(dateString) {
 .progress-details {
     margin-top: 1rem;
     max-width: 300px;
+}
+
+.progress-bar {
+    animation: indeterminate 2s linear infinite;
+    width: 0%;
+}
+
+@keyframes indeterminate {
+    0% {
+        width: 0%;
+        margin-left: 0%;
+    }
+    50% {
+        width: 60%;
+        margin-left: 20%;
+    }
+    100% {
+        width: 0%;
+        margin-left: 100%;
+    }
+}
+
+/* Progressive image loading styles */
+.image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.placeholder-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(2px) brightness(1.1);
+    transform: scale(1.05); /* Slight scale to hide blur edges */
+}
+
+.main-image {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Performance optimizations */
+.galleria-image {
+    will-change: opacity, transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .galleria-image {
