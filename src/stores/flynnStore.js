@@ -190,8 +190,13 @@ export const useFlynnStore = defineStore('flynn', () => {
           comments.value = data.location.site_comments;
           console.log(`Successfully loaded ${data.location.site_comments.length} site comments from analysis endpoint`);
         }
-        if (data.tickets) {
+        // Only set tickets from analysis endpoint if we don't already have them
+        // This prevents overwriting tickets that were fetched from the dedicated tickets endpoint
+        if (data.tickets && tickets.value.length === 0) {
           tickets.value = data.tickets;
+          console.log(`Set ${data.tickets.length} tickets from analysis endpoint`);
+        } else if (data.tickets) {
+          console.log(`Skipping tickets from analysis endpoint - already have ${tickets.value.length} tickets from dedicated endpoint`);
         }
         
         console.log('Location analysis data loaded successfully');
