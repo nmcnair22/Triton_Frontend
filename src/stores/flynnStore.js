@@ -463,6 +463,38 @@ export const useFlynnStore = defineStore('flynn', () => {
     }
   }
 
+  async function updateScopeReviewStatus(reviewId, newStatus, updatedBy = 'Current User') {
+    try {
+      console.log(`Updating scope review ${reviewId} status to:`, newStatus);
+      
+      const response = await ApiService.patch(`flynn/scope-reviews/${reviewId}/status`, {
+        status: newStatus,
+        updated_by: updatedBy
+      });
+      
+      if (response.data.success) {
+        // Update local scope review state
+        if (scopeReview.value && scopeReview.value.id === reviewId) {
+          scopeReview.value.status = newStatus;
+          scopeReview.value.updated_at = response.data.data.updated_at;
+          
+          // Set completed_at if status is completed
+          if (newStatus === 'completed' && response.data.data.completed_at) {
+            scopeReview.value.completed_at = response.data.data.completed_at;
+          }
+        }
+        
+        console.log('Scope review status updated successfully:', response.data.data);
+        return response.data.data;
+      }
+      
+      throw new Error(response.data.message || 'Failed to update status');
+    } catch (error) {
+      console.error('Error updating scope review status:', error);
+      throw error;
+    }
+  }
+
   // Scope Analysis Actions
   async function startScopeAnalysis(locationId, analysisForm) {
     try {
@@ -849,13 +881,13 @@ export const useFlynnStore = defineStore('flynn', () => {
 
   async function generateInstallationDocumentV2(locationId, sessionId, modelConfiguration = null) {
     try {
-      console.log('Generating installation document (v2) for location:', locationId, 'session:', sessionId);
+      console.log('Generating installation document (v2 - Claude) for location:', locationId, 'session:', sessionId);
       installationDocumentState.value.generating = true;
       
       const payload = modelConfiguration ? { model_configuration: modelConfiguration } : {};
       
       const response = await ApiService.post(
-        `flynn/locations/${locationId}/sessions/${sessionId}/generate-installation-document`,
+        `flynn/locations/${locationId}/sessions/${sessionId}/generate-installation-document-direct-claude`,
         payload
       );
       
@@ -992,6 +1024,14 @@ export const useFlynnStore = defineStore('flynn', () => {
       // Don't throw error since this shouldn't block location selection
     });
     
+    // Check for existing scope review for this location
+    fetchScopeReview(location.id).catch(error => {
+      console.warn('Failed to load scope review for location:', error);
+      // Clear scope review state if there's no active review for this location
+      scopeReview.value = null;
+      scopeReviewStarted.value = false;
+    });
+    
     // Fetch other location data
     fetchLocationTickets(location.id);
   }
@@ -1077,6 +1117,7 @@ export const useFlynnStore = defineStore('flynn', () => {
     addScopeTask,
     addScopeReviewNote,
     addScopeReviewTask,
+    updateScopeReviewStatus,
     
     // Scope Analysis Actions
     startScopeAnalysis,

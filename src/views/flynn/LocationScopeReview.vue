@@ -6,6 +6,15 @@
                 <h1 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">Flynn Project - Location Scope Review</h1>
                 <p class="text-surface-600 dark:text-surface-400 mt-1">Manage and track project scope completion across all locations</p>
             </div>
+            <div class="flex items-center gap-3">
+                <Button 
+                    label="Flynn Addendum"
+                    icon="pi pi-sitemap"
+                    @click="showFlynnAddendum = true"
+                    severity="info"
+                    outlined
+                    class="flex items-center gap-2" />
+            </div>
         </div>
 
         <!-- Main Content - Split Panel -->
@@ -189,15 +198,39 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="flex items-center gap-2">
-                                    <i class="pi pi-check-circle text-green-600"></i>
+                                    <i :class="getStatusIcon(currentScopeReviewStatus)" class="text-green-600"></i>
                                     <span class="font-medium text-green-700 dark:text-green-300">Scope Review Active</span>
-                                    <Tag value="In Progress" severity="success" size="small" />
+                                    <Tag 
+                                        :value="getStatusDisplay(currentScopeReviewStatus)" 
+                                        :severity="getStatusSeverity(currentScopeReviewStatus)" 
+                                        size="small" />
                                 </div>
                                 <div class="text-sm text-green-600 dark:text-green-400">
-                                    Review location and document remaining scope items
+                                    {{ getStatusDescription(currentScopeReviewStatus) }}
                                 </div>
                             </div>
                             <div class="flex gap-2">
+                                <!-- Status Update Dropdown -->
+                                <Select 
+                                    v-model="selectedStatusUpdate"
+                                    :options="getAvailableStatusOptions(currentScopeReviewStatus)"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Update Status"
+                                    class="w-40"
+                                    size="small"
+                                    @change="updateScopeReviewStatus"
+                                />
+                                
+                                <!-- Complete Review Button (Always Visible) -->
+                                <Button 
+                                    icon="pi pi-check-circle" 
+                                    label="Complete Review" 
+                                    @click="completeScopeReview"
+                                    size="small"
+                                    severity="success"
+                                    :loading="updatingStatus" />
+                                
                                 <Button 
                                     icon="pi pi-plus" 
                                     label="Add Note" 
@@ -2159,6 +2192,12 @@
             v-model:visible="showScopeManagementModal"
             @scope-updated="onScopeUpdated"
         />
+
+        <!-- Flynn Addendum Drawer -->
+        <FlynnAddendumDrawer 
+            v-model:visible="showFlynnAddendum"
+            :location-id="flynnStore.selectedLocation?.id"
+        />
     </div>
 </template>
 
@@ -2198,6 +2237,7 @@ import PhotoGalleria from '@/components/photos/PhotoGalleria.vue';
 // Flynn Components
 import InstallationDocumentViewer from '@/components/flynn/InstallationDocumentViewer.vue';
 import ScopeManagementModal from '@/components/flynn/ScopeManagementModal.vue';
+import FlynnAddendumDrawer from '@/components/flynn/FlynnAddendumDrawer.vue';
 
 // Store
 const flynnStore = useFlynnStore();
@@ -2225,6 +2265,11 @@ const installDocLoading = ref(false);
 // Installation Document Viewer state
 const showInstallationDocumentViewer = ref(false);
 const showScopeManagementModal = ref(false);
+const showFlynnAddendum = ref(false);
+
+// Status Management
+const selectedStatusUpdate = ref('');
+const updatingStatus = ref(false);
 
 // Scope Analysis state
 const analysisProgress = ref({
@@ -2393,6 +2438,119 @@ const refreshData = async () => {
     await flynnStore.fetchLocations();
 };
 
+// Status Management Methods
+const getStatusDisplay = (status) => {
+    const statusMap = {
+        'not_started': 'Not Started',
+        'review_started': 'Review Started',
+        'in_progress': 'In Progress',
+        'review_complete': 'Review Complete',
+        'ai_analysis_completed': 'AI Analysis Complete',
+        'install_document_created': 'Document Created',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled'
+    };
+    return statusMap[status] || status;
+};
+
+const getStatusSeverity = (status) => {
+    const severityMap = {
+        'not_started': 'secondary',
+        'review_started': 'info',
+        'in_progress': 'warn',
+        'review_complete': 'contrast',
+        'ai_analysis_completed': 'success',
+        'install_document_created': 'success',
+        'completed': 'success',
+        'cancelled': 'danger'
+    };
+    return severityMap[status] || 'secondary';
+};
+
+const getStatusIcon = (status) => {
+    const iconMap = {
+        'not_started': 'pi pi-circle',
+        'review_started': 'pi pi-play-circle',
+        'in_progress': 'pi pi-sync',
+        'review_complete': 'pi pi-check-circle',
+        'ai_analysis_completed': 'pi pi-brain',
+        'install_document_created': 'pi pi-file-check',
+        'completed': 'pi pi-verified',
+        'cancelled': 'pi pi-times-circle'
+    };
+    return iconMap[status] || 'pi pi-circle';
+};
+
+const getStatusDescription = (status) => {
+    const descriptionMap = {
+        'not_started': 'Ready to start scope review',
+        'review_started': 'Initial review has been started',
+        'in_progress': 'Review location and document remaining scope items',
+        'review_complete': 'Field review complete, ready for AI analysis',
+        'ai_analysis_completed': 'AI analysis complete, ready to generate document',
+        'install_document_created': 'Installation document generated, ready for completion',
+        'completed': 'Scope review fully completed',
+        'cancelled': 'Review has been cancelled'
+    };
+    return descriptionMap[status] || 'Review status';
+};
+
+const getAvailableStatusOptions = (currentStatus) => {
+    // Return all statuses available at all times
+    return [
+        { label: 'Review Started', value: 'review_started' },
+        { label: 'In Progress', value: 'in_progress' },
+        { label: 'Review Complete', value: 'review_complete' },
+        { label: 'AI Analysis Completed', value: 'ai_analysis_completed' },
+        { label: 'Install Document Created', value: 'install_document_created' },
+        { label: 'Completed', value: 'completed' },
+        { label: 'Cancelled', value: 'cancelled' }
+    ];
+};
+
+// Simplified - no complex visibility logic needed
+
+const updateScopeReviewStatus = async () => {
+    if (!selectedStatusUpdate.value || !flynnStore.scopeReview) {
+        return;
+    }
+
+    updatingStatus.value = true;
+    try {
+        await flynnStore.updateScopeReviewStatus(
+            flynnStore.scopeReview.id, 
+            selectedStatusUpdate.value
+        );
+        
+        // Clear selection after update
+        selectedStatusUpdate.value = '';
+        
+        console.log('Status updated successfully');
+    } catch (error) {
+        console.error('Failed to update status:', error);
+    } finally {
+        updatingStatus.value = false;
+    }
+};
+
+const completeScopeReview = async () => {
+    if (!flynnStore.scopeReview) return;
+
+    updatingStatus.value = true;
+    try {
+        await flynnStore.updateScopeReviewStatus(
+            flynnStore.scopeReview.id, 
+            'completed'
+        );
+        
+        console.log('Scope review marked as completed');
+    } catch (error) {
+        console.error('Failed to complete scope review:', error);
+    } finally {
+        updatingStatus.value = false;
+    }
+};
+
 // Removed all status-related functions - just showing raw completion percentage
 
 const getCompletionTextClass = (percentage) => {
@@ -2501,7 +2659,16 @@ const startScopeReview = () => {
 };
 
 const scopeReviewStarted = computed(() => {
-    return flynnStore.scopeReviewStarted;
+    // Check if there's a scope review for the currently selected location
+    return flynnStore.scopeReviewStarted && 
+           flynnStore.scopeReview && 
+           flynnStore.selectedLocation && 
+           flynnStore.scopeReview.location_id === flynnStore.selectedLocation.id;
+});
+
+// Status Management Computed Properties
+const currentScopeReviewStatus = computed(() => {
+    return flynnStore.scopeReview?.status || 'not_started';
 });
 
 // New methods for Add Note Modal
@@ -2898,6 +3065,16 @@ const analysisCompleted = (completedData) => {
         flynnStore.currentAnalysisResults = { pass1: null, pass2: null, pass3: null, installation_document: null };
     }
     
+    // Auto-update scope review status when AI analysis completes
+    if (flynnStore.scopeReview && flynnStore.scopeReview.status === 'review_complete') {
+        console.log('Auto-updating scope review status to ai_analysis_completed');
+        // Set the status and call update
+        selectedStatusUpdate.value = 'ai_analysis_completed';
+        updateScopeReviewStatus().catch(error => {
+            console.warn('Failed to auto-update scope review status after AI analysis:', error);
+        });
+    }
+    
     cleanupProgressTracking();
 
 };
@@ -3249,6 +3426,16 @@ const handleGenerateInstallationDocument = async () => {
         );
         
         console.log('Installation document generated successfully:', result);
+        
+        // Auto-update scope review status when install document is generated
+        if (flynnStore.scopeReview && flynnStore.scopeReview.status === 'ai_analysis_completed') {
+            console.log('Auto-updating scope review status to install_document_created');
+            selectedStatusUpdate.value = 'install_document_created';
+            updateScopeReviewStatus().catch(error => {
+                console.warn('Failed to auto-update scope review status after document generation:', error);
+            });
+        }
+        
         // TODO: Show success toast
         
     } catch (error) {
