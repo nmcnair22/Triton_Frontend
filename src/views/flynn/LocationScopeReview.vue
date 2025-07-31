@@ -1021,6 +1021,12 @@
                                             
                                             <!-- Enhanced Actions -->
                                             <div class="flex items-center gap-2">
+                                                <Button label="Edit Final Scope" 
+                                                        icon="pi pi-pencil" 
+                                                        size="small" 
+                                                        severity="info"
+                                                        @click="showScopeManagementModal = true" 
+                                                        :disabled="!hasRemainingScope" />
                                                 <Button v-if="flynnStore.scopeDeduplication.length > 0" 
                                                         label="Review Duplicates" 
                                                         icon="pi pi-eye" 
@@ -2147,6 +2153,12 @@
             :loading="flynnStore.installationDocumentState.generating"
             @generate-document="handleGenerateInstallationDocument"
         />
+
+        <!-- Scope Management Modal -->
+        <ScopeManagementModal 
+            v-model:visible="showScopeManagementModal"
+            @scope-updated="onScopeUpdated"
+        />
     </div>
 </template>
 
@@ -2185,6 +2197,7 @@ import PhotoGalleria from '@/components/photos/PhotoGalleria.vue';
 
 // Flynn Components
 import InstallationDocumentViewer from '@/components/flynn/InstallationDocumentViewer.vue';
+import ScopeManagementModal from '@/components/flynn/ScopeManagementModal.vue';
 
 // Store
 const flynnStore = useFlynnStore();
@@ -2211,6 +2224,7 @@ const installDocLoading = ref(false);
 
 // Installation Document Viewer state
 const showInstallationDocumentViewer = ref(false);
+const showScopeManagementModal = ref(false);
 
 // Scope Analysis state
 const analysisProgress = ref({
@@ -3116,6 +3130,14 @@ const exportAnalysisResults = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+};
+
+const onScopeUpdated = (finalizedScopeItems) => {
+    console.log('Scope updated with finalized items:', finalizedScopeItems);
+    // TODO: Update the flynnStore with the finalized scope
+    // TODO: Trigger installation document generation with the new scope
+    // TODO: Show success message
+    showScopeManagementModal.value = false;
 };
 
 // Computed Properties

@@ -401,23 +401,24 @@ async function loadPhotos() {
     }
 }
 
-// Image preloading function
+// Image preloading function with graceful error handling
 function preloadImage(url) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (preloadedImages.value.has(url)) {
-            resolve(url);
+            resolve(true);
             return;
         }
         
         const img = new Image();
         img.onload = () => {
             preloadedImages.value.add(url);
-            console.log('PhotoGalleria: Preloaded image:', url);
-            resolve(url);
+            console.log('PhotoGalleria: Successfully preloaded image:', url);
+            resolve(true);
         };
         img.onerror = (error) => {
             console.warn('PhotoGalleria: Failed to preload image:', url, error);
-            reject(error);
+            // Don't add to preloaded set, but resolve (don't reject) to prevent breaking the flow
+            resolve(false);
         };
         img.src = url;
     });
@@ -445,8 +446,11 @@ function preloadAdjacentImages(currentIndex) {
         const photo = photos.value[index];
         if (photo?.download_url) {
             const optimizedUrl = getOptimizedImageUrl(photo);
-            preloadImage(optimizedUrl).catch(() => {
-                // Silently handle preload failures
+            preloadImage(optimizedUrl).then((success) => {
+                // Silently handle preload success/failure
+                if (!success) {
+                    console.log('PhotoGalleria: Preload failed for index', index, 'will fallback to original');
+                }
             });
         }
     });
@@ -575,8 +579,41 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString();
 }
 
-// Advanced Azure image optimization with progressive loading and modern formats
+// Smart image optimization with backend detection and graceful fallback
 function getOptimizedImageUrl(photo, options = {}) {
+    const originalUrl = photo.download_url;
+    
+    // Check if backend supports optimization (cache the result)
+    if (!getOptimizedImageUrl._backendSupport) {
+        // For Azure production environment, we detect if optimization is supported
+        // by checking if the backend is our custom Laravel API or a CDN service
+        const isLocalDev = originalUrl.includes('localhost') || originalUrl.includes('127.0.0.1');
+        const isCustomAPI = originalUrl.includes('/api/flynn/photos/') && originalUrl.includes('/download');
+        const isAzureCDN = originalUrl.includes('azureedge') || originalUrl.includes('blob.core.windows.net');
+        
+        // Cache the detection result
+        getOptimizedImageUrl._backendSupport = {
+            supportsOptimization: isAzureCDN, // Only try optimization on Azure CDN
+            isCustomAPI: isCustomAPI,
+            isLocalDev: isLocalDev
+        };
+        
+        console.log('PhotoGalleria: Backend support detection:', getOptimizedImageUrl._backendSupport);
+    }
+    
+    const support = getOptimizedImageUrl._backendSupport;
+    
+    // If it's our custom Laravel API without CDN optimization, return original URL
+    if (support.isCustomAPI && !support.supportsOptimization) {
+        console.log('PhotoGalleria: Using original URL (no backend optimization support)');
+        return originalUrl;
+    }
+    
+    // Only apply optimization for supported backends
+    if (!support.supportsOptimization) {
+        return originalUrl;
+    }
+    
     const {
         width = 1920,
         height = 1080,
@@ -585,48 +622,35 @@ function getOptimizedImageUrl(photo, options = {}) {
         thumbnailMode = false
     } = options;
     
-    // Advanced format detection with AVIF and WebP support
-    const formatSupport = (() => {
-        const cache = getOptimizedImageUrl._formatCache || {};
-        if (Object.keys(cache).length === 0) {
-            // Test AVIF support
-            const avifCanvas = document.createElement('canvas');
-            avifCanvas.width = 1;
-            avifCanvas.height = 1;
-            cache.avif = avifCanvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
-            
-            // Test WebP support
-            const webpCanvas = document.createElement('canvas');
-            webpCanvas.width = 1;
-            webpCanvas.height = 1;
-            cache.webp = webpCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-            
-            getOptimizedImageUrl._formatCache = cache;
+    // Browser format support detection (simplified)
+    const supportsWebP = (() => {
+        if (getOptimizedImageUrl._webpSupport !== undefined) {
+            return getOptimizedImageUrl._webpSupport;
         }
-        return cache;
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const supported = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        getOptimizedImageUrl._webpSupport = supported;
+        return supported;
     })();
     
-    const originalUrl = photo.download_url;
-    
-    // Enhanced Azure Blob Storage / CDN optimization
+    // Azure Blob Storage / CDN optimization (only for supported backends)
     if (originalUrl.includes('azure') || originalUrl.includes('blob') || originalUrl.includes('azureedge')) {
         try {
             const url = new URL(originalUrl);
             const params = new URLSearchParams();
             
-            // Determine optimal format (AVIF > WebP > JPEG)
-            let format = 'jpeg';
-            if (formatSupport.avif) {
-                format = 'avif';
-            } else if (formatSupport.webp) {
-                format = 'webp';
+            // Use WebP if supported, otherwise keep original format
+            if (supportsWebP) {
+                params.set('format', 'webp');
             }
             
-            // Responsive sizing based on viewport and device pixel ratio
-            const dpr = window.devicePixelRatio || 1;
-            const viewportWidth = window.innerWidth || 1920;
+            // Conservative optimization parameters
+            params.set('quality', Math.min(quality, 90).toString());
             
-            // Adaptive sizing for performance
+            // Responsive sizing
+            const viewportWidth = window.innerWidth || 1920;
             let adaptiveWidth = width;
             let adaptiveHeight = height;
             
@@ -634,42 +658,22 @@ function getOptimizedImageUrl(photo, options = {}) {
                 adaptiveWidth = 300;
                 adaptiveHeight = 200;
             } else if (viewportWidth < 768) {
-                // Mobile optimization
-                adaptiveWidth = Math.min(width, viewportWidth * dpr);
-                adaptiveHeight = Math.min(height, (viewportWidth * dpr * 0.75));
+                adaptiveWidth = Math.min(width, viewportWidth);
+                adaptiveHeight = Math.min(height, Math.round(viewportWidth * 0.75));
             }
             
-            // Azure Image Transformation parameters
-            params.set('format', format);
-            params.set('quality', progressive ? Math.max(quality - 15, 60) : quality);
-            params.set('width', Math.round(adaptiveWidth).toString());
-            params.set('height', Math.round(adaptiveHeight).toString());
-            params.set('mode', 'crop'); // Better for consistent aspect ratios
-            params.set('scale', 'both');
-            
-            // Performance optimizations
-            if (progressive) {
-                params.set('progressive', 'true');
-            }
-            
-            // Cache control headers for CDN
-            params.set('cache', '604800'); // 7 days cache
-            params.set('optimize', 'true');
-            
-            // Lossless optimization for high-quality images
-            if (quality >= 90) {
-                params.set('lossless', 'true');
-            }
+            params.set('width', adaptiveWidth.toString());
+            params.set('height', adaptiveHeight.toString());
             
             return `${url.origin}${url.pathname}?${params.toString()}`;
             
         } catch (error) {
-            console.warn('PhotoGalleria: URL optimization failed:', error);
+            console.warn('PhotoGalleria: URL optimization failed, using original:', error);
             return originalUrl;
         }
     }
     
-    // Fallback to original URL
+    // Fallback to original URL for all other cases
     return originalUrl;
 }
 
