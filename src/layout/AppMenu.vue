@@ -8,6 +8,11 @@ const model = ref([
         icon: 'pi pi-home',
         items: [
             {
+                label: 'Dispatch Dashboard',
+                icon: 'pi pi-fw pi-chart-bar',
+                to: '/field-services/dispatch-dashboard'
+            },
+            {
                 label: 'Visit Details',
                 icon: 'pi pi-fw pi-calendar-plus',
                 to: '/field-services/visit-management'
@@ -99,6 +104,35 @@ const model = ref([
                 label: 'Location Scope Review',
                 icon: 'pi pi-fw pi-map-marker',
                 to: '/flynn/location-scope-review'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Billing Audit',
+        icon: 'pi pi-dollar',
+        items: [
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-chart-line',
+                to: '/dashboard'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Audit Workbench',
+        icon: 'pi pi-cog',
+        items: [
+            {
+                label: 'Audit Dashboard',
+                icon: 'pi pi-fw pi-chart-bar',
+                to: '/audit/291/dashboard'
+            },
+            {
+                label: 'Locations',
+                icon: 'pi pi-fw pi-map',
+                to: '/audit/291/locations'
             }
         ]
     },

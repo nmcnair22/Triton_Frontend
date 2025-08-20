@@ -4,6 +4,7 @@ import LandingLayout from '@/layout/LandingLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
 import { useUserStore } from '@/stores/user';
+import auditRoutes from './auditRoutes';
 
 // Explicitly set development mode variable
 const isDevelopmentMode = import.meta.env.DEV;
@@ -32,6 +33,19 @@ const routes = [
                     breadcrumb: ['Streamline Dashboard']
                 },
                 component: () => import('@/views/apps/StreamlineDashboard.vue')
+            },
+            {
+                path: '/field-services/dispatch-dashboard',
+                name: 'dispatch-dashboard',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Field Services', path: '/field-services' },
+                        { label: 'Dispatch Dashboard', path: '/field-services/dispatch-dashboard' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/field-services/DispatchDashboard.vue')
             },
             {
                 path: '/field-services/visit-management',
@@ -147,6 +161,23 @@ const routes = [
                 },
                 component: () => import('@/views/flynn/LocationScopeReview.vue')
             },
+
+            // Legacy Billing Audit Dashboard (kept for backward compatibility)
+            {
+                path: '/dashboard',
+                name: 'billing-audit-dashboard',
+                meta: {
+                    breadcrumb: [
+                        { label: 'Home', path: '/' },
+                        { label: 'Billing Audit Dashboard', path: '/dashboard' }
+                    ],
+                    requiresAuth: true
+                },
+                component: () => import('@/views/Dashboard.vue')
+            },
+
+            // Audit Workbench Routes (customer-scoped)
+            ...auditRoutes,
 
             // Customers Module Routes
             {
@@ -899,7 +930,7 @@ const router = createRouter({
     }
 });
 
-// Navigation guard for authentication
+// Navigation guard for authentication and audit access validation
 router.beforeEach(async (to, from, next) => {
     // Skip auth check for public routes (login, callback, etc.)
     const publicPages = ['/auth/login', '/auth/microsoft-callback', '/auth/register', '/auth/forgot-password', '/auth/verification', '/auth/new-password'];
@@ -912,6 +943,45 @@ router.beforeEach(async (to, from, next) => {
     if (authRequired && !token) {
         localStorage.setItem('auth_redirect', to.fullPath);
         return next('/auth/login');
+    }
+
+    // Special validation for audit workbench routes
+    if (to.path.startsWith('/audit/') && to.params.customerId) {
+        try {
+            // Dynamic import to avoid circular dependency
+            const { auditClient } = await import('@/services/auditClient');
+            const response = await auditClient.getCustomerStatus(to.params.customerId);
+            
+            if (response.status === 200) {
+                // Customer exists and user has access, proceed
+                return next();
+            }
+        } catch (error) {
+            console.error('Audit route validation failed:', error);
+            
+            if (error.response?.status === 403) {
+                // Access denied
+                return next({
+                    path: '/auth/access',
+                    query: { 
+                        from: to.fullPath,
+                        reason: 'Insufficient permissions for customer audit access'
+                    }
+                });
+            } else if (error.response?.status === 404) {
+                // Customer not found
+                return next({
+                    path: '/pages/notfound',
+                    query: { 
+                        from: to.fullPath,
+                        reason: 'Customer not found'
+                    }
+                });
+            }
+            
+            // Other errors, let it proceed and handle at component level
+            console.warn('Audit validation error, proceeding anyway:', error.message);
+        }
     }
     
     if (token) {

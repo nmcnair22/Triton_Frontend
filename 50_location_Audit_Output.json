@@ -1,0 +1,3992 @@
+{
+    "customer_id": 291,
+    "limit_requested": 50,
+    "locations_analyzed": 50,
+    "unique_profiles": 26,
+    "unmapped_asset_types": [],
+    "profile_signatures": {
+        "CP:1-VZ:1|LD-TA-TEL5GB-TEM-TP": {
+            "count": 1,
+            "locations": [
+                "CTR_3636_Toronto_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "VZ": 1
+            },
+            "charge_breakdown": [
+                "TEL5GB",
+                "TA",
+                "LD",
+                "TEM",
+                "TP"
+            ],
+            "total_cost_range": {
+                "min": 139.44,
+                "max": 139.44
+            },
+            "asset_signature": "CP:1-VZ:1",
+            "charge_signature": "LD-TA-TEL5GB-TEM-TP"
+        },
+        "CP:1-MD:4-MN:1-MU:8-OR:6-SIM_TEL1GB:1-TEM:1|TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3651_Drummondville_QC"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 8,
+                "OR": 6,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TP",
+                "VZ1GB"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:8-OR:6-SIM_TEL1GB:1-TEM:1",
+            "charge_signature": "TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1|TA-TEL5GB-TEM-TP": {
+            "count": 2,
+            "locations": [
+                "CTR_3647_Qu\u00e9bec_QC",
+                "CTR_3037_PETERBOROUGH_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TEL5GB",
+                "TEM",
+                "TA",
+                "TP"
+            ],
+            "total_cost_range": {
+                "min": 139.44,
+                "max": 139.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1",
+            "charge_signature": "TA-TEL5GB-TEM-TP"
+        },
+        "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-TEM:1|TEM": {
+            "count": 1,
+            "locations": [
+                "CTR_3643_Lindsay_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 11.5,
+                "max": 11.5
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-TEM:1",
+            "charge_signature": "TEM"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 20,
+            "locations": [
+                "CTR_3006_STRATFORD_ON",
+                "CTR_3436_BELLEVILLE_ON",
+                "CTR_3009_SCARBOROUGH_ON",
+                "CTR_3011_Owen Sound_ON",
+                "CTR_3017_OAKVILLE_ON",
+                "CTR_3018_ST. CATHARINES_ON",
+                "CTR_3021_LONDON_ON",
+                "CTR_3026_MILTON_ON",
+                "CTR_3027_BURLINGTON_ON",
+                "CTR_3029_HANNON _ON",
+                "CTR_3031_KINGSTON_ON",
+                "CTR_3032_ORLEANS_ON",
+                "CTR_3033_SARNIA_ON",
+                "CTR_3036_ORANGEVILLE_ON",
+                "CTR_3039_WHITBY_ON",
+                "CTR_3308_GUELPH_ON",
+                "CTR_3316_WOODBRIDGE_ON",
+                "CTR_3323_EAST GWILLIMBURY_ON",
+                "CTR_3401_LASALLE_ON",
+                "CTR_3409_KINGSTON_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "VZ1GB",
+                "TP",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-VZ:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3424_EDMONTON_AB"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "VZ": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TP",
+                "TA",
+                "VZ1GB"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-VZ:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|TA-TEM-TP-VZ1GB": {
+            "count": 4,
+            "locations": [
+                "CTR_3480_VAUDREUIL-DORION_QC",
+                "CTR_3035_CORNWALL_ON",
+                "CTR_3315_Cambridge_ON",
+                "CTR_3389_BURNABY_BC"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "VZ1GB",
+                "TA",
+                "TP",
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:2-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3609_Victoriaville_QC"
+            ],
+            "asset_breakdown": {
+                "CP": 2,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1
+            },
+            "charge_breakdown": [
+                "VZ1GB",
+                "TP",
+                "TA",
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:2-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1|NO_CHARGES": {
+            "count": 1,
+            "locations": [
+                "CTR_3002_WINDSOR_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1
+            },
+            "charge_breakdown": [],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "CP:1",
+            "charge_signature": "NO_CHARGES"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|LD-TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3003_ORILLIA_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "VZ1GB",
+                "TP",
+                "TA",
+                "TEM",
+                "LD"
+            ],
+            "total_cost_range": {
+                "min": 163,
+                "max": 163
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "charge_signature": "LD-TA-TEM-TP-VZ1GB"
+        },
+        "NO_ASSETS|NO_SHIPTO": {
+            "count": 1,
+            "locations": [
+                "CTR_3004_LONDON_ON"
+            ],
+            "asset_breakdown": [],
+            "charge_breakdown": [
+                "VZ1GB",
+                "TP",
+                "TA",
+                "TEM",
+                "LD"
+            ],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "NO_ASSETS",
+            "charge_signature": "NO_SHIPTO"
+        },
+        "CP:1-MD:4-MN:1-MU:6-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3007_MISSISSAUGA_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TP",
+                "VZ1GB",
+                "TA",
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:6-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-TEM:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3008_OAKVILLE_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TP",
+                "TA",
+                "VZ1GB",
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-TEM:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TEM-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3012_BRAMPTON_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "VZ1GB",
+                "TEM"
+            ],
+            "total_cost_range": {
+                "min": 51.5,
+                "max": 51.5
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TEM-VZ1GB"
+        },
+        "SIM_BELL1GB:1|NO_CHARGES": {
+            "count": 1,
+            "locations": [
+                "CTR_3019_BARRIE_ON"
+            ],
+            "asset_breakdown": {
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "SIM_BELL1GB:1",
+            "charge_signature": "NO_CHARGES"
+        },
+        "NO_ASSETS|NO_CHARGES": {
+            "count": 2,
+            "locations": [
+                "CTR_3024_WOODSTOCK_ON",
+                "CTR_3405_RICHMOND HILL_ON"
+            ],
+            "asset_breakdown": [],
+            "charge_breakdown": [],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "NO_ASSETS",
+            "charge_signature": "NO_CHARGES"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP": {
+            "count": 1,
+            "locations": [
+                "CTR_3347_Brantford_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TA",
+                "TP"
+            ],
+            "total_cost_range": {
+                "min": 81.44,
+                "max": 81.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP"
+        },
+        "CP:1-MD:6-MN:1-MU:8-OR:6-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3034_KITCHENER_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 6,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TP",
+                "VZ1GB",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:6-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1|TA-TEL5GB-TEM-TP": {
+            "count": 1,
+            "locations": [
+                "CTR_3038_TIMMINS_ON"
+            ],
+            "asset_breakdown": {
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TP",
+                "TEL5GB",
+                "TEM",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 139.44,
+                "max": 139.44
+            },
+            "asset_signature": "MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1",
+            "charge_signature": "TA-TEL5GB-TEM-TP"
+        },
+        "MD:2-MU:1|NO_CHARGES": {
+            "count": 1,
+            "locations": [
+                "CTR_3320_WATERLOO_ON"
+            ],
+            "asset_breakdown": {
+                "MD": 2,
+                "MU": 1
+            },
+            "charge_breakdown": [],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "MD:2-MU:1",
+            "charge_signature": "NO_CHARGES"
+        },
+        "CP:1-MD:4-MN:1-MU:4-OR:7-TEM:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3330_WELLAND_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 4,
+                "OR": 7,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TP",
+                "TA",
+                "VZ1GB"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:4-OR:7-TEM:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "NO_ASSETS|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3402_MISSISSAUGA_ON"
+            ],
+            "asset_breakdown": [],
+            "charge_breakdown": [
+                "TEM",
+                "TA",
+                "TP",
+                "VZ1GB"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "NO_ASSETS",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3403_OTTAWA_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "VZ1GB",
+                "TP",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-OR:7|NO_CHARGES": {
+            "count": 1,
+            "locations": [
+                "CTR_3404_OSHAWA_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "OR": 7
+            },
+            "charge_breakdown": [],
+            "total_cost_range": {
+                "min": 0,
+                "max": 0
+            },
+            "asset_signature": "CP:1-OR:7",
+            "charge_signature": "NO_CHARGES"
+        },
+        "CP:1-MD:5-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3406_ANCASTER_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "charge_breakdown": [
+                "TEM",
+                "TP",
+                "VZ1GB",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        },
+        "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_ATT5GB:1-TEM:1|TA-TEM-TP-VZ1GB": {
+            "count": 1,
+            "locations": [
+                "CTR_3407_NIAGARA FALLS_ON"
+            ],
+            "asset_breakdown": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_ATT5GB": 1,
+                "TEM": 1
+            },
+            "charge_breakdown": [
+                "VZ1GB",
+                "TP",
+                "TEM",
+                "TA"
+            ],
+            "total_cost_range": {
+                "min": 121.44,
+                "max": 121.44
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_ATT5GB:1-TEM:1",
+            "charge_signature": "TA-TEM-TP-VZ1GB"
+        }
+    },
+    "location_details": [
+        {
+            "location_id": 22990,
+            "location_name": "CTR_3636_Toronto_ON",
+            "city": "Toronto",
+            "state": "ON",
+            "site_number": "3636",
+            "total_assets": 2,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\Models\\Verizon\\VerizonDevice": 1
+            },
+            "asset_signature": "CP:1-VZ:1",
+            "mapped_counts": {
+                "CP": 1,
+                "VZ": 1
+            },
+            "ship_to_code": "22990",
+            "ship_to_name": "CAR_3636_Toronto_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TELUS DATA PLAN 5GB",
+                    "description": "Telus 5GB Data Plan Pooled",
+                    "amount": 58,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "LAN DEVICE",
+                    "description": "Network Management: LAN Device",
+                    "amount": 19.7,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 27.58,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "LD-TA-TEL5GB-TEM-TP",
+            "total_monthly_cost": 139.44,
+            "combined_signature": "CP:1-VZ:1|LD-TA-TEL5GB-TEM-TP",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 22991,
+            "location_name": "CTR_3651_Drummondville_QC",
+            "city": "Drummondville",
+            "state": "QC",
+            "site_number": "3651",
+            "total_assets": 20,
+            "asset_types": {
+                "App\\MerakiDevice": 4,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 6
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:8-OR:6-SIM_TEL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 8,
+                "OR": 6,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "22991",
+            "ship_to_name": "CAR_3651_Drummondville_QC",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 69.94,
+                    "quantity": 3,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:4-MN:1-MU:8-OR:6-SIM_TEL1GB:1-TEM:1|TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_BELL CANAD_3651_4205",
+                    "provider": "Bell Canada",
+                    "account": "533654205",
+                    "expected_amount": 256.59
+                }
+            ],
+            "tem_providers": [
+                "Bell Canada"
+            ],
+            "tem_total_expected": 256.59,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "TELUS",
+                "plan": "1 GB",
+                "code": "TEL1GB",
+                "sim_number": "8912230000308920503",
+                "phone": "14162068919"
+            },
+            "sim_code": "TEL1GB"
+        },
+        {
+            "location_id": 23083,
+            "location_name": "CTR_3647_Qu\u00e9bec_QC",
+            "city": "Qu\u00e9bec",
+            "state": "QC",
+            "site_number": "3647",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23083",
+            "ship_to_name": "CAR_3647_Quebec City_QC",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TELUS DATA PLAN 5GB",
+                    "description": "Telus 5GB Data Plan Pooled",
+                    "amount": 58,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEL5GB-TEM-TP",
+            "total_monthly_cost": 139.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1|TA-TEL5GB-TEM-TP",
+            "tem_accounts": [
+                {
+                    "vendor": "CTR_3647_Videotron_0016",
+                    "provider": "Videotron",
+                    "account": "769546450016",
+                    "expected_amount": 137.92
+                }
+            ],
+            "tem_providers": [
+                "Videotron"
+            ],
+            "tem_total_expected": 137.92,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "TELUS",
+                "plan": "1 GB",
+                "code": "TEL1GB",
+                "sim_number": "8912230000308919943",
+                "phone": "14163204920"
+            },
+            "sim_code": "TEL1GB"
+        },
+        {
+            "location_id": 23084,
+            "location_name": "CTR_3643_Lindsay_ON",
+            "city": "Lindsay",
+            "state": "ON",
+            "site_number": "3643",
+            "total_assets": 20,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 5,
+                "App\\MerakiUplink": 6,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23084",
+            "ship_to_name": "CAR_3643_Lindsay_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TEM",
+            "total_monthly_cost": 11.5,
+            "combined_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-TEM:1|TEM",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_COGECO_3643_5770",
+                    "provider": "Cogeco Cable",
+                    "account": "50017785770",
+                    "expected_amount": 169.44
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 169.44,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000725231",
+                "phone": "16476539644"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23667,
+            "location_name": "CTR_3006_STRATFORD_ON",
+            "city": "STRATFORD",
+            "state": "ON",
+            "site_number": "3006",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23667",
+            "ship_to_name": "CAR_3006_Stratford_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690201009304554",
+                "phone": "16473221576"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23668,
+            "location_name": "CTR_3424_EDMONTON_AB",
+            "city": "EDMONTON",
+            "state": "AB",
+            "site_number": "3424",
+            "total_assets": 21,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 5,
+                "App\\MerakiUplink": 6,
+                "App\\CradlepointDevice": 1,
+                "App\\Models\\Verizon\\VerizonDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-VZ:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "VZ": 1
+            },
+            "ship_to_code": "23668",
+            "ship_to_name": "CAR_3424_Edmonton_AB",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1-VZ:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690201009301808",
+                "phone": "16473221586"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23669,
+            "location_name": "CTR_3436_BELLEVILLE_ON",
+            "city": "BELLEVILLE",
+            "state": "ON",
+            "site_number": "3436",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23669",
+            "ship_to_name": "CAR_3436_Belleville_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000729217",
+                "phone": "16476539636"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23670,
+            "location_name": "CTR_3480_VAUDREUIL-DORION_QC",
+            "city": "VAUDREUIL-DORION",
+            "state": "QC",
+            "site_number": "3480",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23670",
+            "ship_to_name": "CAR_3480_Vaudreuil-Dorion_QC",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_VTN_3480_0014",
+                    "provider": "Videotron",
+                    "account": "770054070014",
+                    "expected_amount": 149.41
+                }
+            ],
+            "tem_providers": [
+                "Videotron"
+            ],
+            "tem_total_expected": 149.41,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000572690",
+                "phone": "16473221653"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23671,
+            "location_name": "CTR_3609_Victoriaville_QC",
+            "city": "Victoriaville",
+            "state": "QC",
+            "site_number": "3609",
+            "total_assets": 24,
+            "asset_types": {
+                "App\\CradlepointDevice": 2,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:2-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1",
+            "mapped_counts": {
+                "CP": 2,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1
+            },
+            "ship_to_code": "23671",
+            "ship_to_name": "CAR_3609_Victorville_QC",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:2-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "TELUS",
+                "plan": "1 GB",
+                "code": "TEL1GB",
+                "sim_number": "8912230100076514684",
+                "phone": null
+            },
+            "sim_code": "TEL1GB"
+        },
+        {
+            "location_id": 23672,
+            "location_name": "CTR_3002_WINDSOR_ON",
+            "city": "WINDSOR",
+            "state": "ON",
+            "site_number": "3002",
+            "total_assets": 1,
+            "asset_types": {
+                "App\\CradlepointDevice": 1
+            },
+            "asset_signature": "CP:1",
+            "mapped_counts": {
+                "CP": 1
+            },
+            "ship_to_code": "23672",
+            "ship_to_name": "CAR_3002_Windsor_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "CP:1|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23673,
+            "location_name": "CTR_3003_ORILLIA_ON",
+            "city": "ORILLIA",
+            "state": "ON",
+            "site_number": "3003",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23673",
+            "ship_to_name": "CAR_3003_Orillia_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 73.08,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "LAN DEVICE",
+                    "description": "Network Management: LAN Device",
+                    "amount": 15.76,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "LD-TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 163,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|LD-TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CTR_3003_Rogers_Cable_7006",
+                    "provider": "Rogers Cable",
+                    "account": "857006",
+                    "expected_amount": 112.99
+                }
+            ],
+            "tem_providers": [
+                "Rogers Cable"
+            ],
+            "tem_total_expected": 112.99,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724705",
+                "phone": "16476539697"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23674,
+            "location_name": "CTR_3004_LONDON_ON",
+            "city": "LONDON",
+            "state": "ON",
+            "site_number": "3004",
+            "total_assets": 0,
+            "asset_types": [],
+            "asset_signature": "NO_ASSETS",
+            "mapped_counts": [],
+            "ship_to_code": null,
+            "ship_to_name": null,
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_SHIPTO",
+            "total_monthly_cost": 0,
+            "combined_signature": "NO_ASSETS|NO_SHIPTO",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23675,
+            "location_name": "CTR_3007_MISSISSAUGA_ON",
+            "city": "MISSISSAUGA",
+            "state": "ON",
+            "site_number": "3007",
+            "total_assets": 19,
+            "asset_types": {
+                "App\\MerakiDevice": 4,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiUplink": 6,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:6-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23675",
+            "ship_to_name": "CAR_3007_Mississauga_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:4-MN:1-MU:6-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724358",
+                "phone": "16476539712"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23676,
+            "location_name": "CTR_3008_OAKVILLE_ON",
+            "city": "OAKVILLE",
+            "state": "ON",
+            "site_number": "3008",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "TEM": 1
+            },
+            "ship_to_code": "23676",
+            "ship_to_name": "CAR_3008_Oakville_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CTR_3008_Cogeco_Cable_9644",
+                    "provider": "Cogeco Cable",
+                    "account": "50022779644",
+                    "expected_amount": 95.99
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 95.99,
+            "tem_count": 1,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23677,
+            "location_name": "CTR_3009_SCARBOROUGH_ON",
+            "city": "SCARBOROUGH",
+            "state": "ON",
+            "site_number": "3009",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23677",
+            "ship_to_name": "CAR_3009_Scarborough_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724366",
+                "phone": "16476539711"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23678,
+            "location_name": "CTR_3011_Owen Sound_ON",
+            "city": "Owen Sound",
+            "state": "ON",
+            "site_number": "3011",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23678",
+            "ship_to_name": "CAR_3011_Owen Sound_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000725173",
+                "phone": "16476539650"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23679,
+            "location_name": "CTR_3012_BRAMPTON_ON",
+            "city": "BRAMPTON",
+            "state": "ON",
+            "site_number": "3012",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23679",
+            "ship_to_name": "CAR_3012_Brampton_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TEM-VZ1GB",
+            "total_monthly_cost": 51.5,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TEM-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000725140",
+                "phone": "16476539653"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23680,
+            "location_name": "CTR_3017_OAKVILLE_ON",
+            "city": "OAKVILLE",
+            "state": "ON",
+            "site_number": "3017",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23680",
+            "ship_to_name": "CAR_3017_Oakville_TN",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724721",
+                "phone": "16476539695"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23681,
+            "location_name": "CTR_3018_ST. CATHARINES_ON",
+            "city": "ST. CATHARINES",
+            "state": "ON",
+            "site_number": "3018",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23681",
+            "ship_to_name": "CAR_3018_St. Catharines_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000722428",
+                "phone": "16476539689"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23682,
+            "location_name": "CTR_3019_BARRIE_ON",
+            "city": "BARRIE",
+            "state": "ON",
+            "site_number": "3019",
+            "total_assets": 0,
+            "asset_types": [],
+            "asset_signature": "SIM_BELL1GB:1",
+            "mapped_counts": {
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23682",
+            "ship_to_name": "CTR_3019_BARRIE_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "SIM_BELL1GB:1|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000725124",
+                "phone": "16476539655"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23683,
+            "location_name": "CTR_3021_LONDON_ON",
+            "city": "LONDON",
+            "state": "ON",
+            "site_number": "3021",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23683",
+            "ship_to_name": "CAR_3021_London_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724762",
+                "phone": "16476539691"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23684,
+            "location_name": "CTR_3024_WOODSTOCK_ON",
+            "city": "WOODSTOCK",
+            "state": "ON",
+            "site_number": "3024",
+            "total_assets": 0,
+            "asset_types": [],
+            "asset_signature": "NO_ASSETS",
+            "mapped_counts": [],
+            "ship_to_code": "23684",
+            "ship_to_name": "CTR_3024_WOODSTOCK_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "NO_ASSETS|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23685,
+            "location_name": "CTR_3347_Brantford_ON",
+            "city": "Brantford",
+            "state": "ON",
+            "site_number": "3347",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7,
+                "App\\CradlepointDevice": 1
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23685",
+            "ship_to_name": "CAR_3347_Brantford_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP",
+            "total_monthly_cost": 81.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000723616",
+                "phone": "16476539680"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23686,
+            "location_name": "CTR_3026_MILTON_ON",
+            "city": "MILTON",
+            "state": "ON",
+            "site_number": "3026",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23686",
+            "ship_to_name": "CAR_3026_Milton_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724788",
+                "phone": "16476539623"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23687,
+            "location_name": "CTR_3027_BURLINGTON_ON",
+            "city": "BURLINGTON",
+            "state": "ON",
+            "site_number": "3027",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23687",
+            "ship_to_name": "CAR_3027_Burlington_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000722436",
+                "phone": "16476539688"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23688,
+            "location_name": "CTR_3029_HANNON _ON",
+            "city": "HANNON ",
+            "state": "ON",
+            "site_number": "3029",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23688",
+            "ship_to_name": "CAR_3029_Hannon_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724325",
+                "phone": "16476539715"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23689,
+            "location_name": "CTR_3031_KINGSTON_ON",
+            "city": "KINGSTON",
+            "state": "ON",
+            "site_number": "3031",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23689",
+            "ship_to_name": "CAR_3031_Kingston_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724382",
+                "phone": "16476539709"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23690,
+            "location_name": "CTR_3032_ORLEANS_ON",
+            "city": "ORLEANS",
+            "state": "ON",
+            "site_number": "3032",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23690",
+            "ship_to_name": "CAR_3032_Orleans_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724333",
+                "phone": "16476539714"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23691,
+            "location_name": "CTR_3033_SARNIA_ON",
+            "city": "SARNIA",
+            "state": "ON",
+            "site_number": "3033",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23691",
+            "ship_to_name": "CAR_3033_Sarina_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724390",
+                "phone": "16476539708"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23692,
+            "location_name": "CTR_3034_KITCHENER_ON",
+            "city": "KITCHENER",
+            "state": "ON",
+            "site_number": "3034",
+            "total_assets": 22,
+            "asset_types": {
+                "App\\MerakiDevice": 6,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 6
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:6-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 6,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23692",
+            "ship_to_name": "CAR_3034_Kitchener_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:6-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724952",
+                "phone": "16476539606"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23693,
+            "location_name": "CTR_3035_CORNWALL_ON",
+            "city": "CORNWALL",
+            "state": "ON",
+            "site_number": "3035",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23693",
+            "ship_to_name": "CAR_3035_Cornwall_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_COGECO_3035_2843",
+                    "provider": "Cogeco Cable",
+                    "account": "50017782843",
+                    "expected_amount": 167.18
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 167.18,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690201009301691",
+                "phone": "16473221597"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23694,
+            "location_name": "CTR_3036_ORANGEVILLE_ON",
+            "city": "ORANGEVILLE",
+            "state": "ON",
+            "site_number": "3036",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23694",
+            "ship_to_name": "CAR_3036_Orangeville_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724804",
+                "phone": "16476539621"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23695,
+            "location_name": "CTR_3037_PETERBOROUGH_ON",
+            "city": "PETERBOROUGH",
+            "state": "ON",
+            "site_number": "3037",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23695",
+            "ship_to_name": "CAR_3037_Peterborough_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TELUS DATA PLAN 5GB",
+                    "description": "Telus 5GB Data Plan Pooled",
+                    "amount": 58,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEL5GB-TEM-TP",
+            "total_monthly_cost": 139.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1|TA-TEL5GB-TEM-TP",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_COGECO_3037_1171",
+                    "provider": "Cogeco Cable",
+                    "account": "50017491171",
+                    "expected_amount": 167.25
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 167.25,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "TELUS",
+                "plan": "1 GB",
+                "code": "TEL1GB",
+                "sim_number": "8912230000308919927",
+                "phone": "14162062734"
+            },
+            "sim_code": "TEL1GB"
+        },
+        {
+            "location_id": 23696,
+            "location_name": "CTR_3038_TIMMINS_ON",
+            "city": "TIMMINS",
+            "state": "ON",
+            "site_number": "3038",
+            "total_assets": 22,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1",
+            "mapped_counts": {
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_TEL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23696",
+            "ship_to_name": "CAR_3038_Timmins_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TELUS DATA PLAN 5GB",
+                    "description": "Telus 5GB Data Plan Pooled",
+                    "amount": 58,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEL5GB-TEM-TP",
+            "total_monthly_cost": 139.44,
+            "combined_signature": "MD:6-MN:1-MU:8-OR:7-SIM_TEL1GB:1-TEM:1|TA-TEL5GB-TEM-TP",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_EASTLINK_3038_9956",
+                    "provider": "Eastlink",
+                    "account": "8127410190499956",
+                    "expected_amount": 151.37
+                }
+            ],
+            "tem_providers": [
+                "Eastlink"
+            ],
+            "tem_total_expected": 151.37,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "TELUS",
+                "plan": "1 GB",
+                "code": "TEL1GB",
+                "sim_number": "8912230000308919992",
+                "phone": "14169898860"
+            },
+            "sim_code": "TEL1GB"
+        },
+        {
+            "location_id": 23697,
+            "location_name": "CTR_3039_WHITBY_ON",
+            "city": "WHITBY",
+            "state": "ON",
+            "site_number": "3039",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23697",
+            "ship_to_name": "CAR_3039_Whitby_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000723707",
+                "phone": "16476539671"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23698,
+            "location_name": "CTR_3308_GUELPH_ON",
+            "city": "GUELPH",
+            "state": "ON",
+            "site_number": "3308",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23698",
+            "ship_to_name": "CAR_3308_Guelph_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000722444",
+                "phone": "16476539687"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23699,
+            "location_name": "CTR_3315_Cambridge_ON",
+            "city": "Cambridge",
+            "state": "ON",
+            "site_number": "3315",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiDevice": 6,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23699",
+            "ship_to_name": "CAR_3315_Cambridge_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CTR_3315_Bell_Canada_4624",
+                    "provider": "Bell Enterprise",
+                    "account": "547384624",
+                    "expected_amount": 510
+                }
+            ],
+            "tem_providers": [
+                "Bell Enterprise"
+            ],
+            "tem_total_expected": 510,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000513629",
+                "phone": "16473223480"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23700,
+            "location_name": "CTR_3316_WOODBRIDGE_ON",
+            "city": "WOODBRIDGE",
+            "state": "ON",
+            "site_number": "3316",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23700",
+            "ship_to_name": "CAR_3316_Woodbridge_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000724713",
+                "phone": "16476539696"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23701,
+            "location_name": "CTR_3320_WATERLOO_ON",
+            "city": "WATERLOO",
+            "state": "ON",
+            "site_number": "3320",
+            "total_assets": 3,
+            "asset_types": {
+                "App\\MerakiDevice": 2,
+                "App\\MerakiUplink": 1
+            },
+            "asset_signature": "MD:2-MU:1",
+            "mapped_counts": {
+                "MD": 2,
+                "MU": 1
+            },
+            "ship_to_code": "23701",
+            "ship_to_name": "CAR_3320_Waterloo_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "MD:2-MU:1|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23702,
+            "location_name": "CTR_3323_EAST GWILLIMBURY_ON",
+            "city": "EAST GWILLIMBURY",
+            "state": "ON",
+            "site_number": "3323",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23702",
+            "ship_to_name": "CAR_3323_E Gwillimbury_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000723640",
+                "phone": "16476539677"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23703,
+            "location_name": "CTR_3330_WELLAND_ON",
+            "city": "WELLAND",
+            "state": "ON",
+            "site_number": "3330",
+            "total_assets": 17,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 4,
+                "App\\MerakiUplink": 4,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:4-MN:1-MU:4-OR:7-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 4,
+                "MN": 1,
+                "MU": 4,
+                "OR": 7,
+                "TEM": 1
+            },
+            "ship_to_code": "23703",
+            "ship_to_name": "CAR_3330_Welland_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:4-MN:1-MU:4-OR:7-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_COGECO_3330_1544",
+                    "provider": "Cogeco Cable",
+                    "account": "50017491544",
+                    "expected_amount": 129.89
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 129.89,
+            "tem_count": 1,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23704,
+            "location_name": "CTR_3389_BURNABY_BC",
+            "city": "BURNABY",
+            "state": "BC",
+            "site_number": "3389",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23704",
+            "ship_to_name": "CAR_3389_Burnaby_BC",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CTR_3389_Shaw_Cable_9194",
+                    "provider": "Shaw Cable",
+                    "account": "01424559194",
+                    "expected_amount": 1581.22
+                }
+            ],
+            "tem_providers": [
+                "Shaw Cable"
+            ],
+            "tem_total_expected": 1581.22,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690201009303143",
+                "phone": "16473221037"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23705,
+            "location_name": "CTR_3401_LASALLE_ON",
+            "city": "LASALLE",
+            "state": "ON",
+            "site_number": "3401",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23705",
+            "ship_to_name": "CAR_3401_Lasalle_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000725132",
+                "phone": "16476539654"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23706,
+            "location_name": "CTR_3402_MISSISSAUGA_ON",
+            "city": "MISSISSAUGA",
+            "state": "ON",
+            "site_number": "3402",
+            "total_assets": 0,
+            "asset_types": [],
+            "asset_signature": "NO_ASSETS",
+            "mapped_counts": [],
+            "ship_to_code": "23706",
+            "ship_to_name": "CAR_3402_Mississauga_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "NO_ASSETS|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23707,
+            "location_name": "CTR_3403_OTTAWA_ON",
+            "city": "OTTAWA",
+            "state": "ON",
+            "site_number": "3403",
+            "total_assets": 20,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 5,
+                "App\\MerakiUplink": 6,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23707",
+            "ship_to_name": "CAR_3403_Ottawa_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000580628",
+                "phone": "16473221625"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23708,
+            "location_name": "CTR_3404_OSHAWA_ON",
+            "city": "OSHAWA",
+            "state": "ON",
+            "site_number": "3404",
+            "total_assets": 8,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-OR:7",
+            "mapped_counts": {
+                "CP": 1,
+                "OR": 7
+            },
+            "ship_to_code": "23708",
+            "ship_to_name": "CTR_3404_OSHAWA_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "CP:1-OR:7|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23709,
+            "location_name": "CTR_3405_RICHMOND HILL_ON",
+            "city": "RICHMOND HILL",
+            "state": "ON",
+            "site_number": "3405",
+            "total_assets": 0,
+            "asset_types": [],
+            "asset_signature": "NO_ASSETS",
+            "mapped_counts": [],
+            "ship_to_code": "23709",
+            "ship_to_name": "CTR_3405_RICHMOND HILL_ON",
+            "billing_schedule_number": null,
+            "charges": [],
+            "charge_signature": "NO_CHARGES",
+            "total_monthly_cost": 0,
+            "combined_signature": "NO_ASSETS|NO_CHARGES",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": null,
+            "sim_code": null
+        },
+        {
+            "location_id": 23710,
+            "location_name": "CTR_3406_ANCASTER_ON",
+            "city": "ANCASTER",
+            "state": "ON",
+            "site_number": "3406",
+            "total_assets": 22,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 5,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23710",
+            "ship_to_name": "CAR_3406_Ancaster_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:5-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000722485",
+                "phone": "16476539683"
+            },
+            "sim_code": "BELL1GB"
+        },
+        {
+            "location_id": 23711,
+            "location_name": "CTR_3407_NIAGARA FALLS_ON",
+            "city": "NIAGARA FALLS",
+            "state": "ON",
+            "site_number": "3407",
+            "total_assets": 20,
+            "asset_types": {
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 5,
+                "App\\MerakiUplink": 6,
+                "App\\CradlepointDevice": 1,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_ATT5GB:1-TEM:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 5,
+                "MN": 1,
+                "MU": 6,
+                "OR": 7,
+                "SIM_ATT5GB": 1,
+                "TEM": 1
+            },
+            "ship_to_code": "23711",
+            "ship_to_name": "CAR_3407_Niagra_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:5-MN:1-MU:6-OR:7-SIM_ATT5GB:1-TEM:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [
+                {
+                    "vendor": "CAR_COGECO_3407_4765",
+                    "provider": "Cogeco Cable",
+                    "account": "50017784765",
+                    "expected_amount": 169.44
+                }
+            ],
+            "tem_providers": [
+                "Cogeco Cable"
+            ],
+            "tem_total_expected": 169.44,
+            "tem_count": 1,
+            "sim_details": {
+                "carrier": "AT&T",
+                "plan": "5 GB",
+                "code": "ATT5GB",
+                "sim_number": "89014104272951205876",
+                "phone": "19495477809"
+            },
+            "sim_code": "ATT5GB"
+        },
+        {
+            "location_id": 23712,
+            "location_name": "CTR_3409_KINGSTON_ON",
+            "city": "KINGSTON",
+            "state": "ON",
+            "site_number": "3409",
+            "total_assets": 23,
+            "asset_types": {
+                "App\\CradlepointDevice": 1,
+                "App\\MerakiNetwork": 1,
+                "App\\MerakiDevice": 6,
+                "App\\MerakiUplink": 8,
+                "App\\OrionNode": 7
+            },
+            "asset_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1",
+            "mapped_counts": {
+                "CP": 1,
+                "MD": 6,
+                "MN": 1,
+                "MU": 8,
+                "OR": 7,
+                "SIM_BELL1GB": 1
+            },
+            "ship_to_code": "23712",
+            "ship_to_name": "CAR_3409_Kingston_ON",
+            "billing_schedule_number": "CONT291-CAN",
+            "charges": [
+                {
+                    "item_no": "TRANSPORT ADDITIONAL",
+                    "description": "Network Management: Transport Additional",
+                    "amount": 22.66,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TRANSPORT PRIMARY",
+                    "description": "Network Management: Transport Primary",
+                    "amount": 47.28,
+                    "quantity": 2,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "TEM",
+                    "description": "TEM \/ Bill Consolidation fee",
+                    "amount": 11.5,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                },
+                {
+                    "item_no": "VERIZON DATA 1GB",
+                    "description": "Verizon 1GB Data Plan Pooled",
+                    "amount": 40,
+                    "quantity": 1,
+                    "billing_schedule_number": "CONT291-CAN"
+                }
+            ],
+            "charge_signature": "TA-TEM-TP-VZ1GB",
+            "total_monthly_cost": 121.44,
+            "combined_signature": "CP:1-MD:6-MN:1-MU:8-OR:7-SIM_BELL1GB:1|TA-TEM-TP-VZ1GB",
+            "tem_accounts": [],
+            "tem_providers": [],
+            "tem_total_expected": 0,
+            "tem_count": 0,
+            "sim_details": {
+                "carrier": "Bell",
+                "plan": "1 GB",
+                "code": "BELL1GB",
+                "sim_number": "89302690100000729241",
+                "phone": "16476539633"
+            },
+            "sim_code": "BELL1GB"
+        }
+    ],
+    "summary_stats": {
+        "total_assets": 931,
+        "total_monthly_cost": 5115.6,
+        "total_tem_expected": 3798.69,
+        "total_tem_accounts": 13,
+        "locations_with_assets": 45,
+        "locations_with_billing": 43,
+        "locations_with_tem": 13
+    }
+}
