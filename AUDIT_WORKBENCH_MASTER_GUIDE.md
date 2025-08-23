@@ -100,6 +100,15 @@ A comprehensive auditor workflow platform that transforms raw asset scan data in
 - ✅ **Real-time Calculations**: Live final price preview
 - ✅ **Defensive API Design**: Graceful 404 handling for new endpoints
 
+#### **NEW: Field Service Billing Analysis (COMPLETE)**
+- ✅ **Route**: `/accounting/field-service-billing` for ticket-level billing audits
+- ✅ **Ticket Search**: Single or multi-ticket lookup with payables/receivables view toggle
+- ✅ **Turnup Search**: Customer/location/date filtering with dynamic date ranges
+- ✅ **Dynamics 365 Integration**: Ticket comparison, receivable/payable summaries, and detailed line retrieval
+- ✅ **Detail Modals**: Invoice and purchase views with line-item breakdowns
+- ✅ **Analytics**: Net profit calculations, vendor aggregation, and comparison mode (single vs group)
+- ✅ **Utilities**: CSV export links and external ticket navigation
+
 #### **Current UI Design Standards**
 - ✅ Finance page styling (colors, fonts, layout)
 - ✅ Consistent typography (larger, readable fonts)
@@ -149,6 +158,7 @@ A comprehensive auditor workflow platform that transforms raw asset scan data in
 /audit/:customerId/customer            → Customer Management (NEW)
 /audit/:customerId/locations/:id       → Location Workbench
 /audit/:customerId/locations/:id?audit_run_id=X → Historical View
+/accounting/field-service-billing     → Field Service Billing Analysis
 ```
 
 ### **State Management (Pinia)**
@@ -157,6 +167,7 @@ useAuditStore              → Customer status, polling, reference data
 useLocationsStore          → Paginated locations, filters, sorting
 useWorkbenchStore          → Raw assets, units, allocation, issues, history
 useCustomerContractsStore  → Contracts, SoF, bundles, location profiles (NEW)
+useBillingStore            → Ticket billing data, Dynamics comparisons, detail fetches (NEW)
 ```
 
 ### **API Integration**
@@ -208,6 +219,12 @@ auditClient.getServiceLevels(customerId)
 auditClient.getIssueTypes()
 auditClient.getNoteTypes()
 auditClient.getScopes()
+
+// Field Service Billing
+ApiService.get('/field-service-billing/tickets/:ticketId')
+ApiService.get('/field-service-billing/dynamics/:ticketId')
+ApiService.get('/field-service-billing/dynamics-invoices', { invoice_number })
+ApiService.get('/field-service-billing/dynamics-purchases', { document_no })
 ```
 
 ### **Component Structure**
@@ -231,6 +248,13 @@ src/components/audit-workbench/
     ├── BundlesTab.vue               ✅ Service bundles with license allocation
     ├── ProfilesTab.vue              ✅ Location profiles with conformance
     └── LocationsTab.vue             ✅ Embedded locations wrapper
+
+src/views/accounting/
+└── FieldServiceBilling.vue          ✅ COMPLETE (ticket billing analysis)
+
+src/components/modals/
+├── InvoiceDetailModal.vue           ✅ Dynamics 365 invoice lines
+└── PurchaseDetailModal.vue          ✅ Dynamics 365 purchase lines
 ```
 
 ---
@@ -374,6 +398,54 @@ interface LocationProfile {
   expected_monthly_total: number;
   tolerance_percentage: number;
   is_active: boolean;
+}
+```
+
+### **Field Service Billing**
+```typescript
+interface BillingRecord {
+  ticket_id: number;
+  category: string;              // labor, material, etc.
+  billing_details: {
+    invoice_number?: string;
+    product_code?: string;
+    quantity?: number;
+    invoiced_amount?: number;
+    amount_paid?: number;
+    vendor?: { vendor_id: number; name: string };
+  };
+}
+
+interface DynamicsTicket {
+  ticket_id: string;
+  summary: {
+    total_receivables_amount: number;
+    total_payables_amount: number;
+    receivables_count: number;
+    payables_count: number;
+  };
+  receivables?: Array<Record<string, any>>;
+  payables?: Array<Record<string, any>>;
+}
+
+interface InvoiceLine {
+  invoice_number: string;
+  job_no: string;
+  cis_id: string;
+  quantity: number;
+  amount: number;
+  created_at: string;
+}
+
+interface PurchaseLine {
+  document_no: string;
+  vendor_no: string;
+  vendor_invoice_no?: string;
+  job_no: string;
+  cis_id: string;
+  quantity: number;
+  amount?: number;               // falls back to quantity * direct_unit_cost
+  created_at: string;
 }
 ```
 
