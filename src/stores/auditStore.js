@@ -170,15 +170,7 @@ export const useAuditStore = defineStore('audit', {
             console.log('Audit completed - no active audits detected, stopping polling');
             this.stopStatusPolling();
             
-            // Show completion toast
-            const { useToast } = await import('primevue/usetoast');
-            const toast = useToast();
-            toast.add({
-              severity: 'success',
-              summary: 'Audit Completed',
-              detail: 'Full customer audit has been completed successfully',
-              life: 5000
-            });
+            // Note: Toast notification should be handled by components, not in store polling
           }
         } catch (error) {
           console.error('Status polling error:', error);

@@ -11,6 +11,15 @@ const auditRoutes = [
     }
   },
   {
+    path: '/audit/:customerId/customer',
+    name: 'CustomerView', 
+    component: () => import('@/views/audit-workbench/CustomerView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Customer Management'
+    }
+  },
+  {
     path: '/audit/:customerId/locations',
     name: 'AuditLocations',
     component: () => import('@/views/audit-workbench/LocationsList.vue'),

@@ -49,73 +49,80 @@ const model = ref([
                         to: '/streamline/bill-import'
                     },
                     {
-                        label: 'Bill Transfer Tracker',
-                        icon: 'pi pi-fw pi-sync',
-                        to: '/streamline/bill-transfer-tracker'
-                    }
-                ]
-            },
-            {
-                label: 'Accounts',
-                icon: 'pi pi-fw pi-users',
-                items: [
-                    {
-                        label: 'Tem Accounts',
-                        icon: 'pi pi-fw pi-users',
-                        to: '/streamline/tem-accounts'
+                        label: 'New Bill',
+                        icon: 'pi pi-fw pi-plus',
+                        to: '/streamline/bills/new'
                     },
                     {
-                        label: 'Vendors & Contracts',
-                        icon: 'pi pi-fw pi-building',
-                        to: '/streamline/vendors-contracts'
+                        label: 'Custom Charges',
+                        icon: 'pi pi-fw pi-tag',
+                        to: '/streamline/custom-charges'
                     }
                 ]
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Engineering',
-        icon: 'pi pi-cog',
-        items: [
-            {
-                label: 'Dashboard',
-                icon: 'pi pi-fw pi-chart-line',
-                to: '/engineering/dashboard'
             },
             {
-                label: 'Tickets',
+                label: 'Contracts',
+                icon: 'pi pi-fw pi-file-edit',
+                items: [
+                    {
+                        label: 'Contract List',
+                        icon: 'pi pi-fw pi-list',
+                        to: '/streamline/contracts'
+                    },
+                    {
+                        label: 'New Contract',
+                        icon: 'pi pi-fw pi-plus',
+                        to: '/streamline/contracts/new'
+                    }
+                ]
+            },
+            {
+                label: 'Order Management',
+                icon: 'pi pi-fw pi-shopping-cart',
+                items: [
+                    {
+                        label: 'Orders',
+                        icon: 'pi pi-fw pi-shopping-cart',
+                        to: '/streamline/orders'
+                    },
+                    {
+                        label: 'New Order',
+                        icon: 'pi pi-fw pi-plus',
+                        to: '/streamline/orders/new'
+                    }
+                ]
+            },
+            {
+                label: 'Ticketing',
                 icon: 'pi pi-fw pi-ticket',
-                to: '/engineering/tickets'
+                items: [
+                    {
+                        label: 'Tickets',
+                        icon: 'pi pi-fw pi-ticket',
+                        to: '/streamline/tickets'
+                    },
+                    {
+                        label: 'New Ticket',
+                        icon: 'pi pi-fw pi-plus',
+                        to: '/streamline/tickets/new'
+                    }
+                ]
             },
             {
-                label: 'Calendar',
-                icon: 'pi pi-fw pi-calendar',
-                to: '/engineering/calendar'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Flynn Project',
-        icon: 'pi pi-map',
-        items: [
-            {
-                label: 'Location Scope Review',
-                icon: 'pi pi-fw pi-map-marker',
-                to: '/flynn/location-scope-review'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Billing Audit',
-        icon: 'pi pi-dollar',
-        items: [
-            {
-                label: 'Dashboard',
-                icon: 'pi pi-fw pi-chart-line',
-                to: '/dashboard'
+                label: 'Reference',
+                icon: 'pi pi-fw pi-database',
+                items: [
+                    {
+                        label: 'Carriers',
+                        icon: 'pi pi-fw pi-building',
+                        to: '/streamline/carriers'
+                    },
+                    {
+                        label: 'Account Types',
+                        icon: 'pi pi-fw pi-tags',
+                        to: '/streamline/account-types'
+                    }
+                ]
             }
         ]
     },
@@ -128,6 +135,11 @@ const model = ref([
                 label: 'Audit Dashboard',
                 icon: 'pi pi-fw pi-chart-bar',
                 to: '/audit/291/dashboard'
+            },
+            {
+                label: 'Customer Management',
+                icon: 'pi pi-fw pi-building',
+                to: '/audit/291/customer'
             },
             {
                 label: 'Locations',
@@ -164,171 +176,147 @@ const model = ref([
                 to: '/accounting/invoice-templates'
             },
             {
-                label: 'Field Service Billing',
+                label: 'Cash Application',
                 icon: 'pi pi-fw pi-money-bill',
-                to: '/accounting/field-service-billing'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Finance',
-        icon: 'pi pi-chart-bar',
-        items: [
-            {
-                label: 'Dashboard',
-                icon: 'pi pi-fw pi-money-bill',
-                to: '/finance/dashboard'
+                to: '/accounting/cash-application'
             },
             {
-                label: 'Core Finance',
-                icon: 'pi pi-fw pi-file-edit',
-                items: [
-                    {
-                        label: 'Invoicing',
-                        icon: 'pi pi-fw pi-file-edit',
-                        to: '/finance/invoicing'
-                    },
-                    {
-                        label: 'Receivables',
-                        icon: 'pi pi-fw pi-dollar',
-                        to: '/finance/receivables'
-                    },
-                    {
-                        label: 'Payables',
-                        icon: 'pi pi-fw pi-credit-card',
-                        to: '/finance/payables'
-                    }
-                ]
-            },
-            {
-                label: 'Legacy Accounts',
-                icon: 'pi pi-fw pi-database',
-                items: [
-                    {
-                        label: 'Accounts Receivable',
-                        icon: 'pi pi-fw pi-dollar',
-                        to: '/finance/accounts-receivable'
-                    },
-                    {
-                        label: 'Accounts Payable',
-                        icon: 'pi pi-fw pi-credit-card',
-                        to: '/finance/accounts-payable'
-                    }
-                ]
-            },
-            {
-                label: 'Analytics & Reports',
-                icon: 'pi pi-fw pi-chart-line',
-                items: [
-                    {
-                        label: 'Financial Analysis',
-                        icon: 'pi pi-fw pi-chart-line',
-                        to: '/finance/analysis'
-                    },
-                    {
-                        label: 'Product Performance',
-                        icon: 'pi pi-fw pi-box',
-                        to: '/finance/product-performance'
-                    },
-                    {
-                        label: 'Alerts Management',
-                        icon: 'pi pi-fw pi-bell',
-                        to: '/finance/alerts'
-                    }
-                ]
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'Reporting',
-        icon: 'pi pi-chart-bar',
-        items: [
-            {
-                label: 'Report Manager',
-                icon: 'pi pi-fw pi-file-export',
-                to: '/reporting/report-manager'
-            }
-        ]
-    },
-    { separator: true },
-    {
-        label: 'WaveAI',
-        icon: 'pi pi-bolt',
-        items: [
-            {
-                label: 'HD Ticket Analysis',
-                icon: 'pi pi-fw pi-chart-line',
-                to: '/waveai/hd-ticket-analysis'
-            },
-            {
-                label: 'Dispatch Ticket Analysis',
+                label: 'Accounting Dashboard',
                 icon: 'pi pi-fw pi-chart-bar',
-                to: '/waveai/dispatch-ticket-analysis'
-            },
-            {
-                label: 'Network News',
-                icon: 'pi pi-fw pi-globe',
-                items: [
-                    {
-                        label: 'Front Page',
-                        icon: 'pi pi-fw pi-list',
-                        to: '/apps/waveai/frontpage'
-                    },
-                    {
-                        label: 'Network',
-                        icon: 'pi pi-fw pi-server',
-                        to: '/apps/waveai/network'
-                    },
-                    {
-                        label: 'Dispatch',
-                        icon: 'pi pi-fw pi-send',
-                        to: '/apps/waveai/dispatch'
-                    },
-                    {
-                        label: 'Circuits',
-                        icon: 'pi pi-fw pi-sitemap',
-                        to: '/apps/waveai/circuits'
-                    }
-                ]
+                to: '/accounting/dashboard'
             }
         ]
     },
     { separator: true },
     {
-        label: 'User Management',
-        icon: 'pi pi-fw pi-users',
-        permissionGuard: 'users.view',
+        label: 'Billing',
+        icon: 'pi pi-credit-card',
         items: [
+            {
+                label: 'Subscriptions',
+                icon: 'pi pi-fw pi-sync',
+                to: '/billing/subscriptions'
+            },
+            {
+                label: 'Create Subscription',
+                icon: 'pi pi-fw pi-plus',
+                to: '/billing/subscriptions/create'
+            },
+            {
+                label: 'Payment Methods',
+                icon: 'pi pi-fw pi-credit-card',
+                to: '/billing/payment-methods'
+            },
+            {
+                label: 'Billing Portal',
+                icon: 'pi pi-fw pi-external-link',
+                to: '/billing/portal'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Inventory',
+        icon: 'pi pi-box',
+        items: [
+            {
+                label: 'Equipment Database',
+                icon: 'pi pi-fw pi-database',
+                to: '/inventory/equipment'
+            },
+            {
+                label: 'Add Equipment',
+                icon: 'pi pi-fw pi-plus',
+                to: '/inventory/equipment/add'
+            },
+            {
+                label: 'Equipment Types',
+                icon: 'pi pi-fw pi-list',
+                to: '/inventory/equipment-types'
+            },
+            {
+                label: 'Check In/Out',
+                icon: 'pi pi-fw pi-sync',
+                to: '/inventory/check-in-out'
+            }
+        ]
+    },
+    { separator: true },
+    {
+        label: 'Admin',
+        icon: 'pi pi-briefcase',
+        items: [
+            {
+                label: 'Business Details',
+                icon: 'pi pi-fw pi-building',
+                to: '/admin/business'
+            },
+            {
+                label: 'Devices',
+                icon: 'pi pi-fw pi-mobile',
+                to: '/admin/devices'
+            },
+            {
+                label: 'Integrations',
+                icon: 'pi pi-fw pi-link',
+                to: '/admin/integrations'
+            },
+            {
+                label: 'Activity Log',
+                icon: 'pi pi-fw pi-book',
+                to: '/admin/activity'
+            },
             {
                 label: 'Users',
                 icon: 'pi pi-fw pi-user',
-                to: '/user-management',
-                permissionGuard: 'users.view'
+                items: [
+                    {
+                        label: 'User List',
+                        icon: 'pi pi-fw pi-users',
+                        to: '/admin/users'
+                    },
+                    {
+                        label: 'Roles',
+                        icon: 'pi pi-fw pi-lock',
+                        to: '/admin/roles'
+                    },
+                    {
+                        label: 'Permissions',
+                        icon: 'pi pi-fw pi-key',
+                        to: '/admin/permissions'
+                    },
+                    {
+                        label: 'Invite User',
+                        icon: 'pi pi-fw pi-user-plus',
+                        to: '/admin/users/invite'
+                    }
+                ]
             },
             {
-                label: 'Create User',
-                icon: 'pi pi-fw pi-user-plus',
-                to: '/user-management/create',
-                permissionGuard: 'users.create'
-            },
-            {
-                label: 'Roles',
-                icon: 'pi pi-fw pi-shield',
-                to: '/user-management/roles',
-                permissionGuard: 'roles.view'
-            },
-            {
-                label: 'Create Role',
-                icon: 'pi pi-fw pi-plus-circle',
-                to: '/user-management/roles/create',
-                permissionGuard: 'roles.create'
-            },
-            {
-                label: 'My Profile',
-                icon: 'pi pi-fw pi-user-edit',
-                to: '/profile'
+                label: 'Settings',
+                icon: 'pi pi-fw pi-cog',
+                items: [
+                    {
+                        label: 'General',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/settings/general'
+                    },
+                    {
+                        label: 'Security',
+                        icon: 'pi pi-fw pi-shield',
+                        to: '/settings/security'
+                    },
+                    {
+                        label: 'Notifications',
+                        icon: 'pi pi-fw pi-bell',
+                        to: '/settings/notifications'
+                    },
+                    {
+                        label: 'Audit Logs',
+                        icon: 'pi pi-fw pi-list',
+                        to: '/settings/audit-logs'
+                    }
+                ]
             }
         ]
     }
