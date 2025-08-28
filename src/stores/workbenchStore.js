@@ -695,24 +695,6 @@ export const useWorkbenchStore = defineStore('workbench', {
       this.currentLocationId = locationId;
     },
 
-    /**
-     * Load location detail information
-     */
-    async loadLocationDetail(customerId, locationId) {
-      this.loading.location = true;
-      
-      try {
-        const response = await auditClient.getLocationDetail(customerId, locationId);
-        this.locationDetail = response.data;
-        this.currentCustomerId = customerId;
-        this.currentLocationId = locationId;
-      } catch (error) {
-        console.error('Failed to load location detail:', error);
-        throw error;
-      } finally {
-        this.loading.location = false;
-      }
-    },
 
     /**
      * Clear location data
@@ -824,16 +806,22 @@ export const useWorkbenchStore = defineStore('workbench', {
      * Load location detail which includes charges
      */
     async loadLocationDetail(customerId, locationId) {
+      this.loading.location = true;
+      
       try {
         const res = await auditClient.getLocationDetail(customerId, locationId);
         this.locationDetail = res?.data || null;
         this.charges = res?.data?.charges || [];
+        this.currentCustomerId = customerId;
+        this.currentLocationId = locationId;
         return this.locationDetail;
       } catch (error) {
         console.error('Failed to load location detail:', error);
         this.locationDetail = null;
         this.charges = [];
-        return null;
+        throw error;
+      } finally {
+        this.loading.location = false;
       }
     },
 

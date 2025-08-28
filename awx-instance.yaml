@@ -1,0 +1,30 @@
+# awx-instance.yaml
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+  namespace: awx
+spec:
+  service_type: NodePort
+  nodeport_port: 30080
+  
+  # Use standard postgres image
+  postgres_image: docker.io/postgres
+  postgres_image_version: "15"
+  postgres_data_volume_init: true
+  
+  # Specify the postgres configuration explicitly
+  postgres_configuration_secret: awx-postgres-configuration
+  
+  # PostgreSQL configuration
+  postgres_storage_class: managed-csi
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  postgres_resource_requirements:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi

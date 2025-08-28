@@ -220,6 +220,27 @@
           </div>
         </div>
 
+        <!-- Billing Mapping Section -->
+        <div v-if="profileForm.billing_line_items?.length > 0" class="field">
+          <div class="mb-4">
+            <h5 class="font-medium mb-3 flex items-center gap-2">
+              <i class="pi pi-link text-primary"></i>
+              Bundle Mapping
+            </h5>
+            <p class="text-sm text-surface-600 mb-3">
+              Map billing line items to service bundles for license allocation
+            </p>
+            
+            <BillingMappingTable 
+              :billing-items="profileForm.billing_line_items"
+              :available-bundles="availableBundles"
+              :contract-id="customerContractsStore.currentContract?.id"
+              :customer-id="parseInt(customerId)"
+              @mapping-updated="onMappingUpdated"
+            />
+          </div>
+        </div>
+
         <div class="field">
           <label class="flex items-center gap-2">
             <Checkbox v-model="profileForm.is_active" binary />
@@ -328,6 +349,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useCustomerContractsStore } from '@/stores/customerContractsStore';
+import { useToast } from 'primevue/usetoast';
 import { chargeSignatureService } from '@/services/chargeSignatureService';
 import { billingDetailsService } from '@/services/billingDetailsService';
 import Button from 'primevue/button';
@@ -337,13 +359,13 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
 import Checkbox from 'primevue/checkbox';
+import BillingMappingTable from './BillingMappingTable.vue';
 import Tag from 'primevue/tag';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Message from 'primevue/message';
 import Menu from 'primevue/menu';
 import ProgressSpinner from 'primevue/progressspinner';
-import { useToast } from 'primevue/usetoast';
 
 // Props
 const props = defineProps({
@@ -393,6 +415,10 @@ const bundleOptions = computed(() => {
       value: b.id
     }))
   ];
+});
+
+const availableBundles = computed(() => {
+  return customerContractsStore.bundles || [];
 });
 
 const locationTypes = [
@@ -537,6 +563,19 @@ const saveProfile = async () => {
   }
 };
 
+const onMappingUpdated = () => {
+  // Refresh bundles or profiles if needed
+  toast.add({
+    severity: 'success',
+    summary: 'Mapping Updated',
+    detail: 'Billing line item mappings have been updated',
+    life: 3000
+  });
+  
+  // Optionally refresh data
+  // await customerContractsStore.loadBundles(customerContractsStore.currentContract?.id);
+};
+
 const confirmDeleteProfile = (profile) => {
   if (!profile || !profile.id) {
     console.error('Invalid profile for deletion:', profile);
@@ -592,8 +631,10 @@ const toggleProfileMenu = (event, profile) => {
 };
 
 const getBundleName = (bundleId) => {
-  const bundle = customerContractsStore.bundles.find(b => b.id === bundleId);
-  return bundle?.name;
+  if (!bundleId) return null;
+  const bundles = customerContractsStore.bundles || [];
+  const bundle = bundles.find(b => b?.id === bundleId);
+  return bundle?.name || null;
 };
 
 const formatChargeSignature = (signature) => {

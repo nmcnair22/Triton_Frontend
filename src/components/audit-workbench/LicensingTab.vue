@@ -119,6 +119,48 @@
               <Message v-else severity="success">No mismatches 🎉</Message>
             </template>
           </Card>
+
+          <!-- License Coverage Analysis -->
+          <div v-if="allocation?.license_analysis" class="mt-6">
+            <div class="flex items-center gap-2 mb-4">
+              <i class="pi pi-key text-primary text-xl"></i>
+              <h4 class="text-lg font-semibold text-surface-900 dark:text-surface-0">
+                License Coverage Analysis
+              </h4>
+            </div>
+            
+            <LicenseCoveragePanel 
+              :bundle-coverage="allocation.license_analysis.bundle_coverage"
+              :unmapped-charges="allocation.license_analysis.unmapped_charges"
+              :location-id="locationId"
+              @navigate-to-mapping="navigateToMapping"
+              @navigate-to-bundles="navigateToBundles"
+              @refresh-coverage="refreshCoverage"
+            />
+          </div>
+
+          <!-- Save License Mapping -->
+          <div v-if="allocation && hasRunAllocation" class="mt-6">
+            <Card class="save-mapping-card">
+              <template #content>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h5 class="font-medium mb-2">Save License Allocation</h5>
+                    <p class="text-sm text-surface-600">
+                      Save the current license allocation mapping for this location
+                    </p>
+                  </div>
+                  <Button 
+                    label="Save License Mapping" 
+                    icon="pi pi-save"
+                    @click="saveLicenseMapping"
+                    :loading="loading.save"
+                    severity="success"
+                  />
+                </div>
+              </template>
+            </Card>
+          </div>
         </div>
         </TabPanel>
 
@@ -171,6 +213,7 @@ import { useToast } from 'primevue/usetoast'
 import { useWorkbenchStore } from '@/stores/workbenchStore'
 import { auditClient } from '@/services/auditClient'
 import ChargesTable from './ChargesTable.vue'
+import LicenseCoveragePanel from './LicenseCoveragePanel.vue'
 
 const props = defineProps({ 
   locationId: { type:[String,Number], required:true }, 
@@ -199,7 +242,8 @@ const chargesTableRef = ref(null)
 // loading states
 const loading = reactive({
   allocation: false,
-  createProfile: false
+  createProfile: false,
+  save: false
 })
 
 const units = computed(()=> store.assetUnits || [])
@@ -287,7 +331,8 @@ async function runAllocation(save){
     const res = await auditClient.runAllocation(props.locationId, { 
       charge_profile_id: profileId.value, 
       service_level_key: serviceLevel.value, 
-      save 
+      save,
+      include_license_analysis: true
     })
     allocation.value = res.data
     hasRunAllocation.value = true
@@ -403,6 +448,61 @@ function generateIssueDescription(issueType, data) {
   
   return `**Issue Type:** ${issueType.replace(/_/g, ' ')}\n\n**Details:**\n${details.join('\n')}\n\n**Generated from:** Licensing & Allocation tab`
 }
+
+// License coverage navigation methods
+function navigateToMapping() {
+  // Navigate to Location Profiles tab for billing mapping
+  emit('navigate-location', 'profiles-mapping')
+  toast.add({
+    severity: 'info',
+    summary: 'Navigation',
+    detail: 'Navigate to Location Profiles to map billing codes to bundles',
+    life: 4000
+  })
+}
+
+function navigateToBundles() {
+  // Navigate to Service Bundles tab for bundle management
+  emit('navigate-location', 'bundles')
+  toast.add({
+    severity: 'info', 
+    summary: 'Navigation',
+    detail: 'Navigate to Service Bundles to configure license allocations',
+    life: 4000
+  })
+}
+
+function refreshCoverage() {
+  // Re-run allocation with license analysis to refresh coverage
+  if (hasRunAllocation.value && canRunAllocation.value) {
+    runAllocation(false) // Preview only
+  }
+}
+
+async function saveLicenseMapping() {
+  // Save the license allocation mapping 
+  if (!allocation.value || !canRunAllocation.value) return
+  
+  loading.save = true
+  try {
+    await runAllocation(true) // Save allocation
+    toast.add({
+      severity: 'success',
+      summary: 'License Mapping Saved',
+      detail: 'License allocation mapping has been saved for this location',
+      life: 5000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Save Failed',
+      detail: 'Failed to save license mapping',
+      life: 5000
+    })
+  } finally {
+    loading.save = false
+  }
+}
 </script>
 
 <style scoped>
@@ -411,18 +511,18 @@ function generateIssueDescription(issueType, data) {
 }
 
 /* Enhanced styling consistent with other audit workbench components */
-.licensing-tab :deep(.p-tabview .p-tabview-nav) {
+.licensing-tab :deep(.p-tabs .p-tabs-nav) {
   border-bottom: 1px solid var(--surface-border);
   background: var(--surface-50);
 }
 
-.licensing-tab :deep(.p-tabview .p-tabview-nav li .p-tabview-nav-link) {
+.licensing-tab :deep(.p-tabs .p-tabs-nav li .p-tabs-nav-link) {
   padding: 1rem 1.5rem;
   font-weight: 500;
   border-radius: 6px 6px 0 0;
 }
 
-.licensing-tab :deep(.p-tabview .p-tabview-panels) {
+.licensing-tab :deep(.p-tabs .p-tabs-panels) {
   padding: 1.5rem 0;
   background: transparent;
 }

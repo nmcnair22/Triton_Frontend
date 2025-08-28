@@ -128,6 +128,54 @@ const model = ref([
     },
     { separator: true },
     {
+        label: 'TEM (Telecom Expense Management)',
+        icon: 'pi pi-phone',
+        items: [
+            {
+                label: 'Customers',
+                icon: 'pi pi-fw pi-building',
+                to: '/tem/customers'
+            },
+            {
+                label: 'Locations',
+                icon: 'pi pi-fw pi-map-marker',
+                to: '/tem/locations'
+            },
+            {
+                label: 'Account Inventory',
+                icon: 'pi pi-fw pi-credit-card',
+                to: '/tem/accounts'
+            },
+            {
+                label: 'Bill Management',
+                icon: 'pi pi-fw pi-file-text',
+                to: '/tem/bills'
+            },
+            {
+                label: 'Audit Center',
+                icon: 'pi pi-fw pi-search',
+                items: [
+                    {
+                        label: 'Variance Analysis',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/tem/audit/variance'
+                    },
+                    {
+                        label: 'Missing Bills',
+                        icon: 'pi pi-fw pi-exclamation-triangle',
+                        to: '/tem/audit/missing-bills'
+                    },
+                    {
+                        label: 'Exception Queue',
+                        icon: 'pi pi-fw pi-flag',
+                        to: '/tem/audit/exceptions'
+                    }
+                ]
+            }
+        ]
+    },
+    { separator: true },
+    {
         label: 'Audit Workbench',
         icon: 'pi pi-cog',
         items: [

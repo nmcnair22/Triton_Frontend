@@ -4,11 +4,32 @@
       <ProgressSpinner />
     </div>
     
-    <div v-else-if="!raw || !raw.raw_assets || Object.keys(raw.raw_assets).length === 0" class="text-center p-4">
-      <i class="pi pi-box text-6xl text-400 mb-3"></i>
-      <p class="text-xl text-600">No raw assets found for this location.</p>
-      <p class="text-base text-500">Consider initiating a rescan for this location.</p>
-      <Button label="Rescan Location" icon="pi pi-refresh" class="mt-3" @click="emit('rescan')" />
+    <div v-else-if="!raw || !raw.raw_assets || Object.keys(raw.raw_assets).length === 0" class="text-center p-8">
+      <div class="mb-6">
+        <i class="pi pi-box text-6xl text-orange-400 mb-4 block"></i>
+        <h3 class="text-2xl font-semibold text-surface-800 dark:text-surface-200 mb-2">No Assets Discovered</h3>
+        <p class="text-lg text-surface-600 dark:text-surface-400 mb-4">This location hasn't been scanned yet or no network assets were found during the audit process.</p>
+      </div>
+      
+      <Card class="max-w-md mx-auto">
+        <template #content>
+          <div class="text-center">
+            <h4 class="text-lg font-medium mb-3">Possible Actions</h4>
+            <div class="space-y-3">
+              <Button 
+                label="Audit Location" 
+                icon="pi pi-search" 
+                @click="emit('rescan')" 
+                class="w-full"
+                severity="primary"
+              />
+              <p class="text-sm text-surface-500">
+                This will perform a fresh audit scan to discover network devices and infrastructure at this location.
+              </p>
+            </div>
+          </div>
+        </template>
+      </Card>
     </div>
     
     <div v-else>
@@ -20,8 +41,10 @@
               <i class="pi pi-server text-green-600"></i>
               Asset Signature
             </div>
-            <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-              {{ audit.asset_signature || 'N/A' }}
+            <div class="text-2xl font-bold flex items-center gap-2">
+              <span v-if="audit.asset_signature === 'NO_ASSETS'" class="text-orange-600">No Assets Found</span>
+              <span v-else class="text-surface-900 dark:text-surface-0">{{ audit.asset_signature || 'N/A' }}</span>
+              <Tag v-if="audit.asset_signature === 'NO_ASSETS'" severity="warning" value="Empty" />
             </div>
           </div>
           <div>
@@ -29,8 +52,10 @@
               <i class="pi pi-dollar text-orange-600"></i>
               Charge Signature
             </div>
-            <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-              {{ audit.charge_signature || 'N/A' }}
+            <div class="text-2xl font-bold flex items-center gap-2">
+              <span v-if="audit.charge_signature === 'NO_SHIPTO'" class="text-orange-600">No Ship-To Found</span>
+              <span v-else class="text-surface-900 dark:text-surface-0">{{ audit.charge_signature || 'N/A' }}</span>
+              <Tag v-if="audit.charge_signature === 'NO_SHIPTO'" severity="warning" value="Missing" />
             </div>
           </div>
         </div>

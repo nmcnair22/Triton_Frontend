@@ -31,9 +31,9 @@
                 class="w-44"
               />
               <Button 
-                label="Rescan" 
-                icon="pi pi-refresh" 
-                @click="rescanLocation" 
+                label="Audit Location" 
+                icon="pi pi-search" 
+                @click="auditLocation" 
                 :loading="loading.location" 
                 outlined 
               />
@@ -87,7 +87,7 @@
           :location-id="locationId" 
           :audit-run-id="auditRunId" 
           @reviewed-changed="onRawAssetsReviewed" 
-          @rescan="rescanLocation"
+          @rescan="auditLocation"
         />
         </TabPanel>
         
@@ -242,35 +242,33 @@ const updateStatus = async () => {
   }
 };
 
-const rescanLocation = async () => {
+const auditLocation = async () => {
   loading.value.location = true;
   
   try {
-    await auditClient.rescanLocation(customerId.value, locationId.value);
+    const response = await auditClient.auditSingleLocation(customerId.value, locationId.value);
     
     toast.add({
       severity: 'success',
-      summary: 'Rescan Initiated',
-      detail: 'Location rescan has been queued',
-      life: 3000
+      summary: 'Location Audit Complete',
+      detail: `Fresh audit completed for run ${response.data.audit_run_id}`,
+      life: 5000
     });
     
-    // Clear allocation saved badge since data will be stale
+    // Clear allocation saved badge since data will be fresh
     workbenchStore.setAllocationSaved(false);
     
-    // Refresh location details after a delay
-    setTimeout(async () => {
-      await loadLocationDetail();
-      await workbenchStore.loadRawAssets(locationId.value);
-    }, 2000);
+    // Immediately refresh location details with new data
+    await loadLocationDetail();
+    await workbenchStore.loadRawAssets(locationId.value);
     
   } catch (error) {
-    console.error('Failed to rescan location:', error);
+    console.error('Failed to audit location:', error);
     toast.add({
       severity: 'error',
-      summary: 'Rescan Failed',
-      detail: 'Failed to initiate location rescan',
-      life: 3000
+      summary: 'Audit Failed',
+      detail: error.response?.data?.message || 'Failed to complete location audit',
+      life: 5000
     });
   } finally {
     loading.value.location = false;
@@ -391,16 +389,16 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
-.location-workbench :deep(.p-tabview-nav) {
+.location-workbench :deep(.p-tabs-nav) {
   border-bottom: 1px solid var(--surface-border);
 }
 
-.location-workbench :deep(.p-tabview-panels) {
+.location-workbench :deep(.p-tabs-panels) {
   padding: 0;
   background: transparent;
 }
 
-.location-workbench :deep(.p-tabview-panel) {
+.location-workbench :deep(.p-tabs-panel) {
   padding: 1.5rem 0;
 }
 

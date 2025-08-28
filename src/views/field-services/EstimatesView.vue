@@ -962,7 +962,7 @@
                              <label for="surveyDate" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                                  Preferred Survey Date
                              </label>
-                             <Calendar
+                             <DatePicker
                                  id="surveyDate"
                                  v-model="siteSurveyForm.surveyDate"
                                  placeholder="Select date"
@@ -1050,7 +1050,7 @@ import Dialog from 'primevue/dialog';
 import InputNumber from 'primevue/inputnumber';
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import Checkbox from 'primevue/checkbox';
 import FileUpload from 'primevue/fileupload';
 

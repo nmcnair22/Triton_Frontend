@@ -100,6 +100,13 @@ class AuditClient {
   }
 
   /**
+   * Trigger a fresh audit for a specific location
+   */
+  async auditSingleLocation(customerId, locationId) {
+    return this.http.post(`/audit-management/customers/${customerId}/locations/${locationId}/audit`);
+  }
+
+  /**
    * Update the audit status of a location
    */
   async updateLocationStatus(customerId, locationId, status) {

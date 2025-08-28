@@ -5,6 +5,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { AuthService } from '@/auth/AuthService';
 import { useUserStore } from '@/stores/user';
 import auditRoutes from './auditRoutes';
+import temRoutes from './temRoutes';
 
 // Explicitly set development mode variable
 const isDevelopmentMode = import.meta.env.DEV;
@@ -178,6 +179,9 @@ const routes = [
 
             // Audit Workbench Routes (customer-scoped)
             ...auditRoutes,
+
+            // TEM Routes (Telecom Expense Management)
+            ...temRoutes,
 
             // Customers Module Routes
             {

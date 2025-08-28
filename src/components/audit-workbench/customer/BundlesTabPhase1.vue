@@ -155,65 +155,16 @@
                   </div>
                 </div>
 
-                <!-- Bundle Components -->
-                <div class="mb-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <h5 class="font-medium text-sm">Bundle Components</h5>
-                    <Button 
-                      v-if="bundle.bundle_components?.length === 0"
-                      label="Add Components"
-                      icon="pi pi-plus"
-                      size="small"
-                      text
-                      @click="openComponentDialog(bundle)"
-                    />
-                  </div>
-                  
-                  <div v-if="bundle.bundle_components && bundle.bundle_components.length > 0">
-                    <DataTable :value="bundle.bundle_components" size="small" class="component-table">
-                      <Column field="product_name" header="Component">
-                        <template #body="{ data }">
-                          <div class="flex items-center gap-2">
-                            <Tag :severity="getComponentTypeSeverity(data.component_type)" class="text-xs">
-                              {{ data.component_type }}
-                            </Tag>
-                            <span class="font-medium">{{ data.product_name }}</span>
-                          </div>
-                        </template>
-                      </Column>
-                      <Column field="quantity" header="Quantity" style="width: 100px">
-                        <template #body="{ data }">
-                          <span class="font-bold">{{ data.quantity }}</span>
-                        </template>
-                      </Column>
-                      <Column field="unit_price" header="Unit Price" style="width: 120px">
-                        <template #body="{ data }">
-                          <span class="font-mono">{{ formatCurrency(data.unit_price) }}</span>
-                        </template>
-                      </Column>
-                      <Column header="Total" style="width: 120px">
-                        <template #body="{ data }">
-                          <span class="font-mono font-bold">
-                            {{ formatCurrency(data.quantity * data.unit_price) }}
-                          </span>
-                        </template>
-                      </Column>
-                    </DataTable>
-                  </div>
-                  <div v-else class="text-center py-4 text-surface-500 border-2 border-dashed rounded-lg">
-                    No components added yet
-                  </div>
-                </div>
 
                 <!-- License Summary -->
-                <div v-if="bundle.total_licenses > 0" class="flex items-center gap-4 text-sm">
+                <div class="flex items-center gap-4 text-sm mt-3">
                   <div class="flex items-center gap-2">
                     <i class="pi pi-key text-green-500"></i>
-                    <span>Total Licenses: <strong>{{ bundle.total_licenses }}</strong></span>
+                    <span>Licenses: <strong>{{ bundle.license_count || 0 }}</strong></span>
                   </div>
-                  <div v-if="bundle.license_type" class="flex items-center gap-2">
+                  <div v-if="bundle.license_categories" class="flex items-center gap-2">
                     <i class="pi pi-tag text-blue-500"></i>
-                    <span>Type: <strong>{{ bundle.license_type }}</strong></span>
+                    <span>Categories: <strong>{{ bundle.license_categories }}</strong></span>
                   </div>
                 </div>
               </div>
@@ -221,10 +172,10 @@
               <!-- Actions -->
               <div class="flex gap-2 ml-4">
                 <Button 
-                  icon="pi pi-plus"
+                  icon="pi pi-key"
                   size="small"
                   severity="success"
-                  v-tooltip="'Add Components'"
+                  v-tooltip="'Manage Licenses'"
                   @click="openComponentDialog(bundle)"
                 />
                 <Button 
@@ -340,7 +291,8 @@
           label="Create Bundle" 
           icon="pi pi-check"
           @click="createBundleFromBilling"
-          :disabled="!selectedBillingItem || !billingImportName"
+          :disabled="!selectedBillingItem || !billingImportName || creatingBundle"
+          :loading="creatingBundle"
         />
       </template>
     </Dialog>
@@ -348,133 +300,150 @@
     <!-- Add Components Dialog -->
     <Dialog 
       v-model:visible="showComponentDialog" 
-      header="Manage Bundle Components"
+      header="Manage Bundle Licenses"
       modal 
-      class="w-[900px]"
+      class="w-[1000px]"
     >
       <div class="space-y-4">
         <div class="p-3 bg-surface-100 dark:bg-surface-800 rounded-lg">
           <h5 class="font-medium mb-1">{{ editingBundle?.name }}</h5>
-          <p class="text-sm text-surface-600">Add license components to define what this bundle includes</p>
+          <p class="text-sm text-surface-600">Manage license allocations for this bundle</p>
         </div>
 
-        <!-- Add Component Form -->
-        <div class="border rounded-lg p-4">
-          <h6 class="font-medium mb-3">Add New Component</h6>
-          <div class="grid grid-cols-12 gap-3">
-            <div class="col-span-3">
-              <Select 
-                v-model="componentForm.component_type"
-                :options="componentTypes"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Type"
-                class="w-full"
-              />
-            </div>
-            <div class="col-span-5">
-              <InputText 
-                v-model="componentForm.product_name"
-                placeholder="Component name (e.g., Firewall Management License)"
-                class="w-full"
-              />
-            </div>
-            <div class="col-span-2">
-              <InputNumber 
-                v-model="componentForm.quantity"
-                :min="1"
-                placeholder="Qty"
-                class="w-full"
-              />
-            </div>
-            <div class="col-span-2">
-              <Button 
-                label="Add"
-                icon="pi pi-plus"
-                class="w-full"
-                @click="addComponent"
-                :disabled="!componentForm.product_name || !componentForm.quantity"
-              />
-            </div>
+        <!-- License Management Panel -->
+        <LicenseManagementPanel 
+          v-if="editingBundle?.id && customerContractsStore.currentContract?.id"
+          :bundle-id="editingBundle.id"
+          :contract-id="customerContractsStore.currentContract.id"
+          :asset-categories="rawAssetCategories"
+          :loading-asset-categories="loadingAssetCategories"
+          :asset-categories-error="assetCategoriesError"
+          @licenses-updated="onLicensesUpdated"
+        />
+      </div>
+
+      <template #footer>
+        <Button label="Close" text @click="closeComponentDialog" />
+      </template>
+    </Dialog>
+
+    <!-- Edit Bundle Dialog -->
+    <Dialog 
+      v-model:visible="showEditBundleDialog" 
+      header="Edit Service Bundle"
+      modal 
+      class="w-[600px]"
+    >
+      <div class="space-y-4">
+        <div class="p-3 bg-surface-100 dark:bg-surface-800 rounded-lg">
+          <h5 class="font-medium mb-1">Bundle Details</h5>
+          <p class="text-sm text-surface-600">Update the service bundle information</p>
+        </div>
+
+        <div class="grid gap-4">
+          <!-- Bundle Name -->
+          <div class="field">
+            <label for="bundle-name" class="block text-sm font-medium mb-2">Bundle Name</label>
+            <InputText 
+              id="bundle-name"
+              v-model="editBundleForm.name"
+              class="w-full"
+              placeholder="Enter bundle name"
+              :class="{ 'p-invalid': !editBundleForm.name }"
+            />
+            <small v-if="!editBundleForm.name" class="p-error">Bundle name is required</small>
           </div>
-        </div>
 
-        <!-- Current Components -->
-        <div v-if="tempComponents.length > 0">
-          <h6 class="font-medium mb-2">Current Components</h6>
-          <DataTable :value="tempComponents" size="small">
-            <Column field="component_type" header="Type" style="width: 120px">
-              <template #body="{ data }">
-                <Tag :severity="getComponentTypeSeverity(data.component_type)" class="text-xs">
-                  {{ data.component_type }}
-                </Tag>
-              </template>
-            </Column>
-            <Column field="product_name" header="Component Name" />
-            <Column field="quantity" header="Quantity" style="width: 100px">
-              <template #body="{ data }">
-                <InputNumber 
-                  v-model="data.quantity"
-                  :min="1"
-                  size="small"
-                  class="w-full"
-                />
-              </template>
-            </Column>
-            <Column field="unit_price" header="Unit Price" style="width: 120px">
-              <template #body="{ data }">
-                <InputNumber 
-                  v-model="data.unit_price"
-                  mode="currency"
-                  currency="USD"
-                  size="small"
-                  class="w-full"
-                />
-              </template>
-            </Column>
-            <Column header="Actions" style="width: 80px">
-              <template #body="{ index }">
-                <Button 
-                  icon="pi pi-trash"
-                  size="small"
-                  text
-                  severity="danger"
-                  @click="removeComponent(index)"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
-
-        <div class="flex items-center justify-between pt-4 border-t">
-          <div class="text-sm">
-            <span class="text-surface-600">Total Licenses: </span>
-            <span class="font-bold text-lg text-primary">{{ totalTempLicenses }}</span>
+          <!-- Description -->
+          <div class="field">
+            <label for="bundle-description" class="block text-sm font-medium mb-2">Description</label>
+            <Textarea 
+              id="bundle-description"
+              v-model="editBundleForm.description"
+              class="w-full"
+              rows="3"
+              placeholder="Enter bundle description"
+            />
           </div>
-          <div class="text-sm">
-            <span class="text-surface-600">Total Value: </span>
-            <span class="font-bold text-lg text-green-600">{{ formatCurrency(totalTempValue) }}</span>
+
+          <!-- Asset Category (License Type) -->
+          <div class="field">
+            <label for="license-type" class="block text-sm font-medium mb-2">Asset Category</label>
+            <Select 
+              v-if="!assetCategoriesError"
+              id="license-type"
+              v-model="editBundleForm.license_type"
+              :options="assetCategories"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+              placeholder="Select asset category"
+              :loading="loadingAssetCategories"
+              :disabled="loadingAssetCategories || assetCategories.length === 0"
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <Tag 
+                    :value="option.layer" 
+                    :severity="getLayerSeverity(option.layer)"
+                    class="text-xs"
+                  />
+                  <div>
+                    <div class="font-medium">{{ option.label }}</div>
+                    <div class="text-xs text-surface-500">{{ option.description }}</div>
+                  </div>
+                </div>
+              </template>
+            </Select>
+            <Message 
+              v-else
+              severity="error" 
+              class="w-full"
+              :closable="false"
+            >
+              {{ assetCategoriesError }}
+            </Message>
+            <small class="text-surface-600">
+              Select the asset category this bundle will provide licenses for
+            </small>
+          </div>
+
+          <!-- Active Status -->
+          <div class="field">
+            <div class="flex items-center gap-2">
+              <ToggleSwitch v-model="editBundleForm.is_active" />
+              <label class="text-sm font-medium">
+                {{ editBundleForm.is_active ? 'Active' : 'Inactive' }}
+              </label>
+            </div>
+            <small class="text-surface-600">
+              {{ editBundleForm.is_active ? 'This bundle is active and available for use' : 'This bundle is inactive and not available for use' }}
+            </small>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <Button label="Cancel" text @click="closeComponentDialog" />
-        <Button 
-          label="Save Components" 
-          icon="pi pi-check"
-          @click="saveComponents"
-          :disabled="tempComponents.length === 0"
-        />
+        <div class="flex justify-end gap-2">
+          <Button label="Cancel" text @click="closeEditBundleDialog" />
+          <Button 
+            label="Update Bundle" 
+            icon="pi pi-save"
+            @click="updateBundle"
+            :loading="updatingBundle"
+            :disabled="!editBundleForm.name"
+          />
+        </div>
       </template>
     </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useCustomerContractsStore } from '@/stores/customerContractsStore';
+import { auditClient } from '@/services/auditClient';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Dialog from 'primevue/dialog';
@@ -486,6 +455,9 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import Message from 'primevue/message';
+import ToggleSwitch from 'primevue/toggleswitch';
+// Removed tab imports - no longer needed
+import LicenseManagementPanel from './LicenseManagementPanel.vue';
 
 const props = defineProps({
   customerId: {
@@ -503,26 +475,42 @@ const customerContractsStore = useCustomerContractsStore();
 const bundles = ref([]);
 const showBillingImportDialog = ref(false);
 const showComponentDialog = ref(false);
+const showEditBundleDialog = ref(false);
 const selectedBillingItem = ref(null);
 const billingImportName = ref('');
 const editingBundle = ref(null);
-const tempComponents = ref([]);
+// Removed component-related refs
+const creatingBundle = ref(false);
+const deletingBundles = ref(new Set());
+const updatingBundle = ref(false);
 
-// Component form
-const componentForm = ref({
-  component_type: 'LICENSE',
-  product_name: '',
-  quantity: 1,
-  unit_price: 0
+// Edit bundle form
+const editBundleForm = ref({
+  id: null,
+  name: '',
+  description: '',
+  is_active: true,
+  license_type: ''
 });
 
-// Options
-const componentTypes = [
-  { label: 'License', value: 'LICENSE' },
-  { label: 'Service', value: 'SERVICE' },
-  { label: 'Hardware', value: 'HARDWARE' },
-  { label: 'Support', value: 'SUPPORT' }
-];
+// Removed component form
+
+// Asset categories - loaded from backend (raw data)
+const rawAssetCategories = ref([]);
+const loadingAssetCategories = ref(false);
+const assetCategoriesError = ref(null);
+
+// Computed: formatted asset categories for bundle editing dropdown
+const assetCategories = computed(() => {
+  return rawAssetCategories.value
+    .filter(cat => cat.is_licensable)
+    .map(cat => ({
+      label: cat.display_name || cat.description || cat.key,
+      value: cat.key,
+      layer: cat.layer_key,
+      description: cat.description
+    }));
+});
 
 // Computed
 const hasActiveContract = computed(() => customerContractsStore.hasActiveContract);
@@ -570,15 +558,7 @@ const allocatedLicenses = computed(() => 0); // Will be implemented in Phase 3
 
 const availableLicenses = computed(() => totalLicenses.value - allocatedLicenses.value);
 
-const totalTempLicenses = computed(() => 
-  tempComponents.value
-    .filter(c => c.component_type === 'LICENSE')
-    .reduce((sum, c) => sum + c.quantity, 0)
-);
-
-const totalTempValue = computed(() => 
-  tempComponents.value.reduce((sum, c) => sum + (c.quantity * c.unit_price), 0)
-);
+// Removed temp component computed properties
 
 // Methods
 const formatCurrency = (amount, currency = 'USD') => {
@@ -589,15 +569,7 @@ const formatCurrency = (amount, currency = 'USD') => {
   }).format(amount);
 };
 
-const getComponentTypeSeverity = (type) => {
-  const severityMap = {
-    'LICENSE': 'success',
-    'SERVICE': 'info',
-    'HARDWARE': 'warning',
-    'SUPPORT': 'secondary'
-  };
-  return severityMap[type] || 'secondary';
-};
+// Removed getComponentTypeSeverity method
 
 const getCategorySeverity = (category) => {
   const severityMap = {
@@ -607,6 +579,18 @@ const getCategorySeverity = (category) => {
     'Backup Services': 'secondary'
   };
   return severityMap[category] || 'secondary';
+};
+
+const getLayerSeverity = (layer) => {
+  const severityMap = {
+    'TRANSPORT': 'info',
+    'WAN_ACCESS': 'primary', 
+    'WAN_APPLIANCE': 'success',
+    'LAN_ACCESS': 'warning',
+    'LAN_DEVICE': 'secondary',
+    'APP_PERF': 'danger'
+  };
+  return severityMap[layer] || 'secondary';
 };
 
 const openCreateBundle = () => {
@@ -621,51 +605,78 @@ const openCreateBundle = () => {
 
 const openComponentDialog = (bundle) => {
   editingBundle.value = bundle;
-  tempComponents.value = bundle.bundle_components ? [...bundle.bundle_components] : [];
+  // Removed tempComponents assignment
   showComponentDialog.value = true;
 };
 
-const addComponent = () => {
-  if (!componentForm.value.product_name || !componentForm.value.quantity) return;
-  
-  tempComponents.value.push({
-    ...componentForm.value,
-    id: null // New component
-  });
-  
-  // Reset form
-  componentForm.value = {
-    component_type: 'LICENSE',
-    product_name: '',
-    quantity: 1,
-    unit_price: 0
-  };
-};
-
-const removeComponent = (index) => {
-  tempComponents.value.splice(index, 1);
-};
+// Removed addComponent and removeComponent methods
 
 const closeComponentDialog = () => {
   showComponentDialog.value = false;
   editingBundle.value = null;
-  tempComponents.value = [];
+  // Removed tempComponents and componentDialogTab references
+};
+
+const onLicensesUpdated = async (licenseData) => {
+  console.log('Licenses updated:', licenseData);
+  
+  // Reload license counts for the specific bundle
+  if (editingBundle.value) {
+    const bundleIndex = bundles.value.findIndex(b => b.id === editingBundle.value.id);
+    if (bundleIndex !== -1) {
+      // Reload license count for this specific bundle
+      try {
+        const response = await auditClient.http.get(
+          `/contracts/${customerContractsStore.currentContract.id}/bundles/${editingBundle.value.id}/licenses`
+        );
+        
+        const licenses = response.data.licenses || [];
+        const licenseCount = licenses.reduce((sum, license) => sum + (license.quantity || 0), 0);
+        const categories = [...new Set(licenses.map(l => l.asset_category_key))];
+        
+        // Update the bundle object
+        bundles.value[bundleIndex].license_count = licenseCount;
+        bundles.value[bundleIndex].license_categories = categories.length;
+        bundles.value[bundleIndex].licenses = licenses;
+        
+        // Update the editing bundle reference
+        editingBundle.value = bundles.value[bundleIndex];
+        
+        console.log(`Updated bundle ${editingBundle.value.name}: ${licenseCount} licenses, ${categories.length} categories`);
+      } catch (error) {
+        console.warn('Failed to reload license count after update:', error);
+        // Fallback to 0 if error
+        bundles.value[bundleIndex].license_count = 0;
+        bundles.value[bundleIndex].license_categories = 0;
+        bundles.value[bundleIndex].licenses = [];
+      }
+    }
+  }
+  
+  toast.add({
+    severity: 'success',
+    summary: 'Bundle Updated',
+    detail: `${licenseData.licenses_updated || 0} licenses updated for ${editingBundle.value?.name}`,
+    life: 5000
+  });
 };
 
 const saveComponents = async () => {
   if (!editingBundle.value) return;
   
   try {
-    // TODO: Call API to save components
-    // POST /api/bundles/{id}/components
+    // Save components via API
+    const response = await auditClient.http.put(
+      `/contracts/${customerContractsStore.currentContract.id}/bundles/${editingBundle.value.id}/components`,
+      {
+        components: tempComponents.value
+      }
+    );
     
-    // For now, update local state
+    // Update local state with API response
     const bundleIndex = bundles.value.findIndex(b => b.id === editingBundle.value.id);
     if (bundleIndex !== -1) {
-      bundles.value[bundleIndex].bundle_components = [...tempComponents.value];
-      bundles.value[bundleIndex].total_licenses = tempComponents.value
-        .filter(c => c.component_type === 'LICENSE')
-        .reduce((sum, c) => sum + c.quantity, 0);
+      bundles.value[bundleIndex] = response.data.bundle;
     }
     
     toast.add({
@@ -689,28 +700,59 @@ const saveComponents = async () => {
 const createBundleFromBilling = async () => {
   if (!selectedBillingItem.value || !billingImportName.value) return;
   
+  creatingBundle.value = true;
+  console.log('Starting bundle creation...');
+  
   try {
-    // TODO: Call API to create bundle from billing line item
-    // POST /api/bundles/create-from-billing-line
-    
-    // For now, create locally
-    const newBundle = {
-      id: Date.now(), // Temporary ID
+    // Create bundle via API
+    const response = await auditClient.http.post(`/contracts/${customerContractsStore.currentContract.id}/bundles`, {
       name: billingImportName.value,
       description: `Created from billing line item: ${selectedBillingItem.value.description}`,
+      license_type: determineLicenseType(selectedBillingItem.value.category),
+      is_active: true,
       source_billing_line: {
         charge_code: selectedBillingItem.value.charge_code,
         description: selectedBillingItem.value.description,
         amount: selectedBillingItem.value.total_amount
-      },
-      bundle_components: [],
-      total_licenses: 0,
-      license_type: determineLicenseType(selectedBillingItem.value.category),
-      is_active: true,
-      created_at: new Date().toISOString()
-    };
+      }
+    });
     
-    bundles.value.push(newBundle);
+    console.log('Bundle creation response:', response.status, response.data);
+    
+    // Backend returns { message, data: { id, name, is_active, created_at } }
+    const createdBundle = response.data?.data;
+    if (!createdBundle) throw new Error('No bundle returned from backend');
+    
+    console.log('Bundle created with ID:', createdBundle.id);
+    
+    // Refresh the bundle list from server to get the complete data
+    try {
+      await customerContractsStore.loadBundles(customerContractsStore.currentContract.id);
+      bundles.value = customerContractsStore.bundles || [];
+      console.log('Refreshed bundle list, total bundles:', bundles.value.length);
+    } catch (storeError) {
+      console.warn('Store refresh failed after bundle creation:', storeError);
+      // Create a minimal local bundle if server refresh fails
+      const localBundle = {
+        ...createdBundle,
+        bundle_components: [],
+        total_licenses: 0,
+        description: `Created from billing line item: ${selectedBillingItem.value.description}`,
+        source_billing_line: {
+          charge_code: selectedBillingItem.value.charge_code,
+          description: selectedBillingItem.value.description,
+          amount: selectedBillingItem.value.total_amount
+        }
+      };
+      bundles.value.push(localBundle);
+    }
+    
+    // Find the bundle for the dialog (either from server or local)
+    const bundleForDialog = bundles.value.find(b => b.id === createdBundle.id) || {
+      ...createdBundle,
+      bundle_components: [],
+      total_licenses: 0
+    };
     
     toast.add({
       severity: 'success',
@@ -725,58 +767,314 @@ const createBundleFromBilling = async () => {
     showBillingImportDialog.value = false;
     
     // Open component dialog to add licenses
-    openComponentDialog(newBundle);
+    openComponentDialog(bundleForDialog);
   } catch (error) {
+    console.error('Bundle creation error:', error);
+    console.error('Error response:', error.response);
+    console.error('Error status:', error.response?.status);
+    console.error('Error data:', error.response?.data);
+    
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Failed to create bundle';
+    
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to create bundle',
-      life: 3000
+      summary: 'Bundle Creation Failed',
+      detail: errorMessage,
+      life: 5000
     });
+  } finally {
+    creatingBundle.value = false;
   }
 };
 
 const determineLicenseType = (category) => {
-  const typeMap = {
-    'Transport': 'NETWORK_MGMT',
-    'Internet Access': 'INTERNET_MGMT',
-    'Managed Services': 'DEVICE_MGMT',
-    'Backup Services': 'BACKUP_MGMT'
-  };
-  return typeMap[category] || 'GENERAL_MGMT';
+  // No hardcoded mapping - let backend determine license type
+  // Return null to let backend decide based on category
+  return null;
 };
 
 const editBundle = (bundle) => {
-  toast.add({
-    severity: 'info',
-    summary: 'Edit Bundle',
-    detail: 'Bundle editing will be implemented',
-    life: 3000
-  });
+  console.log('Opening edit dialog for bundle:', bundle);
+  
+  // Populate the edit form with current bundle data
+  editBundleForm.value = {
+    id: bundle.id,
+    name: bundle.name || '',
+    description: bundle.description || '',
+    is_active: bundle.is_active !== undefined ? bundle.is_active : true,
+    license_type: bundle.license_type || ''
+  };
+  
+  editingBundle.value = bundle;
+  showEditBundleDialog.value = true;
 };
 
-const confirmDeleteBundle = (bundle) => {
-  toast.add({
-    severity: 'warn',
-    summary: 'Delete Bundle',
-    detail: 'Bundle deletion will be implemented',
-    life: 3000
+const closeEditBundleDialog = () => {
+  showEditBundleDialog.value = false;
+  editingBundle.value = null;
+  editBundleForm.value = {
+    id: null,
+    name: '',
+    description: '',
+    is_active: true,
+    license_type: ''
+  };
+};
+
+const updateBundle = async () => {
+  if (!editBundleForm.value.id || !customerContractsStore.currentContract?.id) return;
+  
+  updatingBundle.value = true;
+  
+  try {
+    const response = await auditClient.http.patch(
+      `/contracts/${customerContractsStore.currentContract.id}/bundles/${editBundleForm.value.id}`,
+      {
+        name: editBundleForm.value.name,
+        description: editBundleForm.value.description,
+        is_active: editBundleForm.value.is_active,
+        license_type: editBundleForm.value.license_type
+      }
+    );
+    
+    const updatedBundle = response.data;
+    console.log('Bundle updated successfully:', updatedBundle);
+    
+    // Update the bundle in the local array
+    const bundleIndex = bundles.value.findIndex(b => b.id === editBundleForm.value.id);
+    if (bundleIndex !== -1) {
+      // Preserve existing fields like license counts
+      bundles.value[bundleIndex] = {
+        ...bundles.value[bundleIndex],
+        ...updatedBundle
+      };
+    }
+    
+    // Update the store as well
+    await customerContractsStore.loadBundles(customerContractsStore.currentContract.id);
+    bundles.value = customerContractsStore.bundles || [];
+    await loadLicenseCounts();
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Bundle Updated',
+      detail: `"${editBundleForm.value.name}" has been updated successfully`,
+      life: 5000
+    });
+    
+    closeEditBundleDialog();
+    
+  } catch (error) {
+    console.error('Failed to update bundle:', error);
+    
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        'Failed to update bundle';
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Update Failed',
+      detail: errorMessage,
+      life: 5000
+    });
+  } finally {
+    updatingBundle.value = false;
+  }
+};
+
+const confirmDeleteBundle = async (bundle) => {
+  if (!bundle?.id) return;
+  
+  // Prevent multiple calls for the same bundle
+  if (deletingBundles.value.has(bundle.id)) {
+    console.log('Already deleting bundle:', bundle.id);
+    return;
+  }
+  
+  // Show confirmation dialog
+  if (!confirm(`Delete "${bundle.name}"?`)) {
+    return;
+  }
+  
+  deletingBundles.value.add(bundle.id);
+  
+  try {
+    console.log('Deleting bundle:', bundle.id, bundle.name);
+    
+    // Call the backend to delete the bundle
+    await auditClient.http.delete(`/contracts/${customerContractsStore.currentContract.id}/bundles/${bundle.id}`);
+    
+    // Remove from local list
+    const bundleIndex = bundles.value.findIndex(b => b.id === bundle.id);
+    if (bundleIndex !== -1) {
+      bundles.value.splice(bundleIndex, 1);
+    }
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Deleted',
+      detail: `"${bundle.name}" deleted`,
+      life: 3000
+    });
+    
+  } catch (error) {
+    console.error('Failed to delete bundle:', error);
+    
+    // Handle 404 as success (bundle already gone)
+    if (error.response?.status === 404) {
+      // Remove from local list anyway
+      const bundleIndex = bundles.value.findIndex(b => b.id === bundle.id);
+      if (bundleIndex !== -1) {
+        bundles.value.splice(bundleIndex, 1);
+      }
+      toast.add({
+        severity: 'info',
+        summary: 'Removed',
+        detail: `"${bundle.name}" was already deleted`,
+        life: 3000
+      });
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Delete Failed',
+        detail: error.response?.data?.message || 'Failed to delete bundle',
+        life: 5000
+      });
+    }
+  } finally {
+    deletingBundles.value.delete(bundle.id);
+  }
+};
+
+// Load license counts for each bundle
+const loadLicenseCounts = async () => {
+  if (!customerContractsStore.currentContract?.id || !bundles.value.length) return;
+  
+  console.log('Loading license counts for', bundles.value.length, 'bundles');
+  
+  // Load license data for each bundle
+  const licensePromises = bundles.value.map(async (bundle) => {
+    try {
+      const response = await auditClient.http.get(
+        `/contracts/${customerContractsStore.currentContract.id}/bundles/${bundle.id}/licenses`
+      );
+      
+      const licenses = response.data.licenses || [];
+      const licenseCount = licenses.reduce((sum, license) => sum + (license.quantity || 0), 0);
+      const categories = [...new Set(licenses.map(l => l.asset_category_key))];
+      
+      // Update the bundle object directly
+      bundle.license_count = licenseCount;
+      bundle.license_categories = categories.length;
+      bundle.licenses = licenses; // Store full license data for later use
+      
+      console.log(`Bundle ${bundle.name}: ${licenseCount} licenses, ${categories.length} categories`);
+    } catch (error) {
+      // Handle 404 gracefully - bundle has no licenses yet
+      if (error.response?.status === 404) {
+        bundle.license_count = 0;
+        bundle.license_categories = 0;
+        bundle.licenses = [];
+      } else {
+        console.warn(`Failed to load licenses for bundle ${bundle.id}:`, error);
+        bundle.license_count = 0;
+        bundle.license_categories = 0;
+        bundle.licenses = [];
+      }
+    }
   });
+  
+  await Promise.all(licensePromises);
+  console.log('Finished loading license counts');
+};
+
+// Load asset categories for license types from backend
+const loadAssetCategories = async () => {
+  loadingAssetCategories.value = true;
+  assetCategoriesError.value = null;
+  
+  try {
+    const response = await auditClient.http.get('/audit/ref/asset-categories');
+    rawAssetCategories.value = response.data?.categories || [];
+    
+    console.log('Loaded asset categories:', rawAssetCategories.value.length);
+  } catch (error) {
+    console.error('Failed to load asset categories:', error);
+    assetCategoriesError.value = error.response?.data?.message || 'Failed to load asset categories from backend';
+    rawAssetCategories.value = []; // No fallback data - show error instead
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Asset Categories Unavailable', 
+      detail: 'Could not load asset categories from backend. Bundle editing may be limited.',
+      life: 7000
+    });
+  } finally {
+    loadingAssetCategories.value = false;
+  }
 };
 
 // Load initial data
 onMounted(async () => {
+  console.log('BundlesTabPhase1 mounted');
+  console.log('Current contract:', customerContractsStore.currentContract?.id);
+  
   // Load bundles if we have a contract
   if (customerContractsStore.currentContract?.id) {
-    await customerContractsStore.loadBundles(customerContractsStore.currentContract.id);
-    bundles.value = customerContractsStore.bundles || [];
+    console.log('Loading bundles for contract:', customerContractsStore.currentContract.id);
+    try {
+      await customerContractsStore.loadBundles(customerContractsStore.currentContract.id);
+      bundles.value = customerContractsStore.bundles || [];
+      console.log('Loaded bundles from server:', bundles.value.length);
+      console.log('Store bundles:', customerContractsStore.bundles?.length);
+      // Load license counts for each bundle
+      await loadLicenseCounts();
+    } catch (error) {
+      console.warn('Failed to load bundles from server:', error);
+      bundles.value = []; // Start with empty array if server fails
+      toast.add({
+        severity: 'warn',
+        summary: 'Bundle Loading Issue',
+        detail: 'Could not load bundles from server.',
+        life: 7000
+      });
+    }
+  } else {
+    console.log('No current contract - skipping bundle load');
   }
   
   // Load location profiles to get billing line items
   if (props.customerId) {
     await customerContractsStore.loadLocationProfiles(props.customerId);
   }
+  
+  // Load asset categories for bundle editing
+  await loadAssetCategories();
 });
+
+// Watch for contract changes and load bundles
+watch(
+  () => customerContractsStore.currentContract,
+  async (newContract, oldContract) => {
+    console.log('Contract changed:', oldContract?.id, '=>', newContract?.id);
+    if (newContract?.id && newContract.id !== oldContract?.id) {
+      console.log('Loading bundles for new contract:', newContract.id);
+      try {
+        await customerContractsStore.loadBundles(newContract.id);
+        bundles.value = customerContractsStore.bundles || [];
+        console.log('Loaded bundles via watcher:', bundles.value.length);
+        // Load license counts for each bundle
+        await loadLicenseCounts();
+      } catch (error) {
+        console.warn('Failed to load bundles via watcher:', error);
+      }
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
