@@ -13,6 +13,7 @@ import Material from '@primeuix/themes/material';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
+import Tooltip from 'primevue/tooltip';
 
 // Syncfusion components
 import { SchedulePlugin } from '@syncfusion/ej2-vue-schedule';
@@ -90,6 +91,8 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(ConfirmationService);
+// Register global tooltip directive for v-tooltip usage across the app
+app.directive('tooltip', Tooltip);
 
 // Syncfusion license already registered above
 
