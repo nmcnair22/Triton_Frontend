@@ -83,7 +83,22 @@ export const useEstimatesStore = defineStore('estimates', () => {
         versions: [],
         owner: 'Unassigned',
         updatedAt: new Date().toISOString(),
-        history: []
+        history: [],
+        bidTracks: [
+          {
+            id: 'BT-2001', vendor_name: 'Vendor Co', category: 'Materials', subject: 'Cabling kit',
+            createdAt: new Date().toISOString(), expectedAt: null, dueAt: null, receivedAt: new Date().toISOString(),
+            status: 'Selected', surveyIds: [], selectedVersionTag: 'B1', documents: [],
+            versions: [ { tag:'B1', received_date: new Date().toISOString(), amount: 1200, status:'Selected', docId:null, attachmentDocIds:[], items: [] } ]
+          },
+          {
+            id: 'BT-2002', vendor_name: 'Local Contractor Services', category: 'Labor', subject: 'Install labor',
+            createdAt: new Date().toISOString(), expectedAt: null, dueAt: null, receivedAt: null,
+            status: 'Requested', surveyIds: [], selectedVersionTag: null, documents: [], versions: []
+          }
+        ],
+        notes: [],
+        pricingComplete: false
       },
       {
         id: 'EST-1003',
@@ -191,6 +206,9 @@ export const useEstimatesStore = defineStore('estimates', () => {
       lineItems: payload.lineItems || [],
       surveys: [],
       documents: [],
+      bidTracks: [],
+      notes: [],
+      pricingComplete: false,
       versions: [],
       approvalStatus: 'none',
       approvalReason: '',
@@ -202,6 +220,238 @@ export const useEstimatesStore = defineStore('estimates', () => {
     recalcTotals(est);
     estimates.value.unshift(est);
     return est;
+  }
+
+  // --- Bid Tracking Helpers ---
+  function nextBidVersionTag(existing = []) {
+    const nums = (existing || [])
+      .map(v => (typeof v === 'string' && /^B\d+$/.test(v) ? Number(v.slice(1)) : 0))
+      .filter(Boolean);
+    const next = nums.length ? Math.max(...nums) + 1 : 1;
+    return `B${next}`;
+  }
+
+  // --- Notes ---
+  function addNote(estimateId, note) {
+    const est = findById(estimateId);
+    if (!est) return;
+    est.notes = est.notes || [];
+    const n = { id: `NOTE-${Date.now()}`, at: new Date().toISOString(), ...note };
+    est.notes.unshift(n);
+    logEvent(est, 'note.add', note?.text?.slice(0, 80) || '');
+  }
+  function deleteNote(estimateId, noteId) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const idx = (est.notes || []).findIndex(n => n.id === noteId);
+    if (idx >= 0) est.notes.splice(idx, 1);
+  }
+
+  // --- Bid Tracks ---
+  function createBidTrack(estimateId, payload) {
+    const est = findById(estimateId);
+    if (!est) return null;
+    est.bidTracks = est.bidTracks || [];
+    const bt = {
+      id: `BT-${Date.now()}`,
+      vendor_name: payload.vendor_name || '',
+      category: payload.category || 'Materials',
+      subject: payload.subject || '',
+      createdAt: new Date().toISOString(),
+      expectedAt: payload.expectedAt || null,
+      dueAt: payload.dueAt || null,
+      receivedAt: null,
+      status: 'Requested', // Requested | Pending Vendor | Received | Selected | Not Selected | Cancelled
+      surveyIds: [],
+      versions: [],
+      selectedVersionTag: null,
+      documents: []
+    };
+    est.bidTracks.unshift(bt);
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidtrack.create', `${bt.vendor_name} ${bt.subject}`.trim());
+    return bt;
+  }
+
+  function updateBidTrack(estimateId, bidTrackId, patch) {
+    const est = findById(estimateId);
+    if (!est) return null;
+    const idx = (est.bidTracks || []).findIndex(b => b.id === bidTrackId);
+    if (idx < 0) return null;
+    est.bidTracks[idx] = { ...est.bidTracks[idx], ...patch };
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidtrack.update', est.bidTracks[idx].subject || est.bidTracks[idx].id);
+    return est.bidTracks[idx];
+  }
+
+  function deleteBidTrack(estimateId, bidTrackId) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const idx = (est.bidTracks || []).findIndex(b => b.id === bidTrackId);
+    if (idx >= 0) {
+      const [removed] = est.bidTracks.splice(idx, 1);
+      est.updatedAt = new Date().toISOString();
+      logEvent(est, 'bidtrack.delete', removed?.subject || bidTrackId);
+    }
+  }
+
+  function addBidVersion(estimateId, bidTrackId, payload) {
+    const est = findById(estimateId);
+    if (!est) return null;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return null;
+    const tag = nextBidVersionTag(bt.versions?.map(v => v.tag) || []);
+    const v = {
+      tag,
+      received_date: payload.received_date || new Date().toISOString(),
+      amount: Number(payload.amount) || 0,
+      status: 'Received', // Received | Selected | Superseded
+      docId: payload.docId || null,
+      attachmentDocIds: payload.attachmentDocIds || [],
+      items: payload.items ? JSON.parse(JSON.stringify(payload.items)) : []
+    };
+    bt.versions = bt.versions || [];
+    bt.versions.unshift(v);
+    bt.receivedAt = v.received_date;
+    bt.status = 'Received';
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidversion.add', `${bt.vendor_name} ${bt.subject} ${tag}`.trim());
+    return v;
+  }
+
+  function setBidStatus(estimateId, bidTrackId, status) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return;
+    bt.status = status;
+    if (status === 'Received') bt.receivedAt = new Date().toISOString();
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidtrack.status', `${bt.id} -> ${status}`);
+  }
+
+  function selectWinningBidVersion(estimateId, bidTrackId, versionTag) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return;
+    bt.selectedVersionTag = versionTag || null;
+    (bt.versions || []).forEach(v => {
+      v.status = v.tag === versionTag ? 'Selected' : (v.status === 'Selected' ? 'Received' : v.status);
+    });
+    bt.status = versionTag ? 'Selected' : bt.status;
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidversion.select', `${bt.id} -> ${versionTag || 'none'}`);
+  }
+
+  function deleteBidVersion(estimateId, bidTrackId, versionTag) {
+    const est = findById(estimateId);
+    if (!est) return false;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return false;
+    const idx = (bt.versions || []).findIndex(v => v.tag === versionTag);
+    if (idx < 0) return false;
+    const [removed] = bt.versions.splice(idx, 1);
+    if (bt.selectedVersionTag === versionTag) bt.selectedVersionTag = null;
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidversion.delete', `${bt.id}/${versionTag}`);
+    return true;
+  }
+
+  function updateBidVersion(estimateId, bidTrackId, versionTag, patch) {
+    const est = findById(estimateId);
+    if (!est) return null;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return null;
+    const vIdx = (bt.versions || []).findIndex(x => x.tag === versionTag);
+    if (vIdx < 0) return null;
+    bt.versions[vIdx] = { ...bt.versions[vIdx], ...patch };
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidversion.update', `${bt.id}/${versionTag}`);
+    return bt.versions[vIdx];
+  }
+
+  function setBidVersionItems(estimateId, bidTrackId, versionTag, items = []) {
+    const est = findById(estimateId);
+    if (!est) return null;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return null;
+    const v = (bt.versions || []).find(x => x.tag === versionTag);
+    if (!v) return null;
+    v.items = JSON.parse(JSON.stringify(items || []));
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'bidversion.items.set', `${bt.id}/${versionTag} (${v.items.length})`);
+    return v.items;
+  }
+
+  function linkDocToBid(estimateId, bidTrackId, docId) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return;
+    bt.documents = bt.documents || [];
+    if (!bt.documents.includes(docId)) bt.documents.push(docId);
+    const doc = (est.documents || []).find(d => d.id === docId);
+    if (doc) doc.linkedTo = { type: 'bid', id: bidTrackId };
+    logEvent(est, 'doc.link.bid', `${docId} -> ${bidTrackId}`);
+  }
+
+  function linkDocToBidVersion(estimateId, bidTrackId, versionTag, docId) {
+    const est = findById(estimateId);
+    if (!est) return;
+    const bt = (est.bidTracks || []).find(b => b.id === bidTrackId);
+    if (!bt) return;
+    const v = (bt.versions || []).find(x => x.tag === versionTag);
+    if (!v) return;
+    v.attachmentDocIds = v.attachmentDocIds || [];
+    if (!v.attachmentDocIds.includes(docId)) v.attachmentDocIds.push(docId);
+    const doc = (est.documents || []).find(d => d.id === docId);
+    if (doc) doc.linkedTo = { type: 'bidVersion', id: bidTrackId, tag: versionTag };
+    logEvent(est, 'doc.link.bidVersion', `${docId} -> ${bidTrackId}/${versionTag}`);
+  }
+
+  function convertWinningBidsToLineItems(estimateId) {
+    const est = findById(estimateId);
+    if (!est) return 0;
+    let added = 0;
+    (est.bidTracks || []).forEach(bt => {
+      if (!bt.selectedVersionTag) return;
+      const v = (bt.versions || []).find(x => x.tag === bt.selectedVersionTag);
+      if (!v) return;
+      if (v.items && v.items.length) {
+        v.items.forEach(item => {
+          est.lineItems.push({ ...item, vendor: bt.vendor_name, id: Date.now() + Math.random() });
+          added += 1;
+        });
+      } else if (v.amount > 0) {
+        est.lineItems.push({
+          id: Date.now() + Math.random(),
+          pricingType: 'Fixed',
+          category: bt.category || 'Materials',
+          description: `Vendor Bid - ${bt.vendor_name} (${bt.subject || bt.id})`,
+          vendor: bt.vendor_name || '',
+          unit: 'ea',
+          quantity: 1,
+          unitCost: Number(v.amount) || 0,
+          margin: 35
+        });
+        added += 1;
+      }
+    });
+    if (added) {
+      est.updatedAt = new Date().toISOString();
+      recalcTotals(est);
+      logEvent(est, 'bid.convert', `${added} item(s)`);
+    }
+    return added;
+  }
+
+  function setPricingComplete(estimateId, flag = true) {
+    const est = findById(estimateId);
+    if (!est) return;
+    est.pricingComplete = !!flag;
+    est.updatedAt = new Date().toISOString();
+    logEvent(est, 'pricing.complete', String(est.pricingComplete));
   }
 
   function updateEstimate(id, patch) {
@@ -526,6 +776,22 @@ export const useEstimatesStore = defineStore('estimates', () => {
     addSite,
     updateSite,
     deleteSite,
+    // bid tracks
+    createBidTrack,
+    updateBidTrack,
+    deleteBidTrack,
+    addBidVersion,
+    setBidStatus,
+    selectWinningBidVersion,
+    linkDocToBid,
+    linkDocToBidVersion,
+    convertWinningBidsToLineItems,
+    updateBidVersion,
+    setBidVersionItems,
+    setPricingComplete,
+    // notes
+    addNote,
+    deleteNote,
     addBid,
     updateBid,
     deleteBid,

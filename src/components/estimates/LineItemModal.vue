@@ -45,7 +45,7 @@ function validate() {
   if (form.value.pricingType === 'T&M') {
     if (!form.value.role) errors.value.role = 'Role is required';
     // Unit cost used for margin on T&M
-    if (form.value.unitCost == null || form.value.unitCost < 0) errors.value.unitCost = 'Unit cost must be = 0';
+    if (form.value.unitCost == null || form.value.unitCost < 0) errors.value.unitCost = 'Unit cost must be >= 0';
     if (form.value.rateOverride && (!form.value.clientRate || form.value.clientRate <= 0)) errors.value.clientRate = 'Client rate required';
   } else {
     if (form.value.unitCost == null || form.value.unitCost < 0) errors.value.unitCost = 'Unit cost must be >= 0';

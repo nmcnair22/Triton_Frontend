@@ -101,6 +101,28 @@ function markAccepted() {
         </div>
       </div>
 
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg border md:col-span-1">
+          <div class="text-sm text-surface-600 dark:text-surface-400 mb-1">Pricing Status</div>
+          <div class="text-sm">Open bid requests: {{ (est.bidTracks||[]).filter(b=>['Requested','Pending Vendor'].includes(b.status)).length }}</div>
+          <div class="mt-2 flex items-center gap-2">
+            <Button :label="est.pricingComplete ? 'Pricing Complete' : 'Mark Pricing Complete'" size="small" :severity="est.pricingComplete?'success':'secondary'" @click="store.setPricingComplete(est.id, !est.pricingComplete)" />
+            <Button label="Sync winning bids to estimate" size="small" outlined @click="() => { const n = store.convertWinningBidsToLineItems(est.id); toast.add({severity:'success', summary:'Synced', detail:`Added ${n} item(s)`, life:2000}); }" />
+          </div>
+        </div>
+        <div class="bg-surface-50 dark:bg-surface-800 p-4 rounded-lg border md:col-span-2">
+          <div class="text-sm text-surface-600 dark:text-surface-400 mb-2">Selected Bids</div>
+          <div v-if="!((est.bidTracks||[]).some(b=>b.selectedVersionTag))" class="text-surface-500 text-sm">No winning bids selected yet.</div>
+          <div v-else>
+            <ul class="text-sm space-y-1">
+              <li v-for="b in (est.bidTracks||[]).filter(b=>b.selectedVersionTag)" :key="b.id">
+                <b>{{ b.vendor_name }}</b> — {{ b.subject }} ({{ b.selectedVersionTag }})
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <div class="space-y-1 text-sm text-surface-700 dark:text-surface-300 mb-6">
         <div><b>Client:</b> {{ est.clientName }}</div>
         <div><b>Project:</b> {{ est.projectName }}</div>

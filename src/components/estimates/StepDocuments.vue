@@ -47,6 +47,12 @@ function extractDemo() {
         <Column field="type" header="Type" />
         <Column field="uploadedAt" header="Uploaded" />
         <Column field="version" header="Version" />
+        <Column header="Linked To">
+          <template #body="{data}">
+            <span v-if="data.linkedTo">{{ data.linkedTo.type }}: {{ data.linkedTo.id }}<span v-if="data.linkedTo.tag">/{{ data.linkedTo.tag }}</span></span>
+            <span v-else>—</span>
+          </template>
+        </Column>
         <Column header="Actions" style="width:12%">
           <template #body="{data}">
             <div class="flex gap-2">

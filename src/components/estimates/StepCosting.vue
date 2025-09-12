@@ -13,6 +13,7 @@ import LineItemModal from './LineItemModal.vue';
 import SurveyRequestModal from './SurveyRequestModal.vue';
 import Message from 'primevue/message';
 import ImportCsvDialog from './ImportCsvDialog.vue';
+import BidTrackerTable from './BidTrackerTable.vue';
 
 const props = defineProps({ initialTab: { type: String, default: 'costing' } });
 const emit = defineEmits(['prev','next']);
@@ -98,7 +99,7 @@ function markupPctForRow(row) {
         <div class="flex border-b border-surface-200 dark:border-surface-700">
           <button @click="activeTab='costing'" :class="['px-4 py-2 font-medium text-sm border-b-2 transition-colors', activeTab==='costing' ? 'border-primary text-primary' : 'border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-100']">Line Items & Costing</button>
           <button @click="activeTab='surveys'" :class="['px-4 py-2 font-medium text-sm border-b-2 transition-colors', activeTab==='surveys' ? 'border-primary text-primary' : 'border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-100']">Site Surveys & Bids</button>
-          <button @click="activeTab='documents'" :class="['px-4 py-2 font-medium text-sm border-b-2 transition-colors', activeTab==='documents' ? 'border-primary text-primary' : 'border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-100']">Documents & Processing</button>
+          <button @click="activeTab='documents'" :class="['px-4 py-2 font-medium text-sm border-b-2 transition-colors', activeTab==='documents' ? 'border-primary text-primary' : 'border-transparent text-surface-600 hover:text-surface-900 dark:text-surface-400 dark:hover:text-surface-100']">Document Library</button>
         </div>
       </div>
 
@@ -188,10 +189,7 @@ function markupPctForRow(row) {
       <div v-else-if="activeTab==='surveys'" class="tab-content">
         <div class="flex justify-between items-center mb-6">
           <h4 class="text-lg font-medium">Site Surveys & Bids</h4>
-          <div class="flex items-center gap-2">
-            <Button label="Request Survey" icon="pi pi-send" @click="showSurvey=true" />
-            <Button label="New Bid (mock)" icon="pi pi-plus" severity="secondary" outlined @click="store.addBid(est.id, { vendor_name: 'Vendor Co', bid_name: 'Bid A', bid_amount: 1000, received_date: new Date().toISOString(), notes: '' })" />
-          </div>
+          <div class="flex items-center gap-2"><Button label="Request Survey" icon="pi pi-send" @click="showSurvey=true" /></div>
         </div>
         <div v-if="!(est.surveys?.length)">
           <p class="text-surface-500">No surveys yet.</p>
@@ -209,25 +207,8 @@ function markupPctForRow(row) {
           </Column>
         </DataTable>
 
-        <h5 class="font-medium mt-6">Bids</h5>
-        <div v-if="!(est.bids?.length)"><p class="text-surface-500">No bids yet.</p></div>
-        <DataTable v-else :value="est.bids" dataKey="id" class="p-datatable-sm">
-          <Column field="vendor_name" header="Vendor" />
-          <Column field="bid_name" header="Bid Name/#" />
-          <Column field="received_date" header="Received" />
-          <Column field="bid_amount" header="Amount">
-            <template #body="{data}"><MoneyCell :value="data.bid_amount || 0" /></template>
-          </Column>
-          <Column field="status" header="Status" />
-          <Column header="Actions" style="width:16%">
-            <template #body="{data}">
-              <div class="flex gap-2">
-                <Button label="Select for Line Item" icon="pi pi-check" size="small" @click="store.selectBidForLineItem(est.id, data.id)" />
-                <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="store.deleteBid(est.id, data.id)" />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
+        <h5 class="font-medium mt-6">Bid Tracking</h5>
+        <BidTrackerTable />
 
         <div class="flex justify-between mt-8 pt-6 border-t border-surface-200 dark:border-surface-700">
           <Button label="Previous" icon="pi pi-arrow-left" severity="secondary" @click="$emit('prev')" />
