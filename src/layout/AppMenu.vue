@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { hasPermission } from '@/utils/rbac';
 import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
@@ -10,17 +11,19 @@ const model = ref([
             {
                 label: 'Dispatch Dashboard',
                 icon: 'pi pi-fw pi-chart-bar',
-                to: '/field-services/dispatch-dashboard'
+                to: '/field-services/dispatch-dashboard',
+                visible: false
             },
             {
-                label: 'Visit Details',
-                icon: 'pi pi-fw pi-calendar-plus',
+                label: 'Call Operations',
+                icon: 'pi pi-fw pi-phone',
                 to: '/field-services/visit-management'
             },
             {
                 label: 'Estimates / Quotes',
                 icon: 'pi pi-fw pi-calculator',
-                to: '/field-services/estimates'
+                to: '/field-services/estimates',
+                visible: false
             }
         ]
     },
@@ -28,6 +31,7 @@ const model = ref([
     {
         label: 'Streamline',
         icon: 'pi pi-chart-line',
+        visible: false,
         items: [
             {
                 label: 'Dashboard',
@@ -130,6 +134,7 @@ const model = ref([
     {
         label: 'TEM (Telecom Expense Management)',
         icon: 'pi pi-phone',
+        visible: false,
         items: [
             {
                 label: 'Customers',
@@ -200,6 +205,7 @@ const model = ref([
     {
         label: 'Customers',
         icon: 'pi pi-users',
+        visible: false,
         items: [
             {
                 label: 'Customer List',
@@ -226,12 +232,14 @@ const model = ref([
             {
                 label: 'Cash Application',
                 icon: 'pi pi-fw pi-money-bill',
-                to: '/accounting/cash-application'
+                to: '/accounting/cash-application',
+                visible: false
             },
             {
                 label: 'Accounting Dashboard',
                 icon: 'pi pi-fw pi-chart-bar',
-                to: '/accounting/dashboard'
+                to: '/accounting/dashboard',
+                visible: false
             }
         ]
     },
@@ -239,6 +247,7 @@ const model = ref([
     {
         label: 'Billing',
         icon: 'pi pi-credit-card',
+        visible: false,
         items: [
             {
                 label: 'Subscriptions',
@@ -266,6 +275,7 @@ const model = ref([
     {
         label: 'Inventory',
         icon: 'pi pi-box',
+        visible: false,
         items: [
             {
                 label: 'Equipment Database',
@@ -369,11 +379,47 @@ const model = ref([
         ]
     }
 ]);
+
+const isItemVisible = (item) => {
+    if (item?.visible === false) {
+        return false;
+    }
+
+    if (!item?.permissionGuard || item.visible === true) {
+        return true;
+    }
+
+    return hasPermission(item.permissionGuard);
+};
+
+const canDisplayItem = (item) => {
+    if (!item?.items?.length) {
+        return isItemVisible(item);
+    }
+
+    return isItemVisible(item) && item.items.some((child) => canDisplayItem(child));
+};
+
+const renderedModel = computed(() => {
+    const visibleEntries = model.value.filter((item) => item.separator || canDisplayItem(item));
+
+    return visibleEntries.filter((item, index) => {
+        if (!item.separator) {
+            return true;
+        }
+
+        const hasPreviousItem = visibleEntries.slice(0, index).some((entry) => !entry.separator);
+        const hasNextItem = visibleEntries.slice(index + 1).some((entry) => !entry.separator);
+        const previousIsSeparator = index > 0 && visibleEntries[index - 1].separator;
+
+        return hasPreviousItem && hasNextItem && !previousIsSeparator;
+    });
+});
 </script>
 
 <template>
     <ul class="layout-menu">
-        <template v-for="(item, i) in model" :key="item">
+        <template v-for="(item, i) in renderedModel" :key="item">
             <AppMenuItem v-if="!item.separator" :item="item" root :index="i" />
 
             <li v-else class="menu-separator" />

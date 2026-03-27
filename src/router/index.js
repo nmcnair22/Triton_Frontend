@@ -55,11 +55,11 @@ const routes = [
                     breadcrumb: [
                         { label: 'Home', path: '/' },
                         { label: 'Field Services', path: '/field-services' },
-                        { label: 'Visit Management', path: '/field-services/visit-management' }
+                        { label: 'Call Operations', path: '/field-services/visit-management' }
                     ],
                     requiresAuth: true
                 },
-                component: () => import('@/views/field-services/VisitDetails.vue')
+                component: () => import('@/views/field-services/CallOperationsView.vue')
             },
             {
                 path: '/field-services/visit/:id',
@@ -68,7 +68,7 @@ const routes = [
                     breadcrumb: [
                         { label: 'Home', path: '/' },
                         { label: 'Field Services', path: '/field-services' },
-                        { label: 'Visit Management', path: '/field-services/visit-management' },
+                        { label: 'Call Operations', path: '/field-services/visit-management' },
                         { label: 'Visit Detail', path: '/field-services/visit/:id' }
                     ],
                     requiresAuth: true

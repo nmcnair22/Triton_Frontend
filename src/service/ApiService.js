@@ -1,6 +1,23 @@
 import axios from 'axios';
 import { AuthService } from '../auth/AuthService';
 
+function resolveApiBaseUrl() {
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const defaultBaseUrl = import.meta.env.DEV ? '/api' : 'http://localhost:8000/api';
+
+  if (!configuredBaseUrl) {
+    return defaultBaseUrl;
+  }
+
+  const isLocalLaravelUrl = /^https?:\/\/(localhost|127\.0\.0\.1):8000\/api\/?$/i.test(configuredBaseUrl);
+
+  if (import.meta.env.DEV && isLocalLaravelUrl) {
+    return '/api';
+  }
+
+  return configuredBaseUrl;
+}
+
 // Helper function to properly join URL parts
 function joinUrl(baseUrl, resource) {
   // Remove trailing slash from baseUrl and leading slash from resource
@@ -9,9 +26,11 @@ function joinUrl(baseUrl, resource) {
   return `${cleanBase}/${cleanResource}`;
 }
 
+const resolvedApiBaseUrl = resolveApiBaseUrl();
+
 // Create axios instance with base URL
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: resolvedApiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -46,7 +65,7 @@ apiClient.interceptors.response.use(
 );
 
 // Debug log to see the base URL configuration
-console.log('API Service BaseURL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api');
+console.log('API Service BaseURL:', resolvedApiBaseUrl);
 
 export const ApiService = {
   // Generic API methods

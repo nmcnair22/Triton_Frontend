@@ -37,43 +37,39 @@ const subMenuRef = ref(null);
 const menuItemRef = ref(null);
 
 // Check if the item should be visible based on permissions
-const isVisible = computed(() => {
-    // If no permissionGuard is set or the item is explicitly marked as visible, show it
-    if (!props.item.permissionGuard || props.item.visible === true) {
-        return true;
-    }
-    
-    // If the item has a permissionGuard, check the permission
-    return hasPermission(props.item.permissionGuard);
-});
-
-// Check if any child items are visible
-const hasVisibleChildren = computed(() => {
-    if (!props.item.items || !props.item.items.length) {
+const isItemVisible = (item) => {
+    if (item?.visible === false) {
         return false;
     }
-    
-    return props.item.items.some(child => {
-        // If no permissionGuard is set or the item is explicitly marked as visible, it's visible
-        if (!child.permissionGuard || child.visible === true) {
-            return true;
-        }
-        
-        // If the item has a permissionGuard, check the permission
-        return hasPermission(child.permissionGuard);
-    });
-});
 
-// Determine if the menu item should be displayed
-const shouldDisplay = computed(() => {
-    // If the item has no children, check if it's visible
-    if (!props.item.items || !props.item.items.length) {
-        return isVisible.value;
+    if (!item?.permissionGuard || item.visible === true) {
+        return true;
     }
-    
-    // If the item has children, show it if it's visible or if it has any visible children
-    return isVisible.value && hasVisibleChildren.value;
-});
+
+    return hasPermission(item.permissionGuard);
+};
+
+const hasVisibleDescendants = (item) => {
+    if (!item?.items?.length) {
+        return false;
+    }
+
+    return item.items.some((child) => canDisplayItem(child));
+};
+
+const canDisplayItem = (item) => {
+    if (!item?.items?.length) {
+        return isItemVisible(item);
+    }
+
+    return isItemVisible(item) && hasVisibleDescendants(item);
+};
+
+const isVisible = computed(() => isItemVisible(props.item));
+
+const hasVisibleChildren = computed(() => hasVisibleDescendants(props.item));
+
+const shouldDisplay = computed(() => canDisplayItem(props.item));
 
 onBeforeMount(() => {
     itemKey.value = props.parentItemKey ? props.parentItemKey + '-' + props.index : String(props.index);

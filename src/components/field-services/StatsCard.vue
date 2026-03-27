@@ -113,6 +113,6 @@ const trendDirection = computed(() => {
 
 <style scoped>
 .stats-card {
-  @apply bg-white dark:bg-surface-900 rounded-lg p-4 border border-surface-200 dark:border-surface-700 transition-all duration-200 hover:shadow-md;
+  @apply bg-white dark:bg-surface-900 rounded-lg p-3.5 border border-surface-200 dark:border-surface-700 transition-all duration-200 hover:shadow-md;
 }
 </style> 
