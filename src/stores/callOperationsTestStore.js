@@ -41,19 +41,37 @@ function normalizeTestCall(call) {
     return call;
   }
 
+  const readiness = call.readiness || {};
+  const blockers = Array.isArray(readiness.blockers)
+    ? readiness.blockers
+    : Array.isArray(readiness.reasons)
+      ? readiness.reasons
+      : [];
+  const warnings = Array.isArray(readiness.warnings) ? readiness.warnings : [];
+
   return {
     ...call,
     visit_name: call.visit_name || call.label || 'Manual Test Call',
+    queue_in_scope: typeof call.queue_in_scope === 'boolean' ? call.queue_in_scope : true,
+    queue_scope_reason: call.queue_scope_reason ?? null,
+    timing_state: call.timing_state || (call.appointment?.is_past_due || readiness.is_past_due ? 'past_due' : 'upcoming'),
+    data_quality: call.data_quality || readiness.grade || (blockers.length > 0 ? 'blocked' : warnings.length > 0 ? 'pushable_with_warnings' : 'ready'),
+    ready_to_push: Boolean(readiness.ready_to_push ?? call.ready_to_push ?? false),
     technician: {
       name: call.technician?.name || null,
-      phone: call.technician?.phone || null
+      phone: call.technician?.phone || null,
+      email: call.technician?.email || null,
+      company: call.technician?.company || null,
+      source: call.technician?.source || null
     },
     appointment: {
       visit_date: call.appointment?.visit_date || null,
       service_date: call.appointment?.visit_date || null,
       visit_time: call.appointment?.visit_time || null,
       local_time: call.appointment?.visit_time || null,
-      timezone: call.appointment?.timezone || null
+      timezone: call.appointment?.timezone || null,
+      scheduled_at_local: call.appointment?.scheduled_at_local || null,
+      is_past_due: Boolean(call.appointment?.is_past_due || readiness.is_past_due)
     },
     location: {
       name: call.location?.name || null,
@@ -65,9 +83,23 @@ function normalizeTestCall(call) {
       override: null,
       source: 'missing'
     },
-    readiness: call.readiness || {
+    readiness: {
       ready_to_push: false,
-      reasons: []
+      grade: call.data_quality || 'blocked',
+      blockers: [],
+      warnings: [],
+      blocker_count: 0,
+      warning_count: 0,
+      reasons: [],
+      is_past_due: false,
+      ...readiness,
+      grade: readiness.grade || call.data_quality || (blockers.length > 0 ? 'blocked' : warnings.length > 0 ? 'pushable_with_warnings' : 'ready'),
+      blockers,
+      warnings,
+      blocker_count: Number(readiness.blocker_count ?? blockers.length),
+      warning_count: Number(readiness.warning_count ?? warnings.length),
+      reasons: Array.isArray(readiness.reasons) ? readiness.reasons : blockers,
+      is_past_due: Boolean(readiness.is_past_due || call.appointment?.is_past_due)
     },
     sync: call.sync || {
       sync_status: 'not_ready',
@@ -114,6 +146,9 @@ export const useCallOperationsTestStore = defineStore('call-operations-test', ()
     search: '',
     syncStatuses: [],
     callStatuses: [],
+    queueInScope: null,
+    timingStates: [],
+    dataQualities: [],
     readyToPush: null
   });
 
@@ -149,6 +184,18 @@ export const useCallOperationsTestStore = defineStore('call-operations-test', ()
 
     if (filters.value.callStatuses.length > 0) {
       query.call_status = filters.value.callStatuses;
+    }
+
+    if (filters.value.queueInScope !== null) {
+      query.queue_in_scope = filters.value.queueInScope;
+    }
+
+    if (filters.value.timingStates.length > 0) {
+      query.timing_state = filters.value.timingStates;
+    }
+
+    if (filters.value.dataQualities.length > 0) {
+      query.data_quality = filters.value.dataQualities;
     }
 
     if (filters.value.readyToPush !== null) {
@@ -208,7 +255,22 @@ export const useCallOperationsTestStore = defineStore('call-operations-test', ()
 
     try {
       const response = await CallOperationsService.getTestCallDetail(testCallId, options);
-      selectedTestCallDetail.value = normalizeTestCall(response.data);
+      const existingCall =
+        rows.value.find((row) => String(row.id) === String(testCallId)) ||
+        selectedTestCallDetail.value ||
+        null;
+      const normalizedCall = normalizeTestCall(response.data);
+      selectedTestCallDetail.value = existingCall
+        ? normalizeTestCall({
+            ...existingCall,
+            ...normalizedCall,
+            payload_preview: normalizedCall.payload_preview ?? existingCall.payload_preview ?? null,
+            vendor_debug: normalizedCall.vendor_debug ?? existingCall.vendor_debug ?? null,
+            allowed_actions: Array.isArray(normalizedCall.allowed_actions) && normalizedCall.allowed_actions.length > 0
+              ? normalizedCall.allowed_actions
+              : existingCall.allowed_actions || []
+          })
+        : normalizedCall;
       mergeUpdatedCall(selectedTestCallDetail.value);
       return selectedTestCallDetail.value;
     } catch (loadError) {
@@ -262,6 +324,9 @@ export const useCallOperationsTestStore = defineStore('call-operations-test', ()
       search: '',
       syncStatuses: [],
       callStatuses: [],
+      queueInScope: null,
+      timingStates: [],
+      dataQualities: [],
       readyToPush: null
     };
     tableState.value.page = 1;

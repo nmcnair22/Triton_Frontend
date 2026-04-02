@@ -3,16 +3,40 @@ import { defineStore } from 'pinia';
 import { CallOperationsService } from '@/service/CallOperationsService';
 
 function formatDateForApi(value) {
-  return new Date(value).toISOString().split('T')[0];
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function defaultSummary(date) {
   return {
     date,
     total_visits: 0,
+    queue_in_scope: 0,
+    out_of_scope: 0,
+    ready: 0,
+    pushable_with_warnings: 0,
+    blocked: 0,
     ready_to_push: 0,
     not_ready: 0,
+    upcoming: 0,
     past_due: 0,
+    by_timing_state: {
+      upcoming: 0,
+      past_due: 0
+    },
+    by_data_quality: {
+      ready: 0,
+      pushable_with_warnings: 0,
+      blocked: 0
+    },
+    by_queue_scope_reason: {},
     sent: 0,
     needs_update: 0,
     push_failed: 0,
@@ -20,9 +44,22 @@ function defaultSummary(date) {
     completed: 0,
     transferred: 0,
     failed: 0,
+    sms_sent_count: 0,
     sms_sent: 0,
     completion_rate: 0,
-    transfer_rate: 0
+    transfer_rate: 0,
+    last_status_sync_at: null
+  };
+}
+
+function normalizeActivityEvent(event) {
+  if (!event) {
+    return event;
+  }
+
+  return {
+    ...event,
+    user_name: event.user_name || event.user?.name || null
   };
 }
 
@@ -31,16 +68,30 @@ function normalizeVisitRow(visit) {
     return visit;
   }
 
+  const appointment = visit.appointment || {};
+  const readiness = visit.readiness || {};
+  const sync = visit.sync || {};
+  const call = visit.call || {};
+  const tools = visit.tools || {};
+
   return {
     ...visit,
+    queue_in_scope: typeof visit.queue_in_scope === 'boolean' ? visit.queue_in_scope : !visit.queue_scope_reason,
+    queue_scope_reason: visit.queue_scope_reason ?? null,
+    timing_state: visit.timing_state || (appointment.is_past_due || readiness.is_past_due ? 'past_due' : 'upcoming'),
+    data_quality: visit.data_quality || readiness.grade || 'blocked',
+    ready_to_push: Boolean(readiness.ready_to_push ?? visit.ready_to_push ?? false),
+    job: visit.job ? { ...visit.job } : null,
     location: {
       ...visit.location
     },
     appointment: {
-      ...visit.appointment,
-      local_time: visit.appointment?.local_time || visit.appointment?.visit_time_local || null,
-      is_past_due: Boolean(visit.appointment?.is_past_due),
-      scheduled_at_local: visit.appointment?.scheduled_at_local || null
+      ...appointment,
+      local_time: appointment.local_time || appointment.visit_time_local || appointment.visit_time || null,
+      visit_time_local: appointment.visit_time_local || appointment.local_time || appointment.visit_time || null,
+      requested_datetime: appointment.requested_datetime || appointment.scheduled_at_local || null,
+      scheduled_at_local: appointment.scheduled_at_local || appointment.requested_datetime || null,
+      is_past_due: Boolean(appointment.is_past_due)
     },
     technician: {
       ...visit.technician
@@ -53,12 +104,40 @@ function normalizeVisitRow(visit) {
     },
     readiness: {
       ready_to_push: false,
+      grade: visit.data_quality || readiness.grade || 'blocked',
+      blockers: [],
+      warnings: [],
+      blocker_count: 0,
+      warning_count: 0,
       reasons: [],
       is_past_due: false,
-      ...(visit.readiness || {}),
-      is_past_due: Boolean(visit.readiness?.is_past_due || visit.appointment?.is_past_due)
+      ...readiness,
+      grade: readiness.grade || visit.data_quality || 'blocked',
+      blockers: Array.isArray(readiness.blockers)
+        ? readiness.blockers
+        : Array.isArray(readiness.reasons)
+          ? readiness.reasons
+          : [],
+      warnings: Array.isArray(readiness.warnings) ? readiness.warnings : [],
+      reasons: Array.isArray(readiness.reasons)
+        ? readiness.reasons
+        : Array.isArray(readiness.blockers)
+          ? readiness.blockers
+          : [],
+      blocker_count: Number(
+        readiness.blocker_count ??
+          (Array.isArray(readiness.blockers)
+            ? readiness.blockers.length
+            : Array.isArray(readiness.reasons)
+              ? readiness.reasons.length
+              : 0)
+      ),
+      warning_count: Number(
+        readiness.warning_count ?? (Array.isArray(readiness.warnings) ? readiness.warnings.length : 0)
+      ),
+      is_past_due: Boolean(readiness.is_past_due || appointment.is_past_due)
     },
-    sync: visit.sync || {
+    sync: {
       sync_status: 'unknown',
       needs_repush: false,
       drift_fields: [],
@@ -66,10 +145,12 @@ function normalizeVisitRow(visit) {
       first_pushed_at: null,
       last_pushed_at: null,
       last_status_sync_at: null,
-      last_error: null
+      last_error: null,
+      ...sync
     },
-    call: visit.call || {
+    call: {
       call_status: 'unknown',
+      call_date: null,
       last_outcome: null,
       sms_sent: null,
       call_transfer: null,
@@ -77,14 +158,75 @@ function normalizeVisitRow(visit) {
       retell_call_id: null,
       recording_url: null,
       recording_direct: null,
-      transcript_url: null
+      transcript_url: null,
+      ...call
     },
-    tools: visit.tools || {
+    tools: {
       resolved: null,
       override: null,
-      source: 'none'
+      source: 'none',
+      ...tools
     },
+    vendor_debug: visit.vendor_debug || null,
+    payload_preview: visit.payload_preview || null,
     allowed_actions: visit.allowed_actions || []
+  };
+}
+
+function mergeVisitPayload(existingVisit, nextVisit) {
+  if (!existingVisit) {
+    return nextVisit;
+  }
+
+  if (!nextVisit) {
+    return existingVisit;
+  }
+
+  return {
+    ...existingVisit,
+    ...nextVisit,
+    job: nextVisit.job ?? existingVisit.job ?? null,
+    location: {
+      ...(existingVisit.location || {}),
+      ...(nextVisit.location || {})
+    },
+    appointment: {
+      ...(existingVisit.appointment || {}),
+      ...(nextVisit.appointment || {})
+    },
+    technician: {
+      ...(existingVisit.technician || {}),
+      ...(nextVisit.technician || {})
+    },
+    customer: {
+      ...(existingVisit.customer || {}),
+      ...(nextVisit.customer || {})
+    },
+    project: {
+      ...(existingVisit.project || {}),
+      ...(nextVisit.project || {})
+    },
+    readiness: {
+      ...(existingVisit.readiness || {}),
+      ...(nextVisit.readiness || {})
+    },
+    sync: {
+      ...(existingVisit.sync || {}),
+      ...(nextVisit.sync || {})
+    },
+    call: {
+      ...(existingVisit.call || {}),
+      ...(nextVisit.call || {})
+    },
+    tools: {
+      ...(existingVisit.tools || {}),
+      ...(nextVisit.tools || {})
+    },
+    vendor_debug: nextVisit.vendor_debug ?? existingVisit.vendor_debug ?? null,
+    payload_preview: nextVisit.payload_preview ?? existingVisit.payload_preview ?? null,
+    allowed_actions: Array.isArray(nextVisit.allowed_actions)
+      ? nextVisit.allowed_actions
+      : existingVisit.allowed_actions || []
   };
 }
 
@@ -104,17 +246,56 @@ function normalizeVisitDetail(detail) {
 
   return {
     ...detail,
+    vendor_debug: detail.vendor_debug || normalizedVisit.vendor_debug || null,
+    payload_preview: detail.payload_preview || normalizedVisit.payload_preview || null,
+    readiness: detail.readiness || normalizedVisit.readiness,
+    sync: detail.sync || normalizedVisit.sync,
+    call: detail.call || normalizedVisit.call,
+    tools: detail.tools || normalizedVisit.tools,
+    allowed_actions: detail.allowed_actions || normalizedVisit.allowed_actions,
     visit: normalizedVisit
   };
 }
 
 function normalizeSummaryPayload(summary, date) {
+  const sent = Number(summary?.sent ?? 0);
+  const completed = Number(summary?.completed ?? 0);
+  const transferred = Number(summary?.transferred ?? 0);
+  const failed = Number(summary?.failed ?? 0);
+  const terminalTotal = completed + transferred + failed;
+  const ready = Number(summary?.ready ?? 0);
+  const warnings = Number(summary?.pushable_with_warnings ?? 0);
+  const blocked = Number(summary?.blocked ?? summary?.not_ready ?? 0);
+  const queueInScope = Number(summary?.queue_in_scope ?? ready + warnings + blocked);
+  const pastDue = Number(summary?.past_due ?? 0);
+
   return {
     ...defaultSummary(date),
     ...(summary || {}),
-    ready_to_push: summary?.ready_to_push ?? summary?.ready ?? 0,
-    past_due: summary?.past_due ?? 0,
-    sms_sent: summary?.sms_sent ?? summary?.sms_sent_count ?? 0
+    queue_in_scope: queueInScope,
+    out_of_scope: Number(summary?.out_of_scope ?? Math.max(Number(summary?.total_visits ?? 0) - queueInScope, 0)),
+    ready,
+    pushable_with_warnings: warnings,
+    blocked,
+    ready_to_push: Number(summary?.ready_to_push ?? ready + warnings),
+    not_ready: Number(summary?.not_ready ?? blocked),
+    upcoming: Number(summary?.upcoming ?? summary?.by_timing_state?.upcoming ?? 0),
+    past_due: pastDue,
+    by_timing_state: {
+      upcoming: Number(summary?.by_timing_state?.upcoming ?? summary?.upcoming ?? 0),
+      past_due: pastDue
+    },
+    by_data_quality: {
+      ready,
+      pushable_with_warnings: warnings,
+      blocked
+    },
+    by_queue_scope_reason: summary?.by_queue_scope_reason || {},
+    sms_sent_count: summary?.sms_sent_count ?? summary?.sms_sent ?? 0,
+    sms_sent: summary?.sms_sent ?? summary?.sms_sent_count ?? 0,
+    completion_rate: summary?.completion_rate ?? (terminalTotal > 0 ? completed / terminalTotal : sent > 0 ? completed / sent : 0),
+    transfer_rate: summary?.transfer_rate ?? (terminalTotal > 0 ? transferred / terminalTotal : 0),
+    last_status_sync_at: summary?.last_status_sync_at ?? null
   };
 }
 
@@ -158,10 +339,14 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
 
   const filters = ref({
     date: today,
+    preset: 'queue',
     customerId: null,
     projectId: null,
     syncStatuses: [],
     callStatuses: [],
+    queueInScope: null,
+    timingStates: [],
+    dataQualities: [],
     readyToPush: null,
     search: ''
   });
@@ -207,7 +392,7 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
 
   const hasSelections = computed(() => selectedRows.value.length > 0);
   const selectedVisitCount = computed(() => selectedRows.value.length);
-  const selectedReadyCount = computed(() => selectedRows.value.filter((row) => row.readiness?.ready_to_push).length);
+  const selectedReadyCount = computed(() => selectedRows.value.filter((row) => row.ready_to_push).length);
 
   function buildQuery() {
     const query = {
@@ -217,6 +402,10 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
       sort: tableState.value.sort,
       direction: tableState.value.direction
     };
+
+    if (filters.value.preset) {
+      query.preset = filters.value.preset;
+    }
 
     if (filters.value.customerId) {
       query.customer_id = filters.value.customerId;
@@ -236,10 +425,60 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
 
     if (filters.value.callStatuses.length > 0) {
       query.call_status = filters.value.callStatuses;
-    } else if (activeTab.value === 'queue') {
-      query.call_status = ['awaiting_call', 'unknown'];
-    } else if (activeTab.value === 'results') {
-      query.call_status = CallOperationsService.TERMINAL_CALL_STATUSES;
+    }
+
+    if (filters.value.queueInScope !== null) {
+      query.queue_in_scope = filters.value.queueInScope;
+    }
+
+    if (filters.value.timingStates.length > 0) {
+      query.timing_state = filters.value.timingStates;
+    }
+
+    if (filters.value.dataQualities.length > 0) {
+      query.data_quality = filters.value.dataQualities;
+    }
+
+    if (filters.value.readyToPush !== null) {
+      query.ready_to_push = filters.value.readyToPush;
+    }
+
+    return query;
+  }
+
+  function buildFilterContext() {
+    const query = {};
+
+    if (filters.value.customerId) {
+      query.customer_id = filters.value.customerId;
+    }
+
+    if (filters.value.projectId) {
+      query.project_id = filters.value.projectId;
+    }
+
+    if (filters.value.search) {
+      query.search = filters.value.search;
+    }
+
+    if (filters.value.syncStatuses.length > 0) {
+      query.sync_status = filters.value.syncStatuses;
+    }
+
+    if (filters.value.callStatuses.length > 0) {
+      query.call_status = filters.value.callStatuses;
+    }
+
+    if (filters.value.queueInScope !== null) {
+      query.queue_in_scope = filters.value.queueInScope;
+    }
+
+    if (filters.value.timingStates.length > 0) {
+      query.timing_state = filters.value.timingStates;
+    }
+
+    if (filters.value.dataQualities.length > 0) {
+      query.data_quality = filters.value.dataQualities;
     }
 
     if (filters.value.readyToPush !== null) {
@@ -254,18 +493,26 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
       return;
     }
 
-    const normalizedVisit = normalizeVisitRow(visit);
-
-    const index = rows.value.findIndex((row) => String(row.visit_id) === String(normalizedVisit.visit_id));
+    const visitId = visit.visit_id;
+    const index = rows.value.findIndex((row) => String(row.visit_id) === String(visitId));
+    const normalizedVisit = normalizeVisitRow(mergeVisitPayload(index !== -1 ? rows.value[index] : null, visit));
 
     if (index !== -1) {
       rows.value[index] = normalizedVisit;
     }
 
     if (selectedVisitDetail.value?.visit && String(selectedVisitDetail.value.visit.visit_id) === String(normalizedVisit.visit_id)) {
+      const mergedDetailVisit = normalizeVisitRow(mergeVisitPayload(selectedVisitDetail.value.visit, visit));
+
       selectedVisitDetail.value = {
         ...selectedVisitDetail.value,
-        visit: normalizedVisit
+        payload_preview: mergedDetailVisit.payload_preview ?? selectedVisitDetail.value.payload_preview ?? null,
+        readiness: mergedDetailVisit.readiness,
+        sync: mergedDetailVisit.sync,
+        call: mergedDetailVisit.call,
+        tools: mergedDetailVisit.tools,
+        allowed_actions: mergedDetailVisit.allowed_actions,
+        visit: mergedDetailVisit
       };
     }
   }
@@ -307,11 +554,7 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
     await Promise.all([loadRows(), loadSummary()]);
 
     if (selectedVisitId.value) {
-      await loadVisitDetail(selectedVisitId.value);
-
-      if (activeTab.value === 'activity') {
-        await loadVisitActivity(selectedVisitId.value);
-      }
+      await Promise.all([loadVisitDetail(selectedVisitId.value), loadVisitActivity(selectedVisitId.value)]);
     }
   }
 
@@ -326,7 +569,29 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
 
     try {
       const response = await CallOperationsService.getVisitDetail(visitId, options);
-      selectedVisitDetail.value = normalizeVisitDetail(response.data);
+      const existingVisit =
+        rows.value.find((row) => String(row.visit_id) === String(visitId)) ||
+        selectedVisitDetail.value?.visit ||
+        null;
+      const normalizedDetail = normalizeVisitDetail(response.data);
+
+      if (normalizedDetail?.visit && existingVisit) {
+        const mergedVisit = normalizeVisitRow(mergeVisitPayload(existingVisit, normalizedDetail.visit));
+        selectedVisitDetail.value = {
+          ...normalizedDetail,
+          vendor_debug: normalizedDetail.vendor_debug ?? mergedVisit.vendor_debug ?? null,
+          payload_preview: normalizedDetail.payload_preview ?? mergedVisit.payload_preview ?? null,
+          readiness: mergedVisit.readiness,
+          sync: mergedVisit.sync,
+          call: mergedVisit.call,
+          tools: mergedVisit.tools,
+          allowed_actions: mergedVisit.allowed_actions,
+          visit: mergedVisit
+        };
+      } else {
+        selectedVisitDetail.value = normalizedDetail;
+      }
+
       if (selectedVisitDetail.value?.visit) {
         mergeUpdatedVisit(selectedVisitDetail.value.visit);
       }
@@ -351,7 +616,7 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
 
     try {
       const response = await CallOperationsService.getVisitActivity(visitId);
-      selectedVisitActivity.value = response.data || [];
+      selectedVisitActivity.value = (response.data || []).map((event) => normalizeActivityEvent(event));
       return selectedVisitActivity.value;
     } catch (loadError) {
       error.value = loadError.message || 'Failed to load selected visit activity.';
@@ -365,19 +630,6 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
     activeTab.value = nextTab;
     selectedRows.value = [];
     tableState.value.page = 1;
-
-    if (nextTab === 'activity') {
-      if (selectedVisitId.value) {
-        await Promise.all([loadVisitDetail(selectedVisitId.value), loadVisitActivity(selectedVisitId.value)]);
-      }
-      return;
-    }
-
-    if (nextTab === 'testing') {
-      return;
-    }
-
-    await Promise.all([loadRows(), loadSummary()]);
   }
 
   function updateFilters(partialFilters) {
@@ -391,10 +643,14 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
   function clearFilters() {
     filters.value = {
       date: new Date(),
+      preset: 'queue',
       customerId: null,
       projectId: null,
       syncStatuses: [],
       callStatuses: [],
+      queueInScope: null,
+      timingStates: [],
+      dataQualities: [],
       readyToPush: null,
       search: ''
     };
@@ -411,6 +667,9 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
       projectId: null,
       syncStatuses: [],
       callStatuses: [],
+      queueInScope: null,
+      timingStates: [],
+      dataQualities: [],
       readyToPush: null,
       search: ''
     };
@@ -442,7 +701,7 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
       if (response.data?.visit) {
         mergeUpdatedVisit(response.data.visit);
       }
-      await Promise.all([loadSummary(), loadVisitActivity(selectedVisitId.value)]);
+      await Promise.all([loadRows(), loadSummary(), loadVisitDetail(selectedVisitId.value), loadVisitActivity(selectedVisitId.value)]);
       return response;
     } catch (actionError) {
       error.value = actionError.message || 'Failed to update tools override.';
@@ -477,7 +736,19 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
   }
 
   async function sendSelected(force = false) {
-    const visitIds = selectedRows.value.map((row) => row.visit_id);
+    const visitIds = selectedRows.value
+      .filter((row) => row.allowed_actions?.includes('send_update'))
+      .map((row) => row.visit_id);
+
+    if (visitIds.length === 0) {
+      return {
+        data: {
+          accepted_count: 0,
+          requested_count: 0
+        },
+        message: 'No selected visits are currently sendable.'
+      };
+    }
 
     actionLoading.value = true;
     error.value = null;
@@ -489,6 +760,11 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
       });
       selectedRows.value = [];
       await Promise.all([loadRows(), loadSummary()]);
+
+      if (selectedVisitId.value && visitIds.some((visitId) => String(visitId) === String(selectedVisitId.value))) {
+        await Promise.all([loadVisitDetail(selectedVisitId.value), loadVisitActivity(selectedVisitId.value)]);
+      }
+
       return response;
     } catch (actionError) {
       error.value = actionError.message || 'Failed to send the selected visits.';
@@ -505,12 +781,18 @@ export const useCallOperationsStore = defineStore('call-operations', () => {
     try {
       const response = await CallOperationsService.sendBulk({
         date: formatDateForApi(filters.value.date),
-        filters: buildQuery(),
+        preset: filters.value.preset || undefined,
+        filters: buildFilterContext(),
         mode: 'all_ready',
         force
       });
       selectedRows.value = [];
       await Promise.all([loadRows(), loadSummary()]);
+
+      if (selectedVisitId.value) {
+        await Promise.all([loadVisitDetail(selectedVisitId.value), loadVisitActivity(selectedVisitId.value)]);
+      }
+
       return response;
     } catch (actionError) {
       error.value = actionError.message || 'Failed to send all ready visits.';

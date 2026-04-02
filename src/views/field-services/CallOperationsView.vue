@@ -1,111 +1,88 @@
 <template>
   <div class="call-operations-view">
-    <section class="call-operations-topbar">
-      <div class="call-operations-topbar__copy">
-        <div class="call-operations-topbar__eyebrow">Field Services</div>
-        <h1 class="call-operations-topbar__title">Dispatch Call Operations</h1>
-        <p class="call-operations-topbar__subtitle">
-          {{
-            activeTab === 'testing'
-              ? 'Build sandbox DPROMPT calls, schedule them a few minutes out, and debug the full send/status loop without touching live visits.'
-              : 'Stage visits for automated calling, send updates to DPROMPT, and track call outcomes from one dispatch queue.'
-          }}
-        </p>
+    <header class="call-operations-header">
+      <div>
+        <div class="call-operations-header__eyebrow">Field Services</div>
+        <h1 class="call-operations-header__title">Dispatch Call Operations</h1>
       </div>
 
-      <div v-if="activeTab !== 'testing'" class="call-operations-topbar__controls">
+      <div v-if="activeTab !== 'testing'" class="call-operations-header__actions">
         <DatePicker
           v-model="filters.date"
-          :minDate="today"
           showIcon
-          class="w-full sm:w-56"
+          class="w-full sm:w-52"
           @date-select="handleDateChange"
         />
         <Button label="Today" outlined @click="setRelativeDate(0)" />
         <Button label="Tomorrow" outlined @click="setRelativeDate(1)" />
-        <Button
-          icon="pi pi-refresh"
-          label="Refresh Data"
-          outlined
-          :loading="loadingRows || loadingSummary"
-          @click="refreshAll"
-        />
-        <Button
-          icon="pi pi-sync"
-          label="Refresh Status"
-          :loading="actionLoading"
-          @click="refreshStatuses"
-        />
       </div>
-      <div v-else class="call-operations-topbar__controls">
-        <Tag value="Sandbox Testing Mode" severity="warning" />
-      </div>
-    </section>
+    </header>
 
-    <CallOperationsSummaryStrip v-if="activeTab !== 'testing'" :summary="summary" :loading="loadingSummary" />
-
-    <Message v-if="error && activeTab !== 'testing'" severity="error" :closable="false">
+    <Message v-if="error && activeTab !== 'testing'" severity="error" variant="outlined" :closable="false">
       {{ error }}
     </Message>
 
-    <Card class="shadow-sm call-operations-grid-shell">
-      <template #content>
-        <Tabs :value="activeTab" @update:value="handleTabChange" class="call-operations-tabs">
-          <div class="call-operations-grid-toolbar">
-            <TabList>
-              <Tab value="queue">Queue</Tab>
-              <Tab value="results">Results</Tab>
-              <Tab value="activity">Selected Visit Activity</Tab>
-              <Tab value="testing">Testing</Tab>
-            </TabList>
+    <section class="call-operations-shell">
+      <Tabs :value="activeTab" @update:value="handleTabChange" class="call-operations-tabs">
+        <div class="call-operations-tabs__nav">
+          <TabList>
+            <Tab value="queue">Queue</Tab>
+            <Tab value="results">Results</Tab>
+            <Tab value="testing">Testing</Tab>
+          </TabList>
+        </div>
 
-            <div class="call-operations-grid-toolbar__actions">
-              <template v-if="activeTab !== 'testing'">
-                <Tag :value="`${meta.total} rows`" severity="secondary" />
-                <Chip :label="`Selected ${selectedVisitCount}`" icon="pi pi-check-square" />
-                <Chip :label="`Ready ${selectedReadyCount}`" icon="pi pi-send" />
-              </template>
-
-              <template v-if="activeTab !== 'activity' && activeTab !== 'testing'">
-                <div class="call-operations-force-toggle">
-                  <Checkbox v-model="forceMode" inputId="force-send" binary />
-                  <label for="force-send">Force send</label>
+        <TabPanels>
+          <TabPanel value="queue">
+            <div class="call-operations-workspace">
+              <div class="call-operations-workspace__toolbar">
+                <div class="call-operations-workspace__tools">
+                  <SelectButton
+                    v-model="queueMode"
+                    :options="queueModeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    size="small"
+                    @update:modelValue="handleQueueModeChange"
+                  />
+                  <InputText
+                    v-model.trim="searchDraft"
+                    class="call-operations-search"
+                    placeholder="Search customer, visit, tech, or ID"
+                    @keyup.enter="applySearch"
+                  />
+                  <Button icon="pi pi-filter-slash" text rounded @click="clearWorkspaceFilters" v-tooltip.top="'Reset filters'" />
                 </div>
 
-                <Button
-                  icon="pi pi-send"
-                  label="Send Selected"
-                  :disabled="!hasSelections"
-                  :loading="actionLoading"
-                  @click="sendSelected"
-                />
-                <Button
-                  icon="pi pi-bolt"
-                  label="Send All Ready"
-                  outlined
-                  :loading="actionLoading"
-                  @click="sendAllReady"
-                />
-                <Button
-                  icon="pi pi-filter-slash"
-                  label="Clear Filters"
-                  text
-                  @click="clearColumnFilters"
-                />
-              </template>
-            </div>
-          </div>
-
-          <TabPanels class="call-operations-tabpanels">
-            <TabPanel v-for="tab in tableTabs" :key="tab.value" :value="tab.value">
-              <div class="call-operations-panel-header">
-                <div>
-                  <h3 class="call-operations-panel-header__title">{{ tab.title }}</h3>
-                  <p class="call-operations-panel-header__subtitle">{{ tab.description }}</p>
+                <div class="call-operations-workspace__actions">
+                  <span v-if="selectedRows.length" class="call-operations-inline-note">{{ selectedRows.length }} selected</span>
+                  <SplitButton
+                    icon="pi pi-refresh"
+                    label="Refresh"
+                    :loading="loadingRows || loadingSummary"
+                    @click="refreshAll"
+                    :model="[{ label: 'Refresh Status', icon: 'pi pi-sync', command: () => refreshStatuses() }]"
+                    outlined
+                    size="small"
+                  />
+                  <Button
+                    icon="pi pi-send"
+                    label="Send Selected"
+                    :disabled="selectedSendableCount === 0"
+                    :loading="actionLoading"
+                    @click="sendSelected"
+                  />
                 </div>
+              </div>
 
-                <div class="call-operations-panel-header__meta">
-                  <Tag :value="`Page ${meta.current_page} of ${meta.last_page}`" severity="contrast" />
+              <div class="call-operations-summary-row">
+                <div
+                  v-for="item in queueSummaryItems"
+                  :key="item.label"
+                  class="call-operations-summary-card"
+                >
+                  <span class="call-operations-summary-card__label">{{ item.label }}</span>
+                  <strong class="call-operations-summary-card__value">{{ item.value }}</strong>
                 </div>
               </div>
 
@@ -125,9 +102,7 @@
                 :sortField="tableState.sort"
                 :sortOrder="sortOrder"
                 scrollable
-                scrollHeight="calc(100vh - 24rem)"
-                stripedRows
-                showGridlines
+                scrollHeight="calc(100vh - 17rem)"
                 rowHover
                 responsiveLayout="scroll"
                 size="small"
@@ -139,11 +114,10 @@
                 @row-click="handleRowClick"
               >
                 <template #empty>
-                  <div class="py-12 text-center">
-                    <i class="pi pi-phone text-5xl text-surface-300 mb-4"></i>
-                    <div class="text-lg font-medium text-surface-700 dark:text-surface-300">No visits match the current queue filters</div>
-                    <div class="text-sm text-surface-500 dark:text-surface-400 mt-2">
-                      Adjust the date or clear column filters, then refresh the queue.
+                  <div class="call-operations-empty">
+                    <div class="call-operations-empty__title">No visits match the current queue view</div>
+                    <div class="call-operations-empty__subtitle">
+                      Clear filters or widen to All Visits when you need broader context.
                     </div>
                   </div>
                 </template>
@@ -151,47 +125,19 @@
                 <Column selectionMode="multiple" headerStyle="width: 3rem" />
 
                 <Column
-                  field="visit_id"
-                  header="Visit"
-                  sortable
-                  sortField="visit_id"
-                  filterField="visit_search"
-                  :showFilterMatchModes="false"
-                  :showFilterOperator="false"
-                  :showAddButton="false"
-                  :style="{ minWidth: '15rem' }"
-                >
-                  <template #body="{ data }">
-                    <div class="space-y-1">
-                      <div class="font-semibold text-primary-600">{{ data.client_system_id }}</div>
-                      <div class="text-sm text-surface-700 dark:text-surface-300">{{ data.visit_name }}</div>
-                    </div>
-                  </template>
-                  <template #filter="{ filterModel }">
-                    <InputText
-                      v-model="filterModel.value"
-                      type="text"
-                      placeholder="Visit ID or name"
-                      class="w-full"
-                    />
-                  </template>
-                </Column>
-
-                <Column
                   field="customer.name"
-                  header="Customer / Project"
+                  header="Customer"
                   sortable
                   sortField="customer.name"
                   filterField="customer_id"
                   :showFilterMatchModes="false"
                   :showFilterOperator="false"
                   :showAddButton="false"
-                  :filterMenuStyle="{ width: '18rem' }"
                   :style="{ minWidth: '16rem' }"
                 >
                   <template #body="{ data }">
                     <div class="space-y-1">
-                      <div class="font-medium text-surface-900 dark:text-surface-0">{{ data.customer?.name || 'Unknown customer' }}</div>
+                      <div class="font-semibold text-surface-900 dark:text-surface-0">{{ data.customer?.name || 'Unknown customer' }}</div>
                       <div class="text-sm text-surface-500 dark:text-surface-400">{{ data.project?.name || 'No project' }}</div>
                     </div>
                   </template>
@@ -215,21 +161,8 @@
                         showClear
                         class="w-full"
                       />
-                      <div class="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          icon="pi pi-times"
-                          severity="secondary"
-                          text
-                          @click="clearCustomerProjectFilters(filterCallback)"
-                        />
-                        <Button
-                          type="button"
-                          icon="pi pi-check"
-                          severity="success"
-                          text
-                          @click="filterCallback()"
-                        />
+                      <div class="flex justify-end">
+                        <Button type="button" icon="pi pi-check" text @click="filterCallback()" />
                       </div>
                     </div>
                   </template>
@@ -237,24 +170,32 @@
 
                 <Column
                   field="appointment.service_date"
-                  header="Appointment"
+                  header="Date / Time"
                   sortable
                   sortField="appointment.service_date"
                   :style="{ minWidth: '12rem' }"
                 >
                   <template #body="{ data }">
                     <div class="space-y-1">
-                      <div class="font-medium">{{ data.appointment?.service_date || 'No date' }}</div>
+                      <div class="font-medium text-surface-900 dark:text-surface-0">{{ data.appointment?.service_date || 'No date' }}</div>
+                      <div class="text-sm text-surface-600 dark:text-surface-400">{{ data.appointment?.local_time || 'No time' }}</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400">{{ data.location?.timezone || 'No timezone' }}</div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column
+                  field="visit_id"
+                  header="Visit"
+                  sortable
+                  sortField="visit_id"
+                  :style="{ minWidth: '18rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <div class="font-semibold text-primary-700">{{ data.visit_name }}</div>
                       <div class="text-sm text-surface-500 dark:text-surface-400">
-                        {{ data.appointment?.local_time || 'No time' }}<span v-if="data.appointment?.approx_hours"> • {{ data.appointment.approx_hours }} hrs</span>
-                      </div>
-                      <div class="flex flex-wrap items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
-                        <span>{{ data.location?.timezone || 'No timezone' }}</span>
-                        <Tag
-                          v-if="data.appointment?.is_past_due || data.readiness?.is_past_due"
-                          value="Past Due"
-                          severity="warn"
-                        />
+                        {{ data.client_system_id }}<span v-if="data.visit_type"> • {{ data.visit_type }}</span>
                       </div>
                     </div>
                   </template>
@@ -262,10 +203,10 @@
 
                 <Column
                   field="technician.name"
-                  header="Technician"
+                  header="Tech"
                   sortable
                   sortField="technician.name"
-                  :style="{ minWidth: '13rem' }"
+                  :style="{ minWidth: '14rem' }"
                 >
                   <template #body="{ data }">
                     <div class="space-y-1">
@@ -275,67 +216,250 @@
                   </template>
                 </Column>
 
-                <Column header="Tools" :style="{ minWidth: '15rem' }">
-                  <template #body="{ data }">
-                    <div class="space-y-2">
-                      <div class="text-sm text-surface-900 dark:text-surface-0 line-clamp-2">{{ formatToolsText(data.tools?.resolved) || 'Missing tools' }}</div>
-                      <Tag :value="data.tools?.source || 'none'" severity="secondary" />
-                    </div>
-                  </template>
-                </Column>
-
-                <Column
-                  field="readiness.ready_to_push"
-                  header="Readiness"
-                  filterField="ready_to_push"
-                  :showFilterMatchModes="false"
-                  :showFilterOperator="false"
-                  :showAddButton="false"
-                  :filterMenuStyle="{ width: '14rem' }"
-                  :style="{ minWidth: '12rem' }"
-                >
-                  <template #body="{ data }">
-                    <div class="space-y-2">
-                      <Tag
-                        :value="getEligibilityState(data).label"
-                        :severity="getEligibilityState(data).severity"
-                      />
-                      <div class="text-xs text-surface-500 dark:text-surface-400 line-clamp-2">
-                        {{ getEligibilityState(data).detail }}
-                      </div>
-                    </div>
-                  </template>
-                  <template #filter="{ filterModel }">
-                    <Select
-                      v-model="filterModel.value"
-                      :options="readyOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      placeholder="Any readiness"
-                      showClear
-                      class="w-full"
-                    />
-                  </template>
-                </Column>
-
                 <Column
                   field="sync.sync_status"
-                  header="Sync"
+                  header="Status"
                   sortable
                   sortField="sync_status"
                   filterField="sync_status"
                   :showFilterMatchModes="false"
                   :showFilterOperator="false"
                   :showAddButton="false"
-                  :filterMenuStyle="{ width: '16rem' }"
-                  :style="{ minWidth: '11rem' }"
+                  :style="{ minWidth: '10rem' }"
                 >
                   <template #body="{ data }">
-                    <div class="space-y-2">
-                      <Tag :value="formatSyncStatus(data.sync?.sync_status)" :severity="syncSeverity(data.sync?.sync_status)" />
-                      <div class="text-xs text-surface-500 dark:text-surface-400">
-                        {{ data.sync?.needs_repush ? `Drift: ${data.sync?.drift_fields?.join(', ')}` : `Pushes: ${data.sync?.push_count || 0}` }}
+                    <span :class="pushPillClass(data)">{{ pushedStateLabel(data) }}</span>
+                  </template>
+                  <template #filter="{ filterModel }">
+                    <MultiSelect
+                      v-model="filterModel.value"
+                      :options="syncStatusOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Any push state"
+                      :maxSelectedLabels="1"
+                      class="w-full"
+                    />
+                  </template>
+                </Column>
+
+                <Column
+                  field="data_quality"
+                  header="Readiness"
+                  filterField="data_quality"
+                  :showFilterMatchModes="false"
+                  :showFilterOperator="false"
+                  :showAddButton="false"
+                  :style="{ minWidth: '10rem' }"
+                >
+                  <template #body="{ data }">
+                    <span :class="eligibilityPillClass(data)">{{ eligibilityLabel(data) }}</span>
+                  </template>
+                  <template #filter="{ filterModel }">
+                    <MultiSelect
+                      v-model="filterModel.value"
+                      :options="dataQualityOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Any eligibility"
+                      :maxSelectedLabels="1"
+                      class="w-full"
+                    />
+                  </template>
+                </Column>
+
+                <Column header="Action" :style="{ minWidth: '10rem' }">
+                  <template #body="{ data }">
+                    <Button
+                      label="Send / Update"
+                      size="small"
+                      :disabled="!data.allowed_actions?.includes('send_update') || actionLoading"
+                      :loading="actionLoading && String(selectedVisit?.visit_id || '') === String(data.visit_id)"
+                      @click.stop="sendSingle(data)"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </TabPanel>
+
+          <TabPanel value="results">
+            <div class="call-operations-workspace">
+              <div class="call-operations-workspace__toolbar">
+                <div class="call-operations-workspace__tools">
+                  <InputText
+                    v-model.trim="searchDraft"
+                    class="call-operations-search"
+                    placeholder="Search customer, visit, tech, or ID"
+                    @keyup.enter="applySearch"
+                  />
+                  <Button icon="pi pi-filter-slash" text rounded @click="clearWorkspaceFilters" v-tooltip.top="'Reset filters'" />
+                </div>
+
+                <div class="call-operations-workspace__actions">
+                  <SplitButton
+                    icon="pi pi-refresh"
+                    label="Refresh"
+                    :loading="loadingRows || loadingSummary"
+                    @click="refreshAll"
+                    :model="[{ label: 'Refresh Status', icon: 'pi pi-sync', command: () => refreshStatuses() }]"
+                    outlined
+                    size="small"
+                  />
+                </div>
+              </div>
+
+              <div class="call-operations-summary-row">
+                <div
+                  v-for="item in resultsSummaryItems"
+                  :key="item.label"
+                  class="call-operations-summary-card"
+                >
+                  <span class="call-operations-summary-card__label">{{ item.label }}</span>
+                  <strong class="call-operations-summary-card__value">{{ item.value }}</strong>
+                </div>
+              </div>
+
+              <DataTable
+                v-model:filters="gridFilters"
+                :value="rows"
+                dataKey="visit_id"
+                lazy
+                paginator
+                filterDisplay="menu"
+                :rows="tableState.perPage"
+                :first="(tableState.page - 1) * tableState.perPage"
+                :totalRecords="meta.total"
+                :rowsPerPageOptions="[10, 25, 50]"
+                :loading="loadingRows"
+                :sortField="tableState.sort"
+                :sortOrder="sortOrder"
+                scrollable
+                scrollHeight="calc(100vh - 17rem)"
+                rowHover
+                responsiveLayout="scroll"
+                size="small"
+                class="call-operations-grid"
+                :rowClass="rowClass"
+                @page="handlePage"
+                @sort="handleSort"
+                @filter="handleFilter"
+                @row-click="handleRowClick"
+              >
+                <template #empty>
+                  <div class="call-operations-empty">
+                    <div class="call-operations-empty__title">No submitted visits match the current results view</div>
+                    <div class="call-operations-empty__subtitle">
+                      Clear filters to widen the result set for the selected day.
+                    </div>
+                  </div>
+                </template>
+
+                <Column
+                  field="customer.name"
+                  header="Customer"
+                  sortable
+                  sortField="customer.name"
+                  filterField="customer_id"
+                  :showFilterMatchModes="false"
+                  :showFilterOperator="false"
+                  :showAddButton="false"
+                  :style="{ minWidth: '16rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <div class="font-semibold text-surface-900 dark:text-surface-0">{{ data.customer?.name || 'Unknown customer' }}</div>
+                      <div class="text-sm text-surface-500 dark:text-surface-400">{{ data.project?.name || 'No project' }}</div>
+                    </div>
+                  </template>
+                  <template #filter="{ filterModel, filterCallback }">
+                    <div class="space-y-3">
+                      <Select
+                        v-model="filterModel.value"
+                        :options="customerOptions"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Any customer"
+                        showClear
+                        class="w-full"
+                      />
+                      <Select
+                        v-model="gridFilters.project_id.value"
+                        :options="projectOptions"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Any project"
+                        showClear
+                        class="w-full"
+                      />
+                      <div class="flex justify-end">
+                        <Button type="button" icon="pi pi-check" text @click="filterCallback()" />
                       </div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column
+                  field="appointment.service_date"
+                  header="Date / Time"
+                  sortable
+                  sortField="appointment.service_date"
+                  :style="{ minWidth: '12rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <div class="font-medium text-surface-900 dark:text-surface-0">{{ data.appointment?.service_date || 'No date' }}</div>
+                      <div class="text-sm text-surface-600 dark:text-surface-400">{{ data.appointment?.local_time || 'No time' }}</div>
+                      <div class="text-xs text-surface-500 dark:text-surface-400">{{ data.location?.timezone || 'No timezone' }}</div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column
+                  field="visit_id"
+                  header="Visit"
+                  sortable
+                  sortField="visit_id"
+                  :style="{ minWidth: '18rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <div class="font-semibold text-primary-700">{{ data.visit_name }}</div>
+                      <div class="text-sm text-surface-500 dark:text-surface-400">{{ data.client_system_id }}</div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column
+                  field="technician.name"
+                  header="Tech"
+                  sortable
+                  sortField="technician.name"
+                  :style="{ minWidth: '14rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <div class="font-medium text-surface-900 dark:text-surface-0">{{ data.technician?.name || 'Unassigned' }}</div>
+                      <div class="text-sm text-surface-500 dark:text-surface-400">{{ data.technician?.phone || 'No phone' }}</div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column
+                  field="sync.sync_status"
+                  header="Synced"
+                  sortable
+                  sortField="sync_status"
+                  filterField="sync_status"
+                  :showFilterMatchModes="false"
+                  :showFilterOperator="false"
+                  :showAddButton="false"
+                  :style="{ minWidth: '12rem' }"
+                >
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <span :class="pushPillClass(data)">{{ resultSyncLabel(data) }}</span>
+                      <div class="text-xs text-surface-500 dark:text-surface-400">{{ pushedStateCopy(data) }}</div>
                     </div>
                   </template>
                   <template #filter="{ filterModel }">
@@ -351,26 +475,41 @@
                   </template>
                 </Column>
 
+                <Column header="Call Window" :style="{ minWidth: '11rem' }">
+                  <template #body="{ data }">
+                    <div class="space-y-1">
+                      <span :class="callWindowPillClass(data)">{{ shouldCallLabel(data) }}</span>
+                      <div class="text-xs text-surface-500 dark:text-surface-400">{{ callWindowCopy(data) }}</div>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column header="Call Made" :style="{ minWidth: '10rem' }">
+                  <template #body="{ data }">
+                    <div class="call-operations-call-state">
+                      <div :class="callMadeStateClass(data)">{{ callMadeLabel(data) }}</div>
+                      <div class="call-operations-call-state__copy">{{ callMadeCopy(data) }}</div>
+                      <div v-if="smsStatusText(data)" class="call-operations-call-state__meta">
+                        SMS {{ smsStatusText(data) }}
+                      </div>
+                    </div>
+                  </template>
+                </Column>
+
                 <Column
                   field="call.call_status"
-                  header="Call"
-                  sortable
-                  sortField="call_status"
+                  header="Outcome"
                   filterField="call_status"
                   :showFilterMatchModes="false"
                   :showFilterOperator="false"
                   :showAddButton="false"
-                  :filterMenuStyle="{ width: '16rem' }"
-                  :style="{ minWidth: '11rem' }"
+                  :style="{ minWidth: '16rem' }"
                 >
                   <template #body="{ data }">
-                    <div class="space-y-2">
-                      <Tag :value="formatStatus(data.call?.call_status)" :severity="callSeverity(data.call?.call_status)" />
-                      <div class="text-xs text-surface-500 dark:text-surface-400">
-                        <span v-if="data.call?.sms_sent">SMS sent</span>
-                        <span v-else-if="data.call?.last_outcome">{{ data.call.last_outcome }}</span>
-                        <span v-else>Awaiting response</span>
-                      </div>
+                    <div :class="outcomeCardClass(data)">
+                      <div class="call-operations-outcome__eyebrow">{{ outcomeHeading(data) }}</div>
+                      <div class="call-operations-outcome__value">{{ outcomeLabel(data) }}</div>
+                      <div class="call-operations-outcome__meta">{{ outcomeCopy(data) }}</div>
                     </div>
                   </template>
                   <template #filter="{ filterModel }">
@@ -379,83 +518,42 @@
                       :options="callStatusOptions"
                       optionLabel="label"
                       optionValue="value"
-                      :placeholder="callFilterPlaceholder"
+                      placeholder="Any outcome"
                       :maxSelectedLabels="1"
                       class="w-full"
                     />
                   </template>
                 </Column>
-
-                <Column
-                  field="sync.last_pushed_at"
-                  header="Last Push"
-                  sortable
-                  sortField="last_pushed_at"
-                  :style="{ minWidth: '12rem' }"
-                >
-                  <template #body="{ data }">
-                    <div class="text-sm text-surface-700 dark:text-surface-300">
-                      {{ formatTimestamp(data.sync?.last_pushed_at) }}
-                    </div>
-                  </template>
-                </Column>
-
-                <Column header="Actions" frozen alignFrozen="right" :style="{ width: '5rem', minWidth: '5rem' }">
-                  <template #body="{ data }">
-                    <div class="flex items-center justify-end call-operations-actions-cell">
-                      <Button
-                        icon="pi pi-ellipsis-v"
-                        text
-                        rounded
-                        size="small"
-                        aria-label="Visit actions"
-                        aria-haspopup="true"
-                        aria-controls="call-operations-row-menu"
-                        @click.stop="toggleActionMenu($event, data)"
-                        v-tooltip.top="'Visit actions'"
-                      />
-                    </div>
-                  </template>
-                </Column>
               </DataTable>
-            </TabPanel>
+            </div>
+          </TabPanel>
 
-            <TabPanel value="activity">
-              <div class="call-operations-activity-panel">
-                <CallOperationsActivityPanel
-                  :visit="selectedVisit"
-                  :events="selectedVisitActivity"
-                  :loading="loadingActivity"
-                  @refresh="refreshSelectedActivity"
-                />
-              </div>
-            </TabPanel>
-
-            <TabPanel value="testing">
+          <TabPanel value="testing">
+            <div class="call-operations-workspace call-operations-workspace--testing">
               <CallOperationsTestingTab v-if="activeTab === 'testing'" />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </template>
-    </Card>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </section>
 
     <CallOperationsDetailDrawer
       v-model:visible="drawerVisible"
       :detail="selectedVisitDetail"
+      :events="selectedVisitActivity"
       :loading="loadingDetail"
+      :loadingActivity="loadingActivity"
       :actionLoading="actionLoading"
       @send="sendSingle"
       @edit-tools="openToolsDialog"
-      @open-activity="openActivity"
       @open-visit="openVisit"
+      @refresh-activity="refreshSelectedActivity"
     />
-
-    <Menu ref="actionMenu" id="call-operations-row-menu" :model="actionMenuItems" :popup="true" class="w-56" />
 
     <Dialog v-model:visible="toolsDialogVisible" modal header="Edit Tools Override" :style="{ width: '32rem' }">
       <div class="space-y-4">
         <p class="text-sm text-surface-600 dark:text-surface-400">
-          ToolsRequired is a hard readiness requirement. Use a manual override when the source SOW HTML is incomplete.
+          Update the tools text when the source record is incomplete.
         </p>
         <Textarea
           v-model="toolsOverrideDraft"
@@ -481,10 +579,13 @@ import { storeToRefs } from 'pinia';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { useCallOperationsStore } from '@/stores/callOperationsStore';
-import { formatToolsText, getVisitEligibility } from '@/utils/callOperations';
-import CallOperationsSummaryStrip from '@/components/field-services/call-operations/CallOperationsSummaryStrip.vue';
+import {
+  formatCallStatus,
+  formatQueueScopeReason,
+  formatReadinessBlockers,
+  formatReadinessWarnings
+} from '@/utils/callOperations';
 import CallOperationsDetailDrawer from '@/components/field-services/call-operations/CallOperationsDetailDrawer.vue';
-import CallOperationsActivityPanel from '@/components/field-services/call-operations/CallOperationsActivityPanel.vue';
 import CallOperationsTestingTab from '@/components/field-services/call-operations/CallOperationsTestingTab.vue';
 
 const router = useRouter();
@@ -509,53 +610,50 @@ const {
   loadingActivity,
   actionLoading,
   filters,
-  tableState,
-  hasSelections,
-  selectedVisitCount,
-  selectedReadyCount
+  tableState
 } = storeToRefs(store);
 
-const today = new Date();
-const forceMode = ref(false);
 const drawerVisible = ref(false);
 const toolsDialogVisible = ref(false);
 const toolsOverrideDraft = ref('');
-const actionMenu = ref(null);
-const currentActionVisit = ref(null);
+const queueMode = ref('queue');
+const searchDraft = ref('');
+
+const queueModeOptions = [
+  { label: 'Action Queue', value: 'queue' },
+  { label: 'All Visits', value: 'all' }
+];
 
 function createGridFilters() {
   return {
-    visit_search: { value: null, matchMode: FilterMatchMode.CONTAINS },
     customer_id: { value: null, matchMode: FilterMatchMode.EQUALS },
     project_id: { value: null, matchMode: FilterMatchMode.EQUALS },
-    ready_to_push: { value: null, matchMode: FilterMatchMode.EQUALS },
     sync_status: { value: null, matchMode: FilterMatchMode.IN },
-    call_status: { value: null, matchMode: FilterMatchMode.IN }
+    call_status: { value: null, matchMode: FilterMatchMode.IN },
+    data_quality: { value: null, matchMode: FilterMatchMode.IN }
   };
 }
 
 const gridFilters = ref(createGridFilters());
-
 const sortOrder = computed(() => (tableState.value.direction === 'desc' ? -1 : 1));
-const callFilterPlaceholder = computed(() => (activeTab.value === 'queue' ? 'Queue preset' : 'Any call state'));
-
-const tableTabs = [
-  {
-    value: 'queue',
-    title: 'Queue',
-    description: 'Active dispatch visits with non-terminal call states and current send readiness.'
-  },
-  {
-    value: 'results',
-    title: 'Results',
-    description: 'Terminal DPROMPT call outcomes, including completed, transferred, and failed calls.'
-  }
-];
+const selectedSendableCount = computed(() => selectedRows.value.filter((row) => row.allowed_actions?.includes('send_update')).length);
+const queueSummaryItems = computed(() => [
+  { label: 'In Scope', value: summary.value.queue_in_scope || 0 },
+  { label: 'Sendable', value: (summary.value.ready || 0) + (summary.value.pushable_with_warnings || 0) },
+  { label: 'Past Due', value: summary.value.past_due || 0 }
+]);
+const visibleCallMadeCount = computed(() => rows.value.filter((visit) => wasCallMade(visit)).length);
+const visibleActionNeededCount = computed(() => rows.value.filter((visit) => resultNeedsAction(visit)).length);
+const resultsSummaryItems = computed(() => [
+  { label: 'Results', value: meta.value.total || 0 },
+  { label: 'Calls Made', value: visibleCallMadeCount.value },
+  { label: 'Action Needed', value: visibleActionNeededCount.value }
+]);
 
 const syncStatusOptions = [
   { label: 'Not Queued', value: 'not_ready' },
   { label: 'Ready to Send', value: 'ready' },
-  { label: 'Sent', value: 'sent' },
+  { label: 'Submitted', value: 'sent' },
   { label: 'Needs Update', value: 'needs_update' },
   { label: 'Push Failed', value: 'push_failed' }
 ];
@@ -568,66 +666,11 @@ const callStatusOptions = [
   { label: 'Unknown', value: 'unknown' }
 ];
 
-const readyOptions = [
-  { label: 'Ready Only', value: true },
-  { label: 'Not Ready / Ineligible', value: false }
+const dataQualityOptions = [
+  { label: 'Ready', value: 'ready' },
+  { label: 'Warnings', value: 'pushable_with_warnings' },
+  { label: 'Blocked', value: 'blocked' }
 ];
-
-const actionMenuItems = computed(() => {
-  const visit = currentActionVisit.value;
-
-  if (!visit) {
-    return [];
-  }
-
-  const items = [
-    {
-      label: 'View Detail',
-      icon: 'pi pi-eye',
-      command: () => openDetail(visit)
-    },
-    {
-      label: 'Send / Update',
-      icon: 'pi pi-send',
-      disabled: !visit.allowed_actions?.includes('send_update') || actionLoading.value,
-      command: () => sendSingle(visit)
-    },
-    {
-      label: 'Edit Tools',
-      icon: 'pi pi-file-edit',
-      disabled: !visit.allowed_actions?.includes('edit_tools') || actionLoading.value,
-      command: () => openToolsDialog(visit)
-    },
-    {
-      label: 'Selected Visit Activity',
-      icon: 'pi pi-history',
-      command: () => openActivity(visit)
-    },
-    {
-      label: 'Open Visit',
-      icon: 'pi pi-external-link',
-      command: () => openVisit(visit)
-    }
-  ];
-
-  if (visit.allowed_actions?.includes('view_recording') && (visit.call?.recording_direct || visit.call?.recording_url)) {
-    items.push({
-      label: 'View Recording',
-      icon: 'pi pi-play-circle',
-      command: () => openExternal(visit.call.recording_direct || visit.call.recording_url)
-    });
-  }
-
-  if (visit.allowed_actions?.includes('view_transcript') && visit.call?.transcript_url) {
-    items.push({
-      label: 'View Transcript',
-      icon: 'pi pi-file',
-      command: () => openExternal(visit.call.transcript_url)
-    });
-  }
-
-  return items;
-});
 
 function normalizeMultiValue(value) {
   if (Array.isArray(value)) {
@@ -637,79 +680,441 @@ function normalizeMultiValue(value) {
   return value ? [value] : [];
 }
 
-function syncStoreFiltersFromGrid(filterState = gridFilters.value) {
+function defaultFiltersForTab(tab = activeTab.value) {
+  if (tab === 'queue') {
+    return {
+      preset: queueMode.value === 'queue' ? 'queue' : null,
+      customerId: null,
+      projectId: null,
+      syncStatuses: [],
+      callStatuses: [],
+      queueInScope: null,
+      timingStates: [],
+      dataQualities: [],
+      readyToPush: null,
+      search: searchDraft.value.trim()
+    };
+  }
+
+  if (tab === 'results') {
+    return {
+      preset: null,
+      customerId: null,
+      projectId: null,
+      syncStatuses: ['sent', 'needs_update', 'push_failed'],
+      callStatuses: [],
+      queueInScope: true,
+      timingStates: [],
+      dataQualities: [],
+      readyToPush: null,
+      search: searchDraft.value.trim()
+    };
+  }
+
+  return {};
+}
+
+function syncStoreFiltersFromGrid(filterState = gridFilters.value, tab = activeTab.value) {
+  const defaults = defaultFiltersForTab(tab);
+  const syncStatuses = normalizeMultiValue(filterState.sync_status?.value);
+  const callStatuses = normalizeMultiValue(filterState.call_status?.value);
+  const dataQualities = normalizeMultiValue(filterState.data_quality?.value);
+
   store.updateFilters({
-    search: filterState.visit_search?.value?.trim?.() || '',
+    ...defaults,
     customerId: filterState.customer_id?.value ?? null,
     projectId: filterState.project_id?.value ?? null,
-    syncStatuses: normalizeMultiValue(filterState.sync_status?.value),
-    callStatuses: normalizeMultiValue(filterState.call_status?.value),
-    readyToPush: filterState.ready_to_push?.value ?? null
+    syncStatuses: syncStatuses.length > 0 ? syncStatuses : defaults.syncStatuses,
+    callStatuses: callStatuses.length > 0 ? callStatuses : defaults.callStatuses,
+    dataQualities: dataQualities.length > 0 ? dataQualities : defaults.dataQualities,
+    search: searchDraft.value.trim()
   });
 }
 
-function rowClass(data) {
-  const eligibility = getVisitEligibility(data);
-
-  return {
-    'call-operations-row-past-due': eligibility.kind === 'past_due',
-    'call-operations-row-warning': data.sync?.sync_status === 'needs_update',
-    'call-operations-row-danger': eligibility.kind === 'blocked',
-    'call-operations-row-muted': eligibility.kind === 'ineligible',
-    'call-operations-row-success': data.call?.call_status === 'completed'
-  };
-}
-
-function formatStatus(value) {
-  if (!value) {
-    return 'Unknown';
+async function applyWorkspacePreset(tab = activeTab.value, options = {}) {
+  if (options.resetSearch) {
+    searchDraft.value = '';
   }
 
-  return value
-    .split('_')
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join(' ');
+  if (options.resetGrid) {
+    gridFilters.value = createGridFilters();
+  }
+
+  syncStoreFiltersFromGrid(gridFilters.value, tab);
+
+  if (options.load !== false) {
+    await store.refreshAll();
+  }
 }
 
-function formatSyncStatus(status) {
-  const labelMap = {
-    not_ready: 'Not Queued',
-    ready: 'Ready to Send',
-    sent: 'Sent',
-    needs_update: 'Needs Update',
-    push_failed: 'Push Failed'
-  };
+function parseLocalDateTime(value) {
+  if (!value) {
+    return null;
+  }
 
-  return labelMap[status] || formatStatus(status);
+  const normalized = String(value).trim().replace('T', ' ');
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+
+  if (!match) {
+    return null;
+  }
+
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4] || 0),
+    Number(match[5] || 0),
+    Number(match[6] || 0)
+  );
 }
 
-function syncSeverity(status) {
-  const severityMap = {
-    not_ready: 'danger',
-    ready: 'success',
-    sent: 'info',
-    needs_update: 'warning',
-    push_failed: 'danger'
-  };
+function pseudoNowInZone(timeZone) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timeZone || 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
 
-  return severityMap[status] || 'secondary';
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(new Date())
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value])
+  );
+
+  return new Date(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
 }
 
-function callSeverity(status) {
-  const severityMap = {
-    awaiting_call: 'warning',
-    completed: 'success',
-    transferred: 'info',
-    failed: 'danger',
-    unknown: 'secondary'
-  };
+function shouldCallHaveHappened(visit) {
+  const scheduledAt = parseLocalDateTime(visit.appointment?.scheduled_at_local || visit.appointment?.requested_datetime);
+  const timeZone = visit.location?.timezone || visit.appointment?.timezone;
 
-  return severityMap[status] || 'secondary';
+  if (!scheduledAt || !timeZone) {
+    return false;
+  }
+
+  const threshold = new Date(scheduledAt.getTime() - 55 * 60 * 1000);
+  return pseudoNowInZone(timeZone).getTime() >= threshold.getTime();
+}
+
+function wasCallMade(visit) {
+  return Boolean(
+    visit.call?.call_date ||
+      ['completed', 'transferred', 'failed'].includes(visit.call?.call_status)
+  );
+}
+
+function cleanSignalText(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return typeof value === 'string' ? value.trim() : String(value);
+}
+
+function smsStatusText(visit) {
+  const sms = visit.call?.sms_sent;
+
+  if (sms === null || sms === undefined || sms === '') {
+    return '';
+  }
+
+  if (typeof sms === 'boolean') {
+    return sms ? 'sent' : '';
+  }
+
+  return cleanSignalText(sms);
+}
+
+function hasSmsSignal(visit) {
+  return Boolean(smsStatusText(visit));
+}
+
+function outcomeTone(visit) {
+  const outcome = cleanSignalText(visit.call?.last_outcome).toLowerCase();
+  const callStatus = cleanSignalText(visit.call?.call_status).toLowerCase();
+
+  if (callStatus === 'failed') {
+    return 'danger';
+  }
+
+  if (/(cancel|declin|unable|not going|resched|won't make|cannot make|can't make)/.test(outcome)) {
+    return 'danger';
+  }
+
+  if (/(late|delay|running late)/.test(outcome)) {
+    return 'warning';
+  }
+
+  if (/(on time|on-time|confirmed|will be on ?site|will be onsite|checked in|ready)/.test(outcome)) {
+    return 'success';
+  }
+
+  if (callStatus === 'completed' || callStatus === 'transferred') {
+    return 'info';
+  }
+
+  return 'muted';
+}
+
+function resultNeedsAction(visit) {
+  return (shouldCallHaveHappened(visit) && !wasCallMade(visit)) || ['warning', 'danger'].includes(outcomeTone(visit));
+}
+
+function rowClass(data) {
+  return {
+    'call-operations-row-blocked': data.data_quality === 'blocked' || data.sync?.sync_status === 'push_failed',
+    'call-operations-row-attention': activeTab.value === 'results' && resultNeedsAction(data)
+  };
+}
+
+function pushedStateLabel(visit) {
+  const status = visit.sync?.sync_status;
+
+  if (status === 'sent' || status === 'needs_update') {
+    return 'Yes';
+  }
+
+  if (status === 'push_failed') {
+    return 'Failed';
+  }
+
+  return 'No';
+}
+
+function pushedStateCopy(visit) {
+  const status = visit.sync?.sync_status;
+
+  if (status === 'push_failed') {
+    return visit.sync?.last_error || 'Push attempt failed';
+  }
+
+  if (status === 'sent') {
+    return 'Submitted to DPROMPT';
+  }
+
+  if (status === 'needs_update') {
+    return 'Submitted and needs update';
+  }
+
+  if (status === 'ready') {
+    return 'Ready to send';
+  }
+
+  return 'Not pushed yet';
+}
+
+function eligibilityLabel(visit) {
+  if (visit.ready_to_push && visit.data_quality === 'pushable_with_warnings') {
+    return 'Yes, with warning';
+  }
+
+  return visit.ready_to_push ? 'Yes' : 'No';
+}
+
+function eligibilityCopy(visit) {
+  const blockers = formatReadinessBlockers(visit);
+  const warnings = formatReadinessWarnings(visit);
+
+  if (blockers.length > 0) {
+    return blockers.join(', ');
+  }
+
+  if (warnings.length > 0) {
+    return warnings.join(', ');
+  }
+
+  return visit.ready_to_push ? 'Ready for push' : formatQueueScopeReason(visit.queue_scope_reason);
+}
+
+function resultSyncLabel(visit) {
+  if (visit.sync?.sync_status === 'push_failed') {
+    return 'Failed';
+  }
+
+  if (visit.sync?.sync_status === 'sent' || visit.sync?.sync_status === 'needs_update') {
+    return 'Yes';
+  }
+
+  return 'No';
+}
+
+function shouldCallLabel(visit) {
+  return shouldCallHaveHappened(visit) ? 'Due now' : 'Not yet';
+}
+
+function callWindowCopy(visit) {
+  if (shouldCallHaveHappened(visit)) {
+    return '55-65 minute reminder window is open';
+  }
+
+  return 'Waiting for reminder window';
+}
+
+function callMadeLabel(visit) {
+  if (wasCallMade(visit)) {
+    return 'Yes';
+  }
+
+  return shouldCallHaveHappened(visit) ? 'No' : 'Not yet';
+}
+
+function callMadeCopy(visit) {
+  if (wasCallMade(visit)) {
+    return visit.call?.call_date ? `Call logged ${formatTimestamp(visit.call.call_date)}` : 'Call outcome recorded';
+  }
+
+  if (shouldCallHaveHappened(visit)) {
+    return 'Call should have been placed already';
+  }
+
+  return visit.call?.call_status === 'awaiting_call' ? 'Scheduled in DPROMPT' : 'Waiting for scheduled call window';
+}
+
+function outcomeLabel(visit) {
+  if (visit.call?.last_outcome) {
+    return cleanSignalText(visit.call.last_outcome);
+  }
+
+  if (visit.call?.call_status === 'awaiting_call') {
+    return 'Scheduled';
+  }
+
+  if (visit.call?.call_status === 'unknown') {
+    return shouldCallHaveHappened(visit) ? 'No result yet' : 'Waiting for call window';
+  }
+
+  return formatCallStatus(visit.call?.call_status);
+}
+
+function outcomeHeading(visit) {
+  if (shouldCallHaveHappened(visit) && !wasCallMade(visit)) {
+    return 'Action needed';
+  }
+
+  const tone = outcomeTone(visit);
+
+  if (tone === 'danger' || tone === 'warning') {
+    return 'Action needed';
+  }
+
+  if (tone === 'success') {
+    return 'Tech confirmed';
+  }
+
+  if (wasCallMade(visit)) {
+    return 'Call result';
+  }
+
+  return visit.call?.call_status === 'awaiting_call' ? 'Awaiting call' : 'No result yet';
+}
+
+function outcomeCopy(visit) {
+  if (visit.call?.retell_call_id) {
+    return `Call ID ${cleanSignalText(visit.call.retell_call_id)}`;
+  }
+
+  if (visit.call?.call_transfer) {
+    return cleanSignalText(visit.call.call_transfer);
+  }
+
+  if (visit.call?.call_date) {
+    return `Call logged ${formatTimestamp(visit.call.call_date)}`;
+  }
+
+  return visit.sync?.last_status_sync_at ? `Synced ${formatTimestamp(visit.sync.last_status_sync_at)}` : 'Open details for full history';
+}
+
+function pushPillClass(visit) {
+  const status = visit.sync?.sync_status;
+
+  if (status === 'push_failed') {
+    return 'call-operations-pill call-operations-pill--danger';
+  }
+
+  if (status === 'sent' || status === 'needs_update') {
+    return 'call-operations-pill call-operations-pill--success';
+  }
+
+  if (status === 'ready') {
+    return 'call-operations-pill call-operations-pill--info';
+  }
+
+  return 'call-operations-pill call-operations-pill--muted';
+}
+
+function eligibilityPillClass(visit) {
+  if (visit.ready_to_push && visit.data_quality === 'pushable_with_warnings') {
+    return 'call-operations-pill call-operations-pill--warning';
+  }
+
+  if (visit.ready_to_push) {
+    return 'call-operations-pill call-operations-pill--success';
+  }
+
+  return 'call-operations-pill call-operations-pill--danger';
+}
+
+function callWindowPillClass(visit) {
+  return shouldCallHaveHappened(visit)
+    ? 'call-operations-pill call-operations-pill--warning'
+    : 'call-operations-pill call-operations-pill--muted';
+}
+
+function callMadeStateClass(visit) {
+  if (wasCallMade(visit)) {
+    return 'call-operations-call-state__value call-operations-call-state__value--success';
+  }
+
+  if (shouldCallHaveHappened(visit)) {
+    return 'call-operations-call-state__value call-operations-call-state__value--danger';
+  }
+
+  if (visit.call?.call_status === 'awaiting_call') {
+    return 'call-operations-call-state__value call-operations-call-state__value--warning';
+  }
+
+  return 'call-operations-call-state__value call-operations-call-state__value--muted';
+}
+
+function outcomeCardClass(visit) {
+  const tone = outcomeTone(visit);
+
+  if (tone === 'danger') {
+    return 'call-operations-outcome call-operations-outcome--danger';
+  }
+
+  if (tone === 'warning') {
+    return 'call-operations-outcome call-operations-outcome--warning';
+  }
+
+  if (tone === 'success') {
+    return 'call-operations-outcome call-operations-outcome--success';
+  }
+
+  if (tone === 'info') {
+    return 'call-operations-outcome call-operations-outcome--info';
+  }
+
+  return 'call-operations-outcome call-operations-outcome--muted';
 }
 
 function formatTimestamp(value) {
   if (!value) {
-    return 'Not sent';
+    return 'No timestamp';
   }
 
   return new Intl.DateTimeFormat('en-US', {
@@ -720,17 +1125,13 @@ function formatTimestamp(value) {
   }).format(new Date(value));
 }
 
-function showToast(severity, summary, detail, life = 4000) {
+function showToast(severity, summaryText, detail, life = 4000) {
   toast.add({
     severity,
-    summary,
+    summary: summaryText,
     detail,
     life
   });
-}
-
-function getEligibilityState(visit) {
-  return getVisitEligibility(visit);
 }
 
 async function refreshAll() {
@@ -741,18 +1142,30 @@ async function refreshAll() {
   }
 }
 
+async function applySearch() {
+  try {
+    tableState.value.page = 1;
+    await applyWorkspacePreset(activeTab.value);
+  } catch (searchError) {
+    showToast('error', 'Search failed', searchError.message || 'Unable to apply the current search.');
+  }
+}
+
 async function handleDateChange() {
   tableState.value.page = 1;
   await refreshAll();
 }
 
-async function clearColumnFilters() {
+async function handleQueueModeChange(nextMode) {
+  queueMode.value = nextMode || queueMode.value;
+  await applyWorkspacePreset('queue', { resetGrid: true });
+}
+
+async function clearWorkspaceFilters() {
   try {
-    gridFilters.value = createGridFilters();
-    store.clearQueryFilters();
-    await store.refreshAll();
+    await applyWorkspacePreset(activeTab.value, { resetSearch: true, resetGrid: true });
   } catch (clearError) {
-    showToast('error', 'Filter reset failed', clearError.message || 'Unable to clear the current filters.');
+    showToast('error', 'Reset failed', clearError.message || 'Unable to clear the current filters.');
   }
 }
 
@@ -775,8 +1188,14 @@ async function handleFilter(event) {
 async function handleTabChange(nextTab) {
   try {
     await store.setActiveTab(nextTab);
+
+    if (nextTab === 'testing') {
+      return;
+    }
+
+    await applyWorkspacePreset(nextTab, { resetSearch: true, resetGrid: true });
   } catch (tabError) {
-    showToast('error', 'Tab load failed', tabError.message || 'Unable to load the selected tab.');
+    showToast('error', 'Tab load failed', tabError.message || 'Unable to load the selected workspace.');
   }
 }
 
@@ -802,14 +1221,14 @@ async function handleSort(event) {
 
     await store.loadRows();
   } catch (sortError) {
-    showToast('error', 'Sort failed', sortError.message || 'Unable to sort the queue.');
+    showToast('error', 'Sort failed', sortError.message || 'Unable to sort the current workspace.');
   }
 }
 
 async function openDetail(visit) {
   try {
     drawerVisible.value = true;
-    await store.loadVisitDetail(visit.visit_id);
+    await Promise.all([store.loadVisitDetail(visit.visit_id), store.loadVisitActivity(visit.visit_id)]);
   } catch (detailError) {
     drawerVisible.value = false;
     showToast('error', 'Detail failed', detailError.message || 'Unable to load visit detail.');
@@ -818,7 +1237,11 @@ async function openDetail(visit) {
 
 async function sendSingle(visit) {
   try {
-    const response = await store.sendVisit(visit.visit_id, forceMode.value);
+    if (!confirmPastDueSend([visit])) {
+      return;
+    }
+
+    const response = await store.sendVisit(visit.visit_id, false);
     showToast('success', 'Visit sent', response.message || 'Visit was sent to DPROMPT.', 3000);
   } catch (sendError) {
     showToast('error', 'Send failed', sendError.message || 'Unable to send the selected visit.', 4500);
@@ -827,7 +1250,11 @@ async function sendSingle(visit) {
 
 async function sendSelected() {
   try {
-    const response = await store.sendSelected(forceMode.value);
+    if (!confirmPastDueSend(selectedRows.value)) {
+      return;
+    }
+
+    const response = await store.sendSelected(false);
     showToast(
       'success',
       'Bulk send queued',
@@ -839,23 +1266,9 @@ async function sendSelected() {
   }
 }
 
-async function sendAllReady() {
+async function refreshStatuses(payload = null) {
   try {
-    const response = await store.sendAllReady(forceMode.value);
-    showToast(
-      'success',
-      'All ready visits queued',
-      `${response.data?.accepted_count || 0} of ${response.data?.requested_count || 0} ready visits accepted.`,
-      3500
-    );
-  } catch (sendError) {
-    showToast('error', 'Send all ready failed', sendError.message || 'Unable to send all ready visits.', 4500);
-  }
-}
-
-async function refreshStatuses() {
-  try {
-    const response = await store.refreshStatuses();
+    const response = await store.refreshStatuses(payload);
     showToast(
       'success',
       'Status refresh complete',
@@ -865,6 +1278,20 @@ async function refreshStatuses() {
   } catch (refreshError) {
     showToast('error', 'Status refresh failed', refreshError.message || 'Unable to refresh DPROMPT call statuses.', 4500);
   }
+}
+
+function confirmPastDueSend(visits) {
+  const lateCount = visits.filter(
+    (visit) => visit?.allowed_actions?.includes('send_update') && visit?.timing_state === 'past_due'
+  ).length;
+
+  if (lateCount === 0) {
+    return true;
+  }
+
+  return window.confirm(
+    `${lateCount} selected visit${lateCount === 1 ? '' : 's'} ${lateCount === 1 ? 'is' : 'are'} past due in the site timezone. Send / Update anyway?`
+  );
 }
 
 async function openToolsDialog(visit) {
@@ -895,15 +1322,6 @@ async function clearToolsOverride() {
   await saveToolsOverride();
 }
 
-async function openActivity(visit) {
-  try {
-    await store.loadVisitDetail(visit.visit_id);
-    await store.setActiveTab('activity');
-  } catch (activityError) {
-    showToast('error', 'Activity failed', activityError.message || 'Unable to load visit activity.', 4500);
-  }
-}
-
 async function refreshSelectedActivity() {
   if (!selectedVisit.value) {
     return;
@@ -916,21 +1334,8 @@ async function refreshSelectedActivity() {
   }
 }
 
-function openExternal(url) {
-  if (!url) {
-    return;
-  }
-
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
 function openVisit(visit) {
   router.push(`/field-services/visit/${visit.visit_id}`);
-}
-
-function toggleActionMenu(event, visit) {
-  currentActionVisit.value = visit;
-  actionMenu.value?.toggle(event);
 }
 
 async function handleRowClick(event) {
@@ -951,81 +1356,191 @@ async function setRelativeDate(offset) {
 }
 
 onMounted(async () => {
-  await refreshAll();
+  activeTab.value = 'queue';
+  await applyWorkspacePreset('queue', { resetSearch: true, resetGrid: true });
 });
 </script>
 
 <style scoped>
 .call-operations-view {
-  @apply p-4 lg:p-5 space-y-4;
+  @apply space-y-4 p-4 lg:p-5;
 }
 
-.call-operations-topbar {
-  @apply rounded-[1.5rem] border border-surface-200 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(245,247,250,0.98))] px-5 py-5 shadow-sm flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between dark:border-surface-700 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(17,24,39,0.94))];
+.call-operations-header {
+  @apply flex flex-col gap-4 rounded-[1.4rem] border border-surface-200 bg-white px-5 py-4 shadow-sm dark:border-surface-800 dark:bg-surface-950 lg:flex-row lg:items-end lg:justify-between;
 }
 
-.call-operations-topbar__eyebrow {
-  @apply text-xs uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400 mb-2;
+.call-operations-header__eyebrow {
+  @apply text-[0.7rem] uppercase tracking-[0.26em] text-surface-500 dark:text-surface-400;
 }
 
-.call-operations-topbar__title {
-  @apply text-2xl font-semibold text-surface-900 dark:text-surface-0;
+.call-operations-header__title {
+  @apply mt-1 text-2xl font-semibold text-surface-950 dark:text-surface-0;
 }
 
-.call-operations-topbar__subtitle {
-  @apply mt-2 max-w-3xl text-sm text-surface-600 dark:text-surface-300;
-}
-
-.call-operations-topbar__controls {
-  @apply flex flex-wrap items-center gap-3 xl:justify-end;
-}
-
-.call-operations-grid-toolbar {
-  @apply flex flex-col gap-3 border-b border-surface-200 px-5 py-4 dark:border-surface-700 xl:flex-row xl:items-center xl:justify-between;
-}
-
-.call-operations-grid-toolbar__actions {
+.call-operations-header__actions {
   @apply flex flex-wrap items-center gap-2;
 }
 
-.call-operations-force-toggle {
-  @apply flex items-center gap-2 rounded-full border border-surface-200 px-3 py-2 text-sm text-surface-600 dark:border-surface-700 dark:text-surface-300;
+.call-operations-shell {
+  @apply overflow-hidden rounded-[1.4rem] border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-950;
 }
 
-.call-operations-tabpanels {
-  @apply min-h-0;
+.call-operations-tabs__nav {
+  @apply border-b border-surface-200 px-5 pt-4 dark:border-surface-800;
 }
 
-.call-operations-panel-header {
-  @apply flex flex-col gap-3 px-5 pt-5 pb-3 border-b border-surface-100 dark:border-surface-800 xl:flex-row xl:items-center xl:justify-between;
+.call-operations-workspace {
+  @apply space-y-3 px-5 py-4;
 }
 
-.call-operations-panel-header__title {
-  @apply text-lg font-semibold text-surface-900 dark:text-surface-0;
-}
-
-.call-operations-panel-header__subtitle {
-  @apply mt-1 text-sm text-surface-600 dark:text-surface-400;
-}
-
-.call-operations-panel-header__meta {
-  @apply flex items-center gap-2;
-}
-
-.call-operations-activity-panel {
+.call-operations-workspace--testing {
   @apply p-5;
 }
 
-:deep(.call-operations-grid-shell .p-card-content) {
+.call-operations-workspace__toolbar {
+  @apply flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between;
+}
+
+.call-operations-workspace__tools,
+.call-operations-workspace__actions {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.call-operations-search {
+  @apply min-w-[18rem];
+}
+
+.call-operations-inline-note {
+  @apply text-sm text-surface-500 dark:text-surface-400;
+}
+
+.call-operations-summary-row {
+  @apply grid gap-2 md:grid-cols-3;
+}
+
+.call-operations-summary-card {
+  @apply rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 dark:border-surface-800 dark:bg-surface-900;
+}
+
+.call-operations-summary-card__label {
+  @apply block text-[0.68rem] uppercase tracking-[0.18em] text-surface-500 dark:text-surface-400;
+}
+
+.call-operations-summary-card__value {
+  @apply mt-2 block text-2xl font-semibold text-surface-950 dark:text-surface-0;
+}
+
+.call-operations-empty {
+  @apply py-14 text-center;
+}
+
+.call-operations-empty__title {
+  @apply text-base font-medium text-surface-800 dark:text-surface-200;
+}
+
+.call-operations-empty__subtitle {
+  @apply mt-2 text-sm text-surface-500 dark:text-surface-400;
+}
+
+.call-operations-pill {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.call-operations-pill--muted {
+  @apply bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-200;
+}
+
+.call-operations-pill--info {
+  @apply bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200;
+}
+
+.call-operations-pill--success {
+  @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200;
+}
+
+.call-operations-pill--warning {
+  @apply bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200;
+}
+
+.call-operations-pill--danger {
+  @apply bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200;
+}
+
+.call-operations-call-state {
+  @apply space-y-1;
+}
+
+.call-operations-call-state__value {
+  @apply text-lg font-semibold leading-none;
+}
+
+.call-operations-call-state__value--success {
+  @apply text-emerald-700 dark:text-emerald-300;
+}
+
+.call-operations-call-state__value--warning {
+  @apply text-amber-700 dark:text-amber-300;
+}
+
+.call-operations-call-state__value--danger {
+  @apply text-rose-700 dark:text-rose-300;
+}
+
+.call-operations-call-state__value--muted {
+  @apply text-surface-700 dark:text-surface-200;
+}
+
+.call-operations-call-state__copy {
+  @apply text-xs text-surface-500 dark:text-surface-400;
+}
+
+.call-operations-call-state__meta {
+  @apply text-xs font-medium text-surface-700 dark:text-surface-200;
+}
+
+.call-operations-outcome {
+  @apply space-y-1 rounded-2xl border px-3 py-2.5;
+}
+
+.call-operations-outcome__eyebrow {
+  @apply text-[0.62rem] font-semibold uppercase tracking-[0.18em];
+}
+
+.call-operations-outcome__value {
+  @apply text-sm font-semibold leading-5;
+}
+
+.call-operations-outcome__meta {
+  @apply text-xs text-surface-600 dark:text-surface-400;
+}
+
+.call-operations-outcome--muted {
+  @apply border-surface-200 bg-surface-50 text-surface-900 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-0;
+}
+
+.call-operations-outcome--info {
+  @apply border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-100;
+}
+
+.call-operations-outcome--success {
+  @apply border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100;
+}
+
+.call-operations-outcome--warning {
+  @apply border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100;
+}
+
+.call-operations-outcome--danger {
+  @apply border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-100;
+}
+
+:deep(.call-operations-tabs .p-tabpanels) {
   @apply p-0;
 }
 
-:deep(.call-operations-grid-shell .p-tabpanels) {
-  @apply p-0;
-}
-
-:deep(.call-operations-grid .p-datatable-header) {
-  @apply border-x-0 border-t-0;
+:deep(.call-operations-grid .p-datatable-thead > tr > th) {
+  @apply bg-surface-50 text-[0.68rem] uppercase tracking-[0.16em] text-surface-500 dark:bg-surface-900 dark:text-surface-400;
 }
 
 :deep(.call-operations-grid .p-datatable-table-container) {
@@ -1033,56 +1548,14 @@ onMounted(async () => {
 }
 
 :deep(.call-operations-grid .p-paginator) {
-  @apply border-x-0 border-b-0;
+  @apply border-x-0 border-b-0 px-0;
 }
 
-:deep(.call-operations-grid .p-datatable-thead > tr > th.p-datatable-frozen-column) {
-  @apply bg-surface-0 dark:bg-surface-900;
-  box-shadow: -12px 0 16px -16px rgba(15, 23, 42, 0.32);
+:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-blocked) {
+  @apply bg-rose-50/60 dark:bg-rose-950/10;
 }
 
-:deep(.call-operations-grid .p-datatable-tbody > tr > td.p-datatable-frozen-column) {
-  @apply bg-surface-0 dark:bg-surface-900;
-  background-clip: padding-box;
-}
-
-:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-warning > td.p-datatable-frozen-column) {
-  @apply bg-yellow-50/95 dark:bg-yellow-950/20;
-}
-
-:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-past-due > td.p-datatable-frozen-column) {
-  @apply bg-amber-50/95 dark:bg-amber-950/20;
-}
-
-:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-danger > td.p-datatable-frozen-column) {
-  @apply bg-red-50/95 dark:bg-red-950/20;
-}
-
-:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-muted > td.p-datatable-frozen-column) {
-  @apply bg-slate-100/95 dark:bg-surface-800/95;
-}
-
-:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-success > td.p-datatable-frozen-column) {
-  @apply bg-green-50/95 dark:bg-green-950/20;
-}
-
-:deep(.call-operations-row-warning) {
-  @apply bg-yellow-50/70 dark:bg-yellow-950/10;
-}
-
-:deep(.call-operations-row-past-due) {
-  @apply bg-amber-50/70 dark:bg-amber-950/10;
-}
-
-:deep(.call-operations-row-danger) {
-  @apply bg-red-50/60 dark:bg-red-950/10;
-}
-
-:deep(.call-operations-row-muted) {
-  @apply bg-slate-100/70 dark:bg-surface-800/60;
-}
-
-:deep(.call-operations-row-success) {
-  @apply bg-green-50/50 dark:bg-green-950/10;
+:deep(.call-operations-grid .p-datatable-tbody > tr.call-operations-row-attention) {
+  @apply bg-amber-50/60 dark:bg-amber-950/10;
 }
 </style>
