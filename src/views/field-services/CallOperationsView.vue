@@ -300,9 +300,9 @@
                   <SplitButton
                     icon="pi pi-refresh"
                     label="Refresh"
-                    :loading="loadingRows || loadingSummary"
-                    @click="refreshAll"
-                    :model="[{ label: 'Refresh Status', icon: 'pi pi-sync', command: () => refreshStatuses() }]"
+                    :loading="loadingRows || loadingSummary || actionLoading"
+                    @click="refreshStatuses"
+                    :model="[{ label: 'Reload List', icon: 'pi pi-list', command: () => refreshAll() }]"
                     outlined
                     size="small"
                   />
