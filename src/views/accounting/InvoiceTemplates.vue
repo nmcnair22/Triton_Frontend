@@ -1,41 +1,46 @@
 <script setup>
-import { ref, onMounted, computed, reactive, watch } from 'vue';
-import { useInvoiceStore } from '@/stores/invoiceStore';
-import { useCustomerStore } from '@/stores/customerStore';
-import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
-import { formatCurrency, formatDate, formatDueDate, groupInvoiceItems } from '@/lib/utils';
-import { useToast } from 'primevue/usetoast';
-import { InvoiceService } from '@/service/ApiService';
-import ExcelPreview from '@/components/ExcelPreview.vue';
-import CustomerSelectionSection from '@/components/accounting/CustomerSelectionSection.vue';
-import InvoiceDataTableSection from '@/components/accounting/InvoiceDataTableSection.vue';
-import TemplateSelectionSection from '@/components/accounting/TemplateSelectionSection.vue';
-import DocumentLibrarySection from '@/components/accounting/DocumentLibrarySection.vue';
-import FilePreviewDialog from '@/components/accounting/FilePreviewDialog.vue';
-import InvoiceDetailDrawer from '@/components/accounting/InvoiceDetailDrawer.vue';
-import MergeHistoryDialog from '@/components/accounting/MergeHistoryDialog.vue';
-import DuplicateConfirmationDialog from '@/components/accounting/DuplicateConfirmationDialog.vue';
-import MergeDetailsModal from '@/components/accounting/MergeDetailsModal.vue';
-import ToggleSwitch from 'primevue/toggleswitch';
-import Select from 'primevue/select';
-import Button from 'primevue/button';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
-import InputNumber from 'primevue/inputnumber';
-import DatePicker from 'primevue/datepicker';
-import ProgressSpinner from 'primevue/progressspinner';
-import Tag from 'primevue/tag';
-import Message from 'primevue/message';
-import Divider from 'primevue/divider';
-import Toast from 'primevue/toast';
-import Drawer from 'primevue/drawer';
-import ToggleButton from 'primevue/togglebutton';
-import { useLayout } from '@/layout/composables/layout';
-import Checkbox from 'primevue/checkbox';
+import { ref, onMounted, computed, reactive, watch } from "vue";
+import { useInvoiceStore } from "@/stores/invoiceStore";
+import { useCustomerStore } from "@/stores/customerStore";
+import { FilterMatchMode, FilterOperator } from "@primevue/core/api";
+import {
+  formatCurrency,
+  formatDate,
+  formatDueDate,
+  groupInvoiceItems,
+} from "@/lib/utils";
+import { useToast } from "primevue/usetoast";
+import { InvoiceService } from "@/service/ApiService";
+import ExcelPreview from "@/components/ExcelPreview.vue";
+import CustomerSelectionSection from "@/components/accounting/CustomerSelectionSection.vue";
+import InvoiceDataTableSection from "@/components/accounting/InvoiceDataTableSection.vue";
+import TemplateSelectionSection from "@/components/accounting/TemplateSelectionSection.vue";
+import DocumentLibrarySection from "@/components/accounting/DocumentLibrarySection.vue";
+import FilePreviewDialog from "@/components/accounting/FilePreviewDialog.vue";
+import InvoiceDetailDrawer from "@/components/accounting/InvoiceDetailDrawer.vue";
+import MergeHistoryDialog from "@/components/accounting/MergeHistoryDialog.vue";
+import DuplicateConfirmationDialog from "@/components/accounting/DuplicateConfirmationDialog.vue";
+import MergeDetailsModal from "@/components/accounting/MergeDetailsModal.vue";
+import ToggleSwitch from "primevue/toggleswitch";
+import Select from "primevue/select";
+import Button from "primevue/button";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
+import InputNumber from "primevue/inputnumber";
+import DatePicker from "primevue/datepicker";
+import ProgressSpinner from "primevue/progressspinner";
+import Tag from "primevue/tag";
+import Message from "primevue/message";
+import Divider from "primevue/divider";
+import Toast from "primevue/toast";
+import Drawer from "primevue/drawer";
+import ToggleButton from "primevue/togglebutton";
+import { useLayout } from "@/layout/composables/layout";
+import Checkbox from "primevue/checkbox";
 
 // Initialize the stores
 const invoiceStore = useInvoiceStore();
@@ -53,7 +58,9 @@ const selectedInvoice = ref(null);
 const isLoading = computed(() => invoiceStore.loading);
 const error = computed(() => invoiceStore.error);
 const isInteractive = ref(false); // Toggle state for interactive mode
-const isLoadingEnrichedData = computed(() => invoiceStore.loadingEnrichedInvoice);
+const isLoadingEnrichedData = computed(
+  () => invoiceStore.loadingEnrichedInvoice,
+);
 const enrichedError = computed(() => invoiceStore.enrichedInvoiceError);
 
 // Table products for the selected invoice
@@ -66,7 +73,9 @@ const customerInvoices = computed(() => invoiceStore.customerInvoices || []);
 const selectedCustomerInvoice = ref(null);
 const isLoadingCustomers = computed(() => customerStore.loading);
 const customerError = computed(() => customerStore.error);
-const isLoadingCustomerInvoices = computed(() => invoiceStore.loadingCustomerInvoices);
+const isLoadingCustomerInvoices = computed(
+  () => invoiceStore.loadingCustomerInvoices,
+);
 
 // Chart data loading state
 const isLoadingChartData = ref(false);
@@ -79,7 +88,7 @@ const customerStats = reactive({
   overdueCount: 0,
   avgDaysToPay: 0,
   openChange: 5, // Example values
-  paidChange: 10 // Example values
+  paidChange: 10, // Example values
 });
 
 // Chart data and options
@@ -90,13 +99,31 @@ const paymentHistoryOptions = ref(null);
 
 // Filters for the invoice table
 const filters = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-    customerName: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-    dueDate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
-    total: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    remainingAmount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  number: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+  },
+  customerName: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+  },
+  dueDate: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+  },
+  total: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+  },
+  remainingAmount: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+  },
+  status: {
+    operator: FilterOperator.OR,
+    constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+  },
 });
 
 // Pagination for invoices table
@@ -107,7 +134,7 @@ const lazyParams = reactive({
   page: 1,
   sortField: null,
   sortOrder: null,
-  status: ['open', 'unpaid']
+  status: ["open", "unpaid"],
 });
 
 // Available row per page options
@@ -115,12 +142,12 @@ const rowsPerPageOptions = [5, 10, 20, 50];
 
 // Interactive mode
 const groupByOptions = ref([
-  { name: 'None', value: 'none' },
-  { name: 'Product', value: 'product' },
-  { name: 'Location', value: 'location' },
-  { name: 'Service', value: 'service' }
+  { name: "None", value: "none" },
+  { name: "Product", value: "product" },
+  { name: "Location", value: "location" },
+  { name: "Service", value: "service" },
 ]);
-const selectedGroupBy = ref({ name: 'None', value: 'none' });
+const selectedGroupBy = ref({ name: "None", value: "none" });
 const groupedProducts = ref([]);
 const groupNames = ref([]);
 const isRegrouping = ref(false);
@@ -134,29 +161,39 @@ const selectedTemplate = ref(null);
 // Invoice Date Override state
 const useInvoiceDateOverride = ref(false);
 const invoiceDateOverride = ref(null);
-const overrideDateError = ref('');
+const overrideDateError = ref("");
 const showOverrideConfirmation = ref(false);
 const pendingOverrideAction = ref(null);
-const availableTemplates = computed(() => invoiceStore.availableTemplates || []);
+const availableTemplates = computed(
+  () => invoiceStore.availableTemplates || [],
+);
 const isLoadingTemplates = computed(() => invoiceStore.loadingTemplates);
 const templatesError = computed(() => invoiceStore.templatesError);
 const generatedFiles = computed(() => invoiceStore.generatedFiles || []);
-const isLoadingGeneratedFiles = computed(() => invoiceStore.loadingGeneratedFiles);
+const isLoadingGeneratedFiles = computed(
+  () => invoiceStore.loadingGeneratedFiles,
+);
 const generatedFilesError = computed(() => invoiceStore.generatedFilesError);
 const isGeneratingTemplate = computed(() => invoiceStore.generatingTemplate);
-const generateTemplateError = computed(() => invoiceStore.generateTemplateError);
+const generateTemplateError = computed(
+  () => invoiceStore.generateTemplateError,
+);
 const customerDocuments = computed(() => invoiceStore.customerDocuments || []);
-const isLoadingCustomerDocuments = computed(() => invoiceStore.loadingCustomerDocuments);
-const customerDocumentsError = computed(() => invoiceStore.customerDocumentsError);
+const isLoadingCustomerDocuments = computed(
+  () => invoiceStore.loadingCustomerDocuments,
+);
+const customerDocumentsError = computed(
+  () => invoiceStore.customerDocumentsError,
+);
 
 // File preview
 const selectedFile = ref(null);
 const showFilePreview = ref(false);
-const activeDocumentTab = ref('customer'); // 'customer' or 'invoice'
-const previewUrl = ref('');
+const activeDocumentTab = ref("customer"); // 'customer' or 'invoice'
+const previewUrl = ref("");
 const previewIframe = ref(null);
 const previewError = ref(false);
-const previewErrorMessage = ref('');
+const previewErrorMessage = ref("");
 const previewLoaded = ref(false);
 
 // Invoice detail drawer
@@ -164,7 +201,7 @@ const showInvoiceDrawer = ref(false);
 const drawerSelectedInvoice = ref(null);
 const drawerProducts = ref([]);
 const drawerIsInteractive = ref(false);
-const drawerSelectedGroupBy = ref({ name: 'None', value: 'none' });
+const drawerSelectedGroupBy = ref({ name: "None", value: "none" });
 const drawerGroupedProducts = ref([]);
 const drawerIsRegrouping = ref(false);
 
@@ -194,8 +231,6 @@ const existingMergeGroups = ref([]);
 const isCheckingMergeGroups = ref(false);
 const showMergePreview = ref(false);
 
-
-
 // Function to handle rows per page change
 function onRowsPerPageChange(event) {
   lazyParams.rows = event.rows;
@@ -215,45 +250,40 @@ onMounted(async () => {
     // Only load customers initially, wait for customer selection to fetch invoices
     await loadCustomers();
   } catch (error) {
-    console.error('Error loading initial data:', error);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load initial data', 
-      life: 3000 
+    console.error("Error loading initial data:", error);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load initial data",
+      life: 3000,
     });
   }
 });
 
 // Function to load customers based on selected list type
 async function loadCustomers() {
-  console.log('👥 loadCustomers called - customer list type:', customerListType.value ? 'active' : 'full');
-  
   try {
     if (customerListType.value) {
       await customerStore.fetchActiveCustomers();
     } else {
       await customerStore.fetchCustomers();
     }
-    
+
     // Clear any previously selected customers when the list changes
-    console.log('📄 Before clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
     selectedCustomer.value = null;
     selectedCustomerInvoice.value = null;
     selectedTemplate.value = null;
     // Clear documents when customer list changes
     invoiceStore.resetTemplateState();
-    console.log('📄 After clearing (loadCustomers) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
-    
+
     // Auto-select Paradies if available
     await autoSelectParadies();
-    
   } catch (err) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load customers', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load customers",
+      life: 3000,
     });
   }
 }
@@ -261,30 +291,27 @@ async function loadCustomers() {
 // Function to automatically select Paradies customer if available
 async function autoSelectParadies() {
   if (!customers.value || customers.value.length === 0) {
-    console.log('👥 No customers available for auto-selection');
     return;
   }
-  
+
   // Look for Paradies customer (case-insensitive search)
-  const paradiesCustomer = customers.value.find(customer => 
-    customer.name && customer.name.toLowerCase().includes('paradies')
+  const paradiesCustomer = customers.value.find(
+    (customer) =>
+      customer.name && customer.name.toLowerCase().includes("paradies"),
   );
-  
+
   if (paradiesCustomer) {
-    console.log('🎯 Auto-selecting Paradies customer:', paradiesCustomer.name);
     selectedCustomer.value = paradiesCustomer;
-    
+
     // Trigger the customer change logic to load invoices and documents
     await onCustomerChange();
-    
-    toast.add({ 
-      severity: 'info', 
-      summary: 'Auto-Selected', 
-      detail: `Automatically selected ${paradiesCustomer.name}`, 
-      life: 3000 
+
+    toast.add({
+      severity: "info",
+      summary: "Auto-Selected",
+      detail: `Automatically selected ${paradiesCustomer.name}`,
+      life: 3000,
     });
-  } else {
-    console.log('👥 Paradies customer not found in the list');
   }
 }
 
@@ -298,46 +325,38 @@ async function loadCustomerInvoices() {
   if (!selectedCustomer.value) {
     return;
   }
-  
+
   try {
     // Build a filter query for the selected customer
     const filterCondition = `customerId eq ${selectedCustomer.value.id}`;
-    
+
     await invoiceStore.fetchCustomerInvoices(filterCondition);
   } catch (err) {
-    console.error('Failed to load customer invoices:', err);
+    console.error("Failed to load customer invoices:", err);
   }
 }
 
 // Handle customer selection change
 async function onCustomerChange() {
-  console.log('🔄 onCustomerChange called - clearing documents');
-  
   // Clear previous invoice selection and documents immediately
   selectedCustomerInvoice.value = null;
   selectedTemplate.value = null;
-  
+
   // Ensure documents are cleared before proceeding
-  console.log('📄 Before reset - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
   invoiceStore.resetTemplateState();
-  console.log('📄 After reset - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
-  
+
   // Set the active tab to customer documents
-  activeDocumentTab.value = 'customer';
-  
-  // Load customer invoices
-  await loadCustomerInvoices();
-  
+  activeDocumentTab.value = "customer";
+
   // Load available templates and customer documents for the selected customer
   if (selectedCustomer.value) {
-    console.log('👤 Loading data for customer:', selectedCustomer.value.name, 'ID:', selectedCustomer.value.id);
-    await loadAvailableTemplates(selectedCustomer.value.id);
-    // Load customer documents using the customer number
-    console.log('📂 About to load customer documents for:', selectedCustomer.value.number);
-    await loadCustomerDocuments(selectedCustomer.value.number);
-    console.log('📂 After loading customer documents:', customerDocuments.value.length);
-  } else {
-    console.log('❌ No customer selected, skipping document load');
+    const customer = selectedCustomer.value;
+
+    await Promise.all([
+      loadCustomerInvoices(),
+      loadAvailableTemplates(customer.id),
+      loadCustomerDocuments(customer.number),
+    ]);
   }
 }
 
@@ -353,42 +372,60 @@ function onPage(event) {
 function clearFilter() {
   filters.value = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-    customerName: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-    dueDate: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
-    total: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    remainingAmount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    number: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+    },
+    customerName: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+    },
+    dueDate: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+    },
+    total: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+    },
+    remainingAmount: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+    },
+    status: {
+      operator: FilterOperator.OR,
+      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+    },
   };
 }
 
 // Handle customer invoice selection change
-async function onCustomerInvoiceSelect(event) {
-  console.log('🧾 onCustomerInvoiceSelect called', event);
-  
+async function onCustomerInvoiceSelect() {
   if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
-    console.log('📋 Selected invoice:', selectedCustomerInvoice.value.number);
-    
     // Clear previous documents immediately to prevent showing old data
-    console.log('📄 Before reset (invoice) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
     invoiceStore.resetTemplateState();
-    console.log('📄 After reset (invoice) - generatedFiles:', generatedFiles.value.length, 'customerDocuments:', customerDocuments.value.length);
-    
-    activeDocumentTab.value = 'invoice';
-    // Load generated files for the selected invoice
-    console.log('📂 About to load generated files for invoice:', selectedCustomerInvoice.value.number);
-    await loadGeneratedFiles(selectedCustomerInvoice.value.number);
-    console.log('📂 After loading generated files:', generatedFiles.value.length);
-    
+
+    activeDocumentTab.value = "invoice";
+
     // If there's a customer ID, refine the template list
-    if (selectedCustomer.value && selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
-      await loadAvailableTemplates(selectedCustomer.value.id, selectedCustomerInvoice.value.number);
+    if (
+      selectedCustomer.value &&
+      selectedCustomerInvoice.value &&
+      selectedCustomerInvoice.value.number
+    ) {
+      await Promise.all([
+        loadGeneratedFiles(selectedCustomerInvoice.value.number),
+        loadAvailableTemplates(
+          selectedCustomer.value.id,
+          selectedCustomerInvoice.value.number,
+        ),
+      ]);
+    } else {
+      await loadGeneratedFiles(selectedCustomerInvoice.value.number);
     }
   } else {
-    console.log('❌ No invoice selected - clearing all documents');
     // If no invoice is selected, clear all documents
     invoiceStore.resetTemplateState();
-    console.log('📄 After clearing (no invoice):', generatedFiles.value.length, customerDocuments.value.length);
   }
 }
 
@@ -410,13 +447,16 @@ async function selectInvoice(id) {
 
 // Function to determine row class based on due date and status
 function getRowClass(data) {
-  if (data.status === 'open' && new Date(data.dueDate) < new Date()) {
-    return 'bg-red-50 dark:bg-red-900/20';
+  if (data.status === "open" && new Date(data.dueDate) < new Date()) {
+    return "bg-red-50 dark:bg-red-900/20";
   }
-  if (data.status === 'open' && (new Date(data.dueDate) - new Date()) <= 3 * 24 * 60 * 60 * 1000) {
-    return 'bg-yellow-50 dark:bg-yellow-900/20';
+  if (
+    data.status === "open" &&
+    new Date(data.dueDate) - new Date() <= 3 * 24 * 60 * 60 * 1000
+  ) {
+    return "bg-yellow-50 dark:bg-yellow-900/20";
   }
-  return '';
+  return "";
 }
 
 // Function to get due date information with context
@@ -425,40 +465,40 @@ function getDueDateInfo(dueDate, status) {
   const today = new Date();
   const diffTime = date - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  const formattedDate = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+
+  const formattedDate = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
-  
-  let contextInfo = '';
-  let contextClass = 'text-surface-600 dark:text-surface-400';
-  
-  if (status === 'paid') {
-    contextInfo = 'Paid';
-    contextClass = 'text-green-600 dark:text-green-400';
+
+  let contextInfo = "";
+  let contextClass = "text-surface-600 dark:text-surface-400";
+
+  if (status === "paid") {
+    contextInfo = "Paid";
+    contextClass = "text-green-600 dark:text-green-400";
   } else if (diffDays < 0) {
     const overdueDays = Math.abs(diffDays);
-    contextInfo = `Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}`;
-    contextClass = 'text-red-600 dark:text-red-400 font-medium';
+    contextInfo = `Overdue by ${overdueDays} day${overdueDays !== 1 ? "s" : ""}`;
+    contextClass = "text-red-600 dark:text-red-400 font-medium";
   } else if (diffDays === 0) {
-    contextInfo = 'Due today';
-    contextClass = 'text-orange-600 dark:text-orange-400 font-medium';
+    contextInfo = "Due today";
+    contextClass = "text-orange-600 dark:text-orange-400 font-medium";
   } else if (diffDays <= 3) {
-    contextInfo = `Due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-    contextClass = 'text-yellow-600 dark:text-yellow-400';
+    contextInfo = `Due in ${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+    contextClass = "text-yellow-600 dark:text-yellow-400";
   } else if (diffDays <= 7) {
     contextInfo = `Due in ${diffDays} days`;
-    contextClass = 'text-blue-600 dark:text-blue-400';
+    contextClass = "text-blue-600 dark:text-blue-400";
   } else {
     contextInfo = `Due in ${diffDays} days`;
   }
-  
+
   return {
     date: formattedDate,
     context: contextInfo,
-    contextClass
+    contextClass,
   };
 }
 
@@ -466,81 +506,103 @@ function getDueDateInfo(dueDate, status) {
 watch(isInteractive, async (newValue) => {
   if (newValue) {
     // Show toast message when interactive mode is enabled
-    toast.add({ severity: 'success', summary: 'Interactive Mode', detail: 'Interactive Mode has been enabled', life: 3000 });
-    
+    toast.add({
+      severity: "success",
+      summary: "Interactive Mode",
+      detail: "Interactive Mode has been enabled",
+      life: 3000,
+    });
+
     if (selectedInvoice.value) {
       // When interactive mode is enabled and an invoice is selected
-      await fetchEnrichedInvoiceData(selectedInvoice.value.number || selectedInvoice.value.id);
+      await fetchEnrichedInvoiceData(
+        selectedInvoice.value.number || selectedInvoice.value.id,
+      );
     }
   } else {
     // Show toast message when interactive mode is disabled
-    toast.add({ severity: 'info', summary: 'Interactive Mode', detail: 'Interactive Mode has been disabled', life: 3000 });
+    toast.add({
+      severity: "info",
+      summary: "Interactive Mode",
+      detail: "Interactive Mode has been disabled",
+      life: 3000,
+    });
   }
 });
 
 // Function to fetch enriched invoice data
 async function fetchEnrichedInvoiceData(documentNumber) {
   if (!documentNumber) return;
-  
+
   try {
     await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
-    
+
     const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
     if (enrichedInvoice) {
       // Update products with the enriched data
-      if (enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
-        products.value = enrichedInvoice.enrichedItems.map(item => ({
+      if (
+        enrichedInvoice.enrichedItems &&
+        enrichedInvoice.enrichedItems.length > 0
+      ) {
+        products.value = enrichedInvoice.enrichedItems.map((item) => ({
           description: item.description,
           quantity: item.quantity.toString(),
           price: formatCurrency(item.unitPrice),
           total: formatCurrency(item.amountIncludingTax),
           // Store the original item data for grouping
-          rawItem: item
+          rawItem: item,
         }));
-        
+
         // Apply grouping if needed
         applyGrouping();
       }
     }
   } catch (err) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load enriched invoice data', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load enriched invoice data",
+      life: 3000,
     });
   }
 }
 
 // Function to apply grouping to products
 function applyGrouping() {
-  if (selectedGroupBy.value.value === 'none' || !products.value || products.value.length === 0) {
+  if (
+    selectedGroupBy.value.value === "none" ||
+    !products.value ||
+    products.value.length === 0
+  ) {
     isRegrouping.value = false;
     groupedProducts.value = [];
     groupNames.value = [];
     return;
   }
-  
+
   isRegrouping.value = true;
-  
+
   // Small delay to ensure the loading spinner shows
   setTimeout(() => {
     // Get raw item data for grouping
-    const rawItems = products.value.map(product => product.rawItem);
-    
+    const rawItems = products.value.map((product) => product.rawItem);
+
     // Group items using the utility function
-    const { groups, groupNames: names } = groupInvoiceItems(rawItems, selectedGroupBy.value.value);
-    
+    const { groups, groupNames: names } = groupInvoiceItems(
+      rawItems,
+      selectedGroupBy.value.value,
+    );
+
     // Add the groupType to each group for display
-    const groupsWithType = groups.map(group => ({
+    const groupsWithType = groups.map((group) => ({
       ...group,
-      groupType: selectedGroupBy.value.name
+      groupType: selectedGroupBy.value.name,
     }));
-    
+
     // Update reactive state
     groupedProducts.value = groupsWithType;
     groupNames.value = names;
-    
+
     isRegrouping.value = false;
   }, 300);
 }
@@ -561,9 +623,9 @@ watch(selectedInvoice, (newInvoice) => {
 // Function to refresh chart data
 function refreshChartData() {
   if (!selectedCustomer.value) return;
-  
+
   isLoadingChartData.value = true;
-  
+
   // This would ideally fetch real data from the API
   setTimeout(() => {
     setupChartData();
@@ -574,17 +636,18 @@ function refreshChartData() {
 // Setup chart data with computed styles
 function setupChartData() {
   const documentStyle = getComputedStyle(document.documentElement);
-  const textColor = documentStyle.getPropertyValue('--text-color');
-  const textColorSecondary = documentStyle.getPropertyValue('--text-muted-color');
-  const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
-  const fontFamily = documentStyle.getPropertyValue('--font-family');
-  
+  const textColor = documentStyle.getPropertyValue("--text-color");
+  const textColorSecondary =
+    documentStyle.getPropertyValue("--text-muted-color");
+  const surfaceBorder = documentStyle.getPropertyValue("--surface-border");
+  const fontFamily = documentStyle.getPropertyValue("--font-family");
+
   // Update customer stats based on customer invoices
   updateCustomerStats();
-  
+
   // Create gradients for pie chart
-  const ctx = document.createElement('canvas').getContext('2d');
-  
+  const ctx = document.createElement("canvas").getContext("2d");
+
   const createGradient = (colorStart, colorEnd) => {
     if (!ctx) return colorStart;
     const gradient = ctx.createLinearGradient(0, 0, 0, 150);
@@ -592,254 +655,252 @@ function setupChartData() {
     gradient.addColorStop(1, colorEnd);
     return gradient;
   };
-  
+
   // Gradient colors for pie chart
   const paidGradient = createGradient(
-    documentStyle.getPropertyValue('--p-green-400'),
-    documentStyle.getPropertyValue('--p-green-600')
+    documentStyle.getPropertyValue("--p-green-400"),
+    documentStyle.getPropertyValue("--p-green-600"),
   );
-  
+
   const openGradient = createGradient(
-    documentStyle.getPropertyValue('--p-blue-400'),
-    documentStyle.getPropertyValue('--p-blue-600')
+    documentStyle.getPropertyValue("--p-blue-400"),
+    documentStyle.getPropertyValue("--p-blue-600"),
   );
-  
+
   const overdueGradient = createGradient(
-    documentStyle.getPropertyValue('--p-red-400'),
-    documentStyle.getPropertyValue('--p-red-600')
+    documentStyle.getPropertyValue("--p-red-400"),
+    documentStyle.getPropertyValue("--p-red-600"),
   );
-  
+
   // Invoice Status Pie Chart
   invoiceStatusData.value = {
-    labels: ['Paid', 'Open', 'Overdue'],
+    labels: ["Paid", "Open", "Overdue"],
     datasets: [
       {
         data: [
           customerStats.totalPaid,
           customerStats.totalOpen - customerStats.totalOverdue,
-          customerStats.totalOverdue
+          customerStats.totalOverdue,
         ],
-        backgroundColor: [
-          paidGradient,
-          openGradient,
-          overdueGradient
-        ],
+        backgroundColor: [paidGradient, openGradient, overdueGradient],
         hoverBackgroundColor: [
-          documentStyle.getPropertyValue('--p-green-300'),
-          documentStyle.getPropertyValue('--p-blue-300'),
-          documentStyle.getPropertyValue('--p-red-300')
+          documentStyle.getPropertyValue("--p-green-300"),
+          documentStyle.getPropertyValue("--p-blue-300"),
+          documentStyle.getPropertyValue("--p-red-300"),
         ],
-        borderColor: 'white',
-        borderWidth: 1
-      }
-    ]
+        borderColor: "white",
+        borderWidth: 1,
+      },
+    ],
   };
 
   // Base options for the pie chart
   invoiceStatusOptions.value = {
-    cutout: '60%',
+    cutout: "60%",
     plugins: {
       legend: {
         display: true,
-        position: 'bottom',
+        position: "bottom",
         labels: {
           usePointStyle: true,
           color: textColor,
           font: {
             family: fontFamily || "'Inter', sans-serif",
             size: 11,
-            weight: '500'
+            weight: "500",
           },
           padding: 10,
           boxWidth: 8,
           boxHeight: 8,
-          generateLabels: function(chart) {
+          generateLabels: function (chart) {
             const data = chart.data;
             if (data.labels.length && data.datasets.length) {
               const dataset = data.datasets[0];
               const total = dataset.data.reduce((acc, value) => acc + value, 0);
-              
+
               return data.labels.map((label, i) => {
                 const value = dataset.data[i];
-                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                const percentage =
+                  total > 0 ? Math.round((value / total) * 100) : 0;
                 // Use 1 decimal place max for the currency display in legend
                 const formattedValue = formatCurrency(value, true, 1);
-                
+
                 return {
                   text: `${label}: ${formattedValue} (${percentage}%)`,
                   fillStyle: dataset.backgroundColor[i],
                   strokeStyle: dataset.borderColor,
                   lineWidth: dataset.borderWidth,
-                  pointStyle: 'circle',
+                  pointStyle: "circle",
                   hidden: false,
-                  index: i
+                  index: i,
                 };
               });
             }
             return [];
-          }
-        }
+          },
+        },
       },
       tooltip: {
-        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
+        backgroundColor: documentStyle.getPropertyValue("--surface-900"),
         padding: 12,
         cornerRadius: 8,
         titleFont: {
           family: fontFamily || "'Inter', sans-serif",
           size: 12,
-          weight: '600'
+          weight: "600",
         },
         bodyFont: {
           family: fontFamily || "'Inter', sans-serif",
-          size: 11
+          size: 11,
         },
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             const value = context.raw;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+            const percentage =
+              total > 0 ? Math.round((value / total) * 100) : 0;
             // Use 1 decimal place max for the currency display in tooltip
             return `${context.label}: ${formatCurrency(value, true, 1)} (${percentage}%)`;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     responsive: true,
     maintainAspectRatio: false,
     layout: {
-      padding: 10
+      padding: 10,
     },
     animation: {
       animateScale: true,
-      animateRotate: true
-    }
+      animateRotate: true,
+    },
   };
-  
+
   // Add datalabels plugin configuration if available - but we're setting display to false
-  if (typeof ChartDataLabels !== 'undefined') {
+  if (typeof ChartDataLabels !== "undefined") {
     invoiceStatusOptions.value.plugins.datalabels = {
-      display: false // Turn off datalabels in favor of tooltips and legend
+      display: false, // Turn off datalabels in favor of tooltips and legend
     };
   }
-  
+
   // 6 Month Payment History Line Chart
   const months = getLast6Months();
-  
+
   // Generate sample data for the past 6 months
   const paidData = months.map(() => Math.floor(Math.random() * 10000));
   const openData = months.map(() => Math.floor(Math.random() * 5000));
   const overdueData = months.map(() => Math.floor(Math.random() * 2000));
-  
+
   // Create gradient backgrounds for line charts
   const paidBgGradient = createGradient(
-    documentStyle.getPropertyValue('--p-green-400') + '20', // 20 is hex for 12% opacity
-    'rgba(0, 0, 0, 0)'
+    documentStyle.getPropertyValue("--p-green-400") + "20", // 20 is hex for 12% opacity
+    "rgba(0, 0, 0, 0)",
   );
-  
+
   const openBgGradient = createGradient(
-    documentStyle.getPropertyValue('--p-blue-400') + '20',
-    'rgba(0, 0, 0, 0)'
+    documentStyle.getPropertyValue("--p-blue-400") + "20",
+    "rgba(0, 0, 0, 0)",
   );
-  
+
   const overdueBgGradient = createGradient(
-    documentStyle.getPropertyValue('--p-red-400') + '20',
-    'rgba(0, 0, 0, 0)'
+    documentStyle.getPropertyValue("--p-red-400") + "20",
+    "rgba(0, 0, 0, 0)",
   );
-  
+
   paymentHistoryData.value = {
     labels: months,
     datasets: [
       {
-        label: 'Paid',
+        label: "Paid",
         data: paidData,
         fill: true,
         backgroundColor: paidBgGradient,
-        borderColor: documentStyle.getPropertyValue('--p-green-500'),
+        borderColor: documentStyle.getPropertyValue("--p-green-500"),
         borderWidth: 2,
-        pointBackgroundColor: documentStyle.getPropertyValue('--p-green-500'),
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: documentStyle.getPropertyValue('--p-green-500'),
+        pointBackgroundColor: documentStyle.getPropertyValue("--p-green-500"),
+        pointBorderColor: "#fff",
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: documentStyle.getPropertyValue("--p-green-500"),
         pointRadius: 3,
         pointHoverRadius: 5,
-        tension: 0.4
+        tension: 0.4,
       },
       {
-        label: 'Open',
+        label: "Open",
         data: openData,
         fill: true,
         backgroundColor: openBgGradient,
-        borderColor: documentStyle.getPropertyValue('--p-blue-500'),
+        borderColor: documentStyle.getPropertyValue("--p-blue-500"),
         borderWidth: 2,
-        pointBackgroundColor: documentStyle.getPropertyValue('--p-blue-500'),
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: documentStyle.getPropertyValue('--p-blue-500'),
+        pointBackgroundColor: documentStyle.getPropertyValue("--p-blue-500"),
+        pointBorderColor: "#fff",
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: documentStyle.getPropertyValue("--p-blue-500"),
         pointRadius: 3,
         pointHoverRadius: 5,
-        tension: 0.4
+        tension: 0.4,
       },
       {
-        label: 'Overdue',
+        label: "Overdue",
         data: overdueData,
         fill: true,
         backgroundColor: overdueBgGradient,
-        borderColor: documentStyle.getPropertyValue('--p-red-500'),
+        borderColor: documentStyle.getPropertyValue("--p-red-500"),
         borderWidth: 2,
-        pointBackgroundColor: documentStyle.getPropertyValue('--p-red-500'),
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: documentStyle.getPropertyValue('--p-red-500'),
+        pointBackgroundColor: documentStyle.getPropertyValue("--p-red-500"),
+        pointBorderColor: "#fff",
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: documentStyle.getPropertyValue("--p-red-500"),
         pointRadius: 3,
         pointHoverRadius: 5,
-        tension: 0.4
-      }
-    ]
+        tension: 0.4,
+      },
+    ],
   };
 
   paymentHistoryOptions.value = {
     plugins: {
       legend: {
         display: true,
-        position: 'bottom',
-        align: 'center',
+        position: "bottom",
+        align: "center",
         labels: {
           usePointStyle: true,
           color: textColor,
           font: {
             family: fontFamily || "'Inter', sans-serif",
             size: 11,
-            weight: '500'
+            weight: "500",
           },
           padding: 15,
           boxWidth: 8,
-          boxHeight: 8
-        }
+          boxHeight: 8,
+        },
       },
       tooltip: {
-        backgroundColor: documentStyle.getPropertyValue('--surface-900'),
-        titleColor: '#FFFFFF',
-        bodyColor: '#FFFFFF',
-        borderColor: documentStyle.getPropertyValue('--surface-border'),
+        backgroundColor: documentStyle.getPropertyValue("--surface-900"),
+        titleColor: "#FFFFFF",
+        bodyColor: "#FFFFFF",
+        borderColor: documentStyle.getPropertyValue("--surface-border"),
         borderWidth: 1,
         padding: 10,
         cornerRadius: 6,
         titleFont: {
           family: fontFamily || "'Inter', sans-serif",
           size: 12,
-          weight: '600'
+          weight: "600",
         },
         bodyFont: {
           family: fontFamily || "'Inter', sans-serif",
-          size: 11
+          size: 11,
         },
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             // Use 1 decimal place max for the currency display in tooltip
             return `${context.dataset.label}: ${formatCurrency(context.raw, true, 1)}`;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     scales: {
       x: {
@@ -847,50 +908,50 @@ function setupChartData() {
           color: textColorSecondary,
           font: {
             family: fontFamily || "'Inter', sans-serif",
-            size: 10
-          }
+            size: 10,
+          },
         },
         grid: {
-          color: surfaceBorder + '30', // 30 is hex for 18% opacity
+          color: surfaceBorder + "30", // 30 is hex for 18% opacity
           display: true,
-          drawBorder: false
-        }
+          drawBorder: false,
+        },
       },
       y: {
         ticks: {
           color: textColorSecondary,
           font: {
             family: fontFamily || "'Inter', sans-serif",
-            size: 10
+            size: 10,
           },
-          callback: function(value) {
+          callback: function (value) {
             // Format with no more than 1 decimal place
             return formatCurrency(value, false, 1);
           },
-          maxTicksLimit: 5
+          maxTicksLimit: 5,
         },
         grid: {
-          color: surfaceBorder + '40', // 40 is hex for 25% opacity
+          color: surfaceBorder + "40", // 40 is hex for 25% opacity
           display: true,
-          drawBorder: false
+          drawBorder: false,
         },
-        beginAtZero: true
-      }
+        beginAtZero: true,
+      },
     },
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
       intersect: false,
-      mode: 'index'
+      mode: "index",
     },
     animations: {
       tension: {
         duration: 1000,
-        easing: 'easeOutQuad',
+        easing: "easeOutQuad",
         from: 0.8,
-        to: 0.4
-      }
-    }
+        to: 0.4,
+      },
+    },
   };
 }
 
@@ -900,7 +961,7 @@ function getLast6Months() {
   const date = new Date();
   for (let i = 5; i >= 0; i--) {
     const month = new Date(date.getFullYear(), date.getMonth() - i, 1);
-    months.push(month.toLocaleString('default', { month: 'short' }));
+    months.push(month.toLocaleString("default", { month: "short" }));
   }
   return months;
 }
@@ -922,16 +983,16 @@ function updateCustomerStats() {
   let paidAmount = 0;
   let overdueAmount = 0;
   let overdueCount = 0;
-  
+
   // Current date for overdue calculation
   const currentDate = new Date();
 
-  customerInvoices.value.forEach(invoice => {
-    if (invoice.status === 'paid') {
+  customerInvoices.value.forEach((invoice) => {
+    if (invoice.status === "paid") {
       paidAmount += invoice.total;
     } else {
       openAmount += invoice.total;
-      
+
       // Check if invoice is overdue
       const dueDate = new Date(invoice.dueDate);
       if (dueDate < currentDate) {
@@ -946,17 +1007,23 @@ function updateCustomerStats() {
   customerStats.totalPaid = paidAmount;
   customerStats.totalOverdue = overdueAmount;
   customerStats.overdueCount = overdueCount;
-  
+
   // Calculate average days to pay (sample calculation - would be more accurate with real data)
   customerStats.avgDaysToPay = 15; // Example value
 }
 
 // Watch for changes in selected customer or theme to update charts
-watch([selectedCustomer, () => document.documentElement.getAttribute('data-theme') === 'dark'], () => {
-  if (selectedCustomer.value) {
-    setupChartData();
-  }
-});
+watch(
+  [
+    selectedCustomer,
+    () => document.documentElement.getAttribute("data-theme") === "dark",
+  ],
+  () => {
+    if (selectedCustomer.value) {
+      setupChartData();
+    }
+  },
+);
 
 // Watch for changes in customer invoices to update dashboard stats
 watch(customerInvoices, () => {
@@ -969,10 +1036,10 @@ watch(customerInvoices, () => {
 // Function to load available templates
 async function loadAvailableTemplates(clientId, invoiceNumber = null) {
   if (!clientId) return;
-  
+
   try {
     await invoiceStore.fetchAvailableTemplates(clientId, invoiceNumber);
-    
+
     // Auto-select template if only one is available
     if (availableTemplates.value.length === 1) {
       selectedTemplate.value = availableTemplates.value[0];
@@ -980,7 +1047,7 @@ async function loadAvailableTemplates(clientId, invoiceNumber = null) {
       selectedTemplate.value = null;
     }
   } catch (err) {
-    console.error('Error loading available templates:', err);
+    console.error("Error loading available templates:", err);
     selectedTemplate.value = null;
   }
 }
@@ -988,34 +1055,34 @@ async function loadAvailableTemplates(clientId, invoiceNumber = null) {
 // Function to load customer documents
 async function loadCustomerDocuments(customerNumber) {
   if (!customerNumber) {
-    toast.add({ 
-      severity: 'warn', 
-      summary: 'Warning', 
-      detail: 'Customer number is required to load documents', 
-      life: 3000 
+    toast.add({
+      severity: "warn",
+      summary: "Warning",
+      detail: "Customer number is required to load documents",
+      life: 3000,
     });
     return;
   }
-  
+
   try {
     await invoiceStore.fetchCustomerDocuments(customerNumber);
-    
+
     // Check for errors after loading
     if (invoiceStore.customerDocumentsError) {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: invoiceStore.customerDocumentsError, 
-        life: 3000 
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: invoiceStore.customerDocumentsError,
+        life: 3000,
       });
     }
   } catch (err) {
-    console.error('Error loading customer documents:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to load customer documents', 
-      life: 3000 
+    console.error("Error loading customer documents:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: err.message || "Failed to load customer documents",
+      life: 3000,
     });
   }
 }
@@ -1023,68 +1090,72 @@ async function loadCustomerDocuments(customerNumber) {
 // Function to load generated files for an invoice
 async function loadGeneratedFiles(invoiceNumber) {
   if (!invoiceNumber) {
-    toast.add({ 
-      severity: 'warn', 
-      summary: 'Warning', 
-      detail: 'Invoice number is required to load documents', 
-      life: 3000 
+    toast.add({
+      severity: "warn",
+      summary: "Warning",
+      detail: "Invoice number is required to load documents",
+      life: 3000,
     });
     return;
   }
-  
+
   try {
     await invoiceStore.fetchGeneratedFiles(invoiceNumber);
-    
+
     // Check for errors after loading
     if (invoiceStore.generatedFilesError) {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: invoiceStore.generatedFilesError, 
-        life: 3000 
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: invoiceStore.generatedFilesError,
+        life: 3000,
       });
     }
   } catch (err) {
-    console.error('Error loading generated files:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to load invoice documents', 
-      life: 3000 
+    console.error("Error loading generated files:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: err.message || "Failed to load invoice documents",
+      life: 3000,
     });
   }
 }
 
 // Function to generate a template document
 async function generateTemplateDocument() {
-  if (!selectedCustomerInvoice.value || !selectedTemplate.value) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Please select both an invoice and a template to generate', 
-      life: 3000 
+  if (
+    !selectedCustomer.value ||
+    !selectedCustomerInvoice.value ||
+    !selectedTemplate.value
+  ) {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Please select a customer, invoice, and template to generate",
+      life: 3000,
     });
     return;
   }
-  
+
   // Validate invoice date override if enabled
   if (useInvoiceDateOverride.value) {
     validateCurrentOverrideDate();
     if (overrideDateError.value) {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Invalid Override Date', 
-        detail: overrideDateError.value, 
-        life: 4000 
+      toast.add({
+        severity: "error",
+        summary: "Invalid Override Date",
+        detail: overrideDateError.value,
+        life: 4000,
       });
       return;
     }
-    
+
     // Show confirmation dialog for override
-    showConfirmationDialog('generate');
+    showConfirmationDialog("generate");
     return;
   }
-  
+
   // If no override, proceed directly
   await executeGenerateTemplate();
 }
@@ -1092,75 +1163,81 @@ async function generateTemplateDocument() {
 // Function to download a generated file
 async function downloadFile(file) {
   if (!file || (!file.id && !file.originalData?.id)) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'File ID is missing', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "File ID is missing",
+      life: 3000,
     });
     return;
   }
-  
+
   // Get the file ID from either the main object or the original data
-  const fileId = file.id || file.originalData?.id || 'unknown';
-  
+  const fileId = file.id || file.originalData?.id || "unknown";
+
   // Determine file type based on various properties
-  let fileType = 'pdf'; // default
+  let fileType = "pdf"; // default
   if (file.fileType) {
     fileType = file.fileType;
   } else if (file.originalData?.type) {
     fileType = file.originalData.type;
   } else if (file.filename) {
     const filename = file.filename.toLowerCase();
-    if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
-      fileType = 'excel';
-    } else if (filename.endsWith('.pdf')) {
-      fileType = 'pdf';
-    } else if (filename.endsWith('.docx') || filename.endsWith('.doc')) {
-      fileType = 'word';
+    if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
+      fileType = "excel";
+    } else if (filename.endsWith(".pdf")) {
+      fileType = "pdf";
+    } else if (filename.endsWith(".docx") || filename.endsWith(".doc")) {
+      fileType = "word";
     }
   }
-  
+
   // Get the subtype/fileCategory if available (important for PDF downloads)
   let subtype = null;
   if (file.fileCategory) {
     subtype = file.fileCategory;
   } else if (file.originalData?.subtype) {
     subtype = file.originalData.subtype;
-  } else if (typeof fileId === 'string' && fileId.includes('_') && fileId.split('_').length > 2) {
+  } else if (
+    typeof fileId === "string" &&
+    fileId.includes("_") &&
+    fileId.split("_").length > 2
+  ) {
     // Try to extract subtype from composite ID (jobId_type_subtype)
-    const parts = fileId.split('_');
+    const parts = fileId.split("_");
     if (parts.length > 2) {
-      subtype = parts.slice(2).join('_');
+      subtype = parts.slice(2).join("_");
     }
   }
-  
-  console.log('Downloading file with:', { fileId, fileType, subtype, filename: file.filename });
-  
+
   try {
-    const success = await invoiceStore.downloadGeneratedFile(fileId, fileType, subtype);
+    const success = await invoiceStore.downloadGeneratedFile(
+      fileId,
+      fileType,
+      subtype,
+    );
     if (!success) {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to download file', 
-        life: 3000 
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to download file",
+        life: 3000,
       });
     } else {
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Success', 
-        detail: 'File downloaded successfully', 
-        life: 2000 
+      toast.add({
+        severity: "success",
+        summary: "Success",
+        detail: "File downloaded successfully",
+        life: 2000,
       });
     }
   } catch (err) {
-    console.error('Error downloading file:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to download file', 
-      life: 3000 
+    console.error("Error downloading file:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: err.message || "Failed to download file",
+      life: 3000,
     });
   }
 }
@@ -1171,37 +1248,37 @@ const downloadGeneratedFile = downloadFile;
 // Function to preview a file
 function previewFile(file) {
   if (!file) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Invalid file data', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Invalid file data",
+      life: 3000,
     });
     return;
   }
-  
+
   // Check if the file has an ID for preview
   if (!file.id && !file.originalData?.id) {
-    toast.add({ 
-      severity: 'warn', 
-      summary: 'Warning', 
-      detail: 'This file cannot be previewed', 
-      life: 3000 
+    toast.add({
+      severity: "warn",
+      summary: "Warning",
+      detail: "This file cannot be previewed",
+      life: 3000,
     });
     return;
   }
-  
+
   // Reset error states
   previewError.value = false;
-  previewErrorMessage.value = '';
-  
+  previewErrorMessage.value = "";
+
   // Generate the preview URL ahead of time
   previewUrl.value = InvoiceService.getFilePreviewUrl(
-    file.id, 
-    file.fileType || file.originalData?.type, 
-    file.fileCategory || file.originalData?.subtype
+    file.id,
+    file.fileType || file.originalData?.type,
+    file.fileCategory || file.originalData?.subtype,
   );
-  
+
   selectedFile.value = file;
   showFilePreview.value = true;
 }
@@ -1209,60 +1286,57 @@ function previewFile(file) {
 // Get file icon based on file type
 function getFileIcon(file) {
   if (!file) {
-    return 'pi pi-file'; // Default icon if file is missing
+    return "pi pi-file"; // Default icon if file is missing
   }
-  
+
   // First check if we already assigned an icon when processing the file
   if (file.icon) {
     return file.icon;
   }
-  
+
   // Then check the fileType property
   if (file.fileType) {
-    if (file.fileType === 'pdf') return 'pi pi-file-pdf';
-    if (file.fileType === 'excel') return 'pi pi-file-excel';
-    if (file.fileType === 'word') return 'pi pi-file-word';
+    if (file.fileType === "pdf") return "pi pi-file-pdf";
+    if (file.fileType === "excel") return "pi pi-file-excel";
+    if (file.fileType === "word") return "pi pi-file-word";
   }
-  
+
   // Then check filename
   if (file.filename) {
     const filename = file.filename.toLowerCase();
-    if (filename.endsWith('.pdf')) return 'pi pi-file-pdf';
-    if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) return 'pi pi-file-excel';
-    if (filename.endsWith('.docx') || filename.endsWith('.doc')) return 'pi pi-file-word';
+    if (filename.endsWith(".pdf")) return "pi pi-file-pdf";
+    if (filename.endsWith(".xlsx") || filename.endsWith(".xls"))
+      return "pi pi-file-excel";
+    if (filename.endsWith(".docx") || filename.endsWith(".doc"))
+      return "pi pi-file-word";
   }
-  
+
   // Finally check fullPath if available
   if (file.fullPath) {
     const path = file.fullPath.toLowerCase();
-    if (path.endsWith('.pdf')) return 'pi pi-file-pdf';
-    if (path.endsWith('.xlsx') || path.endsWith('.xls')) return 'pi pi-file-excel';
-    if (path.endsWith('.docx') || path.endsWith('.doc')) return 'pi pi-file-word';
+    if (path.endsWith(".pdf")) return "pi pi-file-pdf";
+    if (path.endsWith(".xlsx") || path.endsWith(".xls"))
+      return "pi pi-file-excel";
+    if (path.endsWith(".docx") || path.endsWith(".doc"))
+      return "pi pi-file-word";
   }
-  
-  return 'pi pi-file'; // Default icon
+
+  return "pi pi-file"; // Default icon
 }
 
 // Function to get a badge for template type
 function getTemplateTypeBadge(type) {
-  if (!type) return { severity: 'info', label: 'Unknown' };
-  
-  const typeMap = {
-    'nrc': { severity: 'success', label: 'NRC' },
-    'mrc': { severity: 'info', label: 'MRC' },
-    'invoice': { severity: 'primary', label: 'Invoice' },
-    'report': { severity: 'warning', label: 'Report' }
-  };
-  
-  return typeMap[type.toLowerCase()] || { severity: 'secondary', label: type };
-}
+  if (!type) return { severity: "info", label: "Unknown" };
 
-// Watch for changes in selectedCustomerInvoice to update the available templates
-watch(selectedCustomerInvoice, async (newInvoice) => {
-  if (newInvoice && selectedCustomer.value) {
-    await loadAvailableTemplates(selectedCustomer.value.id, newInvoice.number);
-  }
-});
+  const typeMap = {
+    nrc: { severity: "success", label: "NRC" },
+    mrc: { severity: "info", label: "MRC" },
+    invoice: { severity: "primary", label: "Invoice" },
+    report: { severity: "warning", label: "Report" },
+  };
+
+  return typeMap[type.toLowerCase()] || { severity: "secondary", label: type };
+}
 
 // Watch for changes in selectedCustomer to update the available templates
 watch(selectedCustomer, (newCustomer) => {
@@ -1278,15 +1352,15 @@ async function loadTemplates() {
   if (!selectedCustomer.value) {
     return;
   }
-  
+
   try {
     await invoiceStore.fetchAvailableTemplates(selectedCustomer.value.id);
   } catch (error) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load templates', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load templates",
+      life: 3000,
     });
   }
 }
@@ -1295,13 +1369,13 @@ async function loadTemplates() {
 async function onCustomerSelect(event) {
   selectedCustomer.value = event.value;
   selectedTemplate.value = null;
-  
+
   // Reset invoice selection
   selectedCustomerInvoice.value = null;
-  
+
   // Load customer's invoices
   await loadCustomerInvoices();
-  
+
   // Load templates for this customer
   await loadTemplates();
 }
@@ -1316,7 +1390,7 @@ function onIframeLoad(event) {
 function onIframeError(event) {
   previewError.value = true;
   previewLoaded.value = false;
-  previewErrorMessage.value = 'Failed to load preview';
+  previewErrorMessage.value = "Failed to load preview";
 }
 
 // Function to open invoice detail drawer
@@ -1326,9 +1400,9 @@ async function openInvoiceDrawer(invoice) {
     drawerSelectedInvoice.value = null;
     drawerProducts.value = [];
     drawerIsInteractive.value = false;
-    drawerSelectedGroupBy.value = { name: 'None', value: 'none' };
+    drawerSelectedGroupBy.value = { name: "None", value: "none" };
     drawerGroupedProducts.value = [];
-    
+
     // Load the full invoice details
     const fullInvoice = await invoiceStore.fetchInvoice(invoice.id);
     if (fullInvoice) {
@@ -1337,11 +1411,11 @@ async function openInvoiceDrawer(invoice) {
     }
   } catch (err) {
     console.error(`Failed to load invoice #${invoice.id}:`, err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load invoice details', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load invoice details",
+      life: 3000,
     });
   }
 }
@@ -1349,13 +1423,15 @@ async function openInvoiceDrawer(invoice) {
 // Function to handle drawer interactive mode toggle
 async function onDrawerInteractiveToggle() {
   if (drawerIsInteractive.value && drawerSelectedInvoice.value) {
-    await fetchDrawerEnrichedInvoiceData(drawerSelectedInvoice.value.number || drawerSelectedInvoice.value.id);
+    await fetchDrawerEnrichedInvoiceData(
+      drawerSelectedInvoice.value.number || drawerSelectedInvoice.value.id,
+    );
   } else {
     // Reset to basic products when interactive mode is turned off
     if (drawerSelectedInvoice.value) {
       drawerProducts.value = drawerSelectedInvoice.value.items || [];
     }
-    drawerSelectedGroupBy.value = { name: 'None', value: 'none' };
+    drawerSelectedGroupBy.value = { name: "None", value: "none" };
     drawerGroupedProducts.value = [];
   }
 }
@@ -1363,52 +1439,63 @@ async function onDrawerInteractiveToggle() {
 // Function to fetch enriched invoice data for drawer
 async function fetchDrawerEnrichedInvoiceData(documentNumber) {
   if (!documentNumber) return;
-  
+
   try {
     await invoiceStore.fetchEnrichedInvoiceLines(documentNumber);
-    
+
     const enrichedInvoice = invoiceStore.currentEnrichedInvoice;
-    if (enrichedInvoice && enrichedInvoice.enrichedItems && enrichedInvoice.enrichedItems.length > 0) {
-      drawerProducts.value = enrichedInvoice.enrichedItems.map(item => ({
+    if (
+      enrichedInvoice &&
+      enrichedInvoice.enrichedItems &&
+      enrichedInvoice.enrichedItems.length > 0
+    ) {
+      drawerProducts.value = enrichedInvoice.enrichedItems.map((item) => ({
         description: item.description,
         quantity: item.quantity.toString(),
         price: formatCurrency(item.unitPrice),
         total: formatCurrency(item.amountIncludingTax),
-        rawItem: item
+        rawItem: item,
       }));
-      
+
       applyDrawerGrouping();
     }
   } catch (err) {
-    console.error('Error fetching enriched invoice data for drawer:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load enriched invoice data', 
-      life: 3000 
+    console.error("Error fetching enriched invoice data for drawer:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load enriched invoice data",
+      life: 3000,
     });
   }
 }
 
 // Function to apply grouping to drawer products
 function applyDrawerGrouping() {
-  if (drawerSelectedGroupBy.value.value === 'none' || !drawerProducts.value || drawerProducts.value.length === 0) {
+  if (
+    drawerSelectedGroupBy.value.value === "none" ||
+    !drawerProducts.value ||
+    drawerProducts.value.length === 0
+  ) {
     drawerIsRegrouping.value = false;
     drawerGroupedProducts.value = [];
     return;
   }
-  
+
   drawerIsRegrouping.value = true;
-  
+
   setTimeout(() => {
-    const rawItems = drawerProducts.value.map(product => product.rawItem);
-    const { groups, groupNames } = groupInvoiceItems(rawItems, drawerSelectedGroupBy.value.value);
-    
-    const groupsWithType = groups.map(group => ({
+    const rawItems = drawerProducts.value.map((product) => product.rawItem);
+    const { groups, groupNames } = groupInvoiceItems(
+      rawItems,
+      drawerSelectedGroupBy.value.value,
+    );
+
+    const groupsWithType = groups.map((group) => ({
       ...group,
-      groupType: drawerSelectedGroupBy.value.name
+      groupType: drawerSelectedGroupBy.value.name,
     }));
-    
+
     drawerGroupedProducts.value = groupsWithType;
     drawerIsRegrouping.value = false;
   }, 300);
@@ -1440,96 +1527,103 @@ function toggleMergeMode() {
   // The isMergeMode.value has already been updated by the v-model when this function is called
   if (isMergeMode.value) {
     // Entering merge mode - switch to merge history tab
-    activeDocumentTab.value = 'merged';
+    activeDocumentTab.value = "merged";
     // Clear any existing selections
     selectedInvoicesForMerge.value = [];
     tableSelection.value = [];
     existingMergeGroups.value = [];
     showMergePreview.value = false;
-    
-    toast.add({ 
-      severity: 'success', 
-      summary: 'Merge Mode Enabled', 
-      detail: 'Select 2-50 invoices to merge into a single template', 
-      life: 4000 
+
+    toast.add({
+      severity: "success",
+      summary: "Merge Mode Enabled",
+      detail: "Select 2-50 invoices to merge into a single template",
+      life: 4000,
     });
   } else {
     // Exiting merge mode - switch back to appropriate tab
-    activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+    activeDocumentTab.value = selectedCustomerInvoice.value
+      ? "invoice"
+      : "customer";
     // Clear merge selections
     selectedInvoicesForMerge.value = [];
     tableSelection.value = [];
     existingMergeGroups.value = [];
     showMergePreview.value = false;
-    
-    toast.add({ 
-      severity: 'info', 
-      summary: 'Merge Mode Disabled', 
-      detail: 'Returned to single invoice selection', 
-      life: 3000 
+
+    toast.add({
+      severity: "info",
+      summary: "Merge Mode Disabled",
+      detail: "Returned to single invoice selection",
+      life: 3000,
     });
   }
 }
 
 function validateMergeSelection() {
   const errors = [];
-  
-  if (!selectedInvoicesForMerge.value || selectedInvoicesForMerge.value.length < 2) {
-    errors.push('Please select at least 2 invoices to merge');
+
+  if (
+    !selectedInvoicesForMerge.value ||
+    selectedInvoicesForMerge.value.length < 2
+  ) {
+    errors.push("Please select at least 2 invoices to merge");
   }
-  
+
   if (selectedInvoicesForMerge.value.length > 50) {
-    errors.push('Maximum 50 invoices can be merged at once');
+    errors.push("Maximum 50 invoices can be merged at once");
   }
-  
+
   if (!selectedTemplate.value) {
-    errors.push('Please select a template for the merge');
+    errors.push("Please select a template for the merge");
   }
-  
+
   // Check if all invoices belong to the same customer
   if (selectedInvoicesForMerge.value.length > 1) {
     const firstCustomer = selectedInvoicesForMerge.value[0].customerId;
-    const differentCustomer = selectedInvoicesForMerge.value.find(invoice => invoice.customerId !== firstCustomer);
+    const differentCustomer = selectedInvoicesForMerge.value.find(
+      (invoice) => invoice.customerId !== firstCustomer,
+    );
     if (differentCustomer) {
-      errors.push('All invoices must belong to the same customer');
+      errors.push("All invoices must belong to the same customer");
     }
   }
-  
+
   return errors;
 }
 
 async function mergeSelectedInvoices() {
   const validationErrors = validateMergeSelection();
   if (validationErrors.length > 0) {
-    validationErrors.forEach(error => {
+    validationErrors.forEach((error) => {
       toast.add({
-        severity: 'error',
-        summary: 'Validation Error',
+        severity: "error",
+        summary: "Validation Error",
         detail: error,
-        life: 4000
+        life: 4000,
       });
     });
     return;
   }
-  
+
   // Validate invoice date override if enabled
   if (useInvoiceDateOverride.value) {
     validateCurrentOverrideDate();
     if (overrideDateError.value) {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Invalid Override Date', 
-        detail: overrideDateError.value, 
-        life: 4000 
+      toast.add({
+        severity: "error",
+        summary: "Invalid Override Date",
+        detail: overrideDateError.value,
+        life: 4000,
       });
       return;
     }
-    
+
     // Show confirmation dialog for override
-    showConfirmationDialog('merge');
+    showConfirmationDialog("merge");
     return;
   }
-  
+
   // If no override, proceed directly with merge
   await executeMergeInvoices();
 }
@@ -1537,85 +1631,80 @@ async function mergeSelectedInvoices() {
 // Function to handle duplicate confirmation
 async function handleDuplicateConfirmation(overwrite) {
   showDuplicateConfirmation.value = false;
-  
+
   if (!overwrite) {
     // User chose to keep existing merge
-    toast.add({ 
-      severity: 'info', 
-      summary: 'Merge Cancelled', 
-      detail: 'Keeping existing merge. No new merge was created.', 
-      life: 3000 
+    toast.add({
+      severity: "info",
+      summary: "Merge Cancelled",
+      detail: "Keeping existing merge. No new merge was created.",
+      life: 3000,
     });
     duplicateDetails.value = null;
     pendingMergeRequest.value = null;
     return;
   }
-  
+
   // User chose to overwrite - retry with force_overwrite flag
   if (!pendingMergeRequest.value) {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'No pending merge request found', 
-      life: 3000 
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No pending merge request found",
+      life: 3000,
     });
     return;
   }
-  
+
   try {
     isMergingInvoices.value = true;
     mergeError.value = null;
-    
+
     // Add force_overwrite flag to the pending merge request
     const mergeRequestWithOverwrite = {
       ...pendingMergeRequest.value,
-      force_overwrite: true
+      force_overwrite: true,
     };
-    
-    // Debug: Log the merge request to see what's being sent
-    console.log('Sending merge request with force_overwrite:', mergeRequestWithOverwrite);
-    
+
     const result = await invoiceStore.mergeInvoices(mergeRequestWithOverwrite);
-    
+
     if (result && result.success) {
       mergeResult.value = result;
-      
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Merge Regenerated', 
-        detail: `Regenerated merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`, 
-        life: 5000 
+
+      toast.add({
+        severity: "success",
+        summary: "Merge Regenerated",
+        detail: `Regenerated merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`,
+        life: 5000,
       });
-      
+
       // Reset selections
       selectedInvoicesForMerge.value = [];
-      
+
       // Refresh the invoice list
       await loadCustomerInvoices();
-      
+
       // Switch to invoice documents tab
-      activeDocumentTab.value = 'invoice';
-      
+      activeDocumentTab.value = "invoice";
+
       // Load the generated files for the merged invoice
       if (result.data && result.data.merged_invoice_number) {
         try {
           await loadGeneratedFiles(result.data.merged_invoice_number);
         } catch (fileError) {
-          console.warn('Could not load generated files:', fileError);
+          console.warn("Could not load generated files:", fileError);
         }
       }
-      
     } else {
-      throw new Error(result?.message || 'Merge regeneration failed');
+      throw new Error(result?.message || "Merge regeneration failed");
     }
-    
   } catch (err) {
-    console.error('Error regenerating merge:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Regeneration Failed', 
-      detail: err.message || 'Failed to regenerate merged invoice', 
-      life: 5000 
+    console.error("Error regenerating merge:", err);
+    toast.add({
+      severity: "error",
+      summary: "Regeneration Failed",
+      detail: err.message || "Failed to regenerate merged invoice",
+      life: 5000,
     });
   } finally {
     isMergingInvoices.value = false;
@@ -1626,81 +1715,77 @@ async function handleDuplicateConfirmation(overwrite) {
 
 async function loadMergeHistory(showModal = false) {
   if (!selectedCustomer.value) {
-    toast.add({ 
-      severity: 'warn', 
-      summary: 'No Customer Selected', 
-      detail: 'Please select a customer to view merge history', 
-      life: 3000 
+    toast.add({
+      severity: "warn",
+      summary: "No Customer Selected",
+      detail: "Please select a customer to view merge history",
+      life: 3000,
     });
     return;
   }
-  
+
   try {
     isLoadingMergeHistory.value = true;
-    
-    console.log('🔍 Loading merge history for customer:', selectedCustomer.value.number);
-    
-    const history = await invoiceStore.getCustomerMergeHistory(selectedCustomer.value.number);
-    
-    console.log('🔍 Raw merge history response:', history);
-    console.log('🔍 Merge history data:', history.data);
-    
+
+    const history = await invoiceStore.getCustomerMergeHistory(
+      selectedCustomer.value.number,
+    );
+
     // Check if the response indicates an error (like backend unavailable)
     if (!history.success && history.error) {
       mergeHistoryData.value = [];
-      
+
       // Show appropriate toast based on error type
-      if (history.error.type === 'backend_unavailable') {
-        toast.add({ 
-          severity: 'warn', 
-          summary: 'Backend Issue', 
-          detail: history.error.message, 
-          life: 5000 
+      if (history.error.type === "backend_unavailable") {
+        toast.add({
+          severity: "warn",
+          summary: "Backend Issue",
+          detail: history.error.message,
+          life: 5000,
         });
       } else {
-        toast.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: history.error.message || 'Failed to load merge history', 
-          life: 3000 
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: history.error.message || "Failed to load merge history",
+          life: 3000,
         });
       }
       return;
     }
-    
+
     mergeHistoryData.value = history.data || [];
-    
-    console.log('🔍 Final mergeHistoryData:', mergeHistoryData.value);
-    
+
     // Only show the modal if explicitly requested
     if (showModal) {
       showMergeHistory.value = true;
     }
   } catch (err) {
-    console.error('❌ Error loading merge history:', err);
-    console.error('❌ Error details:', {
+    console.error("❌ Error loading merge history:", err);
+    console.error("❌ Error details:", {
       message: err.message,
       response: err.response?.data,
-      status: err.response?.status
+      status: err.response?.status,
     });
-    
+
     // Clear any existing data on error
     mergeHistoryData.value = [];
-    
+
     // Show different messages based on error type
     if (err.response?.status === 500) {
-      toast.add({ 
-        severity: 'warn', 
-        summary: 'Backend Issue', 
-        detail: 'Merge history endpoint is not available. This feature may not be implemented yet.', 
-        life: 5000 
+      toast.add({
+        severity: "warn",
+        summary: "Backend Issue",
+        detail:
+          "Merge history endpoint is not available. This feature may not be implemented yet.",
+        life: 5000,
       });
     } else {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'Failed to load merge history', 
-        life: 3000 
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load merge history",
+        life: 3000,
       });
     }
   } finally {
@@ -1710,98 +1795,103 @@ async function loadMergeHistory(showModal = false) {
 
 function getMergeStatusSeverity(status) {
   switch (status) {
-    case 'completed': return 'success';
-    case 'processing': return 'info';
-    case 'failed': return 'danger';
-    default: return 'secondary';
+    case "completed":
+      return "success";
+    case "processing":
+      return "info";
+    case "failed":
+      return "danger";
+    default:
+      return "secondary";
   }
 }
 
 // Computed properties for merge functionality
 const canMerge = computed(() => {
-  return isMergeMode.value && 
-         selectedInvoicesForMerge.value.length >= 2 && 
-         selectedInvoicesForMerge.value.length <= 50 && 
-         selectedTemplate.value &&
-         !isMergingInvoices.value;
+  return (
+    isMergeMode.value &&
+    selectedInvoicesForMerge.value.length >= 2 &&
+    selectedInvoicesForMerge.value.length <= 50 &&
+    selectedTemplate.value &&
+    !isMergingInvoices.value
+  );
 });
 
 const mergeButtonLabel = computed(() => {
   if (isMergingInvoices.value) {
-    return 'Merging...';
+    return "Merging...";
   }
   if (selectedInvoicesForMerge.value.length === 0) {
-    return 'Select Invoices to Merge';
+    return "Select Invoices to Merge";
   }
   if (selectedInvoicesForMerge.value.length === 1) {
-    return 'Select More Invoices';
+    return "Select More Invoices";
   }
   return `Merge ${selectedInvoicesForMerge.value.length} Invoices`;
 });
 
 const mergeSelectionSummary = computed(() => {
   if (!isMergeMode.value || selectedInvoicesForMerge.value.length === 0) {
-    return '';
+    return "";
   }
-  
+
   const count = selectedInvoicesForMerge.value.length;
-  const totalAmount = selectedInvoicesForMerge.value.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
-  
-  return `${count} invoice${count !== 1 ? 's' : ''} selected • Total: ${formatCurrency(totalAmount)}`;
+  const totalAmount = selectedInvoicesForMerge.value.reduce(
+    (sum, invoice) => sum + (invoice.total || 0),
+    0,
+  );
+
+  return `${count} invoice${count !== 1 ? "s" : ""} selected • Total: ${formatCurrency(totalAmount)}`;
 });
 
 // Function to view merge details
 async function viewMergeDetails(mergeData) {
-  console.log('📊 Viewing merge details:', mergeData);
-  
   try {
     isLoadingMergeDetails.value = true;
     mergeDetailsError.value = null;
     showMergeDetailsModal.value = true;
-    
+
     // If we already have detailed data, use it
     if (mergeData.documents && mergeData.original_invoices) {
       selectedMergeDetails.value = mergeData;
       return;
     }
-    
+
     // Extract the group identifier from the merge data
     // The group_identifier is the merged_invoice_number without the "+" suffix
     let groupIdentifier = mergeData.group_identifier;
-    
+
     if (!groupIdentifier && mergeData.merged_invoice_number) {
       // Remove the "+" suffix if present to get the group identifier
-      groupIdentifier = mergeData.merged_invoice_number.replace(/\+$/, '');
+      groupIdentifier = mergeData.merged_invoice_number.replace(/\+$/, "");
     }
-    
+
     if (!groupIdentifier) {
-      throw new Error('No group identifier found in merge data');
+      throw new Error("No group identifier found in merge data");
     }
-    
-    console.log('📊 Using group identifier:', groupIdentifier);
-    
+
     // Otherwise, fetch detailed merge group data from backend
     const response = await invoiceStore.getMergeGroupDetails(groupIdentifier);
-    
+
     if (response && response.data) {
       selectedMergeDetails.value = response.data;
     } else {
       // Fallback to the provided data if backend call fails
       selectedMergeDetails.value = mergeData;
     }
-    
   } catch (err) {
-    console.error('Error loading merge details:', err);
-    mergeDetailsError.value = err.message || 'Failed to load merge details';
-    
+    console.error("Error loading merge details:", err);
+    mergeDetailsError.value = err.message || "Failed to load merge details";
+
     // Still show the modal with available data
     selectedMergeDetails.value = mergeData;
-    
-    toast.add({ 
-      severity: 'warn', 
-      summary: 'Partial Data', 
-      detail: 'Some merge details could not be loaded, showing available information', 
-      life: 4000 
+
+    toast.add({
+      severity: "warn",
+      summary: "Partial Data",
+      detail:
+        "Some merge details could not be loaded, showing available information",
+      life: 4000,
     });
   } finally {
     isLoadingMergeDetails.value = false;
@@ -1813,26 +1903,26 @@ async function downloadMergedFiles(mergeData) {
   try {
     // Load the generated files for the merged invoice
     await loadGeneratedFiles(mergeData.merged_invoice);
-    
+
     // Switch to invoice documents tab
-    activeDocumentTab.value = 'invoice';
-    
+    activeDocumentTab.value = "invoice";
+
     // Close the merge history dialog
     showMergeHistory.value = false;
-    
-    toast.add({ 
-      severity: 'success', 
-      summary: 'Files Loaded', 
-      detail: `Loaded files for merged invoice ${mergeData.merged_invoice}`, 
-      life: 3000 
+
+    toast.add({
+      severity: "success",
+      summary: "Files Loaded",
+      detail: `Loaded files for merged invoice ${mergeData.merged_invoice}`,
+      life: 3000,
     });
   } catch (err) {
-    console.error('Error loading merged files:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: 'Failed to load merged invoice files', 
-      life: 3000 
+    console.error("Error loading merged files:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load merged invoice files",
+      life: 3000,
     });
   }
 }
@@ -1851,28 +1941,28 @@ async function onDownloadAllMergeFiles(mergeDetails) {
       for (const document of mergeDetails.documents) {
         await downloadGeneratedFile(document);
       }
-      
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Download Started', 
-        detail: `Downloading ${mergeDetails.documents.length} files from merge ${mergeDetails.merged_invoice_number}`, 
-        life: 3000 
+
+      toast.add({
+        severity: "success",
+        summary: "Download Started",
+        detail: `Downloading ${mergeDetails.documents.length} files from merge ${mergeDetails.merged_invoice_number}`,
+        life: 3000,
       });
     } else {
-      toast.add({ 
-        severity: 'warn', 
-        summary: 'No Files', 
-        detail: 'No documents found for this merge', 
-        life: 3000 
+      toast.add({
+        severity: "warn",
+        summary: "No Files",
+        detail: "No documents found for this merge",
+        life: 3000,
       });
     }
   } catch (err) {
-    console.error('Error downloading merge files:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Download Failed', 
-      detail: 'Failed to download merge files', 
-      life: 3000 
+    console.error("Error downloading merge files:", err);
+    toast.add({
+      severity: "error",
+      summary: "Download Failed",
+      detail: "Failed to download merge files",
+      life: 3000,
     });
   }
 }
@@ -1880,26 +1970,12 @@ async function onDownloadAllMergeFiles(mergeDetails) {
 function onReMergeFromDetails(mergeDetails) {
   // Close the details modal
   showMergeDetailsModal.value = false;
-  
+
   // Call the existing re-merge function
   reMergeGroup(mergeDetails);
 }
 
 function onPreviewMergeDocument(document) {
-  console.log('🔍 Preview merge document:', document);
-  console.log('🔍 Document structure:', {
-    id: document.id,
-    job_id: document.job_id,
-    document_type: document.document_type,
-    document_subtype: document.document_subtype,
-    file_name: document.file_name,
-    filename: document.filename,
-    fileType: document.fileType,
-    file_type: document.file_type,
-    type: document.type,
-    preview_url: document.preview_url
-  });
-  
   // Transform merge document to match expected structure
   const transformedDocument = {
     // Use job_id as the main ID for preview (like regular documents)
@@ -1912,19 +1988,14 @@ function onPreviewMergeDocument(document) {
     originalData: {
       ...document,
       type: document.document_type,
-      subtype: document.document_subtype
-    }
+      subtype: document.document_subtype,
+    },
   };
-  
-  console.log('🔍 Transformed document for preview:', transformedDocument);
-  
   // Use the existing preview function with transformed document
   previewFile(transformedDocument);
 }
 
 function onDownloadMergeDocument(document) {
-  console.log('🔍 Download merge document:', document);
-  
   // Transform merge document to match expected structure
   const transformedDocument = {
     // Use job_id as the main ID for download (like regular documents)
@@ -1937,33 +2008,32 @@ function onDownloadMergeDocument(document) {
     originalData: {
       ...document,
       type: document.document_type,
-      subtype: document.document_subtype
-    }
+      subtype: document.document_subtype,
+    },
   };
-  
-  console.log('🔍 Transformed document for download:', transformedDocument);
-  
   // Use the existing download function with transformed document
   downloadGeneratedFile(transformedDocument);
 }
 
 function onDownloadAllMergeDocuments(documents) {
-  documents.forEach(document => {
+  documents.forEach((document) => {
     downloadGeneratedFile(document);
   });
-  
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Download Started', 
-    detail: `Downloading ${documents.length} documents`, 
-    life: 3000 
+
+  toast.add({
+    severity: "success",
+    summary: "Download Started",
+    detail: `Downloading ${documents.length} documents`,
+    life: 3000,
   });
 }
 
 // Computed property for DataTable selection model
 const tableSelection = computed({
   get() {
-    return isMergeMode.value ? selectedInvoicesForMerge.value : selectedCustomerInvoice.value;
+    return isMergeMode.value
+      ? selectedInvoicesForMerge.value
+      : selectedCustomerInvoice.value;
   },
   set(value) {
     if (isMergeMode.value) {
@@ -1971,183 +2041,191 @@ const tableSelection = computed({
     } else {
       selectedCustomerInvoice.value = value;
     }
-  }
+  },
 });
 
 function getRemainingAmountClass(remainingAmount) {
   if (remainingAmount > 0) {
-    return 'font-semibold text-red-600 dark:text-red-400';
+    return "font-semibold text-red-600 dark:text-red-400";
   } else if (remainingAmount < 0) {
-    return 'font-semibold text-green-600 dark:text-green-400';
+    return "font-semibold text-green-600 dark:text-green-400";
   } else {
-    return 'font-medium text-green-600 dark:text-green-400';
+    return "font-medium text-green-600 dark:text-green-400";
   }
 }
 
 // Enhanced Document Management Section
 const selectedDocuments = ref([]);
-const documentSearchTerm = ref('');
-const documentTypeFilter = ref('');
+const documentSearchTerm = ref("");
+const documentTypeFilter = ref("");
 const documentSortOptions = ref([
-  { label: 'Date Created', value: 'created_at' },
-  { label: 'Invoice Number', value: 'invoice_number' },
-  { label: 'Template Name', value: 'template_name' },
-  { label: 'Generated By', value: 'generated_by' },
-  { label: 'File Type', value: 'file_type' }
+  { label: "Date Created", value: "created_at" },
+  { label: "Invoice Number", value: "invoice_number" },
+  { label: "Template Name", value: "template_name" },
+  { label: "Generated By", value: "generated_by" },
+  { label: "File Type", value: "file_type" },
 ]);
 const documentTypeOptions = ref([
-  { label: 'All Types', value: '' },
-  { label: 'PDF', value: 'pdf' },
-  { label: 'Excel', value: 'excel' },
-  { label: 'Word', value: 'word' }
+  { label: "All Types", value: "" },
+  { label: "PDF", value: "pdf" },
+  { label: "Excel", value: "excel" },
+  { label: "Word", value: "word" },
 ]);
-const documentSortBy = ref('created_at');
+const documentSortBy = ref("created_at");
 
 // Document Content Views
 const filteredCustomerDocuments = computed(() => {
   let documents = customerDocuments.value || [];
-  
+
   if (documentSearchTerm.value) {
     const searchTerm = documentSearchTerm.value.toLowerCase();
-    documents = documents.filter(file => 
-      (file.filename || '').toLowerCase().includes(searchTerm) ||
-      (file.template_name || '').toLowerCase().includes(searchTerm) ||
-      (file.generated_by || '').toLowerCase().includes(searchTerm) ||
-      (file.invoice_number || '').toLowerCase().includes(searchTerm)
+    documents = documents.filter(
+      (file) =>
+        (file.filename || "").toLowerCase().includes(searchTerm) ||
+        (file.template_name || "").toLowerCase().includes(searchTerm) ||
+        (file.generated_by || "").toLowerCase().includes(searchTerm) ||
+        (file.invoice_number || "").toLowerCase().includes(searchTerm),
     );
   }
-  
+
   if (documentTypeFilter.value) {
     const typeFilter = documentTypeFilter.value.toLowerCase();
-    documents = documents.filter(file => 
-      (file.fileType || '').toLowerCase().includes(typeFilter) ||
-      (file.filename || '').toLowerCase().includes(typeFilter)
+    documents = documents.filter(
+      (file) =>
+        (file.fileType || "").toLowerCase().includes(typeFilter) ||
+        (file.filename || "").toLowerCase().includes(typeFilter),
     );
   }
-  
+
   // Sort documents
   if (documentSortBy.value) {
     documents.sort((a, b) => {
-      const aVal = a[documentSortBy.value] || '';
-      const bVal = b[documentSortBy.value] || '';
+      const aVal = a[documentSortBy.value] || "";
+      const bVal = b[documentSortBy.value] || "";
       return aVal.localeCompare(bVal);
     });
   }
-  
+
   return documents;
 });
 
 const filteredInvoiceDocuments = computed(() => {
   let documents = generatedFiles.value || [];
-  
+
   if (documentSearchTerm.value) {
     const searchTerm = documentSearchTerm.value.toLowerCase();
-    documents = documents.filter(file => 
-      (file.filename || '').toLowerCase().includes(searchTerm) ||
-      (file.template_name || '').toLowerCase().includes(searchTerm) ||
-      (file.generated_by || '').toLowerCase().includes(searchTerm) ||
-      (file.fileCategory || '').toLowerCase().includes(searchTerm)
+    documents = documents.filter(
+      (file) =>
+        (file.filename || "").toLowerCase().includes(searchTerm) ||
+        (file.template_name || "").toLowerCase().includes(searchTerm) ||
+        (file.generated_by || "").toLowerCase().includes(searchTerm) ||
+        (file.fileCategory || "").toLowerCase().includes(searchTerm),
     );
   }
-  
+
   if (documentTypeFilter.value) {
     const typeFilter = documentTypeFilter.value.toLowerCase();
-    documents = documents.filter(file => 
-      (file.fileType || '').toLowerCase().includes(typeFilter) ||
-      (file.filename || '').toLowerCase().includes(typeFilter)
+    documents = documents.filter(
+      (file) =>
+        (file.fileType || "").toLowerCase().includes(typeFilter) ||
+        (file.filename || "").toLowerCase().includes(typeFilter),
     );
   }
-  
+
   // Sort documents
   if (documentSortBy.value) {
     documents.sort((a, b) => {
-      const aVal = a[documentSortBy.value] || '';
-      const bVal = b[documentSortBy.value] || '';
+      const aVal = a[documentSortBy.value] || "";
+      const bVal = b[documentSortBy.value] || "";
       return aVal.localeCompare(bVal);
     });
   }
-  
+
   return documents;
 });
 
 const filteredMergedDocuments = computed(() => {
   let documents = mergeHistoryData.value || [];
-  
+
   if (documentSearchTerm.value) {
     const searchTerm = documentSearchTerm.value.toLowerCase();
-    documents = documents.filter(document => 
-      (document.merged_invoice || '').toLowerCase().includes(searchTerm) ||
-      (document.template_used || '').toLowerCase().includes(searchTerm) ||
-      (document.original_count || '').toString().includes(searchTerm) ||
-      (document.total_amount || '').toString().includes(searchTerm)
+    documents = documents.filter(
+      (document) =>
+        (document.merged_invoice || "").toLowerCase().includes(searchTerm) ||
+        (document.template_used || "").toLowerCase().includes(searchTerm) ||
+        (document.original_count || "").toString().includes(searchTerm) ||
+        (document.total_amount || "").toString().includes(searchTerm),
     );
   }
-  
+
   if (documentTypeFilter.value) {
     const typeFilter = documentTypeFilter.value.toLowerCase();
-    documents = documents.filter(document => 
-      (document.template_used || '').toLowerCase().includes(typeFilter)
+    documents = documents.filter((document) =>
+      (document.template_used || "").toLowerCase().includes(typeFilter),
     );
   }
-  
+
   // Sort documents
-  if (documentSortBy.value === 'merge_date') {
+  if (documentSortBy.value === "merge_date") {
     documents.sort((a, b) => new Date(b.merge_date) - new Date(a.merge_date));
   } else if (documentSortBy.value) {
     documents.sort((a, b) => {
-      const aVal = a[documentSortBy.value] || '';
-      const bVal = b[documentSortBy.value] || '';
+      const aVal = a[documentSortBy.value] || "";
+      const bVal = b[documentSortBy.value] || "";
       return aVal.localeCompare(bVal);
     });
   }
-  
+
   return documents;
 });
 
 // Document Actions
 function downloadAllCustomerDocuments() {
-  filteredCustomerDocuments.value.forEach(file => {
+  filteredCustomerDocuments.value.forEach((file) => {
     downloadFile(file);
   });
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Download Started', 
-    detail: `Downloading ${filteredCustomerDocuments.value.length} customer documents`, 
-    life: 3000 
+  toast.add({
+    severity: "success",
+    summary: "Download Started",
+    detail: `Downloading ${filteredCustomerDocuments.value.length} customer documents`,
+    life: 3000,
   });
 }
 
 function downloadAllInvoiceDocuments() {
-  filteredInvoiceDocuments.value.forEach(file => {
+  filteredInvoiceDocuments.value.forEach((file) => {
     downloadFile(file);
   });
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Download Started', 
-    detail: `Downloading ${filteredInvoiceDocuments.value.length} invoice documents`, 
-    life: 3000 
+  toast.add({
+    severity: "success",
+    summary: "Download Started",
+    detail: `Downloading ${filteredInvoiceDocuments.value.length} invoice documents`,
+    life: 3000,
   });
 }
 
 function downloadSelectedFiles() {
   const filesToDownload = [];
-  
+
   // Find selected files from both customer and invoice documents
-  [...filteredCustomerDocuments.value, ...filteredInvoiceDocuments.value].forEach(file => {
+  [
+    ...filteredCustomerDocuments.value,
+    ...filteredInvoiceDocuments.value,
+  ].forEach((file) => {
     if (selectedDocuments.value.includes(file.id)) {
       filesToDownload.push(file);
     }
   });
-  
-  filesToDownload.forEach(file => {
+
+  filesToDownload.forEach((file) => {
     downloadFile(file);
   });
-  
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Download Started', 
-    detail: `Downloading ${filesToDownload.length} selected files`, 
-    life: 3000 
+
+  toast.add({
+    severity: "success",
+    summary: "Download Started",
+    detail: `Downloading ${filesToDownload.length} selected files`,
+    life: 3000,
   });
 }
 
@@ -2162,66 +2240,82 @@ function refreshDocuments() {
   if (selectedCustomerInvoice.value && selectedCustomerInvoice.value.number) {
     loadGeneratedFiles(selectedCustomerInvoice.value.number);
   }
-  if (activeDocumentTab.value === 'merged') {
+  if (activeDocumentTab.value === "merged") {
     loadMergeHistory();
   }
 }
 
 function shareFile(file) {
   // Implement sharing functionality - could open a dialog with sharing options
-  toast.add({ 
-    severity: 'info', 
-    summary: 'Share Feature', 
-    detail: 'File sharing functionality coming soon', 
-    life: 3000 
+  toast.add({
+    severity: "info",
+    summary: "Share Feature",
+    detail: "File sharing functionality coming soon",
+    life: 3000,
   });
 }
 
 function getFileTypeHeaderClass(file) {
-  const fileType = file.fileType || file.originalData?.type || '';
-  if (fileType === 'excel' || file.filename?.toLowerCase().includes('.xlsx') || file.filename?.toLowerCase().includes('.xls')) {
-    return 'bg-gradient-to-br from-green-500 to-green-600';
+  const fileType = file.fileType || file.originalData?.type || "";
+  if (
+    fileType === "excel" ||
+    file.filename?.toLowerCase().includes(".xlsx") ||
+    file.filename?.toLowerCase().includes(".xls")
+  ) {
+    return "bg-gradient-to-br from-green-500 to-green-600";
   }
-  if (fileType === 'pdf' || file.filename?.toLowerCase().includes('.pdf')) {
-    return 'bg-gradient-to-br from-red-500 to-red-600';
+  if (fileType === "pdf" || file.filename?.toLowerCase().includes(".pdf")) {
+    return "bg-gradient-to-br from-red-500 to-red-600";
   }
-  if (fileType === 'word' || file.filename?.toLowerCase().includes('.docx') || file.filename?.toLowerCase().includes('.doc')) {
-    return 'bg-gradient-to-br from-blue-500 to-blue-600';
+  if (
+    fileType === "word" ||
+    file.filename?.toLowerCase().includes(".docx") ||
+    file.filename?.toLowerCase().includes(".doc")
+  ) {
+    return "bg-gradient-to-br from-blue-500 to-blue-600";
   }
-  return 'bg-gradient-to-br from-gray-500 to-gray-600';
+  return "bg-gradient-to-br from-gray-500 to-gray-600";
 }
 
 function getFileTypeLabel(file) {
-  const fileType = file.fileType || file.originalData?.type || '';
-  if (fileType === 'excel' || file.filename?.toLowerCase().includes('.xlsx') || file.filename?.toLowerCase().includes('.xls')) {
-    return 'Excel';
+  const fileType = file.fileType || file.originalData?.type || "";
+  if (
+    fileType === "excel" ||
+    file.filename?.toLowerCase().includes(".xlsx") ||
+    file.filename?.toLowerCase().includes(".xls")
+  ) {
+    return "Excel";
   }
-  if (fileType === 'pdf' || file.filename?.toLowerCase().includes('.pdf')) {
-    return 'PDF';
+  if (fileType === "pdf" || file.filename?.toLowerCase().includes(".pdf")) {
+    return "PDF";
   }
-  if (fileType === 'word' || file.filename?.toLowerCase().includes('.docx') || file.filename?.toLowerCase().includes('.doc')) {
-    return 'Word';
+  if (
+    fileType === "word" ||
+    file.filename?.toLowerCase().includes(".docx") ||
+    file.filename?.toLowerCase().includes(".doc")
+  ) {
+    return "Word";
   }
-  return 'Document';
+  return "Document";
 }
 
 function formatFileDate(date) {
-  if (!date) return 'No date';
+  if (!date) return "No date";
   try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch (error) {
-    return 'Invalid date';
+    return "Invalid date";
   }
 }
 
 function formatTimeAgo(date) {
-  if (!date) return '';
+  if (!date) return "";
   try {
     const now = new Date();
     const diff = Math.abs(now - new Date(date));
@@ -2229,97 +2323,102 @@ function formatTimeAgo(date) {
     const diffHours = Math.floor(diff / (1000 * 60 * 60));
     const diffMinutes = Math.floor(diff / (1000 * 60));
 
-    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-    return 'just now';
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    if (diffHours > 0)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffMinutes > 0)
+      return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
+    return "just now";
   } catch (error) {
-    return '';
+    return "";
   }
 }
 
 function hasAnyDocuments() {
-  return (filteredCustomerDocuments.value && filteredCustomerDocuments.value.length > 0) ||
-         (filteredInvoiceDocuments.value && filteredInvoiceDocuments.value.length > 0) ||
-         (filteredMergedDocuments.value && filteredMergedDocuments.value.length > 0);
+  return (
+    (filteredCustomerDocuments.value &&
+      filteredCustomerDocuments.value.length > 0) ||
+    (filteredInvoiceDocuments.value &&
+      filteredInvoiceDocuments.value.length > 0) ||
+    (filteredMergedDocuments.value && filteredMergedDocuments.value.length > 0)
+  );
 }
 
 function switchDocumentTab(tab) {
   activeDocumentTab.value = tab;
-  
+
   // Load merge history when switching to merged tab
-  if (tab === 'merged' && selectedCustomer.value) {
+  if (tab === "merged" && selectedCustomer.value) {
     loadMergeHistory();
   }
-  
+
   // Clear search and filters when switching tabs
-  documentSearchTerm.value = '';
-  documentTypeFilter.value = '';
+  documentSearchTerm.value = "";
+  documentTypeFilter.value = "";
   selectedDocuments.value = [];
 }
 
 function viewSourceInvoices(mergeData) {
   // Show a dialog or expand details to show the original invoices that were merged
-  toast.add({ 
-    severity: 'info', 
-    summary: 'Source Invoices', 
-    detail: `This merged invoice was created from ${mergeData.original_count} original invoices`, 
-    life: 4000 
+  toast.add({
+    severity: "info",
+    summary: "Source Invoices",
+    detail: `This merged invoice was created from ${mergeData.original_count} original invoices`,
+    life: 4000,
   });
-  
+
   // You could implement a dialog here to show the list of original invoice numbers
-  console.log('Viewing source invoices for merge:', mergeData);
 }
 
 // Invoice Date Override Functions
 function validateOverrideDate(date) {
   if (!date) {
-    return 'Override date is required when enabled';
+    return "Override date is required when enabled";
   }
-  
+
   const selectedDate = new Date(date);
-  
+
   // Check if date is valid
   if (isNaN(selectedDate.getTime())) {
-    return 'Invalid date format. Please use YYYY-MM-DD format';
+    return "Invalid date format. Please use YYYY-MM-DD format";
   }
-  
+
   // Check date range
-  const minDate = new Date('2020-01-01');
+  const minDate = new Date("2020-01-01");
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 1);
-  
+
   if (selectedDate < minDate) {
-    return 'Override date must be after 2020-01-01';
+    return "Override date must be after 2020-01-01";
   }
-  
+
   if (selectedDate > maxDate) {
     return `Override date must be before ${maxDate.getFullYear()}-12-31`;
   }
-  
-  return '';
+
+  return "";
 }
 
 function formatDateForAPI(date) {
   if (!date) return null;
-  
+
   // If it's already a string in YYYY-MM-DD format, return it
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return date;
   }
-  
+
   // If it's a Date object, format it
   const dateObj = new Date(date);
   if (isNaN(dateObj.getTime())) return null;
-  
-  return dateObj.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  return dateObj.toISOString().split("T")[0]; // YYYY-MM-DD format
 }
 
 function onOverrideToggle() {
   if (!useInvoiceDateOverride.value) {
     // Clear override data when disabled
     invoiceDateOverride.value = null;
-    overrideDateError.value = '';
+    overrideDateError.value = "";
   } else {
     // Set default to current date when enabled
     invoiceDateOverride.value = new Date();
@@ -2336,41 +2435,53 @@ function validateCurrentOverrideDate() {
   if (useInvoiceDateOverride.value) {
     overrideDateError.value = validateOverrideDate(invoiceDateOverride.value);
   } else {
-    overrideDateError.value = '';
+    overrideDateError.value = "";
   }
 }
 
 function buildRequestOptions() {
   const options = {};
-  
+
   if (useInvoiceDateOverride.value && invoiceDateOverride.value) {
     const formattedDate = formatDateForAPI(invoiceDateOverride.value);
     if (formattedDate) {
       options.invoice_date_override = formattedDate;
     }
   }
-  
+
   return options;
 }
 
 function formatOverrideDateForDisplay() {
-  if (!invoiceDateOverride.value) return '';
-  
+  if (!invoiceDateOverride.value) return "";
+
   const date = new Date(invoiceDateOverride.value);
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
 function getOverrideDatePrefix() {
-  if (!invoiceDateOverride.value) return '';
-  
+  if (!invoiceDateOverride.value) return "";
+
   const date = new Date(invoiceDateOverride.value);
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
   return `${months[date.getMonth()]}_${date.getFullYear()}`;
 }
 
@@ -2386,13 +2497,13 @@ function cancelOverrideConfirmation() {
 
 async function confirmOverrideAndProceed() {
   showOverrideConfirmation.value = false;
-  
-  if (pendingOverrideAction.value === 'generate') {
+
+  if (pendingOverrideAction.value === "generate") {
     await executeGenerateTemplate();
-  } else if (pendingOverrideAction.value === 'merge') {
+  } else if (pendingOverrideAction.value === "merge") {
     await executeMergeInvoices();
   }
-  
+
   pendingOverrideAction.value = null;
 }
 
@@ -2400,50 +2511,45 @@ async function executeGenerateTemplate() {
   try {
     // Build request options
     const options = buildRequestOptions();
-    
-    // Debug logging
-    console.log('executeGenerateTemplate - Override settings:', {
-      useInvoiceDateOverride: useInvoiceDateOverride.value,
-      invoiceDateOverride: invoiceDateOverride.value,
-      options: options
-    });
-    
+
     const result = await invoiceStore.generateTemplate(
-      selectedCustomerInvoice.value.number, 
+      selectedCustomerInvoice.value.number,
       selectedTemplate.value.id,
-      options
+      selectedCustomer.value.id,
+      options,
     );
-    
+
     if (result) {
-      toast.add({ 
-        severity: 'success', 
-        summary: 'Template Generated', 
-        detail: useInvoiceDateOverride.value 
+      toast.add({
+        severity: "success",
+        summary: "Template Generated",
+        detail: useInvoiceDateOverride.value
           ? `Template generated with override date: ${formatOverrideDateForDisplay()}`
-          : 'Template document has been generated successfully', 
-        life: 4000 
+          : "Template document has been generated successfully",
+        life: 4000,
       });
-      
+
       // Refresh the file list
       await loadGeneratedFiles(selectedCustomerInvoice.value.number);
-      
+
       // Switch to the invoice documents tab
-      activeDocumentTab.value = 'invoice';
+      activeDocumentTab.value = "invoice";
     } else {
-      toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: generateTemplateError.value || 'Failed to generate template document', 
-        life: 3000 
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail:
+          generateTemplateError.value || "Failed to generate template document",
+        life: 3000,
       });
     }
   } catch (err) {
-    console.error('Error generating template:', err);
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Error', 
-      detail: err.message || 'Failed to generate template document', 
-      life: 3000 
+    console.error("Error generating template:", err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: err.message || "Failed to generate template document",
+      life: 3000,
     });
   }
 }
@@ -2453,19 +2559,21 @@ async function executeMergeInvoices() {
   // We'll move the core logic here and call this from both places
   const validationErrors = validateMergeSelection();
   if (validationErrors.length > 0) {
-    validationErrors.forEach(error => {
+    validationErrors.forEach((error) => {
       toast.add({
-        severity: 'error',
-        summary: 'Validation Error',
+        severity: "error",
+        summary: "Validation Error",
         detail: error,
-        life: 4000
+        life: 4000,
       });
     });
     return;
   }
 
   // Build merge request
-  const invoiceNumbers = selectedInvoicesForMerge.value.map(invoice => invoice.number);
+  const invoiceNumbers = selectedInvoicesForMerge.value.map(
+    (invoice) => invoice.number,
+  );
   let templateOverride = null;
   if (selectedTemplate.value.type) {
     templateOverride = selectedTemplate.value.type.toLowerCase();
@@ -2473,21 +2581,19 @@ async function executeMergeInvoices() {
 
   // Build base options
   const baseOptions = {
-    format: 'both' // Generate both PDF and Excel
+    format: "both", // Generate both PDF and Excel
   };
-  
+
   // Add invoice date override if enabled
   const overrideOptions = buildRequestOptions();
   const options = { ...baseOptions, ...overrideOptions };
-  
+
   const mergeRequest = {
     invoice_numbers: invoiceNumbers,
     template_id: selectedTemplate.value.id,
     template_override: templateOverride,
-    options: options
+    options: options,
   };
-
-  console.log('🔄 Sending merge request:', mergeRequest);
 
   try {
     isMergingInvoices.value = true;
@@ -2499,50 +2605,48 @@ async function executeMergeInvoices() {
     if (result && result.success) {
       mergeResult.value = result;
       toast.add({
-        severity: 'success',
-        summary: 'Merge Successful',
-        detail: useInvoiceDateOverride.value 
+        severity: "success",
+        summary: "Merge Successful",
+        detail: useInvoiceDateOverride.value
           ? `Created merged invoice ${result.data.merged_invoice_number} with override date: ${formatOverrideDateForDisplay()}`
           : `Created merged invoice ${result.data.merged_invoice_number} from ${result.data.merge_count} invoices`,
-        life: 5000
+        life: 5000,
       });
 
       // Reset selections and refresh view
       selectedInvoicesForMerge.value = [];
       await loadCustomerInvoices();
-      activeDocumentTab.value = 'invoice';
+      activeDocumentTab.value = "invoice";
 
       if (result.data && result.data.merged_invoice_number) {
         try {
           await loadGeneratedFiles(result.data.merged_invoice_number);
         } catch (fileError) {
-          console.warn('Could not load generated files:', fileError);
+          console.warn("Could not load generated files:", fileError);
         }
       }
     } else {
-      throw new Error(result?.message || 'Merge operation failed');
+      throw new Error(result?.message || "Merge operation failed");
     }
   } catch (err) {
-    console.error('Error merging invoices:', err);
-    console.log('Error response status:', err.response?.status);
-    console.log('Error response data:', err.response?.data);
+    console.error("Error merging invoices:", err);
     mergeError.value = err.message;
-    
+
     // Check for duplicate detection (409 error or specific error types)
-    if (err.response?.status === 409 || 
-        err.response?.data?.error_type === 'duplicate_merge' || 
-        err.response?.data?.requires_confirmation) {
-      console.log('Duplicate merge detected, showing confirmation dialog');
-      console.log('Duplicate details:', err.response.data);
+    if (
+      err.response?.status === 409 ||
+      err.response?.data?.error_type === "duplicate_merge" ||
+      err.response?.data?.requires_confirmation
+    ) {
       duplicateDetails.value = err.response.data;
       pendingMergeRequest.value = mergeRequest;
       showDuplicateConfirmation.value = true;
     } else {
       toast.add({
-        severity: 'error',
-        summary: 'Merge Failed',
-        detail: err.message || 'Failed to merge invoices',
-        life: 4000
+        severity: "error",
+        summary: "Merge Failed",
+        detail: err.message || "Failed to merge invoices",
+        life: 4000,
       });
     }
   } finally {
@@ -2560,27 +2664,31 @@ async function checkForExistingMergeGroups(selectedInvoices) {
 
   try {
     isCheckingMergeGroups.value = true;
-    
+
     // Get invoice numbers from selected invoices
-    const invoiceNumbers = selectedInvoices.map(invoice => invoice.number);
-    
+    const invoiceNumbers = selectedInvoices.map((invoice) => invoice.number);
+
     // Get customer number for the API call
-    const customerNumber = selectedCustomer.value?.number || selectedCustomer.value?.customer_number;
-    
+    const customerNumber =
+      selectedCustomer.value?.number || selectedCustomer.value?.customer_number;
+
     if (!customerNumber) {
-      console.error('No customer selected for merge group lookup');
+      console.error("No customer selected for merge group lookup");
       existingMergeGroups.value = [];
       showMergePreview.value = false;
       return;
     }
-    
+
     // Call backend to check for conflicts (existing merge groups)
-    const response = await invoiceStore.findMergeGroupsForInvoices(invoiceNumbers, customerNumber);
-    
+    const response = await invoiceStore.findMergeGroupsForInvoices(
+      invoiceNumbers,
+      customerNumber,
+    );
+
     if (response && response.data) {
       // Backend returns conflicts array when has_conflicts is true
       if (response.data.has_conflicts && response.data.conflicts) {
-        existingMergeGroups.value = response.data.conflicts.map(conflict => ({
+        existingMergeGroups.value = response.data.conflicts.map((conflict) => ({
           id: conflict.merge_group_id,
           merged_invoice_number: conflict.merged_invoice_number,
           group_identifier: conflict.group_identifier,
@@ -2590,14 +2698,12 @@ async function checkForExistingMergeGroups(selectedInvoices) {
           template_override: conflict.template_override,
           document_count: conflict.document_count,
           total_amount: conflict.total_amount,
-          conflicting_invoices: conflict.conflicting_invoices
+          conflicting_invoices: conflict.conflicting_invoices,
         }));
         showMergePreview.value = true;
-        
+
         // Switch to merge preview tab
-        activeDocumentTab.value = 'merge-preview';
-        
-        console.log('📊 Found existing merge groups:', existingMergeGroups.value);
+        activeDocumentTab.value = "merge-preview";
       } else {
         existingMergeGroups.value = [];
         showMergePreview.value = false;
@@ -2607,7 +2713,7 @@ async function checkForExistingMergeGroups(selectedInvoices) {
       showMergePreview.value = false;
     }
   } catch (err) {
-    console.error('Error checking for existing merge groups:', err);
+    console.error("Error checking for existing merge groups:", err);
     existingMergeGroups.value = [];
     showMergePreview.value = false;
   } finally {
@@ -2616,106 +2722,116 @@ async function checkForExistingMergeGroups(selectedInvoices) {
 }
 
 // Watch for changes in selected invoices for merge
-watch(selectedInvoicesForMerge, async (newSelection) => {
-  if (isMergeMode.value && newSelection.length >= 2) {
-    await checkForExistingMergeGroups(newSelection);
-  } else {
-    existingMergeGroups.value = [];
-    showMergePreview.value = false;
-    
-    // Switch back to appropriate tab
-    if (activeDocumentTab.value === 'merge-preview') {
-      activeDocumentTab.value = selectedCustomerInvoice.value ? 'invoice' : 'customer';
+watch(
+  selectedInvoicesForMerge,
+  async (newSelection) => {
+    if (isMergeMode.value && newSelection.length >= 2) {
+      await checkForExistingMergeGroups(newSelection);
+    } else {
+      existingMergeGroups.value = [];
+      showMergePreview.value = false;
+
+      // Switch back to appropriate tab
+      if (activeDocumentTab.value === "merge-preview") {
+        activeDocumentTab.value = selectedCustomerInvoice.value
+          ? "invoice"
+          : "customer";
+      }
     }
-  }
-}, { deep: true });
+  },
+  { deep: true },
+);
 
 // Watch for tab changes to load merge history when needed
 watch(activeDocumentTab, async (newTab) => {
-  if (newTab === 'merged' && selectedCustomer.value && mergeHistoryData.value.length === 0) {
+  if (
+    newTab === "merged" &&
+    selectedCustomer.value &&
+    mergeHistoryData.value.length === 0
+  ) {
     await loadMergeHistory();
   }
 });
 
 // Handle viewing merge group documents
 async function viewMergeDocuments(mergeGroup) {
-  console.log('📄 Viewing documents for merge group:', mergeGroup.merged_invoice_number);
-  
   try {
     // Extract the group identifier from the merge data
     let groupIdentifier = mergeGroup.group_identifier;
-    
+
     if (!groupIdentifier && mergeGroup.merged_invoice_number) {
       // Remove the "+" suffix if present to get the group identifier
-      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, "");
     }
-    
+
     if (!groupIdentifier) {
-      throw new Error('No group identifier found in merge data');
+      throw new Error("No group identifier found in merge data");
     }
-    
-    console.log('📄 Using group identifier for documents:', groupIdentifier);
-    
+
     // Get detailed merge group data with documents
     const response = await invoiceStore.getMergeGroupById(groupIdentifier);
-    
+
     if (response && response.data) {
       // Switch to customer documents tab and show merge group documents
-      activeDocumentTab.value = 'customer';
-      
+      activeDocumentTab.value = "customer";
+
       // You could filter customer documents to show only merge group documents
       // For now, we'll show a toast with the document count
-      const documentCount = response.data.documents ? response.data.documents.length : 0;
-      
+      const documentCount = response.data.documents
+        ? response.data.documents.length
+        : 0;
+
       toast.add({
-        severity: 'info',
-        summary: 'Merge Documents',
+        severity: "info",
+        summary: "Merge Documents",
         detail: `Found ${documentCount} documents for merge group ${mergeGroup.merged_invoice_number}`,
-        life: 3000
+        life: 3000,
       });
     }
   } catch (err) {
-    console.error('Error loading merge group documents:', err);
+    console.error("Error loading merge group documents:", err);
     toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load merge group documents',
-      life: 3000
+      severity: "error",
+      summary: "Error",
+      detail: "Failed to load merge group documents",
+      life: 3000,
     });
   }
 }
 
 // Handle re-merging a group
 async function reMergeGroup(mergeGroup) {
-  console.log('🔄 Re-merging group:', mergeGroup.merged_invoice_number);
-  
   try {
     // Extract the group identifier from the merge data
     let groupIdentifier = mergeGroup.group_identifier;
-    
+
     if (!groupIdentifier && mergeGroup.merged_invoice_number) {
       // Remove the "+" suffix if present to get the group identifier
-      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, '');
+      groupIdentifier = mergeGroup.merged_invoice_number.replace(/\+$/, "");
     }
-    
+
     if (!groupIdentifier) {
-      throw new Error('No group identifier found in merge data');
+      throw new Error("No group identifier found in merge data");
     }
-    
-    console.log('🔄 Using group identifier for re-merge:', groupIdentifier);
-    
+
     // Prepare the merge group for re-merge on the backend
     await invoiceStore.prepareMergeGroupForRemerge(groupIdentifier);
-    
+
     // Set up the merge with the original invoices
-    const originalInvoices = mergeGroup.original_invoices.map(invoiceNumber => {
-      // Find the invoice object from our data
-      return customerInvoices.value.find(inv => inv.number === invoiceNumber) || { number: invoiceNumber };
-    });
-    
+    const originalInvoices = mergeGroup.original_invoices.map(
+      (invoiceNumber) => {
+        // Find the invoice object from our data
+        return (
+          customerInvoices.value.find(
+            (inv) => inv.number === invoiceNumber,
+          ) || { number: invoiceNumber }
+        );
+      },
+    );
+
     selectedInvoicesForMerge.value = originalInvoices;
     isMergeMode.value = true;
-    
+
     // Show confirmation dialog asking if they want to overwrite
     showDuplicateConfirmation.value = true;
     duplicateDetails.value = {
@@ -2723,11 +2839,11 @@ async function reMergeGroup(mergeGroup) {
         merged_invoice_number: mergeGroup.merged_invoice_number,
         created_date: mergeGroup.created_date,
         original_invoices: mergeGroup.original_invoices,
-        template_used: mergeGroup.template_used
+        template_used: mergeGroup.template_used,
       },
-      invoice_numbers: mergeGroup.original_invoices
+      invoice_numbers: mergeGroup.original_invoices,
     };
-    
+
     // Set up the pending merge request
     pendingMergeRequest.value = {
       invoice_numbers: mergeGroup.original_invoices,
@@ -2736,212 +2852,211 @@ async function reMergeGroup(mergeGroup) {
       force_overwrite: true, // Since this is a re-merge, we want to overwrite
       options: {
         format: selectedFormat.value,
-        invoice_date_override: invoiceDateOverride.value
-      }
+        invoice_date_override: invoiceDateOverride.value,
+      },
     };
-    
+
     toast.add({
-      severity: 'warn',
-      summary: 'Re-merge Confirmation',
+      severity: "warn",
+      summary: "Re-merge Confirmation",
       detail: `Confirm re-merging ${mergeGroup.original_invoices.length} invoices`,
-      life: 5000
+      life: 5000,
     });
   } catch (err) {
-    console.error('Error preparing re-merge:', err);
+    console.error("Error preparing re-merge:", err);
     toast.add({
-      severity: 'error',
-      summary: 'Re-merge Error',
-      detail: 'Failed to prepare merge group for re-merge',
-      life: 3000
+      severity: "error",
+      summary: "Re-merge Error",
+      detail: "Failed to prepare merge group for re-merge",
+      life: 3000,
     });
   }
 }
-
-
 </script>
 
 <template>
-    <Toast position="top-right" />
-    <div class="grid">
-        <div class="col-12">
-            <div class="card">
-                <h5>Invoice Templates</h5>
-                
-                <!-- Customer Selection Section -->
-                <CustomerSelectionSection
-                    v-model:selectedCustomer="selectedCustomer"
-                    v-model:customerListType="customerListType"
-                    :customers="customerStore.customers"
-                    :isLoadingCustomers="isLoadingCustomers"
-                    @customer-change="onCustomerChange"
-                    @customer-list-type-change="onCustomerListTypeChange"
-                />
-                
-                <!-- Invoice DataTable Section -->
-                <InvoiceDataTableSection
-                    :tableSelection="tableSelection"
-                    :customerInvoices="customerInvoices"
-                    :isLoadingCustomerInvoices="isLoadingCustomerInvoices"
-                    :isMergeMode="isMergeMode"
-                    :filters="filters"
-                    :selectedCustomer="selectedCustomer"
-                    :selectedInvoicesForMerge="selectedInvoicesForMerge"
-                    :mergeSelectionSummary="mergeSelectionSummary"
-                    :getDueDateInfo="getDueDateInfo"
-                    :getRemainingAmountClass="getRemainingAmountClass"
-                    :getRowClass="getRowClass"
-                    :formatCurrency="formatCurrency"
-                    :FilterMatchMode="FilterMatchMode"
-                    @update:tableSelection="tableSelection = $event"
-                    @update:filters="filters = $event"
-                    @update:isMergeMode="isMergeMode = $event; toggleMergeMode()"
-                    @row-select="onCustomerInvoiceSelect"
-                    @row-unselect="onCustomerInvoiceSelect"
-                    @sort="onSort"
-                    @clear-filter="clearFilter"
-                    @refresh-invoices="loadCustomerInvoices"
-                    @load-merge-history="loadMergeHistory(true)"
-                    @open-invoice-drawer="openInvoiceDrawer"
-                />
-                
-                <!-- Template and Files Section -->
-                <div class="grid grid-cols-12 gap-4">
-                    <!-- Template Selection Section -->
-                    <div class="col-span-12 md:col-span-5 xl:col-span-4">
-                        <TemplateSelectionSection
-                            :isLoadingTemplates="isLoadingTemplates"
-                            :templatesError="templatesError"
-                            :selectedCustomer="selectedCustomer"
-                            :availableTemplates="availableTemplates"
-                            :selectedTemplate="selectedTemplate"
-                            :selectedCustomerInvoice="selectedCustomerInvoice"
-                            :isMergeMode="isMergeMode"
-                            :isGeneratingTemplate="isGeneratingTemplate"
-                            :mergeButtonLabel="mergeButtonLabel"
-                            :canMerge="canMerge"
-                            :isMergingInvoices="isMergingInvoices"
-                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
-                            :getTemplateTypeBadge="getTemplateTypeBadge"
-                            v-model:useInvoiceDateOverride="useInvoiceDateOverride"
-                            v-model:invoiceDateOverride="invoiceDateOverride"
-                            :overrideDateError="overrideDateError"
-                            @template-select="selectedTemplate = $event"
-                            @generate-template="generateTemplateDocument"
-                            @merge-invoices="mergeSelectedInvoices"
-                            @override-toggle="onOverrideToggle"
-                            @date-select="onOverrideDateSelect"
-                        />
-                    </div>
-                    
-                    <!-- Document Library Section -->
-                    <div class="col-span-12 md:col-span-7 xl:col-span-8">
-                        <DocumentLibrarySection
-                            :activeDocumentTab="activeDocumentTab"
-                            :selectedCustomerInvoice="selectedCustomerInvoice"
-                            :isLoadingGeneratedFiles="isLoadingGeneratedFiles"
-                            :isLoadingCustomerDocuments="isLoadingCustomerDocuments"
-                            :generatedFilesError="generatedFilesError"
-                            :customerDocumentsError="customerDocumentsError"
-                            :selectedCustomer="selectedCustomer"
-                            :generatedFiles="generatedFiles"
-                            :customerDocuments="customerDocuments"
-                            :getFileIcon="getFileIcon"
-                            :formatDate="formatDate"
-                            :isMergeMode="isMergeMode"
-                            :selectedInvoicesForMerge="selectedInvoicesForMerge"
-                            :existingMergeGroups="existingMergeGroups"
-                            :isCheckingMergeGroups="isCheckingMergeGroups"
-                            :showMergePreview="showMergePreview"
-                            :mergeHistoryData="mergeHistoryData"
-                            :isLoadingMergeHistory="isLoadingMergeHistory"
-                            @tab-change="activeDocumentTab = $event"
-                            @preview-file="previewFile"
-                            @download-file="downloadGeneratedFile"
-                            @view-merge-documents="viewMergeDocuments"
-                            @re-merge-group="reMergeGroup"
-                            @view-merge-details="viewMergeDetails"
-                            @download-merge-files="downloadMergedFiles"
-                        />
-                    </div>
-                </div>
-            </div>
+  <Toast position="top-right" />
+  <div class="grid">
+    <div class="col-12">
+      <div class="card">
+        <h5>Invoice Templates</h5>
+
+        <!-- Customer Selection Section -->
+        <CustomerSelectionSection
+          v-model:selectedCustomer="selectedCustomer"
+          v-model:customerListType="customerListType"
+          :customers="customerStore.customers"
+          :isLoadingCustomers="isLoadingCustomers"
+          @customer-change="onCustomerChange"
+          @customer-list-type-change="onCustomerListTypeChange"
+        />
+
+        <!-- Invoice DataTable Section -->
+        <InvoiceDataTableSection
+          :tableSelection="tableSelection"
+          :customerInvoices="customerInvoices"
+          :isLoadingCustomerInvoices="isLoadingCustomerInvoices"
+          :isMergeMode="isMergeMode"
+          :filters="filters"
+          :selectedCustomer="selectedCustomer"
+          :selectedInvoicesForMerge="selectedInvoicesForMerge"
+          :mergeSelectionSummary="mergeSelectionSummary"
+          :getDueDateInfo="getDueDateInfo"
+          :getRemainingAmountClass="getRemainingAmountClass"
+          :getRowClass="getRowClass"
+          :formatCurrency="formatCurrency"
+          :FilterMatchMode="FilterMatchMode"
+          @update:tableSelection="tableSelection = $event"
+          @update:filters="filters = $event"
+          @update:isMergeMode="
+            isMergeMode = $event;
+            toggleMergeMode();
+          "
+          @row-select="onCustomerInvoiceSelect"
+          @row-unselect="onCustomerInvoiceSelect"
+          @sort="onSort"
+          @clear-filter="clearFilter"
+          @refresh-invoices="loadCustomerInvoices"
+          @load-merge-history="loadMergeHistory(true)"
+          @open-invoice-drawer="openInvoiceDrawer"
+        />
+
+        <!-- Template and Files Section -->
+        <div class="grid grid-cols-12 gap-4">
+          <!-- Template Selection Section -->
+          <div class="col-span-12 md:col-span-5 xl:col-span-4">
+            <TemplateSelectionSection
+              :isLoadingTemplates="isLoadingTemplates"
+              :templatesError="templatesError"
+              :selectedCustomer="selectedCustomer"
+              :availableTemplates="availableTemplates"
+              :selectedTemplate="selectedTemplate"
+              :selectedCustomerInvoice="selectedCustomerInvoice"
+              :isMergeMode="isMergeMode"
+              :isGeneratingTemplate="isGeneratingTemplate"
+              :mergeButtonLabel="mergeButtonLabel"
+              :canMerge="canMerge"
+              :isMergingInvoices="isMergingInvoices"
+              :selectedInvoicesForMerge="selectedInvoicesForMerge"
+              :getTemplateTypeBadge="getTemplateTypeBadge"
+              v-model:useInvoiceDateOverride="useInvoiceDateOverride"
+              v-model:invoiceDateOverride="invoiceDateOverride"
+              :overrideDateError="overrideDateError"
+              @template-select="selectedTemplate = $event"
+              @generate-template="generateTemplateDocument"
+              @merge-invoices="mergeSelectedInvoices"
+              @override-toggle="onOverrideToggle"
+              @date-select="onOverrideDateSelect"
+            />
+          </div>
+
+          <!-- Document Library Section -->
+          <div class="col-span-12 md:col-span-7 xl:col-span-8">
+            <DocumentLibrarySection
+              :activeDocumentTab="activeDocumentTab"
+              :selectedCustomerInvoice="selectedCustomerInvoice"
+              :isLoadingGeneratedFiles="isLoadingGeneratedFiles"
+              :isLoadingCustomerDocuments="isLoadingCustomerDocuments"
+              :generatedFilesError="generatedFilesError"
+              :customerDocumentsError="customerDocumentsError"
+              :selectedCustomer="selectedCustomer"
+              :generatedFiles="generatedFiles"
+              :customerDocuments="customerDocuments"
+              :getFileIcon="getFileIcon"
+              :formatDate="formatDate"
+              :isMergeMode="isMergeMode"
+              :selectedInvoicesForMerge="selectedInvoicesForMerge"
+              :existingMergeGroups="existingMergeGroups"
+              :isCheckingMergeGroups="isCheckingMergeGroups"
+              :showMergePreview="showMergePreview"
+              :mergeHistoryData="mergeHistoryData"
+              :isLoadingMergeHistory="isLoadingMergeHistory"
+              @tab-change="activeDocumentTab = $event"
+              @preview-file="previewFile"
+              @download-file="downloadGeneratedFile"
+              @view-merge-documents="viewMergeDocuments"
+              @re-merge-group="reMergeGroup"
+              @view-merge-details="viewMergeDetails"
+              @download-merge-files="downloadMergedFiles"
+            />
+          </div>
         </div>
+      </div>
     </div>
-    
-    <!-- File Preview Dialog -->
-    <FilePreviewDialog
-        :showFilePreview="showFilePreview"
-        :selectedFile="selectedFile"
-        :previewError="previewError"
-        :previewErrorMessage="previewErrorMessage"
-        :previewUrl="previewUrl"
-        :getFileIcon="getFileIcon"
-        :formatDate="formatDate"
-        @update:showFilePreview="showFilePreview = $event"
-        @download-file="downloadFile"
-        @iframe-load="onIframeLoad"
-        @iframe-error="onIframeError"
-    />
+  </div>
 
-    <!-- Invoice Detail Drawer -->
-    <InvoiceDetailDrawer
-        :showInvoiceDrawer="showInvoiceDrawer"
-        :drawerSelectedInvoice="drawerSelectedInvoice"
-        :drawerIsInteractive="drawerIsInteractive"
-        :drawerSelectedGroupBy="drawerSelectedGroupBy"
-        :groupByOptions="groupByOptions"
-        :drawerProducts="drawerProducts"
-        :drawerIsRegrouping="drawerIsRegrouping"
-        :drawerGroupedProducts="drawerGroupedProducts"
-        :formatDate="formatDate"
-        :formatCurrency="formatCurrency"
-        @update:showInvoiceDrawer="showInvoiceDrawer = $event"
-        @update:drawerIsInteractive="drawerIsInteractive = $event"
-        @update:drawerSelectedGroupBy="drawerSelectedGroupBy = $event"
-        @drawer-interactive-toggle="onDrawerInteractiveToggle"
-    />
-    
-    <!-- Merge History Dialog -->
-    <MergeHistoryDialog
-        :showMergeHistory="showMergeHistory"
-        :isLoadingMergeHistory="isLoadingMergeHistory"
-        :mergeHistoryData="mergeHistoryData"
-        :selectedCustomer="selectedCustomer"
-        :formatCurrency="formatCurrency"
-        :formatDate="formatDate"
-        @update:showMergeHistory="showMergeHistory = $event"
-        @view-merge-details="viewMergeDetails"
-        @download-merged-files="downloadMergedFiles"
-    />
-    
-    <!-- Duplicate Merge Confirmation Dialog -->
-    <DuplicateConfirmationDialog
-        :showDuplicateConfirmation="showDuplicateConfirmation"
-        :duplicateDetails="duplicateDetails"
-        :selectedInvoicesForMerge="selectedInvoicesForMerge"
-        @update:showDuplicateConfirmation="showDuplicateConfirmation = $event"
-        @handle-duplicate-confirmation="handleDuplicateConfirmation"
-    />
+  <!-- File Preview Dialog -->
+  <FilePreviewDialog
+    :showFilePreview="showFilePreview"
+    :selectedFile="selectedFile"
+    :previewError="previewError"
+    :previewErrorMessage="previewErrorMessage"
+    :previewUrl="previewUrl"
+    :getFileIcon="getFileIcon"
+    :formatDate="formatDate"
+    @update:showFilePreview="showFilePreview = $event"
+    @download-file="downloadFile"
+    @iframe-load="onIframeLoad"
+    @iframe-error="onIframeError"
+  />
 
-    <!-- Merge Details Modal -->
-    <MergeDetailsModal
-        :visible="showMergeDetailsModal"
-        :mergeDetails="selectedMergeDetails"
-        :isLoading="isLoadingMergeDetails"
-        :error="mergeDetailsError"
-        :formatDate="formatDate"
-        :formatCurrency="formatCurrency"
-        :getFileIcon="getFileIcon"
-        @update:visible="showMergeDetailsModal = $event"
-        @retry="onMergeDetailsRetry"
-        @download-all-files="onDownloadAllMergeFiles"
-        @re-merge="onReMergeFromDetails"
-        @preview-document="onPreviewMergeDocument"
-        @download-document="onDownloadMergeDocument"
-        @download-all-documents="onDownloadAllMergeDocuments"
-    />
+  <!-- Invoice Detail Drawer -->
+  <InvoiceDetailDrawer
+    :showInvoiceDrawer="showInvoiceDrawer"
+    :drawerSelectedInvoice="drawerSelectedInvoice"
+    :drawerIsInteractive="drawerIsInteractive"
+    :drawerSelectedGroupBy="drawerSelectedGroupBy"
+    :groupByOptions="groupByOptions"
+    :drawerProducts="drawerProducts"
+    :drawerIsRegrouping="drawerIsRegrouping"
+    :drawerGroupedProducts="drawerGroupedProducts"
+    :formatDate="formatDate"
+    :formatCurrency="formatCurrency"
+    @update:showInvoiceDrawer="showInvoiceDrawer = $event"
+    @update:drawerIsInteractive="drawerIsInteractive = $event"
+    @update:drawerSelectedGroupBy="drawerSelectedGroupBy = $event"
+    @drawer-interactive-toggle="onDrawerInteractiveToggle"
+  />
 
+  <!-- Merge History Dialog -->
+  <MergeHistoryDialog
+    :showMergeHistory="showMergeHistory"
+    :isLoadingMergeHistory="isLoadingMergeHistory"
+    :mergeHistoryData="mergeHistoryData"
+    :selectedCustomer="selectedCustomer"
+    :formatCurrency="formatCurrency"
+    :formatDate="formatDate"
+    @update:showMergeHistory="showMergeHistory = $event"
+    @view-merge-details="viewMergeDetails"
+    @download-merged-files="downloadMergedFiles"
+  />
 
+  <!-- Duplicate Merge Confirmation Dialog -->
+  <DuplicateConfirmationDialog
+    :showDuplicateConfirmation="showDuplicateConfirmation"
+    :duplicateDetails="duplicateDetails"
+    :selectedInvoicesForMerge="selectedInvoicesForMerge"
+    @update:showDuplicateConfirmation="showDuplicateConfirmation = $event"
+    @handle-duplicate-confirmation="handleDuplicateConfirmation"
+  />
+
+  <!-- Merge Details Modal -->
+  <MergeDetailsModal
+    :visible="showMergeDetailsModal"
+    :mergeDetails="selectedMergeDetails"
+    :isLoading="isLoadingMergeDetails"
+    :error="mergeDetailsError"
+    :formatDate="formatDate"
+    :formatCurrency="formatCurrency"
+    :getFileIcon="getFileIcon"
+    @update:visible="showMergeDetailsModal = $event"
+    @retry="onMergeDetailsRetry"
+    @download-all-files="onDownloadAllMergeFiles"
+    @re-merge="onReMergeFromDetails"
+    @preview-document="onPreviewMergeDocument"
+    @download-document="onDownloadMergeDocument"
+    @download-all-documents="onDownloadAllMergeDocuments"
+  />
 </template>
 
 <style scoped>
@@ -2954,7 +3069,7 @@ async function reMergeGroup(mergeGroup) {
 
 /* Make sure iframe takes full height */
 iframe {
-  width: 100%; 
+  width: 100%;
   height: 100%;
   border: none;
   display: block;
@@ -2978,15 +3093,27 @@ iframe {
 
 /* Enhanced selected row styling */
 :deep(.p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%) !important;
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(37, 99, 235, 0.1) 100%
+  ) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(59, 130, 246, 0.3),
+    0 2px 8px rgba(59, 130, 246, 0.2) !important;
   transition: all 0.2s ease;
 }
 
 /* Dark mode selected row styling */
 :deep(.dark .p-datatable .p-datatable-tbody > tr.p-datatable-row-selected) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%) !important;
-  box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.25) 0%,
+    rgba(37, 99, 235, 0.15) 100%
+  ) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(96, 165, 250, 0.4),
+    0 2px 8px rgba(59, 130, 246, 0.3) !important;
 }
 
 /* Hover effect for rows */
@@ -3282,8 +3409,12 @@ iframe {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive improvements */
@@ -3293,12 +3424,12 @@ iframe {
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .document-actions-toolbar {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .search-filter-bar {
     flex-direction: column;
     gap: 0.75rem;

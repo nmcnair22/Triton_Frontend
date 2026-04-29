@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { InvoiceService } from '@/service/ApiService';
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import { InvoiceService } from "@/service/ApiService";
 
-export const useInvoiceStore = defineStore('invoice', () => {
+export const useInvoiceStore = defineStore("invoice", () => {
   // State
   const invoices = ref([]);
   const customerInvoices = ref([]);
@@ -14,7 +14,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const error = ref(null);
   const customerInvoicesError = ref(null);
   const enrichedInvoiceError = ref(null);
-  
+
   // Template state
   const availableTemplates = ref([]);
   const loadingTemplates = ref(false);
@@ -30,7 +30,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
   // Getters
   const getInvoiceById = computed(() => {
-    return (id) => invoices.value.find(invoice => invoice.id === id);
+    return (id) => invoices.value.find((invoice) => invoice.id === id);
   });
 
   const totalInvoices = computed(() => invoices.value.length);
@@ -68,7 +68,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
       udfL2: enrichedLine.Bssi_UDF_L2,
       udfL3: enrichedLine.Bssi_UDF_L3,
       udfL4: enrichedLine.Bssi_UDF_L4,
-      udfL13: enrichedLine.Bssi_UDF_L13
+      udfL13: enrichedLine.Bssi_UDF_L13,
     };
   };
 
@@ -76,18 +76,18 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function fetchInvoices(params = {}) {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const response = await InvoiceService.getInvoices(params);
       if (response.data && response.data.data) {
         invoices.value = response.data.data;
       } else {
         invoices.value = [];
-        error.value = 'Unexpected response format';
+        error.value = "Unexpected response format";
       }
       return invoices.value;
     } catch (err) {
-      error.value = err.message || 'Failed to fetch invoices';
+      error.value = err.message || "Failed to fetch invoices";
       return [];
     } finally {
       loading.value = false;
@@ -99,16 +99,24 @@ export const useInvoiceStore = defineStore('invoice', () => {
       customerInvoices.value = [];
       return [];
     }
-    
+
     loadingCustomerInvoices.value = true;
     customerInvoicesError.value = null;
-    
+
     try {
-      const response = await InvoiceService.getCustomerInvoices(filterConditions, params);
-      
-      if (response.data && response.data.success && response.data.data && response.data.data.value) {
+      const response = await InvoiceService.getCustomerInvoices(
+        filterConditions,
+        params,
+      );
+
+      if (
+        response.data &&
+        response.data.success &&
+        response.data.data &&
+        response.data.data.value
+      ) {
         // Process the invoice data to match the expected format for the frontend
-        customerInvoices.value = response.data.data.value.map(invoice => ({
+        customerInvoices.value = response.data.data.value.map((invoice) => ({
           id: invoice.id,
           number: invoice.number,
           customerId: invoice.customerId,
@@ -118,11 +126,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
           total: invoice.totalAmountIncludingTax,
           remainingAmount: invoice.remainingAmount || 0,
           status: invoice.status.toLowerCase(),
-          items: [] // Invoice items would need to be fetched separately if needed
+          items: [], // Invoice items would need to be fetched separately if needed
         }));
       } else {
         customerInvoices.value = [];
-        customerInvoicesError.value = 'Unexpected response format';
+        customerInvoicesError.value = "Unexpected response format";
       }
       return customerInvoices.value;
     } catch (err) {
@@ -136,27 +144,35 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function fetchInvoice(id) {
     loading.value = true;
     error.value = null;
-    
+
     try {
       // Try to fetch the detailed sales invoice first
       const invoiceResponse = await InvoiceService.getSalesInvoice(id);
-      
-      if (invoiceResponse.data && invoiceResponse.data.success && invoiceResponse.data.data) {
+
+      if (
+        invoiceResponse.data &&
+        invoiceResponse.data.success &&
+        invoiceResponse.data.data
+      ) {
         const invoiceData = invoiceResponse.data.data;
-        
+
         // Fetch invoice lines
         const linesResponse = await InvoiceService.getSalesInvoiceLines(id);
         let invoiceLines = [];
-        
-        if (linesResponse.data && linesResponse.data.success && linesResponse.data.data.value) {
-          invoiceLines = linesResponse.data.data.value.map(line => ({
+
+        if (
+          linesResponse.data &&
+          linesResponse.data.success &&
+          linesResponse.data.data.value
+        ) {
+          invoiceLines = linesResponse.data.data.value.map((line) => ({
             description: line.description,
             quantity: line.quantity.toString(),
             price: `$${line.unitPrice.toFixed(2)}`,
-            total: `$${line.amountIncludingTax.toFixed(2)}`
+            total: `$${line.amountIncludingTax.toFixed(2)}`,
           }));
         }
-        
+
         // Format the invoice data
         const formattedInvoice = {
           id: invoiceData.id,
@@ -171,17 +187,26 @@ export const useInvoiceStore = defineStore('invoice', () => {
             address: [
               invoiceData.billToAddressLine1,
               invoiceData.billToAddressLine2,
-              `${invoiceData.billToCity}, ${invoiceData.billToState} ${invoiceData.billToPostCode}`
-            ].filter(Boolean).join('\n')
+              `${invoiceData.billToCity}, ${invoiceData.billToState} ${invoiceData.billToPostCode}`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
           },
           subtotal: invoiceData.totalAmountExcludingTax,
           vat: invoiceData.totalTaxAmount,
-          vatRate: invoiceData.totalTaxAmount > 0 ? ((invoiceData.totalTaxAmount / invoiceData.totalAmountExcludingTax) * 100).toFixed(0) : 0,
+          vatRate:
+            invoiceData.totalTaxAmount > 0
+              ? (
+                  (invoiceData.totalTaxAmount /
+                    invoiceData.totalAmountExcludingTax) *
+                  100
+                ).toFixed(0)
+              : 0,
           total: invoiceData.totalAmountIncludingTax,
           remainingAmount: invoiceData.remainingAmount || 0,
-          items: invoiceLines
+          items: invoiceLines,
         };
-        
+
         currentInvoice.value = formattedInvoice;
         return formattedInvoice;
       } else {
@@ -191,7 +216,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
           currentInvoice.value = response.data.data;
         } else {
           currentInvoice.value = null;
-          error.value = 'Unexpected response format';
+          error.value = "Unexpected response format";
         }
         return currentInvoice.value;
       }
@@ -205,21 +230,27 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
   async function fetchEnrichedInvoiceLines(documentNumber) {
     if (!documentNumber) {
-      enrichedInvoiceError.value = 'Document number is required';
+      enrichedInvoiceError.value = "Document number is required";
       return null;
     }
-    
+
     loadingEnrichedInvoice.value = true;
     enrichedInvoiceError.value = null;
-    
+
     try {
-      const response = await InvoiceService.getEnrichedSalesInvoiceLines(documentNumber);
-      
-      if (response.data && response.data.success && response.data.data && response.data.data.value) {
+      const response =
+        await InvoiceService.getEnrichedSalesInvoiceLines(documentNumber);
+
+      if (
+        response.data &&
+        response.data.success &&
+        response.data.data &&
+        response.data.data.value
+      ) {
         // Store both the raw and normalized data
         const rawEnrichedLines = response.data.data.value;
         const enrichedLines = rawEnrichedLines.map(mapEnrichedLineFields);
-        
+
         // Create a copy of the current invoice and add the enriched line items
         if (currentInvoice.value) {
           currentEnrichedInvoice.value = {
@@ -227,7 +258,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
             enrichedItems: enrichedLines,
             rawEnrichedItems: rawEnrichedLines,
             rawResponse: response.data,
-            isEnriched: true
+            isEnriched: true,
           };
         } else {
           // If no current invoice exists, create a minimal structure
@@ -236,18 +267,19 @@ export const useInvoiceStore = defineStore('invoice', () => {
             enrichedItems: enrichedLines,
             rawEnrichedItems: rawEnrichedLines,
             rawResponse: response.data,
-            isEnriched: true
+            isEnriched: true,
           };
         }
-        
+
         return currentEnrichedInvoice.value;
       } else {
         currentEnrichedInvoice.value = null;
-        enrichedInvoiceError.value = 'Failed to parse enriched invoice data';
+        enrichedInvoiceError.value = "Failed to parse enriched invoice data";
         return null;
       }
     } catch (err) {
-      enrichedInvoiceError.value = err.message || `Failed to fetch enriched invoice #${documentNumber}`;
+      enrichedInvoiceError.value =
+        err.message || `Failed to fetch enriched invoice #${documentNumber}`;
       return null;
     } finally {
       loadingEnrichedInvoice.value = false;
@@ -257,7 +289,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function createInvoice(invoice) {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const response = await InvoiceService.createInvoice(invoice);
       if (response.data && response.data.data) {
@@ -266,7 +298,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
       }
       return null;
     } catch (err) {
-      error.value = err.message || 'Failed to create invoice';
+      error.value = err.message || "Failed to create invoice";
       return null;
     } finally {
       loading.value = false;
@@ -276,11 +308,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function updateInvoice(invoice) {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const response = await InvoiceService.updateInvoice(invoice);
       if (response.data && response.data.data) {
-        const index = invoices.value.findIndex(i => i.id === invoice.id);
+        const index = invoices.value.findIndex((i) => i.id === invoice.id);
         if (index !== -1) {
           invoices.value[index] = response.data.data;
         }
@@ -301,10 +333,10 @@ export const useInvoiceStore = defineStore('invoice', () => {
   async function deleteInvoice(id) {
     loading.value = true;
     error.value = null;
-    
+
     try {
       await InvoiceService.deleteInvoice(id);
-      invoices.value = invoices.value.filter(invoice => invoice.id !== id);
+      invoices.value = invoices.value.filter((invoice) => invoice.id !== id);
       if (currentInvoice.value && currentInvoice.value.id === id) {
         currentInvoice.value = null;
       }
@@ -329,123 +361,147 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   // Template Actions
-  
+
   // Fetch available templates for a client and optionally an invoice number
   async function fetchAvailableTemplates(clientId, invoiceNumber = null) {
     if (!clientId) {
-      templatesError.value = 'Client ID is required';
+      templatesError.value = "Client ID is required";
       availableTemplates.value = [];
       return [];
     }
-    
+
     loadingTemplates.value = true;
     templatesError.value = null;
-    
+
     try {
-      const response = await InvoiceService.getAvailableTemplates(clientId, invoiceNumber);
-      
+      const response = await InvoiceService.getAvailableTemplates(
+        clientId,
+        invoiceNumber,
+      );
+
       if (response.data && response.data.success && response.data.data) {
         availableTemplates.value = response.data.data;
         return availableTemplates.value;
       } else {
         availableTemplates.value = [];
-        templatesError.value = 'Failed to load available templates';
+        templatesError.value = "Failed to load available templates";
         return [];
       }
     } catch (err) {
-      templatesError.value = err.message || 'Failed to fetch available templates';
+      templatesError.value =
+        err.message || "Failed to fetch available templates";
       availableTemplates.value = [];
       return [];
     } finally {
       loadingTemplates.value = false;
     }
   }
-  
+
   // Generate a document from a template for an invoice
-  async function generateTemplate(invoiceNumber, templateId) {
+  async function generateTemplate(
+    invoiceNumber,
+    templateId,
+    clientId,
+    options = {},
+  ) {
     if (!invoiceNumber || !templateId) {
-      generateTemplateError.value = 'Invoice number and template ID are required';
+      generateTemplateError.value =
+        "Invoice number and template ID are required";
       return null;
     }
-    
-    console.log('Store: generateTemplate called with:', { invoiceNumber, templateId });
+
+    if (!clientId) {
+      generateTemplateError.value =
+        "Client ID is required to generate a template";
+      return null;
+    }
+
     generatingTemplate.value = true;
     generateTemplateError.value = null;
-    
+
     try {
-      console.log('Store: Calling InvoiceService.generateTemplate...');
-      const response = await InvoiceService.generateTemplate(invoiceNumber, templateId);
-      
-      console.log('Store: Raw response from generateTemplate:', response);
-      console.log('Store: Response structure:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        success: response.data?.success,
-        message: response.data?.message,
-        dataType: response.data?.data ? typeof response.data.data : 'null'
-      });
-      
+      const response = await InvoiceService.generateTemplate(
+        invoiceNumber,
+        templateId,
+        clientId,
+        options,
+      );
+
       if (response.data && response.data.success && response.data.data) {
-        console.log('Store: Template generation success, data:', response.data.data);
         // After successful generation, refresh the list of generated files
         await fetchGeneratedFiles(invoiceNumber);
         return response.data.data;
       } else {
-        console.warn('Store: Template generation failed or unexpected response format:', response.data);
-        generateTemplateError.value = response.data?.message || 'Failed to generate template';
+        console.warn(
+          "Store: Template generation failed or unexpected response format:",
+          response.data,
+        );
+        generateTemplateError.value =
+          response.data?.message || "Failed to generate template";
         return null;
       }
     } catch (err) {
-      console.error('Store: Error in generateTemplate:', err);
-      console.log('Store: Error details:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-        response: err.response?.data
-      });
-      generateTemplateError.value = err.message || 'Failed to generate template';
+      console.error("Store: Error in generateTemplate:", err);
+      generateTemplateError.value = formatApiError(
+        err,
+        "Failed to generate template",
+      );
       return null;
     } finally {
       generatingTemplate.value = false;
     }
   }
-  
+
+  function formatApiError(error, fallbackMessage) {
+    const responseData = error.response?.data;
+    const validationErrors = responseData?.errors;
+
+    if (validationErrors && typeof validationErrors === "object") {
+      return Object.entries(validationErrors)
+        .flatMap(([field, messages]) => {
+          const fieldMessages = Array.isArray(messages) ? messages : [messages];
+
+          return fieldMessages.map((message) => `${field}: ${message}`);
+        })
+        .join(" ");
+    }
+
+    return responseData?.message || error.message || fallbackMessage;
+  }
+
   // Fetch generated files for an invoice
   async function fetchGeneratedFiles(invoiceNumber) {
     if (!invoiceNumber) {
-      generatedFilesError.value = 'Invoice number is required';
+      generatedFilesError.value = "Invoice number is required";
       generatedFiles.value = [];
       return [];
     }
-    
+
     loadingGeneratedFiles.value = true;
     generatedFilesError.value = null;
-    
+
     try {
       const response = await InvoiceService.getInvoiceDocuments(invoiceNumber);
-      
+
       if (response.data && response.data.success) {
         let processedFiles = [];
-        
+
         // Check if documents is a single job object
         if (response.data.documents && response.data.documents.outputs) {
           const job = response.data.documents;
           processedFiles = extractFilesFromJob(job);
-        } 
+        }
         // Check if documents is an array of jobs
         else if (Array.isArray(response.data.documents)) {
-          response.data.documents.forEach(job => {
+          response.data.documents.forEach((job) => {
             if (job && job.outputs) {
               processedFiles.push(...extractFilesFromJob(job));
             }
           });
         }
         // Check if documents is an object containing jobs (with job_id keys)
-        else if (typeof response.data.documents === 'object') {
-          Object.values(response.data.documents).forEach(job => {
+        else if (typeof response.data.documents === "object") {
+          Object.values(response.data.documents).forEach((job) => {
             if (job && job.outputs) {
               processedFiles.push(...extractFilesFromJob(job));
             }
@@ -453,61 +509,63 @@ export const useInvoiceStore = defineStore('invoice', () => {
         }
         // Fallback for legacy format
         else if (Array.isArray(response.data.jobs)) {
-          response.data.jobs.forEach(job => {
+          response.data.jobs.forEach((job) => {
             if (job && job.outputs) {
               processedFiles.push(...extractFilesFromJob(job));
             }
           });
         }
-        
+
         generatedFiles.value = processedFiles;
         return processedFiles;
       } else {
         generatedFiles.value = [];
-        generatedFilesError.value = response.data.message || 'Failed to load generated files';
+        generatedFilesError.value =
+          response.data.message || "Failed to load generated files";
         return [];
       }
     } catch (err) {
-      generatedFilesError.value = err.message || 'Failed to fetch generated files';
+      generatedFilesError.value =
+        err.message || "Failed to fetch generated files";
       generatedFiles.value = [];
       return [];
     } finally {
       loadingGeneratedFiles.value = false;
     }
   }
-  
+
   // Helper function to extract files from a job's outputs structure
   function extractFilesFromJob(job) {
     const files = [];
-    
+
     if (!job.outputs) return files;
-    
+
     // Process PDF files which are in an object with keys like 'summary', 'consolidated', etc.
-    if (job.outputs.pdf && typeof job.outputs.pdf === 'object') {
+    if (job.outputs.pdf && typeof job.outputs.pdf === "object") {
       Object.entries(job.outputs.pdf).forEach(([type, path]) => {
         // Extract filename from path (e.g., "invoices/MRC00926/APR_2025_MRC_Summary.pdf" -> "APR_2025_MRC_Summary.pdf")
-        const filename = path.split('/').pop() || path;
+        const filename = path.split("/").pop() || path;
         files.push({
           id: `${job.job_id}_pdf_${type}`,
           job_id: job.job_id,
           filename: filename,
-          fullPath: path, 
+          fullPath: path,
           created_at: job.created_at,
           template_name: job.template,
           invoice_number: job.invoice_number,
-          fileType: 'pdf',
+          fileType: "pdf",
           fileCategory: type,
-          icon: 'pi pi-file-pdf',
-          originalData: { ...job, type: 'pdf', subtype: type, path: path }
+          icon: "pi pi-file-pdf",
+          originalData: { ...job, type: "pdf", subtype: type, path: path },
         });
       });
     }
-    
+
     // Process Excel files which are in an array
     if (job.outputs.excel && Array.isArray(job.outputs.excel)) {
       job.outputs.excel.forEach((path, index) => {
         // Extract filename from path
-        const filename = path.split('/').pop() || path;
+        const filename = path.split("/").pop() || path;
         files.push({
           id: `${job.job_id}_excel_${index}`,
           job_id: job.job_id,
@@ -516,97 +574,107 @@ export const useInvoiceStore = defineStore('invoice', () => {
           created_at: job.created_at,
           template_name: job.template,
           invoice_number: job.invoice_number,
-          fileType: 'excel',
-          icon: 'pi pi-file-excel',
-          originalData: { ...job, type: 'excel', index: index, path: path }
+          fileType: "excel",
+          icon: "pi pi-file-excel",
+          originalData: { ...job, type: "excel", index: index, path: path },
         });
       });
     }
-    
+
     return files;
   }
-  
+
   // Fetch all documents for a customer
   async function fetchCustomerDocuments(customerNumber) {
     if (!customerNumber) {
-      customerDocumentsError.value = 'Customer number is required';
+      customerDocumentsError.value = "Customer number is required";
       customerDocuments.value = [];
       return [];
     }
-    
+
     loadingCustomerDocuments.value = true;
     customerDocumentsError.value = null;
-    
+
     try {
-      const response = await InvoiceService.getCustomerDocuments(customerNumber);
-      
+      const response =
+        await InvoiceService.getCustomerDocuments(customerNumber);
+
       if (response.data && response.data.success) {
         let processedFiles = [];
-        
+
         // Handle different response structures
         if (Array.isArray(response.data.documents)) {
-          response.data.documents.forEach(job => {
+          response.data.documents.forEach((job) => {
             if (job && job.outputs) {
               processedFiles.push(...extractFilesFromJob(job));
             }
           });
-        } else if (response.data.documents && typeof response.data.documents === 'object') {
-          Object.values(response.data.documents).forEach(job => {
+        } else if (
+          response.data.documents &&
+          typeof response.data.documents === "object"
+        ) {
+          Object.values(response.data.documents).forEach((job) => {
             if (job && job.outputs) {
               processedFiles.push(...extractFilesFromJob(job));
             }
           });
         }
-        
+
         customerDocuments.value = processedFiles;
         return processedFiles;
       } else {
         customerDocuments.value = [];
-        customerDocumentsError.value = response.data.message || 'Failed to load customer documents';
+        customerDocumentsError.value =
+          response.data.message || "Failed to load customer documents";
         return [];
       }
     } catch (err) {
-      customerDocumentsError.value = err.message || 'Failed to fetch customer documents';
+      customerDocumentsError.value =
+        err.message || "Failed to fetch customer documents";
       customerDocuments.value = [];
       return [];
     } finally {
       loadingCustomerDocuments.value = false;
     }
   }
-  
+
   // Download a generated file
-  async function downloadGeneratedFile(fileId, fileType = 'pdf', subtype = null) {
+  async function downloadGeneratedFile(
+    fileId,
+    fileType = "pdf",
+    subtype = null,
+  ) {
     try {
-      console.log(`Downloading file: ID=${fileId}, Type=${fileType}, Subtype=${subtype || 'none'}`);
-      
       // For composite IDs, extract the parts
       let jobId = fileId;
       let actualFileType = fileType;
       let actualSubtype = subtype;
-      
+
       // Check if fileId contains our composite format (jobId_type_subtype)
-      if (typeof fileId === 'string' && fileId.includes('_')) {
-        const parts = fileId.split('_');
+      if (typeof fileId === "string" && fileId.includes("_")) {
+        const parts = fileId.split("_");
         if (parts.length >= 2) {
           jobId = parts[0];
           actualFileType = parts[1] || fileType;
-          
+
           if (parts.length > 2) {
-            actualSubtype = parts.slice(2).join('_');
+            actualSubtype = parts.slice(2).join("_");
           }
         }
       }
-      
-      console.log(`Processed download parameters: JobID=${jobId}, ActualType=${actualFileType}, ActualSubtype=${actualSubtype || 'none'}`);
-      
-      const success = await InvoiceService.downloadGeneratedFile(jobId, actualFileType, actualSubtype);
+
+      const success = await InvoiceService.downloadGeneratedFile(
+        jobId,
+        actualFileType,
+        actualSubtype,
+      );
       return success;
     } catch (err) {
-      console.error('Error downloading file:', err);
+      console.error("Error downloading file:", err);
       return false;
     }
   }
-  
+
   // Reset template state
   function resetTemplateState() {
     availableTemplates.value = [];
@@ -630,7 +698,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error,
     customerInvoicesError,
     enrichedInvoiceError,
-    
+
     // Template state
     availableTemplates,
     loadingTemplates,
@@ -643,12 +711,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
     customerDocuments,
     loadingCustomerDocuments,
     customerDocumentsError,
-    
+
     // Getters
     getInvoiceById,
     totalInvoices,
     totalCustomerInvoices,
-    
+
     // Actions
     fetchInvoices,
     fetchCustomerInvoices,
@@ -658,13 +726,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
     updateInvoice,
     deleteInvoice,
     resetState,
-    
+
     // Template actions
     fetchAvailableTemplates,
     generateTemplate,
     fetchGeneratedFiles,
     fetchCustomerDocuments,
     downloadGeneratedFile,
-    resetTemplateState
+    resetTemplateState,
   };
-}); 
+});
