@@ -703,7 +703,7 @@ function defaultFiltersForTab(tab = activeTab.value) {
       projectId: null,
       syncStatuses: ['sent', 'needs_update', 'push_failed'],
       callStatuses: [],
-      queueInScope: true,
+      queueInScope: null,
       timingStates: [],
       dataQualities: [],
       readyToPush: null,

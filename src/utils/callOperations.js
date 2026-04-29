@@ -70,7 +70,8 @@ const QUEUE_SCOPE_REASON_LABELS = {
   outcome_cancelled: 'Outcome Cancelled',
   outcome_set: 'Outcome Set',
   on_hold: 'On Hold',
-  draft: 'Draft'
+  draft: 'Draft',
+  source_missing: 'Historical Call'
 };
 
 const READINESS_REASON_LABELS = {

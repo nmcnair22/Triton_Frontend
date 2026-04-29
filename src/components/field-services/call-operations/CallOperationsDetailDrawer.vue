@@ -245,14 +245,14 @@
 
                   <div v-if="hasCallAssets" class="call-operations-drawer__asset-actions">
                     <Button
-                      v-if="visit.allowed_actions.includes('view_recording')"
+                      v-if="visit.call?.recording_direct || visit.call?.recording_url"
                       label="Recording"
                       icon="pi pi-play-circle"
                       outlined
                       @click="openExternal(visit.call.recording_direct || visit.call.recording_url)"
                     />
                     <Button
-                      v-if="visit.allowed_actions.includes('view_transcript')"
+                      v-if="visit.call?.transcript_url"
                       label="Transcript"
                       icon="pi pi-file"
                       outlined
