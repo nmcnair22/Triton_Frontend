@@ -1096,8 +1096,8 @@ watch(customerInvoices, () => {
                                         <div class="text-xl font-bold text-surface-900 dark:text-surface-0">
                                             {{ selectedInvoice?.customer?.company || selectedInvoice?.customer?.name || 'N/A' }}
                                         </div>
-                                        <div class="text-surface-600 dark:text-surface-400 leading-relaxed" 
-                                             v-html="selectedInvoice?.customer?.address?.replace(/\n/g, '<br />') || 'No address provided'">
+                                        <div class="text-surface-600 dark:text-surface-400 leading-relaxed whitespace-pre-line">
+                                            {{ selectedInvoice?.customer?.address || 'No address provided' }}
                                         </div>
                                         <div v-if="selectedInvoice?.customer?.id" class="inline-flex items-center gap-2 px-3 py-1 bg-surface-100 dark:bg-surface-700 rounded-full text-sm">
                                             <i class="pi pi-id-card text-xs text-surface-500"></i>

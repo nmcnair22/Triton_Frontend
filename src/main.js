@@ -20,8 +20,8 @@ import { SchedulePlugin } from '@syncfusion/ej2-vue-schedule';
 import { registerLicense } from '@syncfusion/ej2-base';
 
 // Register Syncfusion license early in the application lifecycle
-const syncfusionLicenseKey = import.meta.env.VITE_SYNCFUSION_LICENSE_KEY || 'Ngo9BigBOggjHTQxAR8/V1NNaF1cXGJCeUx3TXxbf1x1ZFxMYVhbRnBPIiBoS35Rc0VlWHdccnZUR2RYVUNyVEBU';
-registerLicense(syncfusionLicenseKey);
+const syncfusionLicenseKey = import.meta.env.VITE_SYNCFUSION_LICENSE_KEY;
+if (syncfusionLicenseKey) registerLicense(syncfusionLicenseKey);
 
 // RBAC components
 import PermissionGuard from '@/components/auth/PermissionGuard.vue';

@@ -16,8 +16,8 @@ export const MicrosoftAuth = {
    * Redirects the user to the Microsoft login page
    */
   login() {
-    // Generate a random state for security
-    const state = Math.random().toString(36).substring(2, 15);
+    const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+    const state = Array.from(randomBytes, byte => byte.toString(16).padStart(2, '0')).join('');
     
     // Store state in localStorage to verify later
     localStorage.setItem('auth_state', state);
@@ -27,8 +27,6 @@ export const MicrosoftAuth = {
     
     // Build the auth URL with SPA-specific parameters
     const authUrl = `${BASE_URL}/auth/azure?state=${state}&redirect_uri=${redirectUri}&from_spa=true`;
-    
-    console.log(`Redirecting to Microsoft login at: ${authUrl}`);
     
     // Redirect to the auth URL
     window.location.href = authUrl;
@@ -45,8 +43,7 @@ export const MicrosoftAuth = {
       
       // Check for errors
       if (hashParams.has('error')) {
-        const error = decodeURIComponent(hashParams.get('error'));
-        console.error('Authentication error:', error);
+        const error = hashParams.get('error');
         return { success: false, error };
       }
       
@@ -58,6 +55,17 @@ export const MicrosoftAuth = {
           error: 'No authentication token received'
         };
       }
+
+      // The API echoes the frontend state in the callback fragment.
+      const state = hashParams.get('state');
+      const storedState = localStorage.getItem('auth_state');
+      if (!state || !storedState || state !== storedState) {
+        return {
+          success: false,
+          error: 'Security validation failed. Please try again.'
+        };
+      }
+      localStorage.removeItem('auth_state');
       
       // Parse user data if available
       let userData = null;
@@ -85,19 +93,6 @@ export const MicrosoftAuth = {
         }
       }
       
-      // Verify state if provided
-      const state = hashParams.get('state');
-      const storedState = localStorage.getItem('auth_state');
-      
-      if (state && storedState && state !== storedState) {
-        // State mismatch - possible CSRF attack
-        console.error('State mismatch in auth callback');
-        return { 
-          success: false, 
-          error: 'Security validation failed. Please try again.' 
-        };
-      }
-      
       return { 
         success: true, 
         token,
@@ -111,39 +106,7 @@ export const MicrosoftAuth = {
       success: false, 
       error: 'No authentication data found in URL'
     };
-  },
-  
-  /**
-   * Attempt to parse authentication data from page content
-   * This is a fallback method for when hash-based auth fails
-   * @returns {Object} Result with success flag and user data or error
-   */
-  parseAuthFromPageContent() {
-    const pageContent = document.body.textContent || '';
-    if (pageContent.trim().startsWith('{') && pageContent.includes('"token"')) {
-      try {
-        // Try to parse the JSON directly from the page
-        const jsonData = JSON.parse(pageContent);
-        
-        // Check if we have the necessary authentication data
-        if (jsonData.token && jsonData.user) {
-          return { 
-            success: true, 
-            token: jsonData.token,
-            user: jsonData.user,
-            permissions: jsonData.permissions || []
-          };
-        }
-      } catch (jsonError) {
-        console.error('Error parsing JSON from page:', jsonError);
-      }
-    }
-    
-    return { 
-      success: false, 
-      error: 'No valid authentication data found in page content'
-    };
   }
 };
 
-export default MicrosoftAuth; 
+export default MicrosoftAuth;

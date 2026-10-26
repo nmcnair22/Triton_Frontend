@@ -40,7 +40,7 @@ export const LogoutService = {
         success: true
       };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout error:', { status: error.response?.status });
       
       // Even if the API call fails, we consider the logout successful
       // since we'll clear the local session anyway
@@ -57,6 +57,8 @@ export const LogoutService = {
   clearLocalSession() {
     // Remove all authentication-related items
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     localStorage.removeItem('user_permissions');
     localStorage.removeItem('auth_state');
@@ -66,4 +68,4 @@ export const LogoutService = {
   }
 };
 
-export default LogoutService; 
+export default LogoutService;

@@ -2205,6 +2205,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useFlynnStore } from '@/stores/flynnStore';
 import { usePhotosStore } from '@/stores/photosStore';
+import { sanitizeHtml } from '@/utils/sanitizeHtml';
 
 // PrimeVue Components
 import Button from 'primevue/button';
@@ -2629,11 +2630,7 @@ const getTotalSubtasks = () => {
 };
 
 const formatMarkdown = (markdown) => {
-    if (!markdown) return '';
-    // This is a placeholder for a markdown-to-HTML converter.
-    // In a real application, you would use a library like marked.js or similar.
-    // For now, it just returns the raw markdown.
-    return markdown;
+    return sanitizeHtml(markdown);
 };
 
 const togglePhaseDetails = async (phase) => {

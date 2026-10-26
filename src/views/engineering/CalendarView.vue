@@ -2180,7 +2180,7 @@ const onEventRendered = (args) => {
   const eventData = args.data
   
   // Clear default content and create custom layout
-  eventElement.innerHTML = ''
+  eventElement.textContent = ''
   
   // Create main container
   const container = document.createElement('div')
@@ -2241,7 +2241,7 @@ const onEventRendered = (args) => {
     
     // Add ticket-specific metadata
     if (eventData.TicketId) {
-      metadata.innerHTML = `#${eventData.TicketId}`
+      metadata.textContent = `#${eventData.TicketId}`
     }
     
   } else if (eventData.EventType === 'ai-task') {
@@ -2265,9 +2265,9 @@ const onEventRendered = (args) => {
     // Add AI task-specific metadata
     if (eventData.EstimatedDurationMinutes) {
       const hours = Math.round(eventData.EstimatedDurationMinutes / 60 * 100) / 100
-      metadata.innerHTML = `${hours}h`
+      metadata.textContent = `${hours}h`
     } else if (eventData.EstimatedHours) {
-      metadata.innerHTML = `${eventData.EstimatedHours}h`
+      metadata.textContent = `${eventData.EstimatedHours}h`
     }
   } else {
     eventElement.classList.add('manual-event')
@@ -2304,12 +2304,12 @@ const onEventRendered = (args) => {
     
           // Add activity-specific metadata
     if (eventData.EstimatedHours) {
-      metadata.innerHTML = `${eventData.EstimatedHours}h`
+      metadata.textContent = `${eventData.EstimatedHours}h`
     }
   }
   
   // Set content
-  typeIndicator.innerHTML = `${eventIcon} ${eventTypeLabel}`
+  typeIndicator.textContent = `${eventIcon} ${eventTypeLabel}`
   assignmentInfo.textContent = assignedTo
   
   // Add priority indicator if high priority
@@ -2363,7 +2363,7 @@ const onEventRendered = (args) => {
   header.appendChild(typeIndicator)
   header.appendChild(assignmentInfo)
   content.appendChild(title)
-  if (metadata.innerHTML) {
+  if (metadata.textContent) {
     content.appendChild(metadata)
   }
   container.appendChild(header)
@@ -2515,7 +2515,7 @@ const onEventRendered = (args) => {
     // Create new tooltip element
     const tooltip = document.createElement('div')
     tooltip.className = 'fast-tooltip'
-    tooltip.innerHTML = tooltipText.replace(/\n/g, '<br>')
+    tooltip.textContent = tooltipText
     
     // Position tooltip near mouse cursor
     const rect = e.target.getBoundingClientRect()
@@ -3962,4 +3962,4 @@ const refreshStatistics = async () => {
     padding: 0.5rem;
   }
 }
-</style> 
+</style>

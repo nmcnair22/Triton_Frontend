@@ -1,144 +1,108 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - Triton-FE
+name: Build and deploy Triton-FE
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
-# Environment variables available to all jobs and steps in this workflow
+permissions:
+  contents: read
+
+concurrency:
+  group: triton-fe-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
-  AZURE_WEBAPP_NAME: 'Triton-FE'
-  AZURE_WEBAPP_PACKAGE_PATH: '.'
-  NODE_VERSION: '22.x'
+  NODE_VERSION: "22.x"
+  npm_config_engine_strict: "true"
+  AZURE_WEBAPP_NAME: Triton-FE
+  AZURE_RESOURCE_GROUP: TritonV3
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read # Required for actions/checkout
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js version
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm' # Enable npm caching automatically
-          cache-dependency-path: '**/package-lock.json'
-
-      # REMOVED BUILD CACHE - This was causing stale builds
-      # Always build fresh to ensure consistency
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Clean build directories
-        run: |
-          rm -rf dist/
-          rm -rf .vite/
-          rm -rf node_modules/.vite/
-
-      - name: Build application
+          cache: npm
+      - run: npm ci
+      - run: npm run audit:security
+      - run: npm test
+      - name: Build production SPA
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || secrets.VITE_API_BASE_URL }}
+          VITE_SYNCFUSION_LICENSE_KEY: ${{ vars.VITE_SYNCFUSION_LICENSE_KEY || secrets.VITE_SYNCFUSION_LICENSE_KEY }}
+          REQUIRE_PRODUCTION_CONFIG: ${{ github.event_name != 'pull_request' }}
         run: |
-          # Force clean build
+          if [ "$REQUIRE_PRODUCTION_CONFIG" = true ]; then
+            node -e 'const u = new URL(process.env.VITE_API_BASE_URL); if (u.protocol !== "https:" || /^(localhost|127\.)/.test(u.hostname) || !process.env.VITE_SYNCFUSION_LICENSE_KEY) process.exit(1)'
+          fi
           npm run build
-          # Verify build output
-          echo "Build complete. Checking output..."
-          ls -la dist/
-          ls -la dist/assets/ | head -10
-
-      - name: Run tests
-        run: npm run test --if-present
-
-      # Deploy the ENTIRE application, not just dist folder
-      - name: Prepare deployment package
-        run: |
-          echo "Creating deployment package..."
-          mkdir deployment-package
-          
-          # Copy built files
-          cp -r dist deployment-package/
-          
-          # Copy all necessary config and source files
-          cp package.json deployment-package/
-          cp package-lock.json deployment-package/
-          cp server.js deployment-package/
-          cp vite.config.mjs deployment-package/
-          
-          # Copy source files (needed for Azure to run properly)
-          cp -r src deployment-package/
-          cp -r public deployment-package/ 2>/dev/null || echo "No public folder"
-          cp index.html deployment-package/ 2>/dev/null || echo "No index.html in root"
-          
-          # Copy any other config files
-          [ -f .env.production ] && cp .env.production deployment-package/ || echo "No .env.production found"
-          [ -f tsconfig.json ] && cp tsconfig.json deployment-package/ || echo "No tsconfig.json found"
-          [ -f postcss.config.js ] && cp postcss.config.js deployment-package/ || echo "No postcss.config.js found"
-          [ -f tailwind.config.js ] && cp tailwind.config.js deployment-package/ || echo "No tailwind.config.js found"
-          
-          # List what we're deploying
-          echo "Deployment package contents:"
-          ls -la deployment-package/
-
-      - name: Create deployment artifact
-        run: |
-          cd deployment-package
-          zip -r ../release.zip . -x "*.git*" "node_modules/*" "*.md" ".vscode/*" ".github/*"
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+      - run: npm run package:deployment
+      - run: npm run smoke:deployment
+      - name: Archive runtime-only release
+        run: cd deployment-package && zip -qr ../release.zip .
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request'
         with:
-          name: node-app
+          name: triton-runtime
           path: release.zip
-          retention-days: 1 # Reduce storage usage
+          retention-days: 7
 
   deploy:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     needs: build
+    runs-on: ubuntu-latest
     environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      name: Production
+      url: ${{ steps.deploy.outputs.webapp-url }}
     permissions:
-      id-token: write # Required for requesting the JWT
-      contents: read # Required for actions/checkout
-
+      id-token: write
+      contents: read
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: node-app
-
-      - name: Unzip artifact for deployment
-        run: |
-          unzip release.zip
-          echo "Deployment contents:"
-          ls -la
-
-      - name: Login to Azure
-        uses: azure/login@v2
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: triton-runtime
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_342D948E1B9F4F649BFAF65335B9F8F6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6E6C98CA3E72424D9E3D170E967BB67D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3C50D9DC2D2249FBA4AA8410621AE3A7 }}
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
+      - name: Use the prebuilt runtime package
+        run: >-
+          az webapp config appsettings set --resource-group "$AZURE_RESOURCE_GROUP"
+          --name "$AZURE_WEBAPP_NAME" --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+          ENABLE_ORYX_BUILD=false NODE_ENV=production --output none
+      - name: Replace production files and restart
+        id: deploy
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
         with:
-          app-name: Triton-FE
-          slot-name: 'Production'
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-          
-      # Add post-deployment verification
-      - name: Verify deployment
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: production
+          package: release.zip
+          startup-command: npm start
+          clean: true
+          restart: true
+      - name: Verify the running production commit and HTTP behavior
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
         run: |
-          echo "Deployment complete. Waiting 30 seconds for app to restart..."
-          sleep 30
+          for attempt in $(seq 1 12); do
+            if node scripts/smoke-deployment.mjs "$APP_URL" "$GITHUB_SHA"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1

@@ -157,13 +157,7 @@ export const AuthService = {
   
   // Handle Microsoft authentication callback
   handleMicrosoftCallback() {
-    // First try hash-based authentication
-    let result = this.microsoft.handleCallback();
-    
-    // If that fails, try page content as fallback
-    if (!result.success) {
-      result = this.microsoft.parseAuthFromPageContent();
-    }
+    const result = this.microsoft.handleCallback();
     
     // If successful, set authentication state
     if (result.success) {
@@ -209,7 +203,7 @@ export const AuthService = {
       
       return { success: true };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout error:', { status: error.response?.status });
       // Do NOT clear session here if API fails
       // Rethrow the error so the caller (userStore) knows it failed
       throw error; 
@@ -250,7 +244,7 @@ export const AuthService = {
       
       return response.data;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      console.error('Error getting current user:', { status: error.response?.status });
       // If API fails, return the stored user data as fallback
       return this.getUser();
     }
@@ -281,4 +275,4 @@ export const AuthService = {
 
 };
 
-export default AuthService; 
+export default AuthService;

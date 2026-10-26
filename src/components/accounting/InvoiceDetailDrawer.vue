@@ -76,8 +76,8 @@
               <div class="font-bold text-surface-900 dark:text-surface-0">
                 {{ drawerSelectedInvoice?.customer?.company || drawerSelectedInvoice?.customer?.name || 'N/A' }}
               </div>
-              <div class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed" 
-                   v-html="drawerSelectedInvoice?.customer?.address?.replace(/\n/g, '<br />') || 'No address provided'">
+              <div class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed whitespace-pre-line">
+                {{ drawerSelectedInvoice?.customer?.address || 'No address provided' }}
               </div>
               <div v-if="drawerSelectedInvoice?.customer?.id" class="inline-flex items-center gap-1 px-2 py-1 bg-surface-100 dark:bg-surface-700 rounded text-xs">
                 <i class="pi pi-id-card text-xs text-surface-500"></i>
@@ -294,4 +294,4 @@ defineProps({
 });
 
 defineEmits(['drawer-interactive-toggle', 'group-by-change', 'update:showInvoiceDrawer', 'update:drawerIsInteractive', 'update:drawerSelectedGroupBy']);
-</script> 
+</script>

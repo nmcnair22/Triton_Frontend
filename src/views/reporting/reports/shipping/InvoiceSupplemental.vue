@@ -534,7 +534,7 @@ watch(selectedInvoice, (newInvoice) => {
                             <div class="flex-1">
                                 <div class="label-medium text-surface-500">Bill To:</div>
                                 <div class="mt-2 label-medium">{{ selectedInvoice?.customer?.company || '' }}</div>
-                                <div class="body-small text-left mt-0.5" v-html="selectedInvoice?.customer?.address.replace(/\n/g, '<br />') || ''"></div>
+                                <div class="body-small text-left mt-0.5 whitespace-pre-line">{{ selectedInvoice?.customer?.address || '' }}</div>
                             </div>
                             <div class="flex flex-col gap-3 min-w-64">
                                 <div class="flex items-center justify-between gap-6">

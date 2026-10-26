@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => {
     const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? '/api' : `${backendOrigin}/api`);
 
     return {
+        // Legacy callers may log full Axios errors, including request credentials.
+        // Keep diagnostics in development; omit browser console calls in releases.
+        esbuild: {
+            drop: isDev ? [] : ['console', 'debugger']
+        },
         define: {
             'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl)
         },

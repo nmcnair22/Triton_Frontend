@@ -48,7 +48,7 @@ export const LocalAuth = {
         permissions: response.data.permissions || []
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', { status: error.response?.status });
       
       // Create a standardized error response
       return {
@@ -74,7 +74,7 @@ export const LocalAuth = {
         permissions: response.data.permissions || []
       };
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error:', { status: error.response?.status });
       
       return {
         success: false,
@@ -97,7 +97,7 @@ export const LocalAuth = {
         message: response.data.message || 'Password reset link sent to your email'
       };
     } catch (error) {
-      console.error('Forgot password error:', error);
+      console.error('Forgot password error:', { status: error.response?.status });
       
       return {
         success: false,
@@ -126,7 +126,7 @@ export const LocalAuth = {
         message: response.data.message || 'Password has been reset successfully'
       };
     } catch (error) {
-      console.error('Reset password error:', error);
+      console.error('Reset password error:', { status: error.response?.status });
       
       return {
         success: false,
@@ -149,7 +149,7 @@ export const LocalAuth = {
         message: response.data.message || 'Email verified successfully'
       };
     } catch (error) {
-      console.error('Email verification error:', error);
+      console.error('Email verification error:', { status: error.response?.status });
       
       return {
         success: false,
@@ -159,4 +159,4 @@ export const LocalAuth = {
   }
 };
 
-export default LocalAuth; 
+export default LocalAuth;

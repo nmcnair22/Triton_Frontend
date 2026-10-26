@@ -83,6 +83,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { sanitizeHtml } from '@/utils/sanitizeHtml'
 
 const props = defineProps({
   visible: {
@@ -192,7 +193,7 @@ const renderedMarkdown = computed(() => {
     html = html.replace(/(\|[^<]*\|[^<]*<br>)+/gm, tableHtml)
   }
   
-  return html
+  return sanitizeHtml(html)
 })
 
 // Format date utility
@@ -218,7 +219,7 @@ const printDocument = () => {
   printWindow.document.write(`
     <html>
       <head>
-        <title>Installation Work Order - Session ${props.sessionId}</title>
+        <title>Installation Work Order</title>
         <style>
           body { 
             font-family: Arial, sans-serif; 
@@ -298,11 +299,14 @@ const printDocument = () => {
       <body>
         ${renderedMarkdown.value}
         <div style="margin-top: 30px; font-size: 12px; color: #7f8c8d; border-top: 1px solid #ecf0f1; padding-top: 10px;">
-          <p>Generated: ${formatDate(props.lastGenerated)} | Session: ${props.sessionId} | Location: ${props.locationId}</p>
+          <p id="document-metadata"></p>
         </div>
       </body>
     </html>
   `)
+  printWindow.document.title = `Installation Work Order - Session ${props.sessionId}`
+  printWindow.document.getElementById('document-metadata').textContent =
+    `Generated: ${formatDate(props.lastGenerated)} | Session: ${props.sessionId} | Location: ${props.locationId}`
   printWindow.document.close()
   printWindow.print()
 }
@@ -458,4 +462,4 @@ const copyToClipboard = async () => {
 .markdown-content :deep(a:hover) {
   text-decoration: underline;
 }
-</style> 
+</style>

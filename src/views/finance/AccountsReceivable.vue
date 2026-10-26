@@ -172,7 +172,7 @@ const riskIndicator = (risk) => {
   let colorClass = 'bg-green-500';
   if (risk === 'Medium') colorClass = 'bg-yellow-500';
   if (risk === 'High') colorClass = 'bg-red-500';
-  return `<span class="inline-block w-3 h-3 rounded-full ${colorClass} mr-2"></span>${risk}`;
+  return colorClass;
 };
 
 // Get severity class based on days overdue
@@ -338,7 +338,7 @@ const getOverdueSeverity = (days) => {
             </Column>
             <Column field="risk" header="Risk" sortable>
               <template #body="{ data }">
-                <span v-html="riskIndicator(data.risk)"></span>
+                <span><span class="inline-block w-3 h-3 rounded-full mr-2" :class="riskIndicator(data.risk)"></span>{{ data.risk }}</span>
               </template>
             </Column>
             <Column style="width: 4rem">
@@ -402,4 +402,4 @@ const getOverdueSeverity = (days) => {
 :deep(.dark .p-button.p-button-text) {
   color: #9ca3af;
 }
-</style> 
+</style>

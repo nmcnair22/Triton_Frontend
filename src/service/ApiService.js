@@ -76,12 +76,10 @@ export const ApiService = {
     const cleanResource = resource.replace(/^\//, "");
 
     return apiClient.get(cleanResource, { params }).catch((error) => {
-      console.error(`ApiService.get - Error for ${cleanResource}:`, error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
+      console.error("GET API request failed", {
+        status: Number.isFinite(error.response?.status)
+          ? error.response.status
+          : undefined,
       });
       throw error;
     });
@@ -92,12 +90,10 @@ export const ApiService = {
     const cleanResource = resource.replace(/^\//, "");
 
     return apiClient.post(cleanResource, data).catch((error) => {
-      console.error(`ApiService.post - Error for ${cleanResource}:`, error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
+      console.error("POST API request failed", {
+        status: Number.isFinite(error.response?.status)
+          ? error.response.status
+          : undefined,
       });
       throw error;
     });
@@ -108,12 +104,10 @@ export const ApiService = {
     const cleanResource = resource.replace(/^\//, "");
 
     return apiClient.put(cleanResource, data).catch((error) => {
-      console.error(`ApiService.put - Error for ${cleanResource}:`, error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
+      console.error("PUT API request failed", {
+        status: Number.isFinite(error.response?.status)
+          ? error.response.status
+          : undefined,
       });
       throw error;
     });
@@ -124,12 +118,10 @@ export const ApiService = {
     const cleanResource = resource.replace(/^\//, "");
 
     return apiClient.patch(cleanResource, data).catch((error) => {
-      console.error(`ApiService.patch - Error for ${cleanResource}:`, error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
+      console.error("PATCH API request failed", {
+        status: Number.isFinite(error.response?.status)
+          ? error.response.status
+          : undefined,
       });
       throw error;
     });
@@ -140,12 +132,10 @@ export const ApiService = {
     const cleanResource = resource.replace(/^\//, "");
 
     return apiClient.delete(cleanResource).catch((error) => {
-      console.error(`ApiService.delete - Error for ${cleanResource}:`, error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
+      console.error("DELETE API request failed", {
+        status: Number.isFinite(error.response?.status)
+          ? error.response.status
+          : undefined,
       });
       throw error;
     });
