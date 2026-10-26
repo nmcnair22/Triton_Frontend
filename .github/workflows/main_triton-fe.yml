@@ -82,11 +82,10 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_342D948E1B9F4F649BFAF65335B9F8F6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6E6C98CA3E72424D9E3D170E967BB67D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3C50D9DC2D2249FBA4AA8410621AE3A7 }}
-      - name: Use the prebuilt runtime package
-        run: >-
-          az webapp config appsettings set --resource-group "$AZURE_RESOURCE_GROUP"
-          --name "$AZURE_WEBAPP_NAME" --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
-          ENABLE_ORYX_BUILD=false NODE_ENV=production --output none
+      - name: Verify prebuilt runtime configuration
+        run: |
+          az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD' || name=='NODE_ENV'].{name:name,value:value}" --output json > /tmp/triton-runtime-settings.json
+          node -e 'const fs=require("fs"); const values=Object.fromEntries(JSON.parse(fs.readFileSync("/tmp/triton-runtime-settings.json")).map(x=>[x.name,x.value])); if(values.SCM_DO_BUILD_DURING_DEPLOYMENT!=="false" || values.ENABLE_ORYX_BUILD!=="false" || values.NODE_ENV!=="production") throw new Error("Configure the prebuilt runtime settings and allow Azure to finish restarting before deploying.")'
       - name: Replace production files and restart
         id: deploy
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
@@ -94,7 +93,6 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           slot-name: production
           package: release.zip
-          startup-command: npm start
           clean: true
           restart: true
       - name: Verify the running production commit and HTTP behavior
